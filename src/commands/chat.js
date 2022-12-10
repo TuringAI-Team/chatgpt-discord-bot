@@ -1,8 +1,8 @@
-const { SlashCommandBuilder } = require("discord.js");
-const { chat } = require("../modules/gpt.js");
-const { getUser } = require("../modules/user");
+import { SlashCommandBuilder } from "discord.js";
+import { chat } from "../modules/gpt.js";
+import { getUser } from "../modules/user.js";
 
-module.exports = {
+export default {
   data: new SlashCommandBuilder()
     .setName("chat")
     .setDescription("Chat with gpt-3")
@@ -15,11 +15,12 @@ module.exports = {
   async execute(interaction) {
     var user = await getUser(interaction.user);
     var message = interaction.options.getString("message");
-    var result = await chat(message);
     await interaction.reply({
-      content: result,
-      ephemeral: true,
+      content: `Loading...`,
     });
+    var result = await chat(message);
+    console.log(result);
+    await interaction.editReply(result);
 
     return;
   },

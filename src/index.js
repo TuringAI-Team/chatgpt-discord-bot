@@ -1,8 +1,9 @@
 // Require the necessary discord.js classes
-const chalk = require("chalk");
-const fs = require("node:fs");
-const path = require("node:path");
-const {
+import chalk from "chalk";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "url";
+import {
   Client,
   Events,
   Collection,
@@ -10,9 +11,10 @@ const {
   ActivityType,
   REST,
   Routes,
-} = require("discord.js");
-const { initChat } = require("./modules/gpt");
-require("dotenv").config();
+} from "discord.js";
+import { initChat } from "./modules/gpt.js";
+import * as dotenv from "dotenv"; // see https://github.com/motdotla/dotenv#how-do-i-use-dotenv-with-import
+dotenv.config();
 
 // Create a new client instance
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
@@ -20,6 +22,8 @@ const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
 
 client.commands = new Collection();
 const commands = [];
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const commandsPath = path.join(__dirname, "commands");
 
 const commandFiles = fs
@@ -27,8 +31,9 @@ const commandFiles = fs
   .filter((file) => file.endsWith(".js"));
 
 for (const file of commandFiles) {
-  const filePath = path.join(commandsPath, file);
-  const command = require(filePath);
+  const filePath = `./commands/${file}`;
+  console.log(filePath);
+  const { default: command } = await import(filePath);
   // Set a new item in the Collection with the key as the command name and the value as the exported module
   if ("data" in command && "execute" in command) {
     client.commands.set(command.data.name, command);

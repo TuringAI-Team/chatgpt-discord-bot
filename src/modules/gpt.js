@@ -1,5 +1,6 @@
-require("dotenv").config();
-const { ChatGPTAPI } = require("chatgpt");
+import { ChatGPTAPI } from "chatgpt";
+import * as dotenv from "dotenv"; // see https://github.com/motdotla/dotenv#how-do-i-use-dotenv-with-import
+dotenv.config();
 
 const api = new ChatGPTAPI({
   sessionToken: process.env.SESSION_TOKEN,
@@ -11,11 +12,7 @@ async function initChat() {
 }
 async function chat(msg) {
   const response = await api.sendMessage(msg);
-
   return response;
 }
 
-module.exports = {
-  chat,
-  initChat,
-};
+export { chat, initChat };

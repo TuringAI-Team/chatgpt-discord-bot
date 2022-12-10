@@ -1,5 +1,4 @@
-const supabase = require("./supabase");
-const ms = require("ms");
+import supabase from "./supabase.js";
 
 async function getUser(discordUser) {
   let { data: users, error } = await supabase
@@ -34,6 +33,4 @@ async function getUser(discordUser) {
   }
 }
 
-module.exports = {
-  getUser,
-};
+export { getUser };

@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "main": "src/index.js",
+  "type": "module",
   "scripts": {
     "start": "node .",
     "dev": "nodemon ."
@@ -12,7 +13,7 @@
   "license": "ISC",
   "dependencies": {
     "@supabase/supabase-js": "^2.1.1",
-    "chalk": "4",
+    "chalk": "^5.2.0",
     "chatgpt": "^2.0.5",
     "discord.js": "^14.7.1",
     "dotenv": "^16.0.3",
