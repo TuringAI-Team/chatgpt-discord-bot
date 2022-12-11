@@ -80,7 +80,7 @@ client.once(Events.ClientReady, async (c) => {
   await initChat();
   client.user.setPresence({
     activities: [
-      { name: `Powered by MrlolDev/Nick S.`, type: ActivityType.Watching },
+      { name: `v0.0.2 | New update today`, type: ActivityType.Playing },
     ],
     status: "online",
   });
