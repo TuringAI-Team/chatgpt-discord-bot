@@ -45,6 +45,9 @@ export default {
         abled: true,
       },
     ]);
+    if (error) {
+      console.log(error);
+    }
 
     let collector = await CollectorUtils.collectByMessage(
       interaction.channel,
