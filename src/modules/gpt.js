@@ -4,7 +4,7 @@ import * as dotenv from "dotenv"; // see https://github.com/motdotla/dotenv#how-
 dotenv.config();
 import chalk from "chalk";
 
-var api;
+var api = "loading";
 
 async function initChat() {
   console.log(chalk.grey("Starting ChatGPT API"));
@@ -28,14 +28,14 @@ async function initChat() {
   await api.ensureAuth();
 }
 async function chat(msg) {
-  if (!api) {
+  if (api == "loading") {
     return `Wait 1-2 mins the bot is reloading .`;
   }
   const response = await api.sendMessage(msg);
   return response;
 }
 async function createConversation() {
-  if (!api) {
+  if (api == "loading") {
     return `Wait 1-2 mins the bot is reloading .`;
   }
   var conversation = api.getConversation();
