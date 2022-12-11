@@ -18,9 +18,13 @@ export default {
     );
     const timeout = 120000;
 
-    const collector = new MessageCollector(interaction.channel, {
-      time: timeout,
-    });
+    const collector = new MessageCollector(
+      interaction.channel,
+      (m) => m.author.id === interaction.author.id,
+      {
+        time: timeout,
+      }
+    );
     collector.on("collect", async (m) => {
       console.log(`Collected ${m.content}`);
       var res = await conversation.sendMessage(m.content);
