@@ -13,7 +13,6 @@ export default {
     await interaction.reply({
       content: `Creating collector...`,
     });
-    console.log(interaction.channel);
     if (!interaction.channel) {
       await interaction.editReply(
         `This function is only available for server chats.\nYou can use it [in our server](https://dsc.gg/turing) or in other server with this bot.`
@@ -22,6 +21,9 @@ export default {
     }
     await interaction.editReply(
       `Collector ready.\nStart talking and the bot will answer.\nUse stop to finish the conversation`
+    );
+    console.log(
+      `${interaction.guild.name} ${interaction.author.name} - new conversation`
     );
     var conversation = await createConversation();
 

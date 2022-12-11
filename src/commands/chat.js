@@ -19,7 +19,9 @@ export default {
       content: `Loading...`,
     });
     var result = await chat(message);
-    console.log(result);
+    console.log(
+      `${interaction.guild.name} ${interaction.author.name}: ${message}\nAI: ${result}`
+    );
     await interaction.editReply(result);
 
     return;
