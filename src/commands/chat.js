@@ -21,7 +21,7 @@ export default {
     var result = await chat(message);
     console.log(
       `${interaction.guild ? interaction.guild.name : "dm"} ${
-        interaction.user.username
+        interaction.user.tag
       }: ${message}\nAI: ${result}`
     );
     await interaction.editReply(result);
