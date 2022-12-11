@@ -87,7 +87,7 @@ client.once(Events.ClientReady, async (c) => {
   await initChat();
   client.user.setPresence({
     activities: [
-      { name: `v0.0.3 | dsc.gg/turing`, type: ActivityType.Playing },
+      { name: `v0.0.4 | dsc.gg/turing`, type: ActivityType.Playing },
     ],
     status: "online",
   });
