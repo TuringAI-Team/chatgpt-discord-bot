@@ -23,7 +23,7 @@ export default {
       `Collector ready.\nStart talking and the bot will answer.\nUse stop to finish the conversation`
     );
     console.log(
-      `${interaction.guild.name} ${interaction.author.name} - new conversation`
+      `${interaction.guild.name} ${interaction.user.username} - new conversation`
     );
     var conversation = await createConversation();
 
