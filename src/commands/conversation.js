@@ -34,6 +34,10 @@ export default {
       `${interaction.guild.name} ${interaction.user.tag} - new conversation`
     );
     var conversation = await createConversation();
+    if (conversation == `Wait 1-2 mins the bot is reloading .`) {
+      await interaction.editReply(`Wait 1-2 mins the bot is reloading .`);
+      return;
+    }
     const { data, error } = await supabase.from("conversations").insert([
       {
         id: interaction.channel.id,
