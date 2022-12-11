@@ -24,7 +24,7 @@ export default {
     ),
   async execute(interaction, client) {
     var user = await getUser(interaction.user);
-    var message = interaction.options.getString("message");
+    var message = interaction.options.getString("feedback");
     var type = interaction.options.getString("type");
 
     const channel = client.channels.cache.get("1051425293715390484");
@@ -32,9 +32,9 @@ export default {
       content: `Sending...`,
       ephemeral: true,
     });
-    const timeString = time(Date.now(), "R");
+    const timeString = time(new Date(), "R");
     channel.send(
-      `**Feedback from ${interaction.user.tag} ${timeString}**\n**Message:** ${message}\n**Type:** ${type}`
+      `**Feedback from __${interaction.user.tag}__** ${timeString}\n**Message:** ${message}\n**Type:** ${type}`
     );
     await interaction.editReply({
       content: "Feedback sent.",
