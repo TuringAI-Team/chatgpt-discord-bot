@@ -7,8 +7,8 @@ import chalk from "chalk";
 var api;
 
 async function initChat() {
-  var username = process.env.USER;
-  var password = process.env.PASSWORD;
+  var username = process.env.CHATGPT_USER;
+  var password = process.env.CHATGPT_PASSWORD;
   console.log(username, password);
   const token = await chatgptToken(username, password);
   if (!token) {
