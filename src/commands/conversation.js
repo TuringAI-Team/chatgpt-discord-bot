@@ -1,7 +1,8 @@
-import { SlashCommandBuilder, MessageCollector } from "discord.js";
+import { SlashCommandBuilder } from "discord.js";
 import { getUser } from "../modules/user.js";
 import { createConversation } from "../modules/gpt.js";
 import ms from "ms";
+import { CollectorUtils } from "discord.js-collector-utils";
 
 export default {
   data: new SlashCommandBuilder()
@@ -12,30 +13,35 @@ export default {
     await interaction.reply({
       content: `Creating collector...`,
     });
-    var conversation = await createConversation();
     await interaction.editReply(
-      `Collector ready.\nStart talking an the bot will answer.`
+      `Collector ready.\nStart talking and the bot will answer.\nUse stop to finish the conversation`
     );
-    const timeout = 120000;
+    var conversation = await createConversation();
 
-    const collector = new MessageCollector(
+    let collector = await CollectorUtils.collectByMessage(
       interaction.channel,
-      (m) => m.author.id === interaction.author.id,
+      // Retrieve Result
+      async (message) => {
+        if (message.author.bot) return;
+        if (message.content == "stop") {
+          message.reply("Conversation finished");
+          return;
+        }
+        var msg = await message.reply("Loading ...");
+        const response1 = await conversation.sendMessage(message.content);
+        msg.edit(response1);
+      },
+      // Options
       {
-        time: timeout,
+        time: 120000,
+        reset: false,
+        stopFilter: (message) => message.content.toLowerCase() === "stop",
+
+        onExpire: async () => {
+          await interaction.channel.send(`Conversation finished.`);
+        },
       }
     );
-    collector.on("collect", async (m) => {
-      console.log(`Collected ${m.content}`);
-      var res = await conversation.sendMessage(m.content);
-      console.log(res);
-      m.reply(res);
-    });
-
-    collector.on("end", (collected) => {
-      console.log(`Collected ${collected.size} items`);
-    });
-
     return;
   },
 };

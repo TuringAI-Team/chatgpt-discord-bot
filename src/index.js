@@ -17,7 +17,14 @@ import * as dotenv from "dotenv"; // see https://github.com/motdotla/dotenv#how-
 dotenv.config();
 
 // Create a new client instance
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.DirectMessages,
+  ],
+});
 const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
 
 client.commands = new Collection();

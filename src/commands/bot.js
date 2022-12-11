@@ -50,6 +50,10 @@ export default {
           name: "Github  repository",
           value: `https://github.com/MrlolDev/chatgpt-bot`,
         },
+        {
+          name: "Version",
+          value: `v0.0.2`,
+        },
       ])
       .setFooter({
         text: "This is not an official bot.",
