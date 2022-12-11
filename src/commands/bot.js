@@ -52,7 +52,7 @@ export default {
         },
         {
           name: "Version",
-          value: `v0.0.4`,
+          value: `v0.0.5`,
         },
       ])
       .setFooter({

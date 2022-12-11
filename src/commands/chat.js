@@ -20,7 +20,9 @@ export default {
     });
     var result = await chat(message);
     console.log(
-      `${interaction.guild.name} ${interaction.user.username}: ${message}\nAI: ${result}`
+      `${interaction.guild ? interaction.guild.name : "dm"} ${
+        interaction.user.username
+      }: ${message}\nAI: ${result}`
     );
     await interaction.editReply(result);
 
