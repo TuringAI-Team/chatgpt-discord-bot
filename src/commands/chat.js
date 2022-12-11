@@ -24,7 +24,9 @@ export default {
         interaction.user.tag
       }: ${message}\nAI: ${result}`
     );
-    await interaction.editReply(`**Human:** ${message}\nChatGPT: ${result}`);
+    await interaction.editReply(
+      `**Human:** ${message}\n**ChatGPT:** ${result}`
+    );
 
     return;
   },

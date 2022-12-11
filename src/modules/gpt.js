@@ -28,10 +28,16 @@ async function initChat() {
   await api.ensureAuth();
 }
 async function chat(msg) {
+  if (!api) {
+    return `Wait 1-2 mins the bot is reloading .`;
+  }
   const response = await api.sendMessage(msg);
   return response;
 }
 async function createConversation() {
+  if (!api) {
+    return `Wait 1-2 mins the bot is reloading .`;
+  }
   var conversation = api.getConversation();
   return conversation;
 }

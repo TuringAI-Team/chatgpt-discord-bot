@@ -1,5 +1,6 @@
 import { SlashCommandBuilder } from "discord.js";
 import { getUser } from "../modules/user.js";
+import supabase from "../modules/supabase.js";
 import { createConversation } from "../modules/gpt.js";
 import ms from "ms";
 import { CollectorUtils } from "discord.js-collector-utils";
@@ -19,6 +20,13 @@ export default {
       );
       return;
     }
+    var conversationExist = await checkConversation(interaction.channel.id);
+    if (conversationExist) {
+      await interaction.editReply(
+        `There is an active conversation in this channel`
+      );
+      return;
+    }
     await interaction.editReply(
       `Collector ready.\nStart talking and the bot will answer.\nUse stop to finish the conversation`
     );
@@ -26,6 +34,13 @@ export default {
       `${interaction.guild.name} ${interaction.user.tag} - new conversation`
     );
     var conversation = await createConversation();
+    const { data, error } = await supabase.from("conversations").insert([
+      {
+        id: interaction.channel.id,
+        created_by: interaction.user.id,
+        abled: true,
+      },
+    ]);
 
     let collector = await CollectorUtils.collectByMessage(
       interaction.channel,
@@ -47,6 +62,11 @@ export default {
         stopFilter: (message) => message.content.toLowerCase() === "stop",
 
         onExpire: async () => {
+          const { data, error } = await supabase
+            .from("conversations")
+            .eq("id", interaction.channel.id)
+            .eq("abled", true);
+
           await interaction.channel.send(`Conversation finished.`);
         },
       }
@@ -54,3 +74,21 @@ export default {
     return;
   },
 };
+
+async function checkConversation(channelID) {
+  let { data: conversations, error } = await supabase
+    .from("conversations")
+    .select("*")
+
+    // Filters
+    .eq("id", channelID)
+    .eq("abled", true);
+  if (error) {
+    return false;
+  } else {
+    if (conversations.length > 0) {
+      return true;
+    }
+    return false;
+  }
+}
