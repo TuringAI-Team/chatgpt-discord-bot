@@ -14,5 +14,9 @@ async function chat(msg) {
   const response = await api.sendMessage(msg);
   return response;
 }
+async function createConversation() {
+  var conversation = api.getConversation();
+  return conversation;
+}
 
-export { chat, initChat };
+export { chat, initChat, createConversation };

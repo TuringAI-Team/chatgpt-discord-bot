@@ -5,11 +5,11 @@ import { getUser } from "../modules/user.js";
 export default {
   data: new SlashCommandBuilder()
     .setName("chat")
-    .setDescription("Chat with gpt-3")
+    .setDescription("Chat with ChatGPT")
     .addStringOption((option) =>
       option
         .setName("message")
-        .setDescription("The message for gpt-3")
+        .setDescription("The message for ChatGPT")
         .setRequired(true)
     ),
   async execute(interaction) {

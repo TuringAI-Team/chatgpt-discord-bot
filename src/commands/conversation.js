@@ -1,0 +1,37 @@
+import { SlashCommandBuilder } from "discord.js";
+import { getUser } from "../modules/user.js";
+import { createConversation } from "../modules/gpt.js";
+import ms from "ms";
+
+export default {
+  data: new SlashCommandBuilder()
+    .setName("conversation")
+    .setDescription("Start a conversation with ChatGPT"),
+  async execute(interaction) {
+    var user = await getUser(interaction.user);
+    await interaction.reply({
+      content: `Creating collector...`,
+    });
+    var conversation = await createConversation();
+    await interaction.editReply(
+      `Collector ready.\nStart talking an the bot will answer.`
+    );
+    const collector = interaction.channel.createMessageCollector({
+      filter: (m) => m.content,
+      time: ms("5m"),
+    });
+
+    collector.on("collect", async (m) => {
+      console.log(`Collected ${m.content}`);
+      var res = await conversation.sendMessage(m.content);
+      console.log(res);
+      m.reply(res);
+    });
+
+    collector.on("end", (collected) => {
+      console.log(`Collected ${collected.size} items`);
+    });
+
+    return;
+  },
+};
