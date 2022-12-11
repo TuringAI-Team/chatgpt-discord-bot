@@ -2,6 +2,7 @@ import { ChatGPTAPI } from "chatgpt";
 import { chatgptToken } from "chatgpt-token/module";
 import * as dotenv from "dotenv"; // see https://github.com/motdotla/dotenv#how-do-i-use-dotenv-with-import
 dotenv.config();
+import chalk from "chalk";
 
 var api;
 
@@ -15,6 +16,7 @@ async function initChat() {
     api = new ChatGPTAPI({
       sessionToken: token,
     });
+    console.log(chalk.green("ChatGPT API init successfully"));
     // ensure the API is properly authenticated
     await api.ensureAuth();
   }
