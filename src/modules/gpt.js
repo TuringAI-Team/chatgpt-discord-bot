@@ -9,6 +9,7 @@ var api;
 async function initChat() {
   var username = process.env.USER;
   var password = process.env.PASSWORD;
+  console.log(username, password);
   const token = await chatgptToken(username, password);
   if (!token) {
     console.log("error");
