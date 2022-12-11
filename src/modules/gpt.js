@@ -7,20 +7,25 @@ import chalk from "chalk";
 var api;
 
 async function initChat() {
+  console.log(chalk.grey("Starting ChatGPT API"));
+
   var username = process.env.CHATGPT_USER;
   var password = process.env.CHATGPT_PASSWORD;
-  console.log(username, password);
-  const token = await chatgptToken(username, password);
-  if (!token) {
-    console.log("error");
-  } else {
-    api = new ChatGPTAPI({
-      sessionToken: token,
-    });
-    console.log(chalk.green("ChatGPT API init successfully"));
-    // ensure the API is properly authenticated
-    await api.ensureAuth();
+  var token;
+  try {
+    token = await chatgptToken(username, password);
+  } catch (e) {
+    if (!token) {
+      token = process.env.SESSION_TOKEN;
+    }
   }
+
+  api = new ChatGPTAPI({
+    sessionToken: token,
+  });
+  console.log(chalk.green("ChatGPT API init successfully"));
+  // ensure the API is properly authenticated
+  await api.ensureAuth();
 }
 async function chat(msg) {
   const response = await api.sendMessage(msg);

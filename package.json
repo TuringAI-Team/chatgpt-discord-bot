@@ -12,6 +12,7 @@
   "author": "MrlolDev",
   "license": "Apache-2.0 license",
   "dependencies": {
+    "@playwright/test": "^1.28.1",
     "@supabase/supabase-js": "^2.1.1",
     "chalk": "^5.2.0",
     "chatgpt": "^2.0.5",
