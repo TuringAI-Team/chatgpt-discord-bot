@@ -8,7 +8,21 @@ import { CollectorUtils } from "discord.js-collector-utils";
 export default {
   data: new SlashCommandBuilder()
     .setName("conversation")
-    .setDescription("Start a conversation with ChatGPT"),
+    .setDescription("Start a conversation with ChatGPT")
+    .addStringOption((option) =>
+      option
+        .setName("time")
+        .setDescription("The max duration of the conversation")
+        .addChoices(
+          { name: "2 minutes", value: "2m" },
+          { name: "4 minutes", value: "4m" },
+          { name: "6 minutes", value: "6m" },
+          { name: "8 minutes", value: "8m" },
+          { name: "10 minutes", value: "10m" },
+          { name: "12 minutes", value: "12m" }
+        )
+        .setRequired(false)
+    ),
   async execute(interaction) {
     var user = await getUser(interaction.user);
     await interaction.reply({
@@ -27,6 +41,7 @@ export default {
       );
       return;
     }
+    //var duration = ms(interaction.options.getString("time"));
     await interaction.editReply(
       `Collector ready.\nStart talking and the bot will answer.\nUse stop to finish the conversation`
     );
@@ -63,6 +78,12 @@ export default {
       async (message) => {
         if (message.author.bot) return;
         if (message.content == "stop") {
+          const { data, error } = await supabase
+            .from("conversations")
+            .delete()
+            .eq("id", interaction.channel.id)
+            .eq("abled", true);
+
           message.reply("Conversation finished");
           return;
         }
@@ -72,7 +93,7 @@ export default {
       },
       // Options
       {
-        time: 120000,
+        time: ms("8m"),
         reset: false,
         stopFilter: (message) => message.content.toLowerCase() === "stop",
 
