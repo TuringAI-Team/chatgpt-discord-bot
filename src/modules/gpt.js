@@ -11,7 +11,7 @@ async function getAuth() {
   var email = process.env.CHATGPT_USER;
   var password = process.env.CHATGPT_PASSWORD;
   var browser = await getBrowser({
-    headless: false,
+    headless: true,
     executablePath: process.env.BROWSER_PATH,
   });
   try {
