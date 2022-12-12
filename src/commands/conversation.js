@@ -70,7 +70,7 @@ export default {
         onExpire: async () => {
           const { data, error } = await supabase
             .from("conversations")
-            .update({ abled: false })
+            .delete()
             .eq("id", interaction.channel.id)
             .eq("abled", true);
 
@@ -93,7 +93,6 @@ async function checkConversation(channelID) {
   if (error) {
     return false;
   } else {
-    console.log(conversations.length);
     if (conversations.length > 0) {
       return true;
     }

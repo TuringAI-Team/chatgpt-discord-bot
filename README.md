@@ -10,5 +10,7 @@ A discord bot for interact with ChatGPT
 - [x] Feedback command(allow people to send feedback). --> 0.0.4
 - [x] Auto refresh session token --> 0.0.5
 - [x] Includes user message in chat command. --> 0.0.6
-- [ ] Limits to 1 conversation per channel. --> 0.0.6
-- [ ] Top.gg rewards --> 0.0.7
+- [x] Solve ChatGPT issues --> 0.0.6
+- [x] Limits to 1 conversation per channel. --> 0.0.6
+- [ ] Allow private conversations --> 0.0.7
+- [ ] Top.gg rewards --> Future

@@ -1,6 +1,6 @@
 {
   "name": "turing-bot",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "",
   "main": "src/index.js",
   "type": "module",
@@ -15,7 +15,7 @@
     "@playwright/test": "^1.28.1",
     "@supabase/supabase-js": "^2.1.1",
     "chalk": "^5.2.0",
-    "chatgpt": "^2.1.1",
+    "chatgpt": "^2.2.0",
     "chatgpt-token": "^0.0.1",
     "discord.js": "^14.7.1",
     "discord.js-collector-utils": "1.9.1",
