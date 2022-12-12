@@ -38,6 +38,15 @@ export default {
       await interaction.editReply(`Wait 1-2 mins the bot is reloading .`);
       return;
     }
+    if (
+      conversation ==
+      `ChatGPT is down now.\nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`
+    ) {
+      await interaction.editReply(
+        `ChatGPT is down now.\nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`
+      );
+      return;
+    }
     const { data, error } = await supabase.from("conversations").insert([
       {
         id: interaction.channel.id,
