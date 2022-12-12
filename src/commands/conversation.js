@@ -41,7 +41,6 @@ export default {
     const { data, error } = await supabase.from("conversations").insert([
       {
         id: interaction.channel.id,
-        created_by: interaction.user.id,
         abled: true,
       },
     ]);

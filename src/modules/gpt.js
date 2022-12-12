@@ -12,13 +12,14 @@ async function initChat() {
   var username = process.env.CHATGPT_USER;
   var password = process.env.CHATGPT_PASSWORD;
   var token;
-  try {
+  /* try {
     token = await chatgptToken(username, password);
   } catch (e) {
     if (!token) {
       token = process.env.SESSION_TOKEN;
     }
-  }
+  }*/
+  token = process.env.SESSION_TOKEN;
 
   api = new ChatGPTAPI({
     sessionToken: token,
