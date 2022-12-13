@@ -2,6 +2,7 @@
 import chalk from "chalk";
 import fs from "node:fs";
 import path from "node:path";
+import ms from "ms";
 import { fileURLToPath } from "url";
 import {
   Client,
@@ -85,6 +86,9 @@ client.once(Events.ClientReady, async (c) => {
     chalk.white(`Ready! Logged in as `) + chalk.blue.bold(c.user.tag)
   );
   await initChat();
+  setInterval(async () => {
+    await initChat();
+  }, ms("50m"));
   client.user.setPresence({
     activities: [
       { name: `v0.0.6 | dsc.gg/turing`, type: ActivityType.Playing },

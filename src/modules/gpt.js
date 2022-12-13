@@ -9,16 +9,12 @@ import { getBrowser, getOpenAIAuth } from "./openai-auth-2captcha.js";
 var api = "loading";
 
 async function getAuth() {
-  var email = process.env.CHATGPT_USER;
-  var password = process.env.CHATGPT_PASSWORD;
   var browser = await getBrowser({
     headless: false,
     executablePath: process.env.BROWSER_PATH,
   });
   try {
     const authInfo = await getOpenAIAuth({
-      email,
-      password,
       browser,
     });
     return authInfo;
@@ -30,11 +26,12 @@ async function getAuth() {
 }
 async function initChat() {
   console.log(chalk.grey("Starting ChatGPT API"));
+  var token = process.env.SESSION_TOKEN;
 
   try {
     const authInfo = await getAuth();
 
-    api = new ChatGPTAPI({ ...authInfo });
+    api = new ChatGPTAPI({ sessionToken: token, ...authInfo });
     console.log(chalk.green("ChatGPT API init successfully"));
     // ensure the API is properly authenticated
     await api.ensureAuth();
@@ -45,7 +42,7 @@ async function initChat() {
 }
 async function chat(msg) {
   if (api == "loading") {
-    return `Wait 1-2 mins the bot is reloading .`;
+    return `Wait 1-2 mins the bot is reloading.  \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`;
   }
   if (api == "down") {
     return `ChatGPT is down now.\nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`;

@@ -72,8 +72,9 @@ export async function getOpenAIAuth({
         }),
       ]);
       await page.type("#username", email, { delay: 10 });
-      /*await page.waitForSelector('iframe[src*="recaptcha/"]');
-      await page.solveRecaptchas();*/
+
+      await page.waitForSelector('iframe[src*="recaptcha/"]');
+      await page.solveRecaptchas();
       console.log("username");
 
       await page.click('button[type="submit"]');
@@ -97,7 +98,7 @@ export async function getOpenAIAuth({
     const authInfo = {
       userAgent,
       clearanceToken: cookies["cf_clearance"]?.value,
-      sessionToken: cookies["__Secure-next-auth.session-token"]?.value,
+      //sessionToken: cookies["__Secure-next-auth.session-token"]?.value,
       cookies,
     };
 
