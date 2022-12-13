@@ -1,9 +1,10 @@
-import { ChatGPTAPI, getOpenAIAuth, getBrowser } from "chatgpt";
+import { ChatGPTAPI } from "chatgpt";
 //import { chatgptToken } from "chatgpt-token/module";
 import * as dotenv from "dotenv"; // see https://github.com/motdotla/dotenv#how-do-i-use-dotenv-with-import
 dotenv.config();
 import chalk from "chalk";
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+import { getBrowser, getOpenAIAuth } from "./openai-auth-2captcha.js";
 
 var api = "loading";
 
@@ -11,7 +12,7 @@ async function getAuth() {
   var email = process.env.CHATGPT_USER;
   var password = process.env.CHATGPT_PASSWORD;
   var browser = await getBrowser({
-    headless: true,
+    headless: false,
     executablePath: process.env.BROWSER_PATH,
   });
   try {

@@ -24,6 +24,7 @@
     "ms": "^2.1.3",
     "puppeteer": "^19.4.0",
     "puppeteer-extra": "^3.3.4",
+    "puppeteer-extra-plugin-recaptcha": "^3.6.6",
     "puppeteer-extra-plugin-stealth": "^2.11.1"
   },
   "devDependencies": {
