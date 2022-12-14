@@ -6,7 +6,12 @@
   "type": "module",
   "scripts": {
     "start": "node .",
-    "dev": "nodemon ."
+    "dev": "nodemon .",
+    "git": "git fetch && git pull",
+    "docker:build": "docker build . -t chatgpt:001",
+    "docker:reload": "docker-compose stop && docker-compose up -d chatgpt",
+    "docker:start": "docker-compose up -d chatgpt",
+    "docker:logs": "docker-compose logs -f --tail=0"
   },
   "keywords": [],
   "author": "MrlolDev",
