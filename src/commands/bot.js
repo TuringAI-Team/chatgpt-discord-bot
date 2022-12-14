@@ -1,4 +1,7 @@
 import { SlashCommandBuilder, EmbedBuilder, time } from "discord.js";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "url";
 
 export default {
   data: new SlashCommandBuilder()
@@ -7,6 +10,18 @@ export default {
   async execute(interaction, client) {
     const timeString = time(client.user.createdAt, "R");
 
+    var usersCount = 0;
+    var users = client.guilds.cache.map((guild) => guild.memberCount);
+    console.log(users);
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    fs.writeFileSync(
+      path.join(__dirname, "server.txt"),
+      `${users.join(",  ")}`
+    );
+    for (var i = 0; i < users.length; i++) {
+      usersCount += users[i];
+    }
     var embed = new EmbedBuilder()
       .setColor("#813479")
       .setTimestamp()
@@ -26,7 +41,7 @@ export default {
         },
         {
           name: "Users",
-          value: `${client.users.cache.size}`,
+          value: `${usersCount}`,
           inline: true,
         },
         {

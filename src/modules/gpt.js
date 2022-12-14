@@ -5,13 +5,17 @@ dotenv.config();
 import chalk from "chalk";
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 import { getBrowser, getOpenAIAuth } from "./openai-auth-2captcha.js";
+import { executablePath } from "puppeteer";
 
 var api = "loading";
 
 async function getAuth() {
+  console.log(executablePath());
   var browser = await getBrowser({
     headless: false,
-    executablePath: process.env.BROWSER_PATH,
+    executablePath: executablePath(),
+    //executablePath: "google-chrome-unstable",
+    //executablePath: process.env.BROWSER_PATH,
   });
   try {
     const authInfo = await getOpenAIAuth({

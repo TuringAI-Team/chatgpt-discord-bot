@@ -51,9 +51,10 @@ export async function getOpenAIAuth({
     console.log("Cloudflare");
 
     // NOTE: this is where you may encounter a CAPTCHA
-    // await page.solveRecaptchas();
+    await page.solveRecaptchas();
 
-    var capacityLimit = await page.$('[role="alert"]');
+    await delay(10000);
+    var capacityLimit = await page.$("div.text-3xl.font-medium");
     if (capacityLimit) {
       throw `ChatGPT is at capacity right now`;
     }
@@ -128,13 +129,14 @@ export async function getOpenAIAuth({
 export async function getBrowser(launchOptions) {
   const macChromePath =
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
-
   return puppeteer.launch({
     headless: false,
     args: ["--no-sandbox", "--exclude-switches", "enable-automation"],
     ignoreHTTPSErrors: true,
+
     // executablePath: executablePath()
-    executablePath: macChromePath,
+    // executablePath: macChromePath,
+    // browserWSEndpoint: "ws://localhost:3000",
     ...launchOptions,
   });
 }

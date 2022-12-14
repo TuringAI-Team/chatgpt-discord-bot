@@ -25,43 +25,55 @@ export default {
     ),
   async execute(interaction) {
     var user = await getUser(interaction.user);
+    var type = "public";
+    var privateConversation = true;
+    if (type == "public") {
+      privateConversation = false;
+    }
     await interaction.reply({
       content: `Creating collector...`,
+      ephemeral: privateConversation,
     });
     if (!interaction.channel) {
-      await interaction.editReply(
-        `This function is only available for server chats.\nYou can use it [in our server](https://dsc.gg/turing) or in other server with this bot.`
-      );
+      await interaction.editReply({
+        ephemeral: privateConversation,
+        content: `This function is only available for server chats.\nYou can use it [in our server](https://dsc.gg/turing) or in other server with this bot.`,
+      });
       return;
     }
     var conversationExist = await checkConversation(interaction.channel.id);
     if (conversationExist) {
-      await interaction.editReply(
-        `There is an active conversation in this channel`
-      );
+      await interaction.editReply({
+        ephemeral: privateConversation,
+        content: `There is an active conversation in this channel`,
+      });
       return;
     }
-    //var duration = ms(interaction.options.getString("time"));
-    await interaction.editReply(
-      `Collector ready.\nStart talking and the bot will answer.\nUse stop to finish the conversation`
-    );
+    var duration = ms(interaction.options.getString("time"));
+
+    await interaction.editReply({
+      ephemeral: privateConversation,
+      content: `Collector ready.\nStart talking and the bot will answer.\nUse stop to finish the conversation`,
+    });
     console.log(
       `${interaction.guild.name} ${interaction.user.tag} - new conversation`
     );
     var conversation = await createConversation();
     if (conversation == `Wait 1-2 mins the bot is reloading .`) {
-      await interaction.editReply(
-        `Wait 1-2 mins the bot is reloading. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`
-      );
+      await interaction.editReply({
+        ephemeral: privateConversation,
+        content: `Wait 1-2 mins the bot is reloading. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`,
+      });
       return;
     }
     if (
       conversation ==
       `ChatGPT is down now.\nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`
     ) {
-      await interaction.editReply(
-        `ChatGPT is down now.\nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`
-      );
+      await interaction.editReply({
+        ephemeral: privateConversation,
+        content: `ChatGPT is down now.\nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`,
+      });
       return;
     }
     const { data, error } = await supabase.from("conversations").insert([
@@ -89,13 +101,24 @@ export default {
           message.reply("Conversation finished");
           return;
         }
-        var msg = await message.reply("Loading ...");
+        var msg = await message.reply(
+          "Loading ...\nNow that you are waiting you can join us in [dsc.gg/turing](https://dsc.gg/turing)"
+        );
         const response1 = await conversation.sendMessage(message.content);
+        if (response1.split("").length >= 2000) {
+          await msg.edit(response1.split("").slice(0, 1500).join(""));
+          await interaction.channel.send(
+            response1.split("").slice(1500).join("")
+          );
+        } else {
+          await msg.edit(response1);
+        }
+
         msg.edit(response1);
       },
       // Options
       {
-        time: ms("8m"),
+        time: duration,
         reset: false,
         stopFilter: (message) => message.content.toLowerCase() === "stop",
 

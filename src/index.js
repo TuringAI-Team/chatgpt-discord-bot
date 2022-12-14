@@ -85,6 +85,25 @@ client.once(Events.ClientReady, async (c) => {
   console.log(
     chalk.white(`Ready! Logged in as `) + chalk.blue.bold(c.user.tag)
   );
+  var guilds = client.guilds.cache.map((guild) => guild);
+  for (var i = 0; i < guilds.length; i++) {
+    var guild = client.guilds.cache.get(guilds[i].id);
+    if (guild.memberCount <= 3) {
+      var owner = await guild.fetchOwner();
+
+      /* owner.user
+        .send(
+          `I leave your server call ${guild.name} because we have a servers limit put by discord. If you want to use the bot please enter in [dsc.gg/turing](https://dsc.gg/turing)`
+        )
+        .catch((err) => console.log(`${owner.user.tag} no ha sido notificado`));
+*/
+      var ch = client.channels.cache.get("1051425293715390484");
+      ch.send(
+        `Me he salido de **${guild.name}**(${guild.id})\nTenía un total de **${guild.memberCount} miembros**.\nSu dueño es **${owner.user.tag}(${owner.id})**`
+      );
+      await guild.leave();
+    }
+  }
   await initChat();
   setInterval(async () => {
     await initChat();

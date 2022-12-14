@@ -16,7 +16,7 @@ export default {
     var user = await getUser(interaction.user);
     var message = interaction.options.getString("message");
     await interaction.reply({
-      content: `Loading...`,
+      content: `Loading...\nNow that you are waiting you can join us in [dsc.gg/turing](https://dsc.gg/turing)`,
     });
     var result = await chat(message);
     console.log(
