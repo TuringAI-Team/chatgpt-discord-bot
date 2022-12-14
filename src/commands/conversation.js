@@ -21,7 +21,7 @@ export default {
           { name: "10 minutes", value: "10m" },
           { name: "12 minutes", value: "12m" }
         )
-        .setRequired(false)
+        .setRequired(true)
     ),
   async execute(interaction) {
     var user = await getUser(interaction.user);
