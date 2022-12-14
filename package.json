@@ -5,7 +5,7 @@
   "main": "src/index.js",
   "type": "module",
   "scripts": {
-    "start": "node .",
+    "start": "npm i && node .",
     "dev": "nodemon ."
   },
   "keywords": [],
