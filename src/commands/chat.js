@@ -24,6 +24,21 @@ export default {
         interaction.user.tag
       }: ${message}\nAI: ${result}`
     );
+    if (result.split("").length >= 4000) {
+      await interaction.editReply(
+        `**Human:** ${message}\n**ChatGPT:** ${result
+          .split("")
+          .slice(0, 1500)
+          .join("")}`
+      );
+      await interaction.channel.send(
+        ` ${result.split("").slice(1500, 3000).join("")}`
+      );
+      await interaction.channel.send(
+        ` ${result.split("").slice(3000).join("")}`
+      );
+      return;
+    }
     if (result.split("").length >= 2000) {
       await interaction.editReply(
         `**Human:** ${message}\n**ChatGPT:** ${result

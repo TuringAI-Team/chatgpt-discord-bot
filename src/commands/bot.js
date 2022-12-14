@@ -15,10 +15,7 @@ export default {
     console.log(users);
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
-    fs.writeFileSync(
-      path.join(__dirname, "server.txt"),
-      `${users.join(",  ")}`
-    );
+
     for (var i = 0; i < users.length; i++) {
       usersCount += users[i];
     }
