@@ -60,7 +60,7 @@ export default {
         },
         {
           name: "Github  repository",
-          value: `https://github.com/MrlolDev/chatgpt-bot`,
+          value: `https://github.com/MrlolDev/chatgpt-discord-bot`,
         },
         {
           name: "Version",
