@@ -1,6 +1,6 @@
 {
   "name": "turing-bot",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "",
   "main": "src/index.js",
   "type": "module",
@@ -11,7 +11,8 @@
     "docker:build": "docker build . -t chatgpt:001",
     "docker:reload": "docker-compose stop && docker-compose up -d chatgpt",
     "docker:start": "docker-compose up -d chatgpt",
-    "docker:logs": "docker-compose logs -f --tail=0"
+    "docker:logs": "docker-compose logs -f --tail=0",
+    "docker:update": "npm run docker:build && npm run docker:reload && npm run docker:logs"
   },
   "keywords": [],
   "author": "MrlolDev",

@@ -67,7 +67,7 @@ export default {
         },
         {
           name: "Version",
-          value: `v0.0.6`,
+          value: `v0.0.7`,
         },
       ])
       .setFooter({
