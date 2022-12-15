@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from "discord.js";
-import { chat } from "../modules/gpt.js";
+import { chat } from "../modules/gpt-api.js";
 import { getUser } from "../modules/user.js";
 
 export default {
