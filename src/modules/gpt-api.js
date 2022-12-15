@@ -15,7 +15,7 @@ async function initChat() {
     var json = await response.json();
     id = json.id;
   } catch (err) {
-    api = "down";
+    id = "down";
   }
   console.log(id);
 }
