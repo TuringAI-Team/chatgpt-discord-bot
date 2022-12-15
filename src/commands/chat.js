@@ -19,11 +19,11 @@ export default {
       content: `Loading...\nNow that you are waiting you can join us in [dsc.gg/turing](https://dsc.gg/turing)`,
     });
     var result = await chat(message);
-    console.log(
+    /* console.log(
       `${interaction.guild ? interaction.guild.name : "dm"} ${
         interaction.user.tag
       }: ${message}\nAI: ${result}`
-    );
+    );*/
     if (result.split("").length >= 4000) {
       await interaction.editReply(
         `**Human:** ${message}\n**ChatGPT:** ${result

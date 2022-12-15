@@ -64,7 +64,6 @@ async function createConversation() {
         }),
       });
       var json = await response.json();
-      console.log(json);
       return json.reply[0];
     },
     stopConversation: async () => {
@@ -93,7 +92,6 @@ async function chat(message) {
     }),
   });
   var json = await response.json();
-  console.log(json);
   return json.reply[0];
 }
 

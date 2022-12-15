@@ -89,7 +89,6 @@ client.once(Events.ClientReady, async (c) => {
   for (var i = 0; i < guilds.length; i++) {
     var guild = client.guilds.cache.get(guilds[i].id);
     var owner = await guild.fetchOwner();
-    console.log(owner.user.tag, guild.name);
     if (guild.memberCount <= 3) {
       /* owner.user
         .send(

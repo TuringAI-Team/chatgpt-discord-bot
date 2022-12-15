@@ -51,13 +51,6 @@ export default {
     }
     var duration = ms(interaction.options.getString("time"));
 
-    await interaction.editReply({
-      ephemeral: privateConversation,
-      content: `Collector ready.\nStart talking and the bot will answer.\nUse stop to finish the conversation`,
-    });
-    console.log(
-      `${interaction.guild.name} ${interaction.user.tag} - new conversation`
-    );
     var conversation = await createConversation();
     if (conversation == `Wait 1-2 mins the bot is reloading .`) {
       await interaction.editReply({
@@ -86,6 +79,13 @@ export default {
       console.log(error);
     }
 
+    await interaction.editReply({
+      ephemeral: privateConversation,
+      content: `Collector ready.\nStart talking and the bot will answer.\nUse stop to finish the conversation`,
+    });
+    console.log(
+      `${interaction.guild.name} ${interaction.user.tag} - new conversation`
+    );
     let collector = await CollectorUtils.collectByMessage(
       interaction.channel,
       // Retrieve Result
@@ -99,13 +99,14 @@ export default {
             .eq("abled", true);
 
           message.reply("Conversation finished");
-          await createConversation.stopConversation();
+          await conversation.stopConversation();
           return;
         }
         var msg = await message.reply(
           "Loading ...\nNow that you are waiting you can join us in [dsc.gg/turing](https://dsc.gg/turing)"
         );
         const response1 = await conversation.sendMessage(message.content);
+        console.log(response1);
         if (response1.split("").length >= 2000) {
           await msg.edit(response1.split("").slice(0, 1500).join(""));
           await interaction.channel.send(
