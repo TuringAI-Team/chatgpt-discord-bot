@@ -64,6 +64,9 @@ async function createConversation() {
         }),
       });
       var json = await response.json();
+      if (!json.reply || json.reply.length < 0) {
+        return `Something wrong happened, please report this issue using /feedback or joining [dsc.gg/turing](https://dsc.gg/turing)`;
+      }
       return json.reply[0];
     },
     stopConversation: async () => {
@@ -92,6 +95,9 @@ async function chat(message) {
     }),
   });
   var json = await response.json();
+  if (!json.reply || json.reply.length < 0) {
+    return `Something wrong happened, please report this issue using /feedback or joining [dsc.gg/turing](https://dsc.gg/turing)`;
+  }
   return json.reply[0];
 }
 
