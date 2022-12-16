@@ -36,7 +36,7 @@ async function createConversation() {
   if (!abled) {
     var check = await checkId();
     if (!check) {
-      return `ChatGPT is down now.\nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`;
+      return `Wait 1-2 mins the bot is reloading.\nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`;
     }
   }
   var response = await fetch(`${process.env.API_URL}/chat/${id}`, {
@@ -70,6 +70,7 @@ async function createConversation() {
       if (!json.reply || json.reply.length < 0) {
         if (json.reason == "wrong id") {
           await initChat();
+          return `Something wrong happened, please wait we are reloading the bot [dsc.gg/turing](https://dsc.gg/turing)`;
         }
         return `Something wrong happened, please report this issue using /feedback or joining [dsc.gg/turing](https://dsc.gg/turing)`;
       }
@@ -89,7 +90,7 @@ async function chat(message) {
   if (!abled) {
     var check = await checkId();
     if (!check) {
-      return `ChatGPT is down now.\nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`;
+      return `Wait 1-2 mins the bot is reloading.\nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`;
     }
   }
   var response = await fetch(`${process.env.API_URL}/chat/${id}`, {
@@ -106,6 +107,7 @@ async function chat(message) {
   if (!json.reply || json.reply.length < 0) {
     if (json.reason == "wrong id") {
       await initChat();
+      return `Something wrong happened, please wait we are reloading the bot [dsc.gg/turing](https://dsc.gg/turing)`;
     }
     return `Something wrong happened, please report this issue using /feedback or joining [dsc.gg/turing](https://dsc.gg/turing)`;
   }

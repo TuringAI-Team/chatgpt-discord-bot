@@ -16,6 +16,7 @@ import {
 import { initChat } from "./modules/gpt-api.js";
 import * as dotenv from "dotenv"; // see https://github.com/motdotla/dotenv#how-do-i-use-dotenv-with-import
 dotenv.config();
+import supbase from "./modules/supabase.js";
 
 // Create a new client instance
 const client = new Client({
@@ -103,6 +104,10 @@ client.once(Events.ClientReady, async (c) => {
       await guild.leave();
     }
   }
+  const { data, error } = await supabase
+    .from("conversations")
+    .delete()
+    .eq("abled", true);
   await initChat();
   setInterval(async () => {
     await initChat();
