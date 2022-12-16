@@ -67,8 +67,8 @@ async function createConversation() {
         }),
       });
       var json = await response.json();
-        console.log(json);
-      if (!json.reply || json.reply.length < 0) {
+      console.log(json);
+      if (!json || !json.reply || json.reply.length < 0) {
         if (json.reason == "wrong id") {
           await initChat();
           return `Something wrong happened, please wait we are reloading the bot [dsc.gg/turing](https://dsc.gg/turing)`;
@@ -104,8 +104,7 @@ async function chat(message) {
     }),
   });
   var json = await response.json();
-  console.log(json);
-  if (!json.reply || json.reply.length < 0) {
+  if (!json || !json.reply || json.reply.length < 0) {
     if (json.reason == "wrong id") {
       await initChat();
       return `Something wrong happened, please wait we are reloading the bot [dsc.gg/turing](https://dsc.gg/turing)`;
