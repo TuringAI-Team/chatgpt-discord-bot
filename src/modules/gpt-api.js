@@ -13,7 +13,10 @@ async function initChat() {
       `${process.env.API_URL}/connect?sessionToken=${process.env.SESSION_TOKEN}`
     );
     console.log(response);
-
+    if (response.status) {
+      abled = false;
+      return;
+    }
     var json = await response.json();
     id = json.id;
     abled = false;
