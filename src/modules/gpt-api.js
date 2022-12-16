@@ -12,7 +12,6 @@ async function initChat() {
     var response = await fetch(
       `${process.env.API_URL}/connect?sessionToken=${process.env.SESSION_TOKEN}`
     );
-    console.log(response);
     if (response.status) {
       abled = false;
       return;
@@ -32,7 +31,6 @@ async function getStatus() {
 async function checkId() {
   try {
     var response = await fetch(`${process.env.API_URL}/status?id=${id}`);
-    console.log(response);
     var json = await response.json();
     if (json.status == "ready") {
       abled = true;
@@ -76,7 +74,6 @@ async function createConversation() {
           conversationId: conversationId,
         }),
       });
-      console.log(response);
 
       var json = await response.json();
       if (!json || !json.reply || json.reply.length < 0) {
@@ -114,7 +111,6 @@ async function chat(message) {
       message: message,
     }),
   });
-  console.log(response);
 
   var json = await response.json();
   if (!json || !json.reply || json.reply.length < 0) {
