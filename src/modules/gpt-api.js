@@ -25,13 +25,17 @@ async function getStatus() {
   return abled;
 }
 async function checkId() {
-  var response = await fetch(`${process.env.API_URL}/status?id=${id}`);
-  var json = await response.json();
-  console.log(json);
-  if (json.status == "ready") {
-    abled = true;
+  try {
+    var response = await fetch(`${process.env.API_URL}/status?id=${id}`);
+    var json = await response.json();
+    if (json.status == "ready") {
+      abled = true;
+    }
+    return abled;
+  } catch (err) {
+    console.error(err);
+    return false;
   }
-  return abled;
 }
 
 async function createConversation() {
