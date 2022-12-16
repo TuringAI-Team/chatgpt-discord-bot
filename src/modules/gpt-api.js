@@ -17,7 +17,7 @@ async function initChat() {
     abled = false;
   } catch (err) {
     console.error(err);
-    id = "down";
+    id = "loading";
   }
   console.log(id);
 }
@@ -65,9 +65,8 @@ async function createConversation() {
         }),
       });
       var json = await response.json();
-      console.log(json);
-
       if (!json.reply || json.reply.length < 0) {
+        console.log(json);
         if (json.reason == "wrong id") {
           await initChat();
           return `Something wrong happened, please wait we are reloading the bot [dsc.gg/turing](https://dsc.gg/turing)`;
@@ -103,8 +102,8 @@ async function chat(message) {
     }),
   });
   var json = await response.json();
-  console.log(json);
   if (!json.reply || json.reply.length < 0) {
+    console.log(json);
     if (json.reason == "wrong id") {
       await initChat();
       return `Something wrong happened, please wait we are reloading the bot [dsc.gg/turing](https://dsc.gg/turing)`;
@@ -114,4 +113,4 @@ async function chat(message) {
   return json.reply[0];
 }
 
-export { initChat, createConversation, chat };
+export { initChat, createConversation, chat, abled };

@@ -13,7 +13,7 @@ A discord bot for interact with ChatGPT
 - [x] Solve ChatGPT issues --> 0.0.6
 - [x] Limits to 1 conversation per channel. --> 0.0.6
 - [x] Host on vps server --> 0.0.7
-- [ ] Allow private conversations --> 0.0.8
-- [ ] Partials responses during loading --> 0.0.8
+- [x] Allow private conversations --> 0.0.8
 - [ ] Uptime Robot alerts --> 0.0.8
 - [ ] Top.gg rewards --> Future
+- [ ] Partials responses during loading --> Future

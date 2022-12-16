@@ -1,30 +1,35 @@
 import express from "express";
 const app = express();
 import rateLimit from "express-rate-limit";
-import helmet from "helmet";
 import chalk from "chalk";
 import cors from "cors";
+import { abled } from "./gpt-api.js";
 const limiter = rateLimit({
-  windowMs: 1000,
+  windowMs: 10000,
   max: 2,
   standardHeaders: true,
   legacyHeaders: false,
 });
 
 app.use(cors());
-app.use(helmet());
 app.use(limiter);
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Init server
-app.listen(5522, () => {
-  console.log(chalk.white(`Server is running on port `) + chalk.cyan(5522));
-});
-
 // Endpoints
 app.get("/", (req, res) => {
-  res.json({
-    able: true,
-  });
+  if (abled) {
+    res.json({
+      abled: true,
+    });
+  } else {
+    res.status(403);
+  }
 });
+
+export default async () => {
+  // Init server
+  app.listen(5522, () => {
+    console.log(chalk.white(`Server is running on port `) + chalk.cyan(5522));
+  });
+};

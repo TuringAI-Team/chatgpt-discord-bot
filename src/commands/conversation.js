@@ -59,16 +59,6 @@ export default {
       });
       return;
     }
-    if (
-      conversation ==
-      `ChatGPT is down now.\nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`
-    ) {
-      await interaction.editReply({
-        ephemeral: privateConversation,
-        content: `ChatGPT is down now.\nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`,
-      });
-      return;
-    }
     const { data, error } = await supabase.from("conversations").insert([
       {
         id: interaction.channel.id,

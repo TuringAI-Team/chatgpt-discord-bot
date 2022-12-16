@@ -11,11 +11,28 @@ export default {
         .setName("message")
         .setDescription("The message for ChatGPT")
         .setRequired(true)
+    )
+    .addStringOption((option) =>
+      option
+        .setName("type")
+        .setDescription("The type of message for ChatGPT")
+        .setRequired(false)
+        .addChoices(
+          { name: "public", value: "public" },
+          { name: "private", value: "private" }
+        )
     ),
   async execute(interaction) {
     var user = await getUser(interaction.user);
     var message = interaction.options.getString("message");
+    var type = interaction.options.getString("type");
+
+    var privateConversation = true;
+    if (type == "public") {
+      privateConversation = false;
+    }
     await interaction.reply({
+      ephemeral: privateConversation,
       content: `Loading...\nNow that you are waiting you can join us in [dsc.gg/turing](https://dsc.gg/turing)`,
     });
     var result = await chat(message);
