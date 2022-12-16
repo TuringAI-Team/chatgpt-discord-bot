@@ -65,6 +65,7 @@ async function createConversation() {
         }),
       });
       var json = await response.json();
+      console.log(json);
 
       if (!json.reply || json.reply.length < 0) {
         if (json.reason == "wrong id") {
@@ -72,7 +73,6 @@ async function createConversation() {
         }
         return `Something wrong happened, please report this issue using /feedback or joining [dsc.gg/turing](https://dsc.gg/turing)`;
       }
-      console.log(json);
 
       return json.reply[0];
     },
