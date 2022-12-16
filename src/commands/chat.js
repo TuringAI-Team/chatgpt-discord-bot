@@ -27,9 +27,9 @@ export default {
     var message = interaction.options.getString("message");
     var type = interaction.options.getString("type");
 
-    var privateConversation = true;
-    if (type == "public") {
-      privateConversation = false;
+    var privateConversation = false;
+    if (type == "private") {
+      privateConversation = true;
     }
     await interaction.reply({
       ephemeral: privateConversation,

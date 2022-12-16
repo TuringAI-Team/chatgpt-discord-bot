@@ -15,9 +15,9 @@ import {
 } from "discord.js";
 import { initChat } from "./modules/gpt-api.js";
 import supabase from "./modules/supabase.js";
-import api from "./modules/status.js";
 import * as dotenv from "dotenv"; // see https://github.com/motdotla/dotenv#how-do-i-use-dotenv-with-import
 dotenv.config();
+import "./modules/status.js";
 
 // Create a new client instance
 const client = new Client({
@@ -84,7 +84,6 @@ for (const file of commandFiles) {
 // When the client is ready, run this code (only once)
 // We use 'c' for the event parameter to keep it separate from the already defined 'client'
 client.once(Events.ClientReady, async (c) => {
-  await api();
   console.log(
     chalk.white(`Ready! Logged in as `) + chalk.blue.bold(c.user.tag)
   );
@@ -141,5 +140,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
     });
   }
 });
+
 // Log in to Discord with your client's token
 client.login(process.env.TOKEN);

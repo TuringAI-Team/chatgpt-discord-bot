@@ -21,7 +21,9 @@ async function initChat() {
   }
   console.log(id);
 }
-
+async function getStatus() {
+  return abled;
+}
 async function checkId() {
   var response = await fetch(`${process.env.API_URL}/status?id=${id}`);
   var json = await response.json();
@@ -113,4 +115,4 @@ async function chat(message) {
   return json.reply[0];
 }
 
-export { initChat, createConversation, chat, abled };
+export { initChat, createConversation, chat, getStatus };
