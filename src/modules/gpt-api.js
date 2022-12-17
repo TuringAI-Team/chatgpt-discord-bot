@@ -12,7 +12,7 @@ async function initChat() {
     var response = await fetch(
       `${process.env.API_URL}/connect?sessionToken=${process.env.SESSION_TOKEN}`
     );
-    if (response.status == 503) {
+    if (response.status != 200) {
       abled = false;
       return;
     }
