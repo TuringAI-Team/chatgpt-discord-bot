@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from "discord.js";
+import { SlashCommandBuilder, EmbedBuilder } from "discord.js";
 import { chat } from "../modules/gpt-api.js";
 import { getUser } from "../modules/user.js";
 
@@ -56,7 +56,7 @@ export default {
       );
       return;
     }
-    if (result.split("").length >= 2000) {
+    if (result.split("").length >= 1800) {
       await interaction.editReply(
         `**Human:** ${message}\n**ChatGPT:** ${result
           .split("")

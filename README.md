@@ -15,5 +15,6 @@ A discord bot for interact with ChatGPT
 - [x] Host on vps server --> 0.0.7
 - [x] Allow private conversations --> 0.0.8
 - [ ] Uptime Robot alerts --> 0.0.8
+- [ ] Embeds --> 0.0.9
 - [ ] Top.gg rewards --> Future
 - [ ] Partials responses during loading --> Future
