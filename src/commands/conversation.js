@@ -97,7 +97,7 @@ export default {
         );
         const response1 = await conversation.sendMessage(message.content);
         console.log(response1);
-        if (response1.split("").length >= 1800) {
+        if (response1.split("").length >= 1600) {
           await msg.edit(response1.split("").slice(0, 1500).join(""));
           await interaction.channel.send(
             response1.split("").slice(1500).join("")
