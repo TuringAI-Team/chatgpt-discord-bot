@@ -14,6 +14,7 @@ async function initChat() {
     );
     if (response.status) {
       abled = false;
+      console.log(id, response.status);
       return;
     }
     var json = await response.json();
