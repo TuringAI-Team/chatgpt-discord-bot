@@ -12,9 +12,8 @@ async function initChat() {
     var response = await fetch(
       `${process.env.API_URL}/connect?sessionToken=${process.env.SESSION_TOKEN}`
     );
-    if (response.status) {
+    if (response.status == 503) {
       abled = false;
-      console.log(id, response.status);
       return;
     }
     var json = await response.json();
