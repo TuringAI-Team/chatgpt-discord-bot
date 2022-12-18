@@ -2,6 +2,48 @@
 
 A discord bot for interact with ChatGPT
 
+## Setup Guide
+
+1. Clone repository
+
+```bash
+    git clone https://github.com/MrlolDev/chatgpt-discord-bot.git
+```
+
+2. Install dependencies.
+
+```bash
+    npm install
+```
+
+3. Create a new .env file
+
+```
+# .env
+
+TOKEN=Discord token id(https://discord.dev)
+CLIENT_ID=Discord client id(https://discord.dev)
+SUPABASE_KEY=Supabase key(https://app.supabase.com)
+SUPABASE_URL=Supabase url(https://app.supabase.com)
+SESSION_TOKEN="replace with your open ai session key"
+API_URL=https://justbrowse.io/api/chatgpt
+```
+
+4. Run the bot
+
+```
+    node .
+```
+
+## Get session key
+
+1. Go to https://chat.openai.com/chat
+2. Log in to your account
+3. Open developer tools
+4. Go to the application section
+5. Go to the cookies section
+6. And get your session token which is the cookie with the name: "\_\_Secure-next-auth.session-token"
+
 ## TO DO:
 
 - [x] Chat command with ChatGPT response. --> 0.0.2
