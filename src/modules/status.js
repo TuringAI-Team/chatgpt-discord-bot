@@ -34,6 +34,11 @@ app.get("/test", (req, res) => {
   });
 });
 // Init server
-app.listen(5522, () => {
-  console.log(chalk.white(`Server is running on port `) + chalk.cyan(5522));
-});
+if (process.env.PORT) {
+  app.listen(process.env.PORT || 5522, () => {
+    console.log(
+      chalk.white(`Server is running on port `) +
+        chalk.cyan(process.env.PORT || 5522)
+    );
+  });
+}
