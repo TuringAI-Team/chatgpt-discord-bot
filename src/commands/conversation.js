@@ -4,6 +4,7 @@ import supabase from "../modules/supabase.js";
 import { createConversation } from "../modules/gpt-api.js";
 import ms from "ms";
 import { CollectorUtils } from "discord.js-collector-utils";
+import delay from "delay";
 
 export default {
   data: new SlashCommandBuilder()
@@ -68,7 +69,7 @@ export default {
     if (error) {
       console.log(error);
     }
-
+    await delay(ms("5s"));
     await interaction.editReply({
       ephemeral: privateConversation,
       content: `Collector ready.\nStart talking and the bot will answer.\nUse stop to finish the conversation`,
