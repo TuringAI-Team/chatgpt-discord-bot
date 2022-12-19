@@ -96,6 +96,7 @@ export default {
         var msg = await message.reply(
           "Loading ...\nNow that you are waiting you can join us in [dsc.gg/turing](https://dsc.gg/turing)"
         );
+        await delay(ms("5s"));
         const response1 = await conversation.sendMessage(message.content);
         console.log(response1);
         if (response1.split("").length >= 1600) {
