@@ -32,6 +32,11 @@ export default {
       privateConversation = false;
     }
     await interaction.reply({
+      content: `Conversations are under maintenance.`,
+      ephemeral: privateConversation,
+    });
+    return;
+    await interaction.reply({
       content: `Creating collector...`,
       ephemeral: privateConversation,
     });

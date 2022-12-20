@@ -117,7 +117,7 @@ async function chat(message) {
       "content-type": "application/json",
     },
     body: JSON.stringify({
-      message: "test",
+      message: message,
     }),
   });
   if (response.status != 200) {
