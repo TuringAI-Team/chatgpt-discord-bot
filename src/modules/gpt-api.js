@@ -60,6 +60,7 @@ async function createConversation() {
     }),
   });
   if (response.status != 200) {
+    console.log(response);
     return `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)`;
   }
   var json = await response.json();
@@ -79,6 +80,7 @@ async function createConversation() {
         }),
       });
       if (response.status != 200) {
+        console.log(response);
         return `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)`;
       }
       var json = await response.json();
@@ -119,6 +121,7 @@ async function chat(message) {
     }),
   });
   if (response.status != 200) {
+    console.log(response);
     return `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)`;
   }
   var json = await response.json();
