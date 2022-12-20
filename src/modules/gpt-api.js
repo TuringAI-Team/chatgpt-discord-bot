@@ -13,6 +13,7 @@ async function initChat() {
       `${process.env.API_URL}/connect?sessionToken=${process.env.SESSION_TOKEN}`
     );
     if (response.status != 200) {
+      console.log(response);
       abled = false;
       return;
     }
