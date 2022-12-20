@@ -58,6 +58,9 @@ async function createConversation() {
       message: "Hello.",
     }),
   });
+  if (response.status != 200) {
+    return `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)`;
+  }
   var json = await response.json();
   var conversationId = json.conversationId;
   return {
@@ -74,7 +77,9 @@ async function createConversation() {
           conversationId: conversationId,
         }),
       });
-
+      if (response.status != 200) {
+        return `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)`;
+      }
       var json = await response.json();
       if (!json || !json.reply || json.reply.length < 0) {
         console.log(json);
@@ -112,7 +117,9 @@ async function chat(message) {
       message: message,
     }),
   });
-
+  if (response.status != 200) {
+    return `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)`;
+  }
   var json = await response.json();
   if (!json || !json.reply || json.reply.length < 0) {
     console.log(json);
