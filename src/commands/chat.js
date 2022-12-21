@@ -86,7 +86,7 @@ async function checkGuild(interaction, client) {
         `I have left **${guild.name}**(${guild.id})\nIt has a total of **${guild.memberCount} members**.\nThe owner is: **${owner.user.tag}(${owner.id})**`
       );
       await interaction.channel.send(
-        `${owner}, I am going to leave this server, since the bot is limited to servers with more than **${process.env.REQUIRED_MEMBERS} members. If you want to continue using the bot please go to [dsc.gg/turing](https://dsc.gg/turing). Thanks for using the bot and sorry for the inconvenience.`
+        `${owner}, I am going to leave this server, since the bot is limited to servers with more than **${process.env.REQUIRED_MEMBERS} members**. If you want to continue using the bot please go to [dsc.gg/turing](https://dsc.gg/turing) . Thanks for using the bot and sorry for the inconvenience.`
       );
       await guild.leave();
     }
