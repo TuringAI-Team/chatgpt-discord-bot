@@ -22,7 +22,7 @@ export default {
           { name: "private", value: "private" }
         )
     ),
-  async execute(interaction) {
+  async execute(interaction, client) {
     var user = await getUser(interaction.user);
     var message = interaction.options.getString("message");
     var type = interaction.options.getString("type");
@@ -50,7 +50,7 @@ export default {
       await interaction.channel.send(
         ` ${result.split("").slice(3000).join("")}`
       );
-      await checkGuild(interaction);
+      await checkGuild(interaction, client);
 
       return;
     }
@@ -64,19 +64,19 @@ export default {
       await interaction.channel.send(
         ` ${result.split("").slice(1600).join("")}`
       );
-      await checkGuild(interaction);
+      await checkGuild(interaction, client);
 
       return;
     }
     await interaction.editReply(
       `**Human:** ${message}\n**ChatGPT:** ${result}`
     );
-    await checkGuild(interaction);
+    await checkGuild(interaction, client);
     return;
   },
 };
 
-async function checkGuild(interaction) {
+async function checkGuild(interaction, client) {
   if (process.env.REQUIRED_MEMBERS) {
     var guild = interaction.guild;
     if (guild && guild.memberCount <= parseInt(process.env.REQUIRED_MEMBERS)) {
