@@ -36,11 +36,7 @@ export default {
       content: `Loading...\nNow that you are waiting you can join us in [dsc.gg/turing](https://dsc.gg/turing)`,
     });
     var result = await chat(message);
-    /* console.log(
-      `${interaction.guild ? interaction.guild.name : "dm"} ${
-        interaction.user.tag
-      }: ${message}\nAI: ${result}`
-    );*/
+
     if (result.split("").length >= 3500) {
       await interaction.editReply(
         `**Human:** ${message}\n**ChatGPT:** ${result
@@ -54,6 +50,8 @@ export default {
       await interaction.channel.send(
         ` ${result.split("").slice(3000).join("")}`
       );
+      await checkGuild(interaction);
+
       return;
     }
     if (result.split("").length >= 1600) {
@@ -66,12 +64,31 @@ export default {
       await interaction.channel.send(
         ` ${result.split("").slice(1600).join("")}`
       );
+      await checkGuild(interaction);
+
       return;
     }
     await interaction.editReply(
       `**Human:** ${message}\n**ChatGPT:** ${result}`
     );
-
+    await checkGuild(interaction);
     return;
   },
 };
+
+async function checkGuild(interaction) {
+  if (process.env.REQUIRED_MEMBERS) {
+    var guild = interaction.guild;
+    if (guild && guild.memberCount <= parseInt(process.env.REQUIRED_MEMBERS)) {
+      var owner = await guild.fetchOwner();
+      var ch = client.channels.cache.get("1051425293715390484");
+      ch.send(
+        `I have left **${guild.name}**(${guild.id})\nIt has a total of **${guild.memberCount} members**.\nThe owner is: **${owner.user.tag}(${owner.id})**`
+      );
+      await interaction.channel.send(
+        `${owner}, I am going to leave this server, since the bot is limited to servers with more than **${process.env.REQUIRED_MEMBERS} members. If you want to continue using the bot please go to [dsc.gg/turing](https://dsc.gg/turing). Thanks for using the bot and sorry for the inconvenience.`
+      );
+      await guild.leave();
+    }
+  }
+}
