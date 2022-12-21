@@ -13,6 +13,9 @@ async function initChat() {
       `${process.env.API_URL}/connect?sessionToken=${process.env.SESSION_TOKEN}`
     );
     if (response.status != 200) {
+      if (response.status == 429) {
+        return `The bot have exceed the rate limit please wait some seconds. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`;
+      }
       console.log(response);
       abled = false;
       return;
@@ -60,6 +63,9 @@ async function createConversation() {
     }),
   });
   if (response.status != 200) {
+    if (response.status == 429) {
+      return `The bot have exceed the rate limit please wait some seconds. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`;
+    }
     console.log(response);
     return `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)`;
   }
@@ -80,6 +86,9 @@ async function createConversation() {
         }),
       });
       if (response.status != 200) {
+        if (response.status == 429) {
+          return `The bot have exceed the rate limit please wait some seconds. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`;
+        }
         console.log(response);
         return `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)`;
       }
@@ -121,6 +130,9 @@ async function chat(message) {
     }),
   });
   if (response.status != 200) {
+    if (response.status == 429) {
+      return `The bot have exceed the rate limit please wait some seconds. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`;
+    }
     console.log(response);
     return `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)`;
   }
