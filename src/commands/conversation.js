@@ -1,7 +1,10 @@
 import { SlashCommandBuilder } from "discord.js";
 import { getUser } from "../modules/user.js";
 import supabase from "../modules/supabase.js";
-import { createConversation } from "../modules/gpt-api.js";
+import {
+  createConversation,
+  conversationSendMessage,
+} from "../modules/gpt-api.js";
 import ms from "ms";
 import { CollectorUtils } from "discord.js-collector-utils";
 import delay from "delay";
@@ -83,6 +86,7 @@ export default {
     console.log(
       `${interaction.guild.name} ${interaction.user.tag} - new conversation`
     );
+    var answered = true;
     let collector = await CollectorUtils.collectByMessage(
       interaction.channel,
       // Retrieve Result
@@ -99,11 +103,22 @@ export default {
           await conversation.stopConversation();
           return;
         }
+        if (!answered) {
+          var msg = await message.reply(
+            "Please wait until I answer your previous messsage."
+          );
+          return;
+        }
+        answered = false;
         var msg = await message.reply(
           "Loading ...\nNow that you are waiting you can join us in [dsc.gg/turing](https://dsc.gg/turing)"
         );
-        await delay(ms("5s"));
-        const response1 = await conversation.sendMessage(message.content);
+        await delay(ms("10s"));
+        const response1 = await conversationSendMessage(
+          conversation.id,
+          message.content
+        );
+        answered = true;
         console.log(response1);
         if (response1.split("").length >= 1600) {
           await msg.edit(response1.split("").slice(0, 1500).join(""));
@@ -121,7 +136,7 @@ export default {
         time: duration,
         reset: false,
         stopFilter: (message) => message.content.toLowerCase() === "stop",
-        target: interaction.author.user,
+        target: interaction.user,
         onExpire: async () => {
           const { data, error } = await supabase
             .from("conversations")
