@@ -23,6 +23,12 @@ export default {
           { name: "12 minutes", value: "12m" }
         )
         .setRequired(true)
+    )
+    .addStringOption((option) =>
+      option
+        .setName("initialmessage")
+        .setDescription("The first message of the conversation")
+        .setRequired(true)
     ),
   async execute(interaction) {
     var user = await getUser(interaction.user);
@@ -31,11 +37,6 @@ export default {
     if (type == "public") {
       privateConversation = false;
     }
-    await interaction.reply({
-      content: `Conversations are under maintenance.`,
-      ephemeral: privateConversation,
-    });
-    return;
     await interaction.reply({
       content: `Creating collector...`,
       ephemeral: privateConversation,
@@ -56,8 +57,8 @@ export default {
       return;
     }
     var duration = ms(interaction.options.getString("time"));
-
-    var conversation = await createConversation();
+    var initialMessage = interaction.options.getString("initialmessage");
+    var conversation = await createConversation(initialMessage);
     if (conversation == `Wait 1-2 mins the bot is reloading .`) {
       await interaction.editReply({
         ephemeral: privateConversation,
@@ -120,7 +121,7 @@ export default {
         time: duration,
         reset: false,
         stopFilter: (message) => message.content.toLowerCase() === "stop",
-
+        target: interaction.author.user,
         onExpire: async () => {
           const { data, error } = await supabase
             .from("conversations")

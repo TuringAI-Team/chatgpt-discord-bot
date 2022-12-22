@@ -87,7 +87,7 @@ client.once(Events.ClientReady, async (c) => {
   console.log(
     chalk.white(`Ready! Logged in as `) + chalk.blue.bold(c.user.tag)
   );
-  /*
+
   if (process.env.REQUIRED_MEMBERS) {
     var guilds = client.guilds.cache.map((guild) => guild);
     for (var i = 0; i < guilds.length; i++) {
@@ -96,13 +96,13 @@ client.once(Events.ClientReady, async (c) => {
       if (guild.memberCount <= parseInt(process.env.REQUIRED_MEMBERS)) {
         var ch = client.channels.cache.get("1051425293715390484");
         ch.send(
-          `Me he salido de **${guild.name}**(${guild.id})\nTenía un total de **${guild.memberCount} miembros**.\nSu dueño es **${owner.user.tag}(${owner.id})**`
+          `I have left **${guild.name}**(${guild.id})\nIt has a total of **${guild.memberCount} members**.\nThe owner is: **${owner.user.tag}(${owner.id})**`
         );
         await guild.leave();
       }
     }
   }
-*/
+
   const { data, error } = await supabase
     .from("conversations")
     .delete()
@@ -111,12 +111,21 @@ client.once(Events.ClientReady, async (c) => {
   setInterval(async () => {
     await initChat();
   }, ms("50m"));
-  client.user.setPresence({
-    activities: [
-      { name: `v0.0.8 | dsc.gg/turing`, type: ActivityType.Playing },
-    ],
-    status: "online",
-  });
+  if (process.env.NODE_ENV != "production") {
+    client.user.setPresence({
+      activities: [
+        { name: `maintenance | dsc.gg/turing`, type: ActivityType.Playing },
+      ],
+      status: "online",
+    });
+  } else {
+    client.user.setPresence({
+      activities: [
+        { name: `v0.0.8 | dsc.gg/turing`, type: ActivityType.Playing },
+      ],
+      status: "online",
+    });
+  }
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
@@ -129,7 +138,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
 
   try {
-    await command.execute(interaction, client);
+    await command.execute(interaction, client, commands);
   } catch (error) {
     console.error(error);
     await interaction.reply({
