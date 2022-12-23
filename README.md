@@ -26,7 +26,7 @@ CLIENT_ID=Discord client id(https://discord.dev)
 SUPABASE_KEY=Supabase key(https://app.supabase.com)
 SUPABASE_URL=Supabase url(https://app.supabase.com)
 SESSION_TOKEN="replace with your open ai session key"
-API_URL=https://justbrowse.io/api/chatgpt
+API_TOKEN=Get it from https://justbrowse.io
 ```
 
 4. Run the bot
