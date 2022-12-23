@@ -41,6 +41,11 @@ export default {
       privateConversation = false;
     }
     await interaction.reply({
+      content: `Conversations are under maintenance. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`,
+      ephemeral: privateConversation,
+    });
+    return;
+    await interaction.reply({
       content: `Creating collector...`,
       ephemeral: privateConversation,
     });

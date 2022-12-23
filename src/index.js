@@ -114,7 +114,7 @@ client.once(Events.ClientReady, async (c) => {
   if (process.env.NODE_ENV != "production") {
     client.user.setPresence({
       activities: [
-        { name: `maintenance | dsc.gg/turing`, type: ActivityType.Playing },
+        { name: `v0.0.9 | dsc.gg/turing`, type: ActivityType.Playing },
       ],
       status: "online",
     });
