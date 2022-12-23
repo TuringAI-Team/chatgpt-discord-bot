@@ -10,7 +10,12 @@ var abled = false;
 async function initChat() {
   try {
     var response = await fetch(
-      `${process.env.API_URL}/connect?sessionToken=${process.env.SESSION_TOKEN}`
+      `${process.env.API_URL}/connect?sessionToken=${process.env.SESSION_TOKEN}`,
+      {
+        headers: {
+          authorization: `Bearer ${process.env.API_TOKEN}`,
+        },
+      }
     );
     if (response.status != 200) {
       if (response.status == 429) {
@@ -34,7 +39,11 @@ async function getStatus() {
 }
 async function checkId() {
   try {
-    var response = await fetch(`${process.env.API_URL}/status?id=${id}`);
+    var response = await fetch(`${process.env.API_URL}/status?id=${id}`, {
+      headers: {
+        authorization: `Bearer ${process.env.API_TOKEN}`,
+      },
+    });
     var json = await response.json();
     if (json.status == "ready") {
       abled = true;
@@ -57,6 +66,7 @@ async function createConversation(initialMessage) {
     method: "POST",
     headers: {
       "content-type": "application/json",
+      authorization: `Bearer ${process.env.API_TOKEN}`,
     },
     body: JSON.stringify({
       message: initialMessage,
@@ -93,6 +103,8 @@ async function conversationSendMessage(conversationId, message) {
     method: "POST",
     headers: {
       "content-type": "application/json",
+
+      authorization: `Bearer ${process.env.API_TOKEN}`,
     },
     body: JSON.stringify({
       message: message,
@@ -133,6 +145,7 @@ async function chat(message) {
     method: "POST",
     headers: {
       "content-type": "application/json",
+      authorization: `Bearer ${process.env.API_TOKEN}`,
     },
     body: JSON.stringify({
       message: message,
