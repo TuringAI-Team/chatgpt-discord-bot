@@ -32,5 +32,13 @@ async function getUser(discordUser) {
     };
   }
 }
-
-export { getUser };
+async function updateCredits(id, credits) {
+  const { data, error } = await supabase
+    .from("users")
+    .update({ credits: credits })
+    .eq("id", id);
+  if (error) {
+    return { error: error.message };
+  }
+}
+export { getUser, updateCredits };

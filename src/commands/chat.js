@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, EmbedBuilder } from "discord.js";
 import { chat } from "../modules/gpt-api.js";
-import { getUser } from "../modules/user.js";
+import { getUser, updateCredits } from "../modules/user.js";
 
 export default {
   data: new SlashCommandBuilder()
@@ -35,8 +35,20 @@ export default {
       ephemeral: privateConversation,
       content: `Loading...\nNow that you are waiting you can join us in [dsc.gg/turing](https://dsc.gg/turing)`,
     });
+    if (user.credits <= 0) {
+      await interaction.editReply(
+        `You don't have enough credits for this acction.`
+      );
+    }
     var result = await chat(message);
-
+    if (
+      result !=
+        "Wait 1-2 mins the bot is reloading.\nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)" &&
+      result !=
+        "Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)"
+    ) {
+      await updateCredits(user.id, user.credits - 1);
+    }
     if (result.split("").length >= 3500) {
       await interaction.editReply(
         `**Human:** ${message}\n**ChatGPT:** ${result

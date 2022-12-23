@@ -122,6 +122,7 @@ async function chat(message) {
 
     return response;
   } catch (err) {
+    console.log(err);
     return `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)`;
   }
 }
