@@ -115,11 +115,15 @@ async function chat(message) {
     if (!check) {
       return `Wait 1-2 mins the bot is reloading.\nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`;
     }
-    await delay(2000);
+    await delay(1000);
   }
-  var response = await client.chat(message);
+  try {
+    var response = await client.chat(message);
 
-  return response;
+    return response;
+  } catch (err) {
+    return `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)`;
+  }
 }
 
 export {
