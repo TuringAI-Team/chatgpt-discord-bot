@@ -21,12 +21,12 @@ async function initChat() {
       if (response.status == 429) {
         return `The bot have exceed the rate limit please wait some seconds. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`;
       }
-      console.log(response);
       abled = false;
       return;
     }
     var json = await response.json();
-    id = json.id;
+    console.log(json);
+    id = json.sessionId;
     abled = false;
   } catch (err) {
     console.error(err);
