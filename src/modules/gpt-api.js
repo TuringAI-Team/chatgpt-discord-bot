@@ -117,9 +117,9 @@ async function chat(message) {
     }
     await delay(1000);
   }
+  console.log(message);
   try {
     var response = await client.chat(message);
-
     return response;
   } catch (err) {
     console.log(err);
