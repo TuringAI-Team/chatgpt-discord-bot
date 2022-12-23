@@ -39,11 +39,14 @@ async function getStatus() {
 }
 async function checkId() {
   try {
-    var response = await fetch(`${process.env.API_URL}/status?id=${id}`, {
-      headers: {
-        authorization: `Bearer ${process.env.API_TOKEN}`,
-      },
-    });
+    var response = await fetch(
+      `${process.env.API_URL}/status?sessionId=${id}`,
+      {
+        headers: {
+          authorization: `Bearer ${process.env.API_TOKEN}`,
+        },
+      }
+    );
     var json = await response.json();
     if (json.status == "ready") {
       abled = true;
