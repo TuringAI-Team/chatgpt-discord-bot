@@ -39,8 +39,15 @@ export default {
       await interaction.editReply(
         `You don't have enough credits for this acction.`
       );
+      return;
     }
-    var result = await chat(message);
+    var result;
+
+    if (message.toLowerCase() == "hello" || message.toLowerCase() == "hi") {
+      result = "Hello! How can I help you today?";
+    } else {
+      result = await chat(message);
+    }
     if (
       result !=
         "Wait 1-2 mins the bot is reloading.\nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)" &&
