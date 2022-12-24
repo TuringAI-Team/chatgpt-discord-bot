@@ -2,6 +2,7 @@ import ms from "ms";
 import supabase from "./supabase.js";
 import Client from "justbrowse.io";
 import delay from "delay";
+import { getApiToken, useApiToken } from "./apitokens.js";
 var clients = [];
 
 async function getTokens() {
@@ -12,10 +13,11 @@ async function getTokens() {
 
   return sessiontokens;
 }
-async function initChat(token) {
+async function initChat(token, apitoken) {
   try {
-    var client = new Client(token, process.env.API_TOKEN);
+    var client = new Client(token, apitoken);
     await client.init();
+    await useApiToken();
     clients.push({ client, token });
   } catch (err) {
     console.error(err);
@@ -61,6 +63,7 @@ async function addMessage(token) {
     .eq("sessionToken", token);
   var tokenObj = sessiontokens[0];
   if (tokenObj) {
+    await useApiToken();
     if (tokenObj.totalMessages >= 30) {
       const { data, error } = await supabase
         .from("sessiontokens")
@@ -99,9 +102,10 @@ async function removeMessage(token) {
 
 async function initTokens() {
   var tokens = await getTokens();
+  var apitoken = await getApiToken();
   for (var i = 0; i < tokens.length; i++) {
     var token = tokens[i];
-    await initChat(token.sessionToken);
+    await initChat(token.sessionToken, apitoken);
     await delay(1000);
   }
 }
@@ -120,6 +124,7 @@ async function addToken(sessionToken) {
   await initChat(sessionToken);
 }
 async function reloadTokens() {
+  clients = [];
   var tokens = await getTokens();
   var t = tokens.filter((x) => x.lastUse != null);
   for (var i = 0; i < t.length; i++) {
@@ -135,6 +140,7 @@ async function reloadTokens() {
     }
   }
 }
+
 export {
   addToken,
   initTokens,

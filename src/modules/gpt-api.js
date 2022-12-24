@@ -99,7 +99,6 @@ async function conversationSendMessage(conversationId, message) {
 
 async function chat(message) {
   var token = await useToken();
-  console.log(token);
   if (token.error) {
     return token.error;
   }
