@@ -26,7 +26,7 @@ async function initChat(token) {
 async function useToken() {
   var tokens = await getTokens();
   var t = tokens
-    .filter((x) => x.lastUse == null && x.messages <= 2)
+    .filter((x) => x.lastUse == null && x.messages <= 1)
     .sort((a, b) => {
       if (a.messages > b.messages) {
         return 1;
