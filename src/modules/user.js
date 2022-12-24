@@ -16,7 +16,7 @@ async function getUser(discordUser) {
     const { data, error } = await supabase.from("users").insert([
       {
         id: discordUser.id,
-        credits: 5,
+        credits: 20,
         created_at: new Date(),
       },
     ]);
@@ -27,7 +27,7 @@ async function getUser(discordUser) {
       id: discordUser.id,
       username: discordUser.username,
       discriminator: discordUser.discriminator,
-      credits: 5,
+      credits: 20,
       created_at: new Date(),
     };
   }

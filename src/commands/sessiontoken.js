@@ -1,5 +1,6 @@
 import { SlashCommandBuilder, time } from "discord.js";
 import { getUser } from "../modules/user.js";
+import { addToken } from "../modules/loadbalancer.js";
 
 export default {
   data: new SlashCommandBuilder()
@@ -14,6 +15,13 @@ export default {
         .setRequired(true)
     ),
   async execute(interaction, client) {
+    var token = interaction.options.getString("sessiontoken");
+    interaction.reply({
+      content: `Adding your session token...`,
+      ephemeral: true,
+    });
+    await addToken(token);
+    interaction.editReply("Token added successfully");
     return;
   },
 };

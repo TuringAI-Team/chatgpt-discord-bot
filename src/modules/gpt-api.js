@@ -1,28 +1,16 @@
 //import { chatgptToken } from "chatgpt-token/module";
 import * as dotenv from "dotenv"; // see https://github.com/motdotla/dotenv#how-do-i-use-dotenv-with-import
-import Client from "justbrowse.io";
 import delay from "delay";
 dotenv.config();
 import chalk from "chalk";
+import { useToken, addMessage, removeMessage } from "./loadbalancer.js";
 
-var client = "loading";
 var abled = false;
 
-async function initChat() {
-  try {
-    client = new Client(process.env.SESSION_TOKEN, process.env.API_TOKEN);
-    await client.init();
-    abled = false;
-  } catch (err) {
-    console.error(err);
-    client = "loading";
-  }
-  console.log("loaded");
-}
 async function getStatus() {
   return abled;
 }
-async function checkId() {
+async function checkId(client) {
   try {
     if (client != "loading") {
       var status = await client.status();
@@ -110,16 +98,20 @@ async function conversationSendMessage(conversationId, message) {
 }
 
 async function chat(message) {
+  var token = await useToken();
+  console.log(token);
+
   if (!abled) {
-    var check = await checkId();
+    var check = await checkId(token.client);
     if (!check) {
       return `Wait 1-2 mins the bot is reloading.\nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`;
     }
     await delay(1000);
   }
-  console.log(message);
   try {
-    var response = await client.chat(message);
+    await addMessage(token.token);
+    var response = await token.client.chat(message);
+    await removeMessage(token.token);
     return response;
   } catch (err) {
     console.log(err);
@@ -127,10 +119,4 @@ async function chat(message) {
   }
 }
 
-export {
-  initChat,
-  createConversation,
-  chat,
-  getStatus,
-  conversationSendMessage,
-};
+export { createConversation, chat, getStatus, conversationSendMessage };

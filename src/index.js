@@ -13,10 +13,9 @@ import {
   REST,
   Routes,
 } from "discord.js";
-import { initChat } from "./modules/gpt-api.js";
+import "dotenv/config";
 import supabase from "./modules/supabase.js";
-import * as dotenv from "dotenv"; // see https://github.com/motdotla/dotenv#how-do-i-use-dotenv-with-import
-dotenv.config();
+import { initTokens, reloadTokens } from "./modules/loadbalancer.js";
 import "./modules/status.js";
 
 // Create a new client instance
@@ -84,6 +83,11 @@ for (const file of commandFiles) {
 // When the client is ready, run this code (only once)
 // We use 'c' for the event parameter to keep it separate from the already defined 'client'
 client.once(Events.ClientReady, async (c) => {
+  await reloadTokens();
+  setInterval(async () => {
+    await reloadTokens();
+  }, ms("10m"));
+  await initTokens();
   console.log(
     chalk.white(`Ready! Logged in as `) + chalk.blue.bold(c.user.tag)
   );
@@ -107,14 +111,10 @@ client.once(Events.ClientReady, async (c) => {
     .from("conversations")
     .delete()
     .eq("abled", true);
-  await initChat();
-  setInterval(async () => {
-    await initChat();
-  }, ms("50m"));
   if (process.env.NODE_ENV != "production") {
     client.user.setPresence({
       activities: [
-        { name: `v0.0.9 | dsc.gg/turing`, type: ActivityType.Playing },
+        { name: `maintenance | dsc.gg/turing`, type: ActivityType.Playing },
       ],
       status: "online",
     });

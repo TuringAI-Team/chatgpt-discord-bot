@@ -37,7 +37,7 @@ export default {
     });
     if (user.credits <= 0) {
       await interaction.editReply(
-        `You don't have enough credits for this acction.`
+        `You don't have enough credits for this acction. If you want more credits, please join us in [dsc.gg/turing](https://dsc.gg/turing)`
       );
       return;
     }
