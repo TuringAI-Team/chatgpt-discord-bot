@@ -1,6 +1,7 @@
 import ms from "ms";
 import supabase from "./supabase.js";
 import Client from "justbrowse.io";
+import delay from "delay";
 var clients = [];
 
 async function getTokens() {
@@ -38,6 +39,7 @@ async function useToken() {
       }
     });
   var token = t[getRndInteger(0, t.length)];
+  console.log(token);
   var client = clients.find((x) => x.token == token.sessionToken);
 
   return client;
@@ -93,6 +95,7 @@ async function initTokens() {
   for (var i = 0; i < tokens.length; i++) {
     var token = tokens[i];
     await initChat(token.sessionToken);
+    await delay(1000);
   }
 }
 async function addToken(sessionToken) {
