@@ -38,11 +38,18 @@ async function useToken() {
         return 0;
       }
     });
-  var token = t[getRndInteger(0, t.length)];
-  console.log(token);
-  var client = clients.find((x) => x.token == token.sessionToken);
+  var i = getRndInteger(0, t.length - 1);
+  console.log(i);
+  var token = t[i];
+  if (token) {
+    var client = clients.find((x) => x.token == token.sessionToken);
 
-  return client;
+    return client;
+  } else {
+    return {
+      error: `We are reaching our capacity limits right now please wait 1-2 minutes. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`,
+    };
+  }
 }
 function getRndInteger(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;

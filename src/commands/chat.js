@@ -1,6 +1,7 @@
 import { SlashCommandBuilder, EmbedBuilder } from "discord.js";
 import { chat } from "../modules/gpt-api.js";
 import { getUser, updateCredits } from "../modules/user.js";
+import supabase from "../modules/supabase.js";
 
 export default {
   data: new SlashCommandBuilder()
@@ -42,17 +43,45 @@ export default {
       return;
     }
     var result;
+    let { data: results, error } = await supabase
+      .from("results")
+      .select("*")
 
-    if (message.toLowerCase() == "hello" || message.toLowerCase() == "hi") {
-      result = "Hello! How can I help you today?";
+      // Filters
+      .eq("prompt", message.toLowerCase())
+      .eq("provider", "chatgpt");
+    if (results[0]) {
+      result = results[0].result.text;
+      const { data, error } = await supabase
+        .from("results")
+        .update({ uses: results[0].uses + 1 })
+        .eq("id", results[0].id);
     } else {
       result = await chat(message);
+      if (
+        result !=
+          "Wait 1-2 mins the bot is reloading.\nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)" &&
+        result !=
+          "Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)" &&
+        result !=
+          `We are reaching our capacity limits right now please wait 1-2 minutes. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`
+      ) {
+        const { data, error } = await supabase.from("results").insert([
+          {
+            provider: "chatgpt",
+            prompt: message.toLowerCase(),
+            result: { text: result },
+          },
+        ]);
+      }
     }
     if (
       result !=
         "Wait 1-2 mins the bot is reloading.\nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)" &&
       result !=
-        "Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)"
+        "Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)" &&
+      result !=
+        `We are reaching our capacity limits right now please wait 1-2 minutes. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`
     ) {
       await updateCredits(user.id, user.credits - 1);
     }

@@ -100,7 +100,9 @@ async function conversationSendMessage(conversationId, message) {
 async function chat(message) {
   var token = await useToken();
   console.log(token);
-
+  if (token.error) {
+    return token.error;
+  }
   if (!abled) {
     var check = await checkId(token.client);
     if (!check) {
@@ -108,13 +110,14 @@ async function chat(message) {
     }
     await delay(1000);
   }
+  await addMessage(token.token);
   try {
-    await addMessage(token.token);
     var response = await token.client.chat(message);
     await removeMessage(token.token);
     return response;
   } catch (err) {
     console.log(err);
+    await removeMessage(token.token);
     return `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)`;
   }
 }
