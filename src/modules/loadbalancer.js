@@ -2,7 +2,6 @@ import ms from "ms";
 import supabase from "./supabase.js";
 import Client from "justbrowse.io";
 import delay from "delay";
-import { getApiToken, useApiToken } from "./apitokens.js";
 var clients = [];
 
 async function getTokens() {
@@ -13,11 +12,10 @@ async function getTokens() {
 
   return sessiontokens;
 }
-async function initChat(token, apitoken) {
+async function initChat(token) {
   try {
-    var client = new Client(token, apitoken);
+    var client = new Client(token);
     await client.init();
-    await useApiToken();
     clients.push({ client, token });
   } catch (err) {
     console.error(err);
@@ -45,7 +43,7 @@ async function useToken() {
   var token = t[i];
   if (token) {
     var client = clients.find((x) => x.token == token.sessionToken);
-
+    console.log(client);
     return client;
   } else {
     return {
@@ -63,7 +61,6 @@ async function addMessage(token) {
     .eq("sessionToken", token);
   var tokenObj = sessiontokens[0];
   if (tokenObj) {
-    await useApiToken();
     if (tokenObj.totalMessages >= 30) {
       const { data, error } = await supabase
         .from("sessiontokens")
@@ -102,11 +99,10 @@ async function removeMessage(token) {
 
 async function initTokens() {
   var tokens = await getTokens();
-  var apitoken = await getApiToken();
   for (var i = 0; i < tokens.length; i++) {
     var token = tokens[i];
-    await initChat(token.sessionToken, apitoken);
-    await delay(1000);
+    await initChat(token.sessionToken);
+    await delay(90000);
   }
 }
 async function addToken(sessionToken) {

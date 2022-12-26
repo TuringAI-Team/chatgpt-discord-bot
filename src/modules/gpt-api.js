@@ -99,6 +99,7 @@ async function conversationSendMessage(conversationId, message) {
 
 async function chat(message) {
   var token = await useToken();
+  console.log(token);
   if (!token) {
     return `We are reaching our capacity limits right now please wait 1-2 minutes. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`;
   }
