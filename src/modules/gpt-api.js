@@ -3,9 +3,10 @@ import * as dotenv from "dotenv"; // see https://github.com/motdotla/dotenv#how-
 import delay from "delay";
 dotenv.config();
 import chalk from "chalk";
+import fetch from "node-fetch";
 import { useToken, addMessage, removeMessage } from "./loadbalancer.js";
 
-var abled = false;
+var abled = true;
 
 async function getStatus() {
   return abled;
@@ -98,14 +99,6 @@ async function conversationSendMessage(conversationId, message) {
 }
 
 async function chat(message) {
-  var token = await useToken();
-  console.log(token);
-  if (!token) {
-    return `We are reaching our capacity limits right now please wait 1-2 minutes. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`;
-  }
-  if (token.error) {
-    return token.error;
-  }
   if (!abled) {
     var check = await checkId(token.client);
     if (!check) {
@@ -113,14 +106,21 @@ async function chat(message) {
     }
     await delay(1000);
   }
-  await addMessage(token.token);
   try {
-    var response = await token.client.chat(message);
-    await removeMessage(token.token);
-    return response;
+    var response = await fetch(`${process.env.API_URL}/ask`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        Authorization: process.env.API_TOKEN,
+      },
+      body: JSON.stringify({
+        content: message,
+      }),
+    });
+    var json = await response.json();
+    return json.content;
   } catch (err) {
     console.log(err);
-    await removeMessage(token.token);
     return `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)`;
   }
 }
