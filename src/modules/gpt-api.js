@@ -117,6 +117,7 @@ async function chat(message) {
         content: message,
       }),
     });
+    console.log(response);
     var json = await response.json();
     return json.content;
   } catch (err) {
