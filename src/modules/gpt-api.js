@@ -111,7 +111,7 @@ async function chat(message) {
       method: "POST",
       headers: {
         "content-type": "application/json",
-        Authorization: process.env.API_TOKEN,
+        Authorization: process.env.API_KEY,
       },
       body: JSON.stringify({
         content: message,
