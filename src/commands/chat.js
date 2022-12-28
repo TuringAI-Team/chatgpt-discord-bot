@@ -50,7 +50,7 @@ export default {
       // Filters
       .eq("prompt", message.toLowerCase())
       .eq("provider", "chatgpt");
-    if (results[0]) {
+    if (results[0] && results[0].result.text) {
       result = results[0].result.text;
       const { data, error } = await supabase
         .from("results")
@@ -62,9 +62,7 @@ export default {
         result !=
           "Wait 1-2 mins the bot is reloading.\nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)" &&
         result !=
-          "Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)" &&
-        result !=
-          `We are reaching our capacity limits right now please wait 1-2 minutes. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`
+          "Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)"
       ) {
         const { data, error } = await supabase.from("results").insert([
           {
@@ -75,6 +73,7 @@ export default {
         ]);
       }
     }
+    console.log(result);
     if (
       result !=
         "Wait 1-2 mins the bot is reloading.\nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)" &&

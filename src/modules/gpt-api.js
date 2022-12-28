@@ -106,24 +106,20 @@ async function chat(message) {
     }
     await delay(1000);
   }
-  try {
-    var response = await fetch(`${process.env.API_URL}/ask`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        Authorization: process.env.API_KEY,
-      },
-      body: JSON.stringify({
-        content: message,
-      }),
-    });
-    console.log(response);
-    var json = await response.json();
-    return json.content;
-  } catch (err) {
-    console.log(err);
-    return `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)`;
-  }
+  var response = await fetch(`${process.env.API_URL}/ask`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      Authorization: process.env.API_KEY,
+    },
+    body: JSON.stringify({
+      content: message,
+    }),
+  });
+  console.log(response);
+  var json = await response.json();
+  console.log(json.content);
+  return json.content;
 }
 
 export { createConversation, chat, getStatus, conversationSendMessage };
