@@ -20,10 +20,10 @@ async function initChat(email, password, id) {
     });
     await Capi.initSession();
     clients.push({ client: Capi, id });
+    console.log("loaded");
   } catch (err) {
     console.error(err);
   }
-  console.log("loaded");
 }
 
 async function useToken() {
@@ -105,7 +105,6 @@ async function initTokens() {
   for (var i = 0; i < tokens.length; i++) {
     var token = tokens[i];
     await initChat(token.email, token.password, token.id);
-    await delay(90000);
   }
 }
 
