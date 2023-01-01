@@ -39,8 +39,9 @@ async function chat(message) {
   await addMessage(token.id);
   try {
     var response = await token.client.sendMessage(message);
+    console.log(message, response);
     await removeMessage(token.id);
-    return response;
+    return response.response;
   } catch (err) {
     console.log(err);
     await removeMessage(token.id);

@@ -73,7 +73,6 @@ export default {
         ]);
       }
     }
-    console.log(result);
     if (
       result !=
         "Wait 1-2 mins the bot is reloading.\nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)" &&
