@@ -29,29 +29,14 @@ export default {
         .setName("initialmessage")
         .setDescription("The first message of the conversation")
         .setRequired(true)
-    )
-    .addStringOption((option) =>
-      option
-        .setName("type")
-        .setDescription("The first message of the conversation")
-        .addChoices(
-          { name: "Public conversation", value: "public" },
-          { name: "Private conversation", value: "private" }
-        )
-        .setRequired(false)
     ),
   async execute(interaction) {
     var user = await getUser(interaction.user);
-    var type = interaction.options.getString("type");
+    var type = "public";
     var privateConversation = false;
     if (type == "private") {
       privateConversation = true;
     }
-    await interaction.reply({
-      content: `Conversations are under maintenance. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`,
-      ephemeral: privateConversation,
-    });
-
     await interaction.reply({
       content: `Creating collector...`,
       ephemeral: privateConversation,
@@ -95,6 +80,10 @@ export default {
       ephemeral: privateConversation,
       content: `Collector ready.\nStart talking and the bot will answer.\nUse stop to finish the conversation`,
     });
+    await interaction.channel.send(
+      `**Human:** ${initialMessage}\n**ChatGPT:** ${conversation.response}`
+    );
+
     console.log(
       `${interaction.guild.name} ${interaction.user.tag} - new conversation`
     );
