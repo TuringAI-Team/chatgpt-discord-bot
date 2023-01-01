@@ -60,7 +60,7 @@ export default {
       result = await chat(message);
       if (
         result !=
-          "Wait 1-2 mins the bot is reloading.\nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)" &&
+          "We are reaching our capacity limits right now please wait 1-2 minutes. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)" &&
         result !=
           "Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)"
       ) {
