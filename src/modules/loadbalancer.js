@@ -104,6 +104,7 @@ async function initTokens() {
   var tokens = await getTokens();
   for (var i = 0; i < tokens.length; i++) {
     var token = tokens[i];
+    await delay(1000);
     await initChat(token.email, token.password, token.id);
   }
 }
