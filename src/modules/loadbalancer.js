@@ -42,10 +42,8 @@ async function useToken(retry) {
       }
     });
   var i = getRndInteger(0, t.length - 1);
-  console.log(i);
   var token = t[i];
   if (token) {
-    console.log(clients);
     var client = clients.find((x) => x.id == token.id);
     console.log(token.id);
     if (!client && !retry) {
