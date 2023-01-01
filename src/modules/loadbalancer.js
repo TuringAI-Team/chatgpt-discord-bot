@@ -22,7 +22,7 @@ async function initChat(email, password, id) {
     clients.push({ client: Capi, id });
     console.log("loaded");
   } catch (err) {
-    console.error(err);
+    console.log(`error with ${email}:\n${err}`);
   }
 }
 
