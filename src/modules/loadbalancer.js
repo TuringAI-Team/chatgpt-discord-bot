@@ -115,7 +115,6 @@ async function initTokens() {
 }
 
 async function reloadTokens() {
-  clients = [];
   var tokens = await getTokens();
   var t = tokens.filter((x) => x.lastUse != null);
   for (var i = 0; i < t.length; i++) {
