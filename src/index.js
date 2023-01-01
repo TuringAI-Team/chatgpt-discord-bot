@@ -111,21 +111,12 @@ client.once(Events.ClientReady, async (c) => {
     .from("conversations")
     .delete()
     .eq("abled", true);
-  if (process.env.NODE_ENV != "production") {
-    client.user.setPresence({
-      activities: [
-        { name: `maintenance | dsc.gg/turing`, type: ActivityType.Playing },
-      ],
-      status: "online",
-    });
-  } else {
-    client.user.setPresence({
-      activities: [
-        { name: `v0.1.2 | dsc.gg/turing`, type: ActivityType.Playing },
-      ],
-      status: "online",
-    });
-  }
+  client.user.setPresence({
+    activities: [
+      { name: `v0.1.2 | dsc.gg/turing`, type: ActivityType.Playing },
+    ],
+    status: "online",
+  });
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {

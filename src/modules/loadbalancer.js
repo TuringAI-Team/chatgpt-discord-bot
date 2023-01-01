@@ -46,6 +46,7 @@ async function useToken() {
   var token = t[i];
   if (token) {
     var client = clients.find((x) => x.id == token.id);
+    console.log(token.id, client);
     return client;
   } else {
     return {
