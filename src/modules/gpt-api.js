@@ -31,7 +31,7 @@ async function checkId(client) {
 async function chat(message) {
   var token = await useToken();
   if (!token) {
-    return `We are reaching our capacity limits right now please wait 1-2 minutes. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`;
+    return `"Wait 1-2 mins the bot is reloading.\nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`;
   }
   if (token.error) {
     return token.error;
@@ -48,6 +48,37 @@ async function chat(message) {
     return `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)`;
   }
 }
-async function conversation(initMessage) {}
+async function createConversation(initMessage) {
+  var conversationId;
+  var token = await useToken();
+  if (!token) {
+    return `"Wait 1-2 mins the bot is reloading.\nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`;
+  }
+  if (token.error) {
+    return token.error;
+  }
+  await addMessage(token.id);
+  try {
+    var response = await token.client.sendMessage(message);
+    await removeMessage(token.id);
+    conversationId = response.conversationId;
+    return {
+      response: response.response,
+      conversationId: conversationId,
+      send: async (msg) => {
+        var response = await token.client.sendMessage(msg, {
+          conversationId: conversationId,
+        });
+        return response.response;
+      },
+    };
+  } catch (err) {
+    console.log(err);
+    await removeMessage(token.id);
+    return {
+      error: `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)`,
+    };
+  }
+}
 
-export { chat, getStatus };
+export { chat, getStatus, createConversation };

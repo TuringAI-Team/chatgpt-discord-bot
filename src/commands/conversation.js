@@ -1,7 +1,7 @@
 import { SlashCommandBuilder } from "discord.js";
 import { getUser } from "../modules/user.js";
 import supabase from "../modules/supabase.js";
-
+import { createConversation } from "../modules/gpt-api.js";
 import ms from "ms";
 import { CollectorUtils } from "discord.js-collector-utils";
 import delay from "delay";
@@ -29,20 +29,29 @@ export default {
         .setName("initialmessage")
         .setDescription("The first message of the conversation")
         .setRequired(true)
+    )
+    .addStringOption((option) =>
+      option
+        .setName("type")
+        .setDescription("The first message of the conversation")
+        .addChoices(
+          { name: "Public conversation", value: "public" },
+          { name: "Private conversation", value: "private" }
+        )
+        .setRequired(false)
     ),
   async execute(interaction) {
     var user = await getUser(interaction.user);
-    var type = "public";
-    var privateConversation = true;
-    if (type == "public") {
-      privateConversation = false;
+    var type = interaction.options.getString("type");
+    var privateConversation = false;
+    if (type == "private") {
+      privateConversation = true;
     }
     await interaction.reply({
       content: `Conversations are under maintenance. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`,
       ephemeral: privateConversation,
     });
-    return;
-    /*
+
     await interaction.reply({
       content: `Creating collector...`,
       ephemeral: privateConversation,
@@ -103,7 +112,6 @@ export default {
             .eq("abled", true);
 
           message.reply("Conversation finished");
-          await conversation.stopConversation();
           return;
         }
         if (!answered) {
@@ -117,12 +125,8 @@ export default {
           "Loading ...\nNow that you are waiting you can join us in [dsc.gg/turing](https://dsc.gg/turing)"
         );
         await delay(ms("10s"));
-        const response1 = await conversationSendMessage(
-          conversation.id,
-          message.content
-        );
+        const response1 = await conversation.send(message.content);
         answered = true;
-        console.log(response1);
         if (response1.split("").length >= 1600) {
           await msg.edit(response1.split("").slice(0, 1500).join(""));
           await interaction.channel.send(
@@ -151,7 +155,7 @@ export default {
         },
       }
     );
-    return;*/
+    return;
   },
 };
 
