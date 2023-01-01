@@ -37,11 +37,12 @@ export default {
     if (type == "private") {
       privateConversation = true;
     }
+    /*
     await interaction.editReply({
       ephemeral: privateConversation,
       content: `This function is under maintenance.\nYou can find more information [in our server](https://dsc.gg/turing).`,
     });
-    return;
+    return;*/
     await interaction.reply({
       content: `Creating collector...`,
       ephemeral: privateConversation,
