@@ -1,10 +1,7 @@
 import { SlashCommandBuilder } from "discord.js";
 import { getUser } from "../modules/user.js";
 import supabase from "../modules/supabase.js";
-import {
-  createConversation,
-  conversationSendMessage,
-} from "../modules/gpt-api.js";
+
 import ms from "ms";
 import { CollectorUtils } from "discord.js-collector-utils";
 import delay from "delay";
@@ -45,6 +42,7 @@ export default {
       ephemeral: privateConversation,
     });
     return;
+    /*
     await interaction.reply({
       content: `Creating collector...`,
       ephemeral: privateConversation,
@@ -153,7 +151,7 @@ export default {
         },
       }
     );
-    return;
+    return;*/
   },
 };
 

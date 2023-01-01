@@ -1,22 +1,25 @@
 import ms from "ms";
 import supabase from "./supabase.js";
-import Client from "justbrowse.io";
 import delay from "delay";
 var clients = [];
-
+import { ChatGPTAPIBrowser } from "chatgpt";
+import { executablePath } from "puppeteer";
 async function getTokens() {
-  let { data: sessiontokens, error } = await supabase
-    .from("sessiontokens")
-    .select("*");
+  let { data: accounts, error } = await supabase.from("accounts").select("*");
   if (error) return error;
 
-  return sessiontokens;
+  return accounts;
 }
-async function initChat(token) {
+async function initChat(email, password, id) {
   try {
-    var client = new Client(token);
-    await client.init();
-    clients.push({ client, token });
+    var Capi = new ChatGPTAPIBrowser({
+      email: email,
+      password: password,
+      executablePath: executablePath(),
+      captchaToken: process.env.TWOCAPTCHA,
+    });
+    await Capi.initSession();
+    clients.push({ client: Capi, id });
   } catch (err) {
     console.error(err);
   }
@@ -42,7 +45,7 @@ async function useToken() {
   console.log(i);
   var token = t[i];
   if (token) {
-    var client = clients.find((x) => x.token == token.sessionToken);
+    var client = clients.find((x) => x.id == token.id);
     console.log(client);
     return client;
   } else {
@@ -55,15 +58,15 @@ function getRndInteger(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 async function addMessage(token) {
-  let { data: sessiontokens, error } = await supabase
-    .from("sessiontokens")
+  let { data: accounts, error } = await supabase
+    .from("accounts")
     .select("*")
     .eq("sessionToken", token);
-  var tokenObj = sessiontokens[0];
+  var tokenObj = accounts[0];
   if (tokenObj) {
     if (tokenObj.totalMessages >= 30) {
       const { data, error } = await supabase
-        .from("sessiontokens")
+        .from("accounts")
         .update({
           messages: tokenObj.messages + 1,
           totalMessages: tokenObj.totalMessages + 1,
@@ -74,7 +77,7 @@ async function addMessage(token) {
       clients.splice(index, 1); // 2nd parameter means remove one item only
     } else {
       const { data, error } = await supabase
-        .from("sessiontokens")
+        .from("accounts")
         .update({
           messages: tokenObj.messages + 1,
           totalMessages: tokenObj.totalMessages + 1,
@@ -84,14 +87,14 @@ async function addMessage(token) {
   }
 }
 async function removeMessage(token) {
-  let { data: sessiontokens, error } = await supabase
-    .from("sessiontokens")
+  let { data: accounts, error } = await supabase
+    .from("accounts")
     .select("*")
     .eq("sessionToken", token);
-  var tokenObj = sessiontokens[0];
+  var tokenObj = accounts[0];
   if (tokenObj) {
     const { data, error } = await supabase
-      .from("sessiontokens")
+      .from("accounts")
       .update({ messages: tokenObj.messages - 1 })
       .eq("sessionToken", token);
   }
@@ -101,24 +104,11 @@ async function initTokens() {
   var tokens = await getTokens();
   for (var i = 0; i < tokens.length; i++) {
     var token = tokens[i];
-    await initChat(token.sessionToken);
+    await initChat(token.email, token.password, token.id);
     await delay(90000);
   }
 }
-async function addToken(sessionToken) {
-  const { data, error } = await supabase.from("sessiontokens").insert([
-    {
-      sessionToken: sessionToken,
-      messages: 0,
-      totalMessages: 0,
-      lastUse: null,
-    },
-  ]);
-  if (error) {
-    return error.message;
-  }
-  await initChat(sessionToken);
-}
+
 async function reloadTokens() {
   clients = [];
   var tokens = await getTokens();
@@ -129,7 +119,7 @@ async function reloadTokens() {
     var diff = token.lastUse - now;
     if (diff >= ms("20min")) {
       const { data, error } = await supabase
-        .from("sessiontokens")
+        .from("accounts")
         .update({ lastUse: null, messages: 0, totalMessages: 0 })
         .eq("id", t.id);
       await initChat(sessionToken);
@@ -137,11 +127,4 @@ async function reloadTokens() {
   }
 }
 
-export {
-  addToken,
-  initTokens,
-  addMessage,
-  removeMessage,
-  useToken,
-  reloadTokens,
-};
+export { initTokens, addMessage, removeMessage, useToken, reloadTokens };

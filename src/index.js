@@ -83,11 +83,11 @@ for (const file of commandFiles) {
 // When the client is ready, run this code (only once)
 // We use 'c' for the event parameter to keep it separate from the already defined 'client'
 client.once(Events.ClientReady, async (c) => {
-  /* await reloadTokens();
+  await reloadTokens();
   setInterval(async () => {
     await reloadTokens();
   }, ms("10m"));
-  await initTokens();*/
+  await initTokens();
   console.log(
     chalk.white(`Ready! Logged in as `) + chalk.blue.bold(c.user.tag)
   );

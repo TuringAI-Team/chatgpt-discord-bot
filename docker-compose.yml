@@ -1,0 +1,13 @@
+version: '3.3'
+
+services:
+  chatgpt-bot: 
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: chatgpt-bot
+    environment:
+      - NODE_ENV=Production
+    stdin_open: true
+    tty: true
+    restart: always
