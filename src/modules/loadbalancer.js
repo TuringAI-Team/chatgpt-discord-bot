@@ -20,13 +20,13 @@ async function initChat(email, password, id) {
     });
     await Capi.initSession();
     clients.push({ client: Capi, id });
-    console.log("loaded");
+    console.log(`loaded ${id}`);
   } catch (err) {
     console.log(`error with ${email}:\n${err}`);
   }
 }
 
-async function useToken() {
+async function useToken(retry) {
   var tokens = await getTokens();
   var t = tokens
     .filter((x) => x.lastUse == null && x.messages <= 1)
@@ -47,6 +47,9 @@ async function useToken() {
   if (token) {
     var client = clients.find((x) => x.id == token.id);
     console.log(token.id, client);
+    if (!client && !retry) {
+      return useToken(true);
+    }
     return client;
   } else {
     return {
