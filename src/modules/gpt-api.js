@@ -36,14 +36,14 @@ async function chat(message) {
   if (token.error) {
     return token.error;
   }
-  await addMessage(token.token);
+  await addMessage(token.id);
   try {
     var response = await token.client.sendMessage(message);
-    await removeMessage(token.token);
+    await removeMessage(token.id);
     return response;
   } catch (err) {
     console.log(err);
-    await removeMessage(token.token);
+    await removeMessage(token.id);
     return `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)`;
   }
 }

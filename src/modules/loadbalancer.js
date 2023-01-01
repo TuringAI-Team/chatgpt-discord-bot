@@ -57,11 +57,11 @@ async function useToken() {
 function getRndInteger(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
-async function addMessage(token) {
+async function addMessage(id) {
   let { data: accounts, error } = await supabase
     .from("accounts")
     .select("*")
-    .eq("sessionToken", token);
+    .eq("id", id);
   var tokenObj = accounts[0];
   if (tokenObj) {
     if (tokenObj.totalMessages >= 30) {
@@ -72,8 +72,8 @@ async function addMessage(token) {
           totalMessages: tokenObj.totalMessages + 1,
           lastUse: Date.now(),
         })
-        .eq("sessionToken", token);
-      var index = clients.findIndex((x) => x.token == tokenObj.sessionToken);
+        .eq("id", id);
+      var index = clients.findIndex((x) => x.id == tokenObj.id);
       clients.splice(index, 1); // 2nd parameter means remove one item only
     } else {
       const { data, error } = await supabase
@@ -82,21 +82,21 @@ async function addMessage(token) {
           messages: tokenObj.messages + 1,
           totalMessages: tokenObj.totalMessages + 1,
         })
-        .eq("sessionToken", token);
+        .eq("id", id);
     }
   }
 }
-async function removeMessage(token) {
+async function removeMessage(id) {
   let { data: accounts, error } = await supabase
     .from("accounts")
     .select("*")
-    .eq("sessionToken", token);
+    .eq("id", id);
   var tokenObj = accounts[0];
   if (tokenObj) {
     const { data, error } = await supabase
       .from("accounts")
       .update({ messages: tokenObj.messages - 1 })
-      .eq("sessionToken", token);
+      .eq("id", id);
   }
 }
 
