@@ -83,6 +83,8 @@ export default {
     ) {
       await updateCredits(user.id, user.credits - 1);
     }
+    var channel = interaction.channel;
+    if (!interaction.channel) channel = interaction.user;
     if (result.split("").length >= 3500) {
       await interaction.editReply(
         `**Human:** ${message}\n**ChatGPT:** ${result
@@ -90,12 +92,9 @@ export default {
           .slice(0, 1500)
           .join("")}`
       );
-      await interaction.channel.send(
-        ` ${result.split("").slice(1600, 3000).join("")}`
-      );
-      await interaction.channel.send(
-        ` ${result.split("").slice(3000).join("")}`
-      );
+      if (interaction)
+        await channel.send(` ${result.split("").slice(1600, 3000).join("")}`);
+      await channel.send(` ${result.split("").slice(3000).join("")}`);
       await checkGuild(interaction, client);
 
       return;
@@ -107,9 +106,7 @@ export default {
           .slice(0, 1600)
           .join("")}`
       );
-      await interaction.channel.send(
-        ` ${result.split("").slice(1600).join("")}`
-      );
+      await channel.send(` ${result.split("").slice(1600).join("")}`);
       await checkGuild(interaction, client);
 
       return;

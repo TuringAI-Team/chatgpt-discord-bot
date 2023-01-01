@@ -48,5 +48,6 @@ async function chat(message) {
     return `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)`;
   }
 }
+async function conversation(initMessage) {}
 
 export { chat, getStatus };
