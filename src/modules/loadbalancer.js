@@ -47,10 +47,11 @@ async function useToken(retry) {
   if (token) {
     console.log(clients);
     var client = clients.find((x) => x.id == token.id);
-    console.log(token.id, client._email);
+    console.log(token.id);
     if (!client && !retry) {
       return useToken(true);
     }
+    console.log("client found");
     return client;
   } else {
     return {
