@@ -52,7 +52,7 @@ async function createConversation(initMessage) {
   var conversationId;
   var token = await useToken();
   if (!token) {
-    return `"Wait 1-2 mins the bot is reloading.\nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`;
+    return `Wait 1-2 mins the bot is reloading.\nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`;
   }
   if (token.error) {
     return token.error;

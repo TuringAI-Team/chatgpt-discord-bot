@@ -59,10 +59,20 @@ export default {
     var duration = ms(interaction.options.getString("time"));
     var initialMessage = interaction.options.getString("initialmessage");
     var conversation = await createConversation(initialMessage);
-    if (conversation == `Wait 1-2 mins the bot is reloading .`) {
+    if (
+      conversation ==
+      `Wait 1-2 mins the bot is reloading.\nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`
+    ) {
       await interaction.editReply({
         ephemeral: privateConversation,
-        content: `Wait 1-2 mins the bot is reloading. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`,
+        content: `Wait 1-2 mins the bot is reloading.\nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`,
+      });
+      return;
+    }
+    if (conversation.error) {
+      await interaction.editReply({
+        ephemeral: privateConversation,
+        content: conversation.error,
       });
       return;
     }
