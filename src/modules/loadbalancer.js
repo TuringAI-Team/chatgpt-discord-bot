@@ -16,7 +16,7 @@ async function initChat(email, password, id) {
       email: email,
       password: password,
       executablePath: executablePath(),
-      captchaToken: process.env.NOPECHA,
+      nopechaKey: process.env.NOPECHA_KEY,
     });
     await Capi.initSession();
     clients.push({ client: Capi, id });
