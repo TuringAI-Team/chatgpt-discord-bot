@@ -64,7 +64,11 @@ export default {
         },
         {
           name: "Version",
-          value: `v0.1.2`,
+          value: `v0.1.3`,
+        },
+        {
+          name: "Support Server",
+          value: `https://dsc.gg/turing`,
         },
       ])
       .setFooter({
