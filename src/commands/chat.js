@@ -60,7 +60,7 @@ export default {
       result = await chat(message);
       if (
         result !=
-          "We are reaching our capacity limits right now please wait 1-2 minutes. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)" &&
+          "Wait 1-2 mins the bot is reloading or we are reaching our capacity limits.\nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)" &&
         result !=
           "Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)"
       ) {
@@ -75,13 +75,11 @@ export default {
     }
     if (
       result !=
-        "Wait 1-2 mins the bot is reloading.\nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)" &&
+        "Wait 1-2 mins the bot is reloading or we are reaching our capacity limits.\nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)" &&
       result !=
-        "Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)" &&
-      result !=
-        `We are reaching our capacity limits right now please wait 1-2 minutes. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`
+        "Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)"
     ) {
-      await updateCredits(user.id, user.credits - 1);
+      await updateCredits(user.id, user.credits - 0.5);
     }
     var channel = interaction.channel;
     if (!interaction.channel) channel = interaction.user;
