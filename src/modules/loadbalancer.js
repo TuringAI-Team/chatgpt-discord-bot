@@ -67,7 +67,7 @@ async function addMessage(id) {
     .eq("id", id);
   var tokenObj = accounts[0];
   if (tokenObj) {
-    if (tokenObj.totalMessages >= 30) {
+    if (tokenObj.totalMessages >= 50) {
       const { data, error } = await supabase
         .from("accounts")
         .update({
@@ -76,6 +76,7 @@ async function addMessage(id) {
           lastUse: Date.now(),
         })
         .eq("id", id);
+      console.log(error);
       var index = clients.findIndex((x) => x.id == tokenObj.id);
       clients.splice(index, 1); // 2nd parameter means remove one item only
     } else {
@@ -118,13 +119,13 @@ async function reloadTokens() {
   for (var i = 0; i < t.length; i++) {
     var token = t[i];
     var now = Date.now();
-    var diff = token.lastUse - now;
+    var diff = now - token.lastUse;
     if (diff >= ms("20min")) {
       const { data, error } = await supabase
         .from("accounts")
         .update({ lastUse: null, messages: 0, totalMessages: 0 })
-        .eq("id", t.id);
-      await initChat(sessionToken);
+        .eq("id", token.id);
+      await initChat(token.email, token.password, token.id);
     }
   }
 }
