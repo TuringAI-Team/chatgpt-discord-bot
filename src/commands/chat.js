@@ -80,10 +80,17 @@ export default {
         "Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)"
     ) {
       await updateCredits(user.id, user.credits - 0.5);
+    } else {
+      /*  const channel = client.channels.cache.get("1051425293715390484");
+      const timeString = time(new Date(), "R");
+      channel.send(
+        `**Error with the bot** ${timeString}\n**Account:** ${message}\n**Type:** ${type}`
+      );*/
     }
     var channel = interaction.channel;
     if (!interaction.channel) channel = interaction.user;
-    if (result.split("").length >= 3500) {
+    var completeResponse = `**Human:** ${message}\n**ChatGPT:** ${result}`;
+    if (completeResponse.split("").length >= 3900) {
       await interaction.editReply(
         `**Human:** ${message}\n**ChatGPT:** ${result
           .split("")
@@ -97,7 +104,7 @@ export default {
 
       return;
     }
-    if (result.split("").length >= 1600) {
+    if (completeResponse.split("").length >= 1900) {
       await interaction.editReply(
         `**Human:** ${message}\n**ChatGPT:** ${result
           .split("")
