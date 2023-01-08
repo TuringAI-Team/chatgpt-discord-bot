@@ -15,11 +15,7 @@ export default {
         .setDescription("The max duration of the conversation")
         .addChoices(
           { name: "2 minutes", value: "2m" },
-          { name: "4 minutes", value: "4m" },
-          { name: "6 minutes", value: "6m" },
-          { name: "8 minutes", value: "8m" },
-          { name: "10 minutes", value: "10m" },
-          { name: "12 minutes", value: "12m" }
+          { name: "4 minutes", value: "4m" }
         )
         .setRequired(true)
     )
@@ -30,23 +26,17 @@ export default {
         .setRequired(true)
     ),
   async execute(interaction) {
-    var type = "public";
-    var privateConversation = false;
-    if (type == "private") {
-      privateConversation = true;
-    }
+    /*
     await interaction.editReply({
       ephemeral: privateConversation,
       content: `This function is under maintenance.\nYou can find more information [in our server](https://dsc.gg/turing).`,
     });
-    return;
+    return;*/
     await interaction.reply({
       content: `Creating collector...`,
-      ephemeral: privateConversation,
     });
     if (!interaction.channel) {
       await interaction.editReply({
-        ephemeral: privateConversation,
         content: `This function is only available for server chats.\nYou can use it [in our server](https://dsc.gg/turing) or in other server with this bot.`,
       });
       return;
@@ -54,7 +44,6 @@ export default {
     var conversationExist = await checkConversation(interaction.channel.id);
     if (conversationExist) {
       await interaction.editReply({
-        ephemeral: privateConversation,
         content: `There is an active conversation in this channel`,
       });
       return;
@@ -62,19 +51,8 @@ export default {
     var duration = ms(interaction.options.getString("time"));
     var initialMessage = interaction.options.getString("initialmessage");
     var conversation = await createConversation(initialMessage);
-    if (
-      conversation ==
-      `Wait 1-2 mins the bot is reloading.\nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`
-    ) {
-      await interaction.editReply({
-        ephemeral: privateConversation,
-        content: `Wait 1-2 mins the bot is reloading.\nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`,
-      });
-      return;
-    }
     if (conversation.error) {
       await interaction.editReply({
-        ephemeral: privateConversation,
         content: conversation.error,
       });
       return;
@@ -85,9 +63,7 @@ export default {
         abled: true,
       },
     ]);
-    if (error) {
-      console.log(error);
-    }
+
     await delay(ms("5s"));
     await interaction.editReply({
       ephemeral: privateConversation,
