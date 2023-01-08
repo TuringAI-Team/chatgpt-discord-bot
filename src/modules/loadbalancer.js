@@ -74,8 +74,8 @@ async function addMessage(id) {
         totalMessages: tokenObj.totalMessages + 1,
       })
       .eq("id", id);
-    /*
-    if (tokenObj.totalMessages >= 50) {
+
+    if (tokenObj.totalMessages >= 30) {
       const { data, error } = await supabase
         .from("accounts")
         .update({
@@ -95,7 +95,7 @@ async function addMessage(id) {
           totalMessages: tokenObj.totalMessages + 1,
         })
         .eq("id", id);
-    }*/
+    }
   }
 }
 async function removeMessage(id) {
@@ -128,6 +128,7 @@ async function reloadTokens() {
     var token = t[i];
     var now = Date.now();
     var diff = now - token.lastUse;
+    console.log(diff);
     if (diff >= ms("20min")) {
       const { data, error } = await supabase
         .from("accounts")
