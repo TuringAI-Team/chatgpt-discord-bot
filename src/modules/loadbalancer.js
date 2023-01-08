@@ -26,7 +26,7 @@ async function initChat(email, password, id) {
   }
 }
 
-async function useToken(retry) {
+async function useToken(retry = 0) {
   var tokens = await getTokens();
   var t = tokens
     .filter((x) => x.lastUse == null && x.messages <= 1)
@@ -46,8 +46,8 @@ async function useToken(retry) {
   if (token) {
     var client = clients.find((x) => x.id == token.id);
     console.log(token.id);
-    if (!client && !retry) {
-      return useToken(true);
+    if (!client && retry < 2) {
+      return useToken(retry++);
     }
     console.log("client found");
     return client;
@@ -67,6 +67,14 @@ async function addMessage(id) {
     .eq("id", id);
   var tokenObj = accounts[0];
   if (tokenObj) {
+    const { data, error } = await supabase
+      .from("accounts")
+      .update({
+        messages: tokenObj.messages + 1,
+        totalMessages: tokenObj.totalMessages + 1,
+      })
+      .eq("id", id);
+    /*
     if (tokenObj.totalMessages >= 50) {
       const { data, error } = await supabase
         .from("accounts")
@@ -87,7 +95,7 @@ async function addMessage(id) {
           totalMessages: tokenObj.totalMessages + 1,
         })
         .eq("id", id);
-    }
+    }*/
   }
 }
 async function removeMessage(id) {

@@ -50,12 +50,7 @@ export default {
         .eq("id", results[0].id);
     } else {
       result = await chat(message);
-      if (
-        result !=
-          "Wait 1-2 mins the bot is reloading or we are reaching our capacity limits.\nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)" &&
-        result !=
-          "Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)"
-      ) {
+      if (!result.error) {
         const { data, error } = await supabase.from("results").insert([
           {
             provider: "chatgpt",
@@ -63,48 +58,48 @@ export default {
             result: { text: result },
           },
         ]);
+        var channel = interaction.channel;
+        if (!interaction.channel) channel = interaction.user;
+        var completeResponse = `**Human:** ${message}\n**ChatGPT:** ${result}`;
+        if (completeResponse.split("").length >= 3900) {
+          await interaction.editReply(
+            `**Human:** ${message}\n**ChatGPT:** ${result
+              .split("")
+              .slice(0, 1900)
+              .join("")}`
+          );
+          if (interaction)
+            await channel.send(
+              ` ${result.split("").slice(1900, 3900).join("")}`
+            );
+          await channel.send(` ${result.split("").slice(3900).join("")}`);
+          await checkGuild(interaction, client);
+
+          return;
+        }
+        if (completeResponse.split("").length >= 1900) {
+          await interaction.editReply(
+            `**Human:** ${message}\n**ChatGPT:** ${result
+              .split("")
+              .slice(0, 1900)
+              .join("")}`
+          );
+          await channel.send(` ${result.split("").slice(1900).join("")}`);
+          await checkGuild(interaction, client);
+
+          return;
+        }
+        await interaction.editReply(
+          `**Human:** ${message}\n**ChatGPT:** ${result}`
+        );
+        await checkGuild(interaction, client);
+      } else {
+        await interaction.editReply(
+          `**Human:** ${message}\n**ChatGPT:** ${result.error}`
+        );
       }
     }
-    if (
-      result !=
-        "Wait 1-2 mins the bot is reloading or we are reaching our capacity limits.\nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)" &&
-      result !=
-        "Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)"
-    ) {
-    }
-    var channel = interaction.channel;
-    if (!interaction.channel) channel = interaction.user;
-    var completeResponse = `**Human:** ${message}\n**ChatGPT:** ${result}`;
-    if (completeResponse.split("").length >= 3900) {
-      await interaction.editReply(
-        `**Human:** ${message}\n**ChatGPT:** ${result
-          .split("")
-          .slice(0, 1500)
-          .join("")}`
-      );
-      if (interaction)
-        await channel.send(` ${result.split("").slice(1600, 3000).join("")}`);
-      await channel.send(` ${result.split("").slice(3000).join("")}`);
-      await checkGuild(interaction, client);
 
-      return;
-    }
-    if (completeResponse.split("").length >= 1900) {
-      await interaction.editReply(
-        `**Human:** ${message}\n**ChatGPT:** ${result
-          .split("")
-          .slice(0, 1600)
-          .join("")}`
-      );
-      await channel.send(` ${result.split("").slice(1600).join("")}`);
-      await checkGuild(interaction, client);
-
-      return;
-    }
-    await interaction.editReply(
-      `**Human:** ${message}\n**ChatGPT:** ${result}`
-    );
-    await checkGuild(interaction, client);
     return;
   },
 };
