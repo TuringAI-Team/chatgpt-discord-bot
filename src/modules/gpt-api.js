@@ -54,7 +54,7 @@ async function chat(message) {
 }
 async function createConversation(initMessage) {
   var conversationId;
-  var token = await useToken();
+  var token = await useToken(0);
   if (!token) {
     return {
       error: `Wait 1-2 mins the bot is reloading.\nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`,
