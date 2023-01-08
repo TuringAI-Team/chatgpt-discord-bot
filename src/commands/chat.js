@@ -1,6 +1,5 @@
 import { SlashCommandBuilder, EmbedBuilder } from "discord.js";
 import { chat } from "../modules/gpt-api.js";
-import { getUser, updateCredits } from "../modules/user.js";
 import supabase from "../modules/supabase.js";
 
 export default {
@@ -24,7 +23,6 @@ export default {
         )
     ),
   async execute(interaction, client) {
-    var user = await getUser(interaction.user);
     var message = interaction.options.getString("message");
     var type = interaction.options.getString("type");
 
@@ -36,12 +34,6 @@ export default {
       ephemeral: privateConversation,
       content: `Loading...\nNow that you are waiting you can join us in [dsc.gg/turing](https://dsc.gg/turing)`,
     });
-    if (user.credits <= 0) {
-      await interaction.editReply(
-        `You don't have enough credits for this acction. If you want more credits, please join us in [dsc.gg/turing](https://dsc.gg/turing)`
-      );
-      return;
-    }
     var result;
     let { data: results, error } = await supabase
       .from("results")
@@ -79,13 +71,6 @@ export default {
       result !=
         "Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)"
     ) {
-      await updateCredits(user.id, user.credits - 0.5);
-    } else {
-      /*  const channel = client.channels.cache.get("1051425293715390484");
-      const timeString = time(new Date(), "R");
-      channel.send(
-        `**Error with the bot** ${timeString}\n**Account:** ${message}\n**Type:** ${type}`
-      );*/
     }
     var channel = interaction.channel;
     if (!interaction.channel) channel = interaction.user;

@@ -1,5 +1,4 @@
 import { SlashCommandBuilder, time } from "discord.js";
-import { getUser } from "../modules/user.js";
 
 export default {
   data: new SlashCommandBuilder()
@@ -23,7 +22,6 @@ export default {
         )
     ),
   async execute(interaction, client) {
-    var user = await getUser(interaction.user);
     var message = interaction.options.getString("feedback");
     var type = interaction.options.getString("type");
 
