@@ -61,6 +61,7 @@ export default {
         var channel = interaction.channel;
         if (!interaction.channel) channel = interaction.user;
         var completeResponse = `**Human:** ${message}\n**ChatGPT:** ${result}`;
+        console.log(completeResponse.split("").length);
         if (completeResponse.split("").length >= 3900) {
           await interaction.editReply(
             `**Human:** ${message}\n**ChatGPT:** ${result
