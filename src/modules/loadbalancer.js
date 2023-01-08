@@ -75,7 +75,7 @@ async function addMessage(id) {
       })
       .eq("id", id);
 
-    if (tokenObj.totalMessages >= 30) {
+    if (tokenObj.totalMessages >= 25) {
       const { data, error } = await supabase
         .from("accounts")
         .update({
