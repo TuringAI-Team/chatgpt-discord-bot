@@ -86,7 +86,6 @@ export default {
               .join("")}`
           );
           await channel.send(` ${result.split("").slice(1900).join("")}`);
-          await checkGuild(interaction, client);
 
           return;
         }

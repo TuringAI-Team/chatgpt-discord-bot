@@ -74,6 +74,7 @@ export default {
       .setFooter({
         text: "This is not an official bot.",
       });
+
     await interaction.reply({
       embeds: [embed],
     });

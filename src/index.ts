@@ -20,12 +20,7 @@ import "./modules/status.js";
 
 // Create a new client instance
 const client: any = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.DirectMessages,
-  ],
+  intents: [GatewayIntentBits.Guilds],
 });
 const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
 
