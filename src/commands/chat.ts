@@ -93,7 +93,6 @@ export default {
         await interaction.editReply(
           `**Human:** ${message}\n**ChatGPT:** ${result}`
         );
-        await checkGuild(interaction, client);
       } else {
         await interaction.editReply(
           `**Human:** ${message}\n**ChatGPT:** ${result.error}`
@@ -104,20 +103,3 @@ export default {
     return;
   },
 };
-
-async function checkGuild(interaction, client) {
-  if (process.env.REQUIRED_MEMBERS) {
-    var guild = interaction.guild;
-    if (guild && guild.memberCount <= parseInt(process.env.REQUIRED_MEMBERS)) {
-      var owner = await guild.fetchOwner();
-      var ch = client.channels.cache.get("1051425293715390484");
-      ch.send(
-        `I have left **${guild.name}**(${guild.id})\nIt has a total of **${guild.memberCount} members**.\nThe owner is: **${owner.user.tag}(${owner.id})**`
-      );
-      await interaction.channel.send(
-        `${owner}, I am going to leave this server, since the bot is limited to servers with more than **${process.env.REQUIRED_MEMBERS} members**. If you want to continue using the bot please go to [dsc.gg/turing](https://dsc.gg/turing) . Thanks for using the bot and sorry for the inconvenience.`
-      );
-      await guild.leave();
-    }
-  }
-}

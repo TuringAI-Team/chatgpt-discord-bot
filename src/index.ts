@@ -90,21 +90,6 @@ client.once(Events.ClientReady, async (c) => {
     chalk.white(`Ready! Logged in as `) + chalk.blue.bold(c.user.tag)
   );
 
-  if (process.env.REQUIRED_MEMBERS) {
-    var guilds = client.guilds.cache.map((guild) => guild);
-    for (var i = 0; i < guilds.length; i++) {
-      var guild = client.guilds.cache.get(guilds[i].id);
-      var owner = await guild.fetchOwner();
-      if (guild.memberCount <= parseInt(process.env.REQUIRED_MEMBERS)) {
-        var ch = client.channels.cache.get("1051425293715390484");
-        ch.send(
-          `I have left **${guild.name}**(${guild.id})\nIt has a total of **${guild.memberCount} members**.\nThe owner is: **${owner.user.tag}(${owner.id})**`
-        );
-        await guild.leave();
-      }
-    }
-  }
-
   const { data, error } = await supabase
     .from("conversations")
     .delete()
