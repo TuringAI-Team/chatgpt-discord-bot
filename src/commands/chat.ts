@@ -74,7 +74,6 @@ export default {
               ` ${result.split("").slice(1900, 3900).join("")}`
             );
           await channel.send(` ${result.split("").slice(3900).join("")}`);
-          await checkGuild(interaction, client);
 
           return;
         }
