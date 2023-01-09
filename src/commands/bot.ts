@@ -64,7 +64,7 @@ export default {
         },
         {
           name: "Version",
-          value: `v0.1.3`,
+          value: `v0.1.4`,
         },
         {
           name: "Support Server",

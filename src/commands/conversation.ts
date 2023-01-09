@@ -27,7 +27,6 @@ export default {
     ),
   async execute(interaction) {
     await interaction.editReply({
-      ephemeral: privateConversation,
       content: `This function is under maintenance.\nYou can find more information [in our server](https://dsc.gg/turing).`,
     });
     return;
@@ -65,7 +64,6 @@ export default {
 
     await delay(ms("5s"));
     await interaction.editReply({
-      ephemeral: privateConversation,
       content: `Collector ready.\nStart talking and the bot will answer.\nUse stop to finish the conversation`,
     });
     await interaction.channel.send(
@@ -117,7 +115,7 @@ export default {
       },
       // Options
       {
-        time: duration,
+        time: parseInt(duration),
         reset: false,
         stopFilter: (message) => message.content.toLowerCase() === "stop",
         target: interaction.user,

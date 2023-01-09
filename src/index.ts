@@ -19,7 +19,7 @@ import { initTokens, reloadTokens } from "./modules/loadbalancer.js";
 import "./modules/status.js";
 
 // Create a new client instance
-const client = new Client({
+const client: any = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.MessageContent,
@@ -71,9 +71,7 @@ for (const file of commandFiles) {
       { body: commands }
     );
 
-    console.log(
-      `Successfully reloaded ${data.length} application (/) commands.`
-    );
+    console.log(`Successfully reloaded application (/) commands.`);
   } catch (error) {
     // And of course, make sure you catch and log any errors!
     console.error(error);
@@ -113,7 +111,7 @@ client.once(Events.ClientReady, async (c) => {
     .eq("abled", true);
   client.user.setPresence({
     activities: [
-      { name: `v0.1.3 | dsc.gg/turing`, type: ActivityType.Playing },
+      { name: `v0.1.4 | dsc.gg/turing`, type: ActivityType.Playing },
     ],
     status: "online",
   });

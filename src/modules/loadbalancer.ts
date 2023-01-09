@@ -6,7 +6,10 @@ import { ChatGPTAPIBrowser } from "chatgpt";
 import { executablePath } from "puppeteer";
 async function getTokens() {
   let { data: accounts, error } = await supabase.from("accounts").select("*");
-  if (error) return error;
+  if (error) {
+    console.log(error);
+    return null;
+  }
 
   return accounts;
 }
@@ -28,33 +31,39 @@ async function initChat(email, password, id) {
 
 async function useToken(retry = 0) {
   var tokens = await getTokens();
-  var t = tokens
-    .filter((x) => x.lastUse == null && x.messages <= 1)
-    .sort((a, b) => {
-      if (a.messages > b.messages) {
-        return 1;
-      }
-      if (a.messages < b.messages) {
-        return -1;
-      }
-      if (a.messages == b.messages) {
-        return 0;
-      }
-    });
-  var i = getRndInteger(0, t.length - 1);
-  var token = t[i];
-  if (token) {
-    var client = clients.find((x) => x.id == token.id);
-    console.log(token.id);
-    if (!client && retry < 2) {
-      return useToken(retry++);
-    }
-    console.log("client found");
-    return client;
-  } else {
+  if (!tokens) {
     return {
       error: `We are reaching our capacity limits right now please wait 1-2 minutes. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`,
     };
+  } else {
+    var t = tokens
+      .filter((x) => x.lastUse == null && x.messages <= 1)
+      .sort((a, b) => {
+        if (a.messages > b.messages) {
+          return 1;
+        }
+        if (a.messages < b.messages) {
+          return -1;
+        }
+        if (a.messages == b.messages) {
+          return 0;
+        }
+      });
+    var i = getRndInteger(0, t.length - 1);
+    var token = t[i];
+    if (token) {
+      var client = clients.find((x) => x.id == token.id);
+      console.log(token.id);
+      if (!client && retry < 2) {
+        return useToken(retry++);
+      }
+      console.log("client found");
+      return client;
+    } else {
+      return {
+        error: `We are reaching our capacity limits right now please wait 1-2 minutes. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`,
+      };
+    }
   }
 }
 function getRndInteger(min, max) {
