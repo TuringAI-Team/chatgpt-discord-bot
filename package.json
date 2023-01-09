@@ -2,7 +2,7 @@
   "name": "chatgpt-bot",
   "version": "0.1.4",
   "description": "",
-  "main": "src/index.js",
+  "main": "dist/index.js",
   "type": "module",
   "scripts": {
     "build": "tsc",
