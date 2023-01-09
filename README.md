@@ -10,6 +10,10 @@ A discord bot for interact with ChatGPT
     git clone https://github.com/MrlolDev/chatgpt-discord-bot.git
 ```
 
+<details>
+<summary>Running on your local machine</summary>
+> **Note**
+> This option doesn't work for server such as vps or bot hosting, to this type of machines read the guide of docker.
 2. Install dependencies.
 
 ```bash
@@ -34,6 +38,11 @@ API_TOKEN=Get it from https://justbrowse.io
 ```
     node .
 ```
+
+</details>
+<details>
+<summary>Running with docker</summary>
+</details>
 
 ## Get session key
 
