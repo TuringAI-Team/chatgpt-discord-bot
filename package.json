@@ -5,8 +5,8 @@
   "main": "src/index.js",
   "type": "module",
   "scripts": {
-    "start": "node .",
-    "dev": "nodemon .",
+    "start": "tsc && node .",
+    "dev": "tsc && nodemon .",
     "git": "git fetch && git pull",
     "deploy": "docker build -t chatgpt-bot . && docker-compose up -d"
   },
