@@ -31,7 +31,7 @@ async function initChat(email, password, id) {
 
 async function useToken(retry = 0) {
   var tokens = await getTokens();
-  if (!tokens) {
+  if (!tokens || tokens.length <= 0) {
     return {
       error: `We are reaching our capacity limits right now please wait 1-2 minutes. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`,
     };
@@ -116,7 +116,7 @@ async function removeMessage(id) {
   if (tokenObj) {
     const { data, error } = await supabase
       .from("accounts")
-      .update({ messages: tokenObj.messages - 1 })
+      .update({ messages: 0 })
       .eq("id", id);
   }
 }
