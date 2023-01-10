@@ -71,7 +71,7 @@ export default {
       var response = await renderResponse({
         prompt: message,
         response: result,
-        userImageUrl: interaction.user.avatarUrl(),
+        userImageUrl: interaction.user.avatarURL(),
         username: interaction.user.tag,
       });
       var image = new AttachmentBuilder(response, { name: "output.jpg" });
@@ -85,6 +85,7 @@ export default {
         prompt: message,
         response: result.error,
         username: interaction.user.tag,
+        userImageUrl: interaction.user.avatarURL(),
       });
       var image = new AttachmentBuilder(response, { name: "output.jpg" });
 
