@@ -29,7 +29,7 @@ async function checkId(client) {
 }
 
 async function chat(message) {
-  var token = await useToken();
+  var token = await useToken(0);
   if (!token) {
     return {
       error: `Wait 1-2 mins the bot is reloading or we are reaching our capacity limits.\nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`,
