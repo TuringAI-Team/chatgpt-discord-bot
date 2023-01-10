@@ -80,7 +80,7 @@ export default {
       var channel = interaction.channel;
       if (!interaction.channel) channel = interaction.user;
       if (responseType == "image") {
-        await responseWithImage(interaction, message, result.error);
+        await responseWithImage(interaction, message, result);
       } else {
         await responseWithText(interaction, message, result, channel);
       }
