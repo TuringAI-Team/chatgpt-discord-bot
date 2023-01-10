@@ -56,6 +56,7 @@ export default {
             provider: "chatgpt",
             prompt: message.toLowerCase(),
             result: { text: result },
+            guildId: interaction.guildId,
           },
         ]);
         var channel = interaction.channel;
