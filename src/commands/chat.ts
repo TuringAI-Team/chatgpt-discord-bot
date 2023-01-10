@@ -88,7 +88,7 @@ export default {
       if (responseType == "image") {
         await responseWithImage(interaction, message, result.error);
       } else {
-        await responseWithText(interaction, message, result, channel);
+        await responseWithText(interaction, message, result.error, channel);
       }
     }
     return;
@@ -111,7 +111,7 @@ async function responseWithImage(interaction, prompt, result) {
 }
 
 async function responseWithText(interaction, prompt, result, channel) {
-  var completeResponse = `**Human:** ${prompt}\n**ChatGPT**${result}`;
+  var completeResponse = `**Human:** ${prompt}\n**ChatGPT:** ${result}`;
   var charsCount = completeResponse.split("").length;
   if (charsCount % 2000 == 0) {
     var loops = Math.ceil(charsCount / 2000);
