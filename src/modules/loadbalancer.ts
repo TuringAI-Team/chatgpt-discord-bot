@@ -29,7 +29,7 @@ async function initChat(email, password, id) {
   }
 }
 
-async function useToken(retry = 0) {
+async function useToken(retry) {
   var tokens = await getTokens();
   if (!tokens || tokens.length <= 0) {
     return {
