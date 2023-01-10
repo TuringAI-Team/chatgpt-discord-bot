@@ -26,7 +26,7 @@ export default {
         .setRequired(true)
     ),
   async execute(interaction) {
-    await interaction.editReply({
+    await interaction.reply({
       content: `This function is under maintenance.\nYou can find more information [in our server](https://dsc.gg/turing).`,
     });
     return;
