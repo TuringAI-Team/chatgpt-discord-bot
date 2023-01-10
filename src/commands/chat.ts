@@ -1,6 +1,11 @@
-import { SlashCommandBuilder, EmbedBuilder } from "discord.js";
+import {
+  SlashCommandBuilder,
+  EmbedBuilder,
+  AttachmentBuilder,
+} from "discord.js";
 import { chat } from "../modules/gpt-api.js";
 import supabase from "../modules/supabase.js";
+import { renderResponse } from "../modules/render-response.js";
 
 export default {
   data: new SlashCommandBuilder()
@@ -61,7 +66,19 @@ export default {
         ]);
         var channel = interaction.channel;
         if (!interaction.channel) channel = interaction.user;
-        var completeResponse = `**Human:** ${message}\n**ChatGPT:** ${result}`;
+        var response = await renderResponse({
+          prompt: message,
+          response: result,
+          userImageUrl: interaction.user.avatarUrl(),
+          username: interaction.user.tag,
+        });
+        var image = new AttachmentBuilder(response, { name: "output.jpg" });
+
+        await interaction.editReply({
+          content: "",
+          files: [image],
+        });
+        /*var completeResponse = `**Human:** ${message}\n**ChatGPT:** ${result}`;
         console.log(completeResponse.split("").length);
         if (completeResponse.split("").length >= 3900) {
           await interaction.editReply(
@@ -91,11 +108,19 @@ export default {
         }
         await interaction.editReply(
           `**Human:** ${message}\n**ChatGPT:** ${result}`
-        );
+        );*/
       } else {
-        await interaction.editReply(
-          `**Human:** ${message}\n**ChatGPT:** ${result.error}`
-        );
+        var response = await renderResponse({
+          prompt: message,
+          response: result.error,
+          username: interaction.user.tag,
+        });
+        var image = new AttachmentBuilder(response, { name: "output.jpg" });
+
+        await interaction.editReply({
+          content: "",
+          files: [image],
+        });
       }
     }
 

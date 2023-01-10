@@ -2,8 +2,7 @@ import ms from "ms";
 import supabase from "./supabase.js";
 import delay from "delay";
 var clients = [];
-import { ChatGPTAPI, getOpenAIAuth } from "chatgpt";
-
+import { ChatGPTAPIBrowser } from "chatgpt";
 import { executablePath } from "puppeteer";
 async function getTokens() {
   let { data: accounts, error } = await supabase.from("accounts").select("*");
@@ -16,13 +15,12 @@ async function getTokens() {
 }
 async function initChat(email, password, id) {
   try {
-    var openAIAuth = await getOpenAIAuth({
+    var Capi = new ChatGPTAPIBrowser({
       email: email,
       password: password,
       executablePath: executablePath(),
       nopechaKey: process.env.NOPECHA_KEY,
     });
-    const Capi = new ChatGPTAPI({ ...openAIAuth });
     await Capi.initSession();
     clients.push({ client: Capi, id });
     console.log(`loaded ${id}`);
