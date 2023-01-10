@@ -19,6 +19,16 @@ export default {
     )
     .addStringOption((option) =>
       option
+        .setName("response")
+        .setDescription("The type of resoibse message that you want")
+        .setRequired(true)
+        .addChoices(
+          { name: "image", value: "image" },
+          { name: "text", value: "text" }
+        )
+    )
+    .addStringOption((option) =>
+      option
         .setName("type")
         .setDescription("The type of message for ChatGPT")
         .setRequired(false)
@@ -30,6 +40,7 @@ export default {
   async execute(interaction, client) {
     var message = interaction.options.getString("message");
     var type = interaction.options.getString("type");
+    var responseType = interaction.options.getString("response");
 
     var privateConversation = false;
     if (type == "private") {
@@ -68,32 +79,57 @@ export default {
       ]);
       var channel = interaction.channel;
       if (!interaction.channel) channel = interaction.user;
-      var response = await renderResponse({
-        prompt: message,
-        response: result,
-        userImageUrl: interaction.user.avatarURL(),
-        username: interaction.user.tag,
-      });
-      var image = new AttachmentBuilder(response, { name: "output.jpg" });
-
-      await interaction.editReply({
-        content: "",
-        files: [image],
-      });
+      if (responseType == "image") {
+        await responseWithImage(interaction, message, result.error);
+      } else {
+        await responseWithText(interaction, message, result, channel);
+      }
     } else {
-      var response = await renderResponse({
-        prompt: message,
-        response: result.error,
-        username: interaction.user.tag,
-        userImageUrl: interaction.user.avatarURL(),
-      });
-      var image = new AttachmentBuilder(response, { name: "output.jpg" });
-
-      await interaction.editReply({
-        content: "",
-        files: [image],
-      });
+      if (responseType == "image") {
+        await responseWithImage(interaction, message, result.error);
+      } else {
+        await responseWithText(interaction, message, result, channel);
+      }
     }
     return;
   },
 };
+
+async function responseWithImage(interaction, prompt, result) {
+  var response = await renderResponse({
+    prompt: prompt,
+    response: result,
+    username: interaction.user.tag,
+    userImageUrl: interaction.user.avatarURL(),
+  });
+  var image = new AttachmentBuilder(response, { name: "output.jpg" });
+
+  await interaction.editReply({
+    content: "",
+    files: [image],
+  });
+}
+
+async function responseWithText(interaction, prompt, result, channel) {
+  var completeResponse = `**Human:** ${prompt}\n**ChatGPT**${result}`;
+  var charsCount = completeResponse.split("").length;
+  if (charsCount % 2000 == 0) {
+    var loops = Math.ceil(charsCount / 2000);
+    for (var i = 0; i < loops; i++) {
+      if (i == 0) {
+        interaction.editReply(
+          completeResponse.split("").slice(0, 2000).join("")
+        );
+      } else {
+        channel.send(
+          completeResponse
+            .split("")
+            .slice(2000 * i, 2000 * i + 2000)
+            .join("")
+        );
+      }
+    }
+  } else {
+    interaction.editReply(completeResponse);
+  }
+}
