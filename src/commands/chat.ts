@@ -55,75 +55,44 @@ export default {
         .eq("id", results[0].id);
     } else {
       result = await chat(message);
-      if (!result.error) {
-        const { data, error } = await supabase.from("results").insert([
-          {
-            provider: "chatgpt",
-            prompt: message.toLowerCase(),
-            result: { text: result },
-            guildId: interaction.guildId,
-          },
-        ]);
-        var channel = interaction.channel;
-        if (!interaction.channel) channel = interaction.user;
-        var response = await renderResponse({
-          prompt: message,
-          response: result,
-          userImageUrl: interaction.user.avatarUrl(),
-          username: interaction.user.tag,
-        });
-        var image = new AttachmentBuilder(response, { name: "output.jpg" });
-
-        await interaction.editReply({
-          content: "",
-          files: [image],
-        });
-        /*var completeResponse = `**Human:** ${message}\n**ChatGPT:** ${result}`;
-        console.log(completeResponse.split("").length);
-        if (completeResponse.split("").length >= 3900) {
-          await interaction.editReply(
-            `**Human:** ${message}\n**ChatGPT:** ${result
-              .split("")
-              .slice(0, 1900)
-              .join("")}`
-          );
-          if (interaction)
-            await channel.send(
-              ` ${result.split("").slice(1900, 3900).join("")}`
-            );
-          await channel.send(` ${result.split("").slice(3900).join("")}`);
-
-          return;
-        }
-        if (completeResponse.split("").length >= 1900) {
-          await interaction.editReply(
-            `**Human:** ${message}\n**ChatGPT:** ${result
-              .split("")
-              .slice(0, 1900)
-              .join("")}`
-          );
-          await channel.send(` ${result.split("").slice(1900).join("")}`);
-
-          return;
-        }
-        await interaction.editReply(
-          `**Human:** ${message}\n**ChatGPT:** ${result}`
-        );*/
-      } else {
-        var response = await renderResponse({
-          prompt: message,
-          response: result.error,
-          username: interaction.user.tag,
-        });
-        var image = new AttachmentBuilder(response, { name: "output.jpg" });
-
-        await interaction.editReply({
-          content: "",
-          files: [image],
-        });
-      }
     }
 
+    if (!result.error) {
+      const { data, error } = await supabase.from("results").insert([
+        {
+          provider: "chatgpt",
+          prompt: message.toLowerCase(),
+          result: { text: result },
+          guildId: interaction.guildId,
+        },
+      ]);
+      var channel = interaction.channel;
+      if (!interaction.channel) channel = interaction.user;
+      var response = await renderResponse({
+        prompt: message,
+        response: result,
+        userImageUrl: interaction.user.avatarUrl(),
+        username: interaction.user.tag,
+      });
+      var image = new AttachmentBuilder(response, { name: "output.jpg" });
+
+      await interaction.editReply({
+        content: "",
+        files: [image],
+      });
+    } else {
+      var response = await renderResponse({
+        prompt: message,
+        response: result.error,
+        username: interaction.user.tag,
+      });
+      var image = new AttachmentBuilder(response, { name: "output.jpg" });
+
+      await interaction.editReply({
+        content: "",
+        files: [image],
+      });
+    }
     return;
   },
 };
