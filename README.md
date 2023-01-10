@@ -10,38 +10,72 @@ A discord bot for interact with ChatGPT
     git clone https://github.com/MrlolDev/chatgpt-discord-bot.git
 ```
 
+2. Create supabase project
+
+3. Create supabase tables
+
+4. Upload open ai accounts
+
 <details>
 <summary>Running on your local machine</summary>
 > **Note**
 > This option doesn't work for server such as vps or bot hosting, to this type of machines read the guide of docker.
-2. Install dependencies.
-
-```bash
-    npm install
+5. Install dependencies
+```
+npm install
+```
+6. Create .env
+```env
+TOKEN=Your discord bot token https://discord.dev
+CLIENT_ID=Your discord bot id https://discord.dev
+SUPABASE_KEY=Your supabase service role key https://app.supabase.com
+SUPABASE_URL=Your supabase project url https://app.supabase.com
+NOPECHA_KEY=Your nopecha key https://nopecha.com
 ```
 
-3. Create a new .env file
+7. Run the bot
 
 ```
-# .env
-
-TOKEN=Discord token id(https://discord.dev)
-CLIENT_ID=Discord client id(https://discord.dev)
-SUPABASE_KEY=Supabase key(https://app.supabase.com)
-SUPABASE_URL=Supabase url(https://app.supabase.com)
-SESSION_TOKEN="replace with your open ai session key"
-API_TOKEN=Get it from https://justbrowse.io
+npm start
 ```
 
-4. Run the bot
+8. Running with auto reload(development mode)
 
 ```
-    node .
+npm run dev
+```
+
+9. Updating code with changes.
+
+```
+npm run git
 ```
 
 </details>
 <details>
 <summary>Running with docker</summary>
+For this deploy we have create extra commands to make the process easier for people who have never used docker
+
+5. Install docker.
+
+6. Deploy the container for first time.
+
+```
+npm run docker:deploy
+```
+
+7. Update the container with changes
+
+```
+npm run docker:update
+```
+
+8. See the logs inside the container
+
+```
+npm run docker:logs
+```
+
 </details>
 
 ## Get session key
