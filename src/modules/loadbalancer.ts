@@ -2,7 +2,8 @@ import ms from "ms";
 import supabase from "./supabase.js";
 import delay from "delay";
 var clients = [];
-import { ChatGPTAPIBrowser } from "chatgpt";
+import { ChatGPTAPI, getOpenAIAuth } from "chatgpt";
+
 import { executablePath } from "puppeteer";
 async function getTokens() {
   let { data: accounts, error } = await supabase.from("accounts").select("*");
@@ -15,12 +16,13 @@ async function getTokens() {
 }
 async function initChat(email, password, id) {
   try {
-    var Capi = new ChatGPTAPIBrowser({
+    var openAIAuth = await getOpenAIAuth({
       email: email,
       password: password,
       executablePath: executablePath(),
       nopechaKey: process.env.NOPECHA_KEY,
     });
+    const Capi = new ChatGPTAPI({ ...openAIAuth });
     await Capi.initSession();
     clients.push({ client: Capi, id });
     console.log(`loaded ${id}`);
@@ -53,7 +55,6 @@ async function useToken(retry = 0) {
     var token = t[i];
     if (token) {
       var client = clients.find((x) => x.id == token.id);
-      console.log(token.id, retry, retry++);
       if (!client && retry < 2) {
         return useToken(retry++);
       }

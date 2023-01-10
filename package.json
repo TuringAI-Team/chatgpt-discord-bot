@@ -7,9 +7,12 @@
   "scripts": {
     "build": "tsc",
     "start": "tsc && node .",
-    "dev": "tsc && nodemon .",
+    "dev": "concurrently \"tsc --watch\" \"npx nodemon\"",
     "git": "git fetch && git pull",
-    "deploy": "docker build -t chatgpt-bot . && docker-compose up -d"
+    "docker:deploy": "docker build -t chatgpt-bot . && docker-compose up -d",
+    "docker:reload": "docker-compose stop && docker-compose up -d",
+    "docker:update": "npm run git && docker build -t chatgpt-bot . && npm run docker:reload",
+    "docker:logs": "docker-compose logs -f --tail=0"
   },
   "keywords": [],
   "author": "MrlolDev",
@@ -17,7 +20,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.1.1",
     "chalk": "^5.2.0",
-    "chatgpt": "^3.3.8",
+    "chatgpt": "^3.3.11",
     "cors": "^2.8.5",
     "delay": "^5.0.0",
     "discord.js": "^14.7.1",
@@ -27,9 +30,10 @@
     "express-rate-limit": "^6.7.0",
     "ms": "^2.1.3",
     "node-fetch": "^3.3.0",
-    "puppeteer": "^19.4.1"
+    "puppeteer": "^19.5.0"
   },
   "devDependencies": {
+    "concurrently": "^7.6.0",
     "eslint": "^8.29.0",
     "nodemon": "^2.0.20",
     "typescript": "^4.9.4"

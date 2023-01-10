@@ -1,4 +1,12 @@
-import { SlashCommandBuilder, EmbedBuilder, time } from "discord.js";
+import {
+  ActionRowBuilder,
+  EmbedBuilder,
+  SlashCommandBuilder,
+  StringSelectMenuBuilder,
+  ButtonBuilder,
+  time,
+  ButtonStyle,
+} from "discord.js";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "url";
@@ -59,24 +67,32 @@ export default {
           inline: true,
         },
         {
-          name: "Github  repository",
-          value: `https://github.com/MrlolDev/chatgpt-discord-bot`,
-        },
-        {
           name: "Version",
-          value: `v0.1.4`,
-        },
-        {
-          name: "Support Server",
-          value: `https://dsc.gg/turing`,
+          value: `v0.1.5`,
         },
       ])
       .setFooter({
         text: "This is not an official bot.",
       });
-
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setLabel("Add me")
+        .setURL(
+          `https://discord.com/api/oauth2/authorize?client_id=1053015370115588147&permissions=277025736768&scope=bot%20applications.commands`
+        )
+        .setStyle(ButtonStyle.Link),
+      new ButtonBuilder()
+        .setLabel("Support server")
+        .setURL("https://dsc.gg/turing")
+        .setStyle(ButtonStyle.Link),
+      new ButtonBuilder()
+        .setLabel("Github Repo")
+        .setURL("https://github.com/MrlolDev/chatgpt-discord-bot")
+        .setStyle(ButtonStyle.Link)
+    );
     await interaction.reply({
       embeds: [embed],
+      components: [row],
     });
     return;
   },

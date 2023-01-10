@@ -66,6 +66,7 @@ async function createConversation(initMessage) {
   await addMessage(token.id);
   try {
     var response = await token.client.sendMessage(initMessage);
+    console.log(response);
     await removeMessage(token.id);
     conversationId = response.conversationId;
     return {
