@@ -66,28 +66,45 @@ export default {
       var channel = interaction.channel;
       if (!interaction.channel) channel = interaction.user;
       if (responseType == "image") {
-        await responseWithImage(interaction, message, result);
+        await responseWithImage(
+          interaction,
+          message,
+          result.response,
+          result.type
+        );
       } else {
-        await responseWithText(interaction, message, result, channel);
+        await responseWithText(
+          interaction,
+          message,
+          result.response,
+          channel,
+          result.type
+        );
       }
     } else {
       if (responseType == "image") {
-        await responseWithImage(interaction, message, result.error);
+        await responseWithImage(interaction, message, result.error, "gpt-3.5");
       } else {
-        await responseWithText(interaction, message, result.error, channel);
+        await responseWithText(
+          interaction,
+          message,
+          result.error,
+          channel,
+          "gpt-3.5"
+        );
       }
     }
     return;
   },
 };
 
-async function responseWithImage(interaction, prompt, result) {
+async function responseWithImage(interaction, prompt, result, type) {
   var response = await renderResponse({
     prompt: prompt,
-    response: result.response,
+    response: result,
     username: interaction.user.tag,
     userImageUrl: interaction.user.avatarURL(),
-    chatgptUsername: `ChatGPT#3799(${result.type})`,
+    chatgptUsername: `ChatGPT#3799(${type})`,
   });
   var image = new AttachmentBuilder(response, { name: "output.jpg" });
 
@@ -97,8 +114,8 @@ async function responseWithImage(interaction, prompt, result) {
   });
 }
 
-async function responseWithText(interaction, prompt, result, channel) {
-  var completeResponse = `**Human:** ${prompt}\n**ChatGPT(${result.type}):** ${result.response}`;
+async function responseWithText(interaction, prompt, result, channel, type) {
+  var completeResponse = `**Human:** ${prompt}\n**ChatGPT(${type}):** ${result}`;
   var charsCount = completeResponse.split("").length;
   console.log(charsCount, charsCount % 2000);
   if (charsCount % 2000 == 0) {
