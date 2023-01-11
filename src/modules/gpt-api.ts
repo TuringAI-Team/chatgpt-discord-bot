@@ -3,7 +3,6 @@ import * as dotenv from "dotenv"; // see https://github.com/motdotla/dotenv#how-
 import delay from "delay";
 dotenv.config();
 import chalk from "chalk";
-import fetch from "node-fetch";
 import { useToken, addMessage, removeMessage } from "./loadbalancer.js";
 
 var abled = false;
