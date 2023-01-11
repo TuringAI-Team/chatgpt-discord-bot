@@ -4,6 +4,8 @@ import delay from "delay";
 var clients = [];
 import { ChatGPTAPIBrowser } from "chatgpt";
 import { executablePath } from "puppeteer";
+import { Configuration, OpenAIApi } from "openai";
+
 async function getTokens() {
   let { data: accounts, error } = await supabase.from("accounts").select("*");
   if (error) {
@@ -13,7 +15,7 @@ async function getTokens() {
 
   return accounts;
 }
-async function initChat(email, password, id) {
+async function initChat(email, password, id, key) {
   try {
     var Capi = new ChatGPTAPIBrowser({
       email: email,
@@ -22,9 +24,19 @@ async function initChat(email, password, id) {
       nopechaKey: process.env.NOPECHA_KEY,
     });
     await Capi.initSession();
-    clients.push({ client: Capi, id });
-    console.log(`loaded ${id}`);
+
+    clients.push({ client: Capi, id, type: "unofficial" });
+    console.log(`loaded ${id} with unofficial`);
   } catch (err) {
+    if (key) {
+      const configuration = new Configuration({
+        apiKey: key,
+      });
+      const openai = new OpenAIApi(configuration);
+      clients.push({ client: openai, id, type: "official" });
+      console.log(`loaded ${id} with official`);
+    }
+
     console.log(`error with ${email}:\n${err}`);
   }
 }
@@ -54,10 +66,10 @@ async function useToken(retry) {
     if (token) {
       var client = clients.find((x) => x.id == token.id);
       var nr = retry + 1;
-      console.log(token.id, nr);
       if (!client && retry < 2) {
         return useToken(nr);
       }
+      console.log(token.id, token.type);
       console.log("client found");
       return client;
     } else {
@@ -127,7 +139,7 @@ async function initTokens() {
   for (var i = 0; i < tokens.length; i++) {
     var token = tokens[i];
     await delay(5000);
-    await initChat(token.email, token.password, token.id);
+    await initChat(token.email, token.password, token.id, token.key);
   }
 }
 
@@ -144,7 +156,7 @@ async function reloadTokens() {
         .from("accounts")
         .update({ lastUse: null, messages: 0, totalMessages: 0 })
         .eq("id", token.id);
-      await initChat(token.email, token.password, token.id);
+      await initChat(token.email, token.password, token.id, token.key);
     }
   }
 }
