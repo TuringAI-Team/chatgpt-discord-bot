@@ -108,11 +108,14 @@ async function responseWithImage(interaction, prompt, result, type) {
     chatgptUsername: `ChatGPT#3799(${type})`,
   });
   var image = new AttachmentBuilder(response, { name: "output.jpg" });
-
-  await interaction.editReply({
-    content: "",
-    files: [image],
-  });
+  try {
+    await interaction.editReply({
+      content: "",
+      files: [image],
+    });
+  } catch (err) {
+    console.log(err);
+  }
 }
 
 async function responseWithText(interaction, prompt, result, channel, type) {
@@ -123,9 +126,13 @@ async function responseWithText(interaction, prompt, result, channel, type) {
     var loops = Math.ceil(charsCount / 2000);
     for (var i = 0; i < loops; i++) {
       if (i == 0) {
-        interaction.editReply(
-          completeResponse.split("").slice(0, 2000).join("")
-        );
+        try {
+          interaction.editReply(
+            completeResponse.split("").slice(0, 2000).join("")
+          );
+        } catch (err) {
+          console.log(err);
+        }
       } else {
         channel.send(
           completeResponse
