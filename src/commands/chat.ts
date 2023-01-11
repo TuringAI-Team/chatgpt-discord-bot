@@ -26,16 +26,6 @@ export default {
           { name: "image", value: "image" },
           { name: "text", value: "text" }
         )
-    )
-    .addStringOption((option) =>
-      option
-        .setName("type")
-        .setDescription("The type of message for ChatGPT")
-        .setRequired(false)
-        .addChoices(
-          { name: "public", value: "public" },
-          { name: "private", value: "private" }
-        )
     ),
   async execute(interaction, client) {
     var message = interaction.options.getString("message");
