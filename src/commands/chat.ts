@@ -99,6 +99,7 @@ async function responseWithImage(interaction, prompt, result) {
 async function responseWithText(interaction, prompt, result, channel) {
   var completeResponse = `**Human:** ${prompt}\n**ChatGPT:** ${result}`;
   var charsCount = completeResponse.split("").length;
+  console.log(charsCount, charsCount % 2000);
   if (charsCount % 2000 == 0) {
     var loops = Math.ceil(charsCount / 2000);
     for (var i = 0; i < loops; i++) {
