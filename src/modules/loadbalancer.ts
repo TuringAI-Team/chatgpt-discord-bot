@@ -69,7 +69,9 @@ async function useToken(retry) {
       if (!client && retry < 2) {
         return useToken(nr);
       }
-      console.log(token.id, client.type);
+      if (client) {
+        console.log(token.id, client.type);
+      }
       console.log("client found");
       return client;
     } else {
