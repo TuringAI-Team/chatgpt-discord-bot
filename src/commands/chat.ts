@@ -84,9 +84,10 @@ export default {
 async function responseWithImage(interaction, prompt, result) {
   var response = await renderResponse({
     prompt: prompt,
-    response: result,
+    response: result.response,
     username: interaction.user.tag,
     userImageUrl: interaction.user.avatarURL(),
+    chatgptUsername: `ChatGPT#3799(${result.type})`,
   });
   var image = new AttachmentBuilder(response, { name: "output.jpg" });
 
@@ -97,7 +98,7 @@ async function responseWithImage(interaction, prompt, result) {
 }
 
 async function responseWithText(interaction, prompt, result, channel) {
-  var completeResponse = `**Human:** ${prompt}\n**ChatGPT:** ${result}`;
+  var completeResponse = `**Human:** ${prompt}\n**ChatGPT(${result.type}):** ${result.response}`;
   var charsCount = completeResponse.split("").length;
   console.log(charsCount, charsCount % 2000);
   if (charsCount % 2000 == 0) {

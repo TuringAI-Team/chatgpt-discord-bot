@@ -40,10 +40,13 @@ async function chat(message) {
   await addMessage(token.id);
   try {
     var response;
+    var type;
     if (token.type == "unofficial") {
+      type = "gpt-3.5";
       response = await token.client.sendMessage(message);
       response = response.response;
     } else {
+      type = "gpt-3";
       response = await token.client.createCompletion({
         model: "text-davinci-003",
         prompt: `The following is a conversation with an AI assistant. The assistant is helpful, creative, clever, and very friendly.\n\nHuman: Hello, who are you?\nAI: I am an AI created by OpenAI. How can I help you today?\nHuman: ${message}\nAI:`,
@@ -56,9 +59,8 @@ async function chat(message) {
       });
       response = response.data.choices[0].text;
     }
-    console.log(message, response);
     await removeMessage(token.id);
-    return response;
+    return { response, type: type };
   } catch (err) {
     console.log(err);
     await removeMessage(token.id);

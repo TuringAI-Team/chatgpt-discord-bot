@@ -146,6 +146,7 @@ export async function renderResponse({
   username,
   outputPath,
   htmlOutputPath,
+  chatgptUsername = "ChatGPT#3799",
 }: {
   prompt?: string;
   response: string;
@@ -153,6 +154,7 @@ export async function renderResponse({
   username?: string;
   outputPath?: string;
   htmlOutputPath?: string;
+  chatgptUsername?: string;
 }): Promise<string> {
   const md = new MarkdownIt({
     highlight: function (str: string, lang: string) {
@@ -193,7 +195,7 @@ export async function renderResponse({
     userHeader = `<p class="user">${username}</p>`;
   }
 
-  let responseUserHeader = `<p class="user">ChatGPT#3799</p>`;
+  let responseUserHeader = `<p class="user">${chatgptUsername}</p>`;
 
   const promptHtml = prompt
     ? md
