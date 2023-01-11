@@ -29,13 +29,9 @@ export default {
     ),
   async execute(interaction, client) {
     var message = interaction.options.getString("message");
-    var type = interaction.options.getString("type");
     var responseType = interaction.options.getString("response");
 
     var privateConversation = false;
-    if (type == "private") {
-      privateConversation = true;
-    }
     await interaction.reply({
       ephemeral: privateConversation,
       content: `Loading...\nNow that you are waiting you can join us in [dsc.gg/turing](https://dsc.gg/turing)`,
