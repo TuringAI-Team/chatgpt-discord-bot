@@ -58,6 +58,7 @@ export default {
       const { data, error } = await supabase.from("results").insert([
         {
           provider: "chatgpt",
+          version: result.type,
           prompt: message.toLowerCase(),
           result: { text: result },
           guildId: interaction.guildId,
