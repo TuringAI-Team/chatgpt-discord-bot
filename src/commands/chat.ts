@@ -33,14 +33,6 @@ export default {
     if (!responseType) {
       responseType = "text";
     }
-    /*
-    if (interaction.user.id != "530102778408861706") {
-      await interaction.reply({
-        ephemeral: true,
-        content: `The bot is under maintenance and due to the massive use we can't make our tests properly. The bot would be able in some hours, sorry for the inconvenience.\nJoin our discord server for more information[dsc.gg/turing](https://dsc.gg/turing)`,
-      });
-      return;
-    }*/
     await interaction.reply({
       content: `Loading...\nNow that you are waiting you can join us in [dsc.gg/turing](https://dsc.gg/turing)`,
     });
@@ -68,15 +60,18 @@ export default {
     console.log(result);
     if (!result.error) {
       var response = result.text;
-      const { data, error } = await supabase.from("results").insert([
-        {
-          provider: "chatgpt",
-          version: result.type,
-          prompt: message.toLowerCase(),
-          result: { text: response },
-          guildId: interaction.guildId,
-        },
-      ]);
+      if (result.type == "gpt-3.5") {
+        const { data, error } = await supabase.from("results").insert([
+          {
+            provider: "chatgpt",
+            version: result.type,
+            prompt: message.toLowerCase(),
+            result: { text: response },
+            guildId: interaction.guildId,
+          },
+        ]);
+      }
+
       var channel = interaction.channel;
       if (!interaction.channel) channel = interaction.user;
       if (responseType == "image") {
