@@ -60,7 +60,7 @@ async function chat(message) {
       response = response.data.choices[0].text;
     }
     await removeMessage(token.id);
-    return { response, type: type };
+    return { text: response, type: type };
   } catch (err) {
     console.log(err);
     await removeMessage(token.id);

@@ -66,6 +66,7 @@ export default {
     }
     console.log(result);
     if (!result.error) {
+      var response = result.text;
       const { data, error } = await supabase.from("results").insert([
         {
           provider: "chatgpt",
@@ -77,8 +78,6 @@ export default {
       ]);
       var channel = interaction.channel;
       if (!interaction.channel) channel = interaction.user;
-      var response = result.response;
-      console.log(response, "re");
       if (responseType == "image") {
         await responseWithImage(interaction, message, response, result.type);
       } else {
