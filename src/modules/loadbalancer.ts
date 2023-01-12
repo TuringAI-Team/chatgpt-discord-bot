@@ -42,12 +42,7 @@ async function useToken(retry) {
     };
   } else {
     var t = tokens
-      .filter(
-        (x) =>
-          x.lastUse == null &&
-          x.messages <= 1 &&
-          clients.find((y) => y.id == x.id)
-      )
+      .filter((x) => x.lastUse == null && x.messages <= 1)
       .sort((a, b) => {
         if (a.messages > b.messages) {
           return 1;
@@ -63,7 +58,6 @@ async function useToken(retry) {
     var i = getRndInteger(0, t.length - 1);
 
     if (clients.length < t.length || t.length <= 0 || clients.length <= 0) {
-      console.log("start error");
       return {
         error:
           "Wait 1-2 mins the bot is starting or we are reaching our capacity limits.\nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)",

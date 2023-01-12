@@ -36,7 +36,7 @@ async function chat(message) {
     };
   }
   if (token.error) {
-    return token.error;
+    return { error: token.error };
   }
   await addMessage(token.id);
   try {

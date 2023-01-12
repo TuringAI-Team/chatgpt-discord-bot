@@ -91,14 +91,14 @@ export default {
       }
     } else {
       if (responseType == "image") {
-        await responseWithImage(interaction, message, result.error, "gpt-3.5");
+        await responseWithImage(interaction, message, result.error, "error");
       } else {
         await responseWithText(
           interaction,
           message,
           result.error,
           channel,
-          "gpt-3.5"
+          "error"
         );
       }
     }
