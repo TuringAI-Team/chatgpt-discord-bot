@@ -2,9 +2,8 @@ import ms from "ms";
 import supabase from "./supabase.js";
 import delay from "delay";
 var clients = [];
-import { ChatGPTAPIBrowser } from "chatgpt";
-import { executablePath } from "puppeteer";
 import { Configuration, OpenAIApi } from "openai";
+import chatGPT from "chatgpt-io";
 
 async function getTokens() {
   let { data: accounts, error } = await supabase.from("accounts").select("*");
@@ -15,17 +14,11 @@ async function getTokens() {
 
   return accounts;
 }
-async function initChat(email, password, id, key) {
+async function initChat(token, id, key) {
   try {
-    var Capi = new ChatGPTAPIBrowser({
-      email: email,
-      password: password,
-      executablePath: executablePath(),
-      nopechaKey: process.env.NOPECHA_KEY,
-    });
-    await Capi.initSession();
-
-    clients.push({ client: Capi, id, type: "unofficial" });
+    let bot = new chatGPT(token);
+    await bot.waitForReady();
+    clients.push({ client: bot, id, type: "unofficial" });
     console.log(`loaded ${id} with unofficial`);
   } catch (err) {
     if (key) {
@@ -37,7 +30,7 @@ async function initChat(email, password, id, key) {
       console.log(`loaded ${id} with official`);
     }
 
-    console.log(`error with ${email}:\n${err}`);
+    console.log(`error with ${id}:\n${err}`);
   }
 }
 
@@ -141,7 +134,7 @@ async function initTokens() {
   for (var i = 0; i < tokens.length; i++) {
     var token = tokens[i];
     await delay(15000);
-    await initChat(token.email, token.password, token.id, token.key);
+    await initChat(token.session, token.id, token.key);
   }
 }
 
@@ -158,7 +151,7 @@ async function reloadTokens() {
         .from("accounts")
         .update({ lastUse: null, messages: 0, totalMessages: 0 })
         .eq("id", token.id);
-      await initChat(token.email, token.password, token.id, token.key);
+      await initChat(token.session, token.id, token.key);
     }
   }
 }

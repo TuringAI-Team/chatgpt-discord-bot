@@ -43,8 +43,7 @@ async function chat(message) {
     var type;
     if (token.type == "unofficial") {
       type = "gpt-3.5";
-      response = await token.client.sendMessage(message);
-      response = response.response;
+      response = await token.client.ask(message);
     } else {
       type = "gpt-3";
       response = await token.client.createCompletion({
