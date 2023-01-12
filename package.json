@@ -19,7 +19,6 @@
   "license": "Apache-2.0 license",
   "dependencies": {
     "@supabase/supabase-js": "^2.1.1",
-    "@types/puppeteer": "^7.0.4",
     "chalk": "^5.2.0",
     "chatgpt": "^3.3.13",
     "cors": "^2.8.5",
