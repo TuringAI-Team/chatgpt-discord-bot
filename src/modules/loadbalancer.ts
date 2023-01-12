@@ -57,6 +57,7 @@ async function useToken(retry) {
     var i = getRndInteger(0, t.length - 1);
     var token = t[i];
     if (token) {
+      console.log(clients.length, t.length);
       var client = clients.find((x) => x.id == token.id);
       var nr = retry + 1;
       if (!client && retry < 2) {
