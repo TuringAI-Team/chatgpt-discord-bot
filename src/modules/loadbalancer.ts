@@ -18,20 +18,8 @@ async function initChat(token, id, key) {
   try {
     let bot = new chatGPT(token);
     await bot.waitForReady();
-    var tokenvalid = await bot.validateToken(token);
-    if (tokenvalid) {
-      clients.push({ client: bot, id, type: "unofficial" });
-      console.log(`loaded ${id} with unofficial`);
-    } else {
-      console.log(`${id} session token is invalid`);
-
-      const configuration = new Configuration({
-        apiKey: key,
-      });
-      const openai = new OpenAIApi(configuration);
-      clients.push({ client: openai, id, type: "official" });
-      console.log(`loaded ${id} with official`);
-    }
+    clients.push({ client: bot, id, type: "unofficial" });
+    console.log(`loaded ${id} with unofficial`);
   } catch (err) {
     if (key) {
       const configuration = new Configuration({
@@ -54,7 +42,12 @@ async function useToken(retry) {
     };
   } else {
     var t = tokens
-      .filter((x) => x.lastUse == null && x.messages <= 1)
+      .filter(
+        (x) =>
+          x.lastUse == null &&
+          x.messages <= 1 &&
+          clients.find((y) => y.id == x.id)
+      )
       .sort((a, b) => {
         if (a.messages > b.messages) {
           return 1;
@@ -66,16 +59,19 @@ async function useToken(retry) {
           return 0;
         }
       });
+    console.log(clients.length, t.length);
     var i = getRndInteger(0, t.length - 1);
-    var token = t[i];
-    if (clients.length < t.length) {
+
+    if (clients.length < t.length || t.length <= 0 || clients.length <= 0) {
+      console.log("start error");
       return {
         error:
           "Wait 1-2 mins the bot is starting or we are reaching our capacity limits.\nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)",
       };
     }
+    var token = t[i];
+
     if (token) {
-      console.log(clients.length, t.length);
       var client = clients.find((x) => x.id == token.id);
       var nr = retry + 1;
       if (!client && retry < 2) {

@@ -20,7 +20,6 @@ export default {
 
     var usersCount = 0;
     var users = client.guilds.cache.map((guild) => guild.memberCount);
-    console.log(users);
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
 

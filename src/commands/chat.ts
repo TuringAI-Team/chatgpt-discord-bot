@@ -33,9 +33,14 @@ export default {
     if (!responseType) {
       responseType = "text";
     }
-    var privateConversation = false;
+    if (interaction.user.id != "530102778408861706") {
+      await interaction.reply({
+        ephemeral: true,
+        content: `The bot is under maintenance and due to the massive use we can't make our tests properly. The bot would be able in some hours, sorry for the inconvenience.\nJoin our discord server for more information[dsc.gg/turing](https://dsc.gg/turing)`,
+      });
+      return;
+    }
     await interaction.reply({
-      ephemeral: privateConversation,
       content: `Loading...\nNow that you are waiting you can join us in [dsc.gg/turing](https://dsc.gg/turing)`,
     });
     var result;
@@ -59,7 +64,7 @@ export default {
     } else {
       result = await chat(message);
     }
-
+    console.log(result);
     if (!result.error) {
       const { data, error } = await supabase.from("results").insert([
         {
@@ -72,18 +77,15 @@ export default {
       ]);
       var channel = interaction.channel;
       if (!interaction.channel) channel = interaction.user;
+      var response = result.response;
+      console.log(response, "re");
       if (responseType == "image") {
-        await responseWithImage(
-          interaction,
-          message,
-          result.response,
-          result.type
-        );
+        await responseWithImage(interaction, message, response, result.type);
       } else {
         await responseWithText(
           interaction,
           message,
-          result.response,
+          response,
           channel,
           result.type
         );
@@ -127,7 +129,6 @@ async function responseWithImage(interaction, prompt, result, type) {
 async function responseWithText(interaction, prompt, result, channel, type) {
   var completeResponse = `**Human:** ${prompt}\n**ChatGPT(${type}):** ${result}`;
   var charsCount = completeResponse.split("").length;
-  console.log(charsCount, charsCount / 2000);
   if (charsCount / 2000 >= 1) {
     var loops = Math.ceil(charsCount / 2000);
     for (var i = 0; i < loops; i++) {
