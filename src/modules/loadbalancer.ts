@@ -68,6 +68,12 @@ async function useToken(retry) {
       });
     var i = getRndInteger(0, t.length - 1);
     var token = t[i];
+    if (clients.length < t.length) {
+      return {
+        error:
+          "Wait 1-2 mins the bot is starting or we are reaching our capacity limits.\nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)",
+      };
+    }
     if (token) {
       console.log(clients.length, t.length);
       var client = clients.find((x) => x.id == token.id);
