@@ -18,8 +18,20 @@ async function initChat(token, id, key) {
   try {
     let bot = new chatGPT(token);
     await bot.waitForReady();
-    clients.push({ client: bot, id, type: "unofficial" });
-    console.log(`loaded ${id} with unofficial`);
+    var tokenvalid = await bot.validateToken(token);
+    if (tokenvalid) {
+      clients.push({ client: bot, id, type: "unofficial" });
+      console.log(`loaded ${id} with unofficial`);
+    } else {
+      console.log(`${id} session token is invalid`);
+
+      const configuration = new Configuration({
+        apiKey: key,
+      });
+      const openai = new OpenAIApi(configuration);
+      clients.push({ client: openai, id, type: "official" });
+      console.log(`loaded ${id} with official`);
+    }
   } catch (err) {
     if (key) {
       const configuration = new Configuration({
