@@ -72,7 +72,7 @@ export default {
           provider: "chatgpt",
           version: result.type,
           prompt: message.toLowerCase(),
-          result: { text: result },
+          result: { text: response },
           guildId: interaction.guildId,
         },
       ]);
