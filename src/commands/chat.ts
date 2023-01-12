@@ -21,7 +21,7 @@ export default {
       option
         .setName("response")
         .setDescription("The type of resoibse message that you want")
-        .setRequired(true)
+        .setRequired(false)
         .addChoices(
           { name: "image", value: "image" },
           { name: "text", value: "text" }
@@ -30,7 +30,9 @@ export default {
   async execute(interaction, client) {
     var message = interaction.options.getString("message");
     var responseType = interaction.options.getString("response");
-
+    if (!responseType) {
+      responseType = "text";
+    }
     var privateConversation = false;
     await interaction.reply({
       ephemeral: privateConversation,
@@ -45,7 +47,11 @@ export default {
       .eq("prompt", message.toLowerCase())
       .eq("provider", "chatgpt");
     if (results[0] && results[0].result.text) {
-      result = results[0].result.text;
+      var type = "gpt-3.5";
+      if (results[0].version) {
+        type = results[0].version;
+      }
+      result = { resonse: results[0].result.text, type: type };
       const { data, error } = await supabase
         .from("results")
         .update({ uses: results[0].uses + 1 })
