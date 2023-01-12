@@ -51,7 +51,7 @@ export default {
       if (results[0].version) {
         type = results[0].version;
       }
-      result = { resonse: results[0].result.text, type: type };
+      result = { response: results[0].result.text, type: type };
       const { data, error } = await supabase
         .from("results")
         .update({ uses: results[0].uses + 1 })
