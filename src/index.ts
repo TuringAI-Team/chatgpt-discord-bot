@@ -97,7 +97,7 @@ client.once(Events.ClientReady, async (c) => {
     .eq("abled", true);
   client.user.setPresence({
     activities: [
-      { name: `v0.1.5 | dsc.gg/turing`, type: ActivityType.Playing },
+      { name: `v0.1.6 | dsc.gg/turing`, type: ActivityType.Playing },
     ],
     status: "online",
   });
