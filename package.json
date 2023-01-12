@@ -12,7 +12,7 @@
     "docker:deploy": "docker build -t chatgpt-bot . && docker-compose up -d",
     "docker:reload": "docker-compose stop && docker-compose up -d",
     "docker:update": "npm run git && docker build -t chatgpt-bot . && npm run docker:reload",
-    "docker:logs": "docker-compose logs -f --tail=0"
+    "docker:logs": "docker-compose logs -f --tail=10"
   },
   "keywords": [],
   "author": "MrlolDev",
