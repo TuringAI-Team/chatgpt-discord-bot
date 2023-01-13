@@ -65,6 +65,7 @@ async function useToken(retry) {
       };
     }
     if (t.length <= 0) {
+      console.log(t.length);
       return {
         error: `We are reaching our capacity limits right now please wait 1-2 minutes. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`,
       };
