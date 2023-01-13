@@ -143,7 +143,6 @@ async function initTokens() {
   var tokens = await getTokens();
   for (var i = 0; i < tokens.length; i++) {
     var token = tokens[i];
-    await delay(15000);
     await initChat(token.session, token.id, token.key);
   }
 }
