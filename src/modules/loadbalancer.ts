@@ -76,6 +76,7 @@ async function useToken(retry) {
       if (!client && retry < 2) {
         return useToken(nr);
       }
+      console.log(token.id);
       return client;
     } else {
       return {
@@ -102,7 +103,7 @@ async function addMessage(id) {
       })
       .eq("id", id);
 
-    if (tokenObj.totalMessages >= 25) {
+    if (tokenObj.totalMessages >= 30) {
       const { data, error } = await supabase
         .from("accounts")
         .update({
@@ -111,8 +112,7 @@ async function addMessage(id) {
           lastUse: Date.now(),
         })
         .eq("id", id);
-      console.log(error);
-      var index = clients.findIndex((x) => x.id == tokenObj.id);
+      var index = clients.findIndex((x) => x.id == id);
       clients.splice(index, 1); // 2nd parameter means remove one item only
     } else {
       const { data, error } = await supabase
