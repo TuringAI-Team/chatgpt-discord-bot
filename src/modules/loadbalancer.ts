@@ -16,6 +16,7 @@ async function getTokens() {
 }
 async function initChat(token, id, key) {
   try {
+    console.log(id);
     let bot = new chatGPT(token);
     await bot.waitForReady();
     clients.push({ client: bot, id, type: "unofficial" });
