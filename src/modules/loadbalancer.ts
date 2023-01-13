@@ -57,10 +57,15 @@ async function useToken(retry) {
     console.log(clients.length, t.length);
     var i = getRndInteger(0, t.length - 1);
 
-    if (clients.length < t.length || t.length <= 0 || clients.length <= 0) {
+    if (clients.length <= 2) {
       return {
         error:
           "Wait 1-2 mins the bot is starting or we are reaching our capacity limits.\nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)",
+      };
+    }
+    if (t.length <= 0) {
+      return {
+        error: `We are reaching our capacity limits right now please wait 1-2 minutes. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`,
       };
     }
     var token = t[i];
