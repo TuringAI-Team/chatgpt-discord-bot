@@ -10,22 +10,6 @@ var abled = false;
 async function getStatus() {
   return abled;
 }
-async function checkId(client) {
-  try {
-    if (client != "loading") {
-      var status = await client.status();
-      console.log(status);
-      if (status == "ready") {
-        abled = true;
-      }
-    }
-
-    return abled;
-  } catch (err) {
-    console.error(err);
-    return false;
-  }
-}
 
 async function chat(message) {
   var token = await useToken(0);
@@ -83,7 +67,6 @@ async function createConversation(initMessage) {
   await addMessage(token.id);
   try {
     var response = await token.client.sendMessage(initMessage);
-    console.log(response);
     await removeMessage(token.id);
     conversationId = response.conversationId;
     return {

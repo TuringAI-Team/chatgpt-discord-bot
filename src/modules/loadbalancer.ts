@@ -71,10 +71,6 @@ async function useToken(retry) {
       if (!client && retry < 2) {
         return useToken(nr);
       }
-      if (client) {
-        console.log(token.id, client.type);
-      }
-      console.log("client found");
       return client;
     } else {
       return {
@@ -154,7 +150,6 @@ async function reloadTokens() {
     var token = t[i];
     var now = Date.now();
     var diff = now - token.lastUse;
-    console.log(diff);
     if (diff >= ms("20min")) {
       const { data, error } = await supabase
         .from("accounts")

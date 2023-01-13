@@ -57,7 +57,6 @@ export default {
     } else {
       result = await chat(message);
     }
-    console.log(result);
     if (!result.error) {
       var response = result.text;
       if (result.type == "gpt-3.5") {

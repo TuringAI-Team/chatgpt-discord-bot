@@ -230,7 +230,7 @@ export async function renderResponse({
 </div>
 `;
 
-  const output = outputPath || temporaryFile({ extension: "jpg" });
+  const output = outputPath || temporaryFile({ extension: "png" });
   const html = await renderText({
     text: input,
     output,
