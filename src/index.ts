@@ -81,6 +81,7 @@ client.once(Events.ClientReady, async (c) => {
     ],
     status: "online",
   });
+
   await reloadTokens();
   setInterval(async () => {
     await reloadTokens();
