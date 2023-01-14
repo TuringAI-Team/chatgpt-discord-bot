@@ -9,6 +9,7 @@ import {
 } from "discord.js";
 import fs from "node:fs";
 import path from "node:path";
+import { getActiveTokens } from "../modules/loadbalancer.js";
 import { fileURLToPath } from "url";
 
 export default {
@@ -22,7 +23,7 @@ export default {
     var users = client.guilds.cache.map((guild) => guild.memberCount);
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
-
+    var tokens = await getActiveTokens();
     for (var i = 0; i < users.length; i++) {
       usersCount += users[i];
     }
@@ -63,6 +64,12 @@ export default {
           value: `${(process.memoryUsage().heapUsed / 1024 / 1024).toFixed(
             2
           )} MB`,
+          inline: true,
+        },
+
+        {
+          name: "ChatGPT Tokens",
+          value: `${tokens}`,
           inline: true,
         },
         {

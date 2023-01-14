@@ -22,7 +22,6 @@ async function chat(message) {
   if (token.error) {
     return { error: token.error };
   }
-  await addMessage(token.id);
   try {
     var response;
     var type;

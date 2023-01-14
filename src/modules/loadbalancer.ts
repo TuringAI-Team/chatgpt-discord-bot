@@ -35,6 +35,24 @@ async function initChat(token, id, key) {
   }
 }
 
+export async function getActiveTokens() {
+  var tokens = await getTokens();
+  var t = tokens
+    .filter((x) => x.lastUse == null && x.messages <= 1)
+    .sort((a, b) => {
+      if (a.messages > b.messages) {
+        return 1;
+      }
+      if (a.messages < b.messages) {
+        return -1;
+      }
+      if (a.messages == b.messages) {
+        return 0;
+      }
+    });
+  return `${t.length}/${clients.length}`;
+}
+
 async function useToken(retry) {
   var tokens = await getTokens();
   if (!tokens || tokens.length <= 0) {
@@ -77,6 +95,9 @@ async function useToken(retry) {
       var nr = retry + 1;
       if (!client && retry < 2) {
         return useToken(nr);
+      }
+      if (client) {
+        await addMessage(token.id);
       }
       console.log(token.id);
       return client;
