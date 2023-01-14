@@ -117,7 +117,7 @@ async function removeDuplactes() {
 client.once(Events.ClientReady, async (c) => {
   client.user.setPresence({
     activities: [
-      { name: `Starting bot... | dsc.gg/turing`, type: ActivityType.Playing },
+      { name: `v0.1.6 | dsc.gg/turing`, type: ActivityType.Playing },
     ],
     status: "online",
   });
@@ -135,12 +135,6 @@ client.once(Events.ClientReady, async (c) => {
     .from("conversations")
     .delete()
     .eq("abled", true);
-  client.user.setPresence({
-    activities: [
-      { name: `v0.1.6 | dsc.gg/turing`, type: ActivityType.Playing },
-    ],
-    status: "online",
-  });
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {

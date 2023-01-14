@@ -165,7 +165,6 @@ async function removeMessage(id) {
 async function initTokens() {
   var tokens = await getTokens();
   var max = tokens.length;
-  if (max > 15) max = 15;
   for (var i = 0; i < max; i++) {
     var token = tokens[i];
     await delay(30000);
