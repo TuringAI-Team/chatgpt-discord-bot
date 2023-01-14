@@ -50,7 +50,7 @@ export async function getActiveTokens() {
         return 0;
       }
     });
-  return `${t.length}/${clients.length}`;
+  return `${t.length}/${tokens.length}`;
 }
 
 async function useToken(retry) {
