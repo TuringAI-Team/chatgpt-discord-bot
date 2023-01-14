@@ -15,7 +15,7 @@ import {
 } from "discord.js";
 import "dotenv/config";
 import supabase from "./modules/supabase.js";
-import { initTokens, reloadTokens } from "./modules/loadbalancer.js";
+import { initTokens, reloadTokens, resetto0 } from "./modules/loadbalancer.js";
 
 // Create a new client instance
 const client: any = new Client({
@@ -115,6 +115,7 @@ async function removeDuplactes() {
 }
 
 client.once(Events.ClientReady, async (c) => {
+  await resetto0();
   client.user.setPresence({
     activities: [
       { name: `v0.1.6 | dsc.gg/turing`, type: ActivityType.Playing },
