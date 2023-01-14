@@ -50,7 +50,7 @@ export async function getActiveTokens() {
         return 0;
       }
     });
-  return `${t.length}/${tokens.length}`;
+  return `${clients.length}/${tokens.length}`;
 }
 
 async function useToken(retry) {
@@ -118,19 +118,11 @@ async function addMessage(id) {
     .eq("id", id);
   var tokenObj = accounts[0];
   if (tokenObj) {
-    const { data, error } = await supabase
-      .from("accounts")
-      .update({
-        messages: tokenObj.messages + 1,
-        totalMessages: tokenObj.totalMessages + 1,
-      })
-      .eq("id", id);
-
     if (tokenObj.totalMessages >= 30) {
       const { data, error } = await supabase
         .from("accounts")
         .update({
-          messages: tokenObj.messages + 1,
+          messages: 1,
           totalMessages: tokenObj.totalMessages + 1,
           lastUse: Date.now(),
         })
@@ -141,7 +133,7 @@ async function addMessage(id) {
       const { data, error } = await supabase
         .from("accounts")
         .update({
-          messages: tokenObj.messages + 1,
+          messages: 1,
           totalMessages: tokenObj.totalMessages + 1,
         })
         .eq("id", id);
