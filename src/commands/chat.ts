@@ -26,7 +26,7 @@ export default {
         )
         .setRequired(true)
         .addChoices(
-          { name: "Conversation", value: "true" },
+          { name: "Conversation(Alpha)", value: "true" },
           { name: "Isolated message", value: "false" }
         )
     )
@@ -54,7 +54,7 @@ export default {
     if (conversationMode) {
     }
     await interaction.reply({
-      content: `Loading...\nNow that you are waiting you can join us in [dsc.gg/turing](https://dsc.gg/turing)`,
+      content: `Loading(If you are using conversation mode report the issues with the feedback command)...\nNow that you are waiting you can join us in [dsc.gg/turing](https://dsc.gg/turing)`,
     });
     var result;
     if (conversationMode == false) {
@@ -108,18 +108,21 @@ export default {
           );
           return;
         }
-        conversation.id = uuidv4();
-        conversation.account = token.id;
+        var id = uuidv4();
 
         const { data, error } = await supabase.from("conversations").insert([
           {
-            id: conversation.id,
+            id: id,
             account: token.id,
             lastMessage: Date.now(),
             userId: interaction.user.id,
           },
         ]);
-        console.log(data, error);
+
+        if (!error) {
+          conversation.id = id;
+          conversation.account = token.id;
+        }
       }
       console.log(conversation);
       if (!conversation.id) {
