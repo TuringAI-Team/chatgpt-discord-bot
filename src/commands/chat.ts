@@ -86,7 +86,7 @@ export default {
         // Filters
         .eq("userId", interaction.user.id);
       var conversation: any = {};
-      if (conversations) conversation = conversations[0];
+      if (conversations && conversations[0]) conversation = conversations[0];
       if (!conversation || conversations.length < 0) {
         var ableTokens = await getAbleTokens();
         if (ableTokens <= 11) {
