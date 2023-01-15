@@ -171,25 +171,17 @@ async function addMessage(id) {
 }
 
 export async function rateLimitAcc(id) {
-  let { data: accounts, error } = await supabase
+  const { data, error } = await supabase
     .from("accounts")
-    .select("*")
+    .update({
+      messages: 0,
+      lastUse: Date.now(),
+    })
     .eq("id", id);
-  var tokenObj = accounts[0];
-  if (tokenObj) {
-    const { data, error } = await supabase
-      .from("accounts")
-      .update({
-        messages: 0,
-        totalMessages: tokenObj.totalMessages + 1,
-        lastUse: Date.now(),
-      })
-      .eq("id", id);
-    var client = clients.find((x) => x.id == id);
-    await client.client.disconnect();
-    var index = clients.findIndex((x) => x.id == id);
-    clients.splice(index, 1); // 2nd parameter means remove one item only
-  }
+  var client = clients.find((x) => x.id == id);
+  await client.client.disconnect();
+  var index = clients.findIndex((x) => x.id == id);
+  clients.splice(index, 1); // 2nd parameter means remove one item only
 }
 
 async function removeMessage(id) {
