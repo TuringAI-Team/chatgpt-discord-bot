@@ -105,6 +105,7 @@ export default {
             { id: conversation.id, account: token.id, lastMessage: Date.now() },
           ]);
       }
+      console.log(conversation);
       result = await conversation(
         message,
         conversation.id,
