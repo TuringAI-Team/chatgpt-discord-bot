@@ -54,7 +54,7 @@ export default {
     if (conversationMode) {
     }
     await interaction.reply({
-      content: `Loading(If you are using conversation mode report the issues with the feedback command)...\nNow that you are waiting you can join us in [dsc.gg/turing](https://dsc.gg/turing)`,
+      content: `Loading...\nNow that you are waiting you can join us in [dsc.gg/turing](https://dsc.gg/turing)`,
     });
     var result;
     if (conversationMode == false) {
