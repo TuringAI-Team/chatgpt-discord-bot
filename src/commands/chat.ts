@@ -3,10 +3,11 @@ import {
   EmbedBuilder,
   AttachmentBuilder,
 } from "discord.js";
-import { chat } from "../modules/gpt-api.js";
+import { chat, conversation } from "../modules/gpt-api.js";
 import supabase from "../modules/supabase.js";
 import { renderResponse } from "../modules/render-response.js";
-
+import { randomUUID } from "node:crypto";
+import { useToken, getAbleTokens } from "../modules/loadbalancer.js";
 export default {
   data: new SlashCommandBuilder()
     .setName("chat")
@@ -19,6 +20,18 @@ export default {
     )
     .addStringOption((option) =>
       option
+        .setName("conversation")
+        .setDescription(
+          "Select if you want to preserver context from the previous messages"
+        )
+        .setRequired(true)
+        .addChoices(
+          { name: "Conversation", value: "true" },
+          { name: "Isolated message", value: "false" }
+        )
+    )
+    .addStringOption((option) =>
+      option
         .setName("response")
         .setDescription("The type of resoibse message that you want")
         .setRequired(false)
@@ -26,49 +39,83 @@ export default {
           { name: "image", value: "image" },
           { name: "text", value: "text" }
         )
-    )
-    .addStringOption((option) =>
-      option
-        .setName("conversation")
-        .setDescription(
-          "Select if you want to preserver context from the previous messages"
-        )
-        .setRequired(false)
-        .addChoices(
-          { name: "Conversation", value: "true" },
-          { name: "Isolated message", value: "false" }
-        )
     ),
   async execute(interaction, client) {
     var message = interaction.options.getString("message");
     var responseType = interaction.options.getString("response");
+    var conversationMode = interaction.options.getString("conversation");
+
     if (!responseType) {
       responseType = "text";
+    }
+    if (conversationMode == "true") conversationMode = true;
+    if (conversationMode == "false") conversationMode = false;
+
+    if (conversationMode) {
     }
     await interaction.reply({
       content: `Loading...\nNow that you are waiting you can join us in [dsc.gg/turing](https://dsc.gg/turing)`,
     });
     var result;
-    let { data: results, error } = await supabase
-      .from("results")
-      .select("*")
-
-      // Filters
-      .eq("prompt", message.toLowerCase())
-      .eq("provider", "chatgpt");
-    if (results[0] && results[0].result.text) {
-      var type = "gpt-3.5";
-      if (results[0].version) {
-        type = results[0].version;
-      }
-      result = { text: results[0].result.text, type: type };
-      const { data, error } = await supabase
+    if (conversationMode == false) {
+      let { data: results, error } = await supabase
         .from("results")
-        .update({ uses: results[0].uses + 1 })
-        .eq("id", results[0].id);
+        .select("*")
+
+        // Filters
+        .eq("prompt", message.toLowerCase())
+        .eq("provider", "chatgpt");
+      if (results[0] && results[0].result.text) {
+        var type = "gpt-3.5";
+        if (results[0].version) {
+          type = results[0].version;
+        }
+        result = { text: results[0].result.text, type: type };
+        const { data, error } = await supabase
+          .from("results")
+          .update({ uses: results[0].uses + 1 })
+          .eq("id", results[0].id);
+      } else {
+        result = await chat(message);
+      }
     } else {
-      result = await chat(message);
+      let { data: conversations, error } = await supabase
+        .from("conversations")
+        .select("*")
+
+        // Filters
+        .eq("userId", interaction.user.id);
+      var conversation;
+      if (conversations) conversation = conversations[0];
+      if (!conversation) {
+        var ableTokens = await getAbleTokens();
+        if (ableTokens <= 11) {
+          await interaction.editReply(
+            `Conversations are at their capacity limit please try using isolated messages mode or wait until other users finish their conversations.`
+          );
+          return;
+        }
+        var token = await useToken(0);
+        conversation.id = randomUUID();
+        conversation.account = token.id;
+
+        const { data, error } = await supabase
+          .from("conversations")
+          .insert([
+            { id: conversation.id, account: token.id, lastMessage: Date.now() },
+          ]);
+      }
+      result = await conversation(
+        message,
+        conversation.id,
+        conversation.account
+      );
+      const { data } = await supabase
+        .from("conversations")
+        .update({ lastMessage: Date.now() })
+        .eq("userId", interaction.user.id);
     }
+
     if (!result) {
       if (responseType == "image") {
         await responseWithImage(

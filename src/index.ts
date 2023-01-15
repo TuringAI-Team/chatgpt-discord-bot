@@ -71,49 +71,6 @@ for (const file of commandFiles) {
   }
 })();
 
-// When the client is ready, run this code (only once)
-// We use 'c' for the event parameter to keep it separate from the already defined 'client'
-async function removeDuplactes() {
-  const { data, error } = await supabase
-    .from("results")
-    .select("*")
-    .eq("provider", "chatgpt")
-    .range(0, 1000);
-  for (var i = 0; i < data.length; i++) {
-    var { data: existMore } = await supabase
-      .from("results")
-      .select("*")
-      .eq("provider", "chatgpt")
-      .eq("prompt", data[i].prompt);
-    if (existMore.length > 2) {
-      existMore = existMore.sort(function (a: any, b: any) {
-        var aD: any = new Date(a.created_at);
-        var bD: any = new Date(b.created_at);
-
-        return aD - bD;
-      });
-      var first = existMore[0];
-      var totalUses = 0;
-      for (var j = 0; j < existMore.length; j++) {
-        totalUses = totalUses + parseInt(existMore[j].uses);
-        if (existMore[j].id != first.id) {
-          const { data, error } = await supabase
-            .from("results")
-            .delete()
-            .eq("id", existMore[j].id);
-          console.log(`delete ${existMore[j].id}`);
-        }
-      }
-      const { data, error } = await supabase
-        .from("results")
-        .update({ uses: totalUses })
-        .eq("id", first.id);
-      console.log(totalUses);
-    }
-  }
-  console.log("completed");
-}
-
 client.once(Events.ClientReady, async (c) => {
   await resetto0();
   client.user.setPresence({

@@ -5,6 +5,7 @@ import chalk from "chalk";
 import {
   useToken,
   addMessage,
+  getToken,
   removeMessage,
   rateLimitAcc,
 } from "./loadbalancer.js";
@@ -61,39 +62,48 @@ async function chat(message) {
     };
   }
 }
-async function createConversation(initMessage) {
-  var conversationId;
-  var token = await useToken(0);
+export async function conversation(message, conversationId, accId) {
+  var token = await getToken(accId);
+
   if (!token) {
     return {
-      error: `Wait 1-2 mins the bot is reloading.\nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`,
+      error: `We are reaching our capacity limits right now please wait 1-2 minutes. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`,
     };
   }
   if (token.error) {
-    return token.error;
+    return { error: token.error };
   }
-  await addMessage(token.id);
   try {
-    var response = await token.client.sendMessage(initMessage);
-    await removeMessage(token.id);
-    conversationId = response.conversationId;
-    return {
-      response: response.response,
-      conversationId: conversationId,
-      send: async (msg) => {
-        var response = await token.client.sendMessage(msg, {
-          conversationId: conversationId,
-        });
-        return response.response;
-      },
-    };
+    var response;
+    var type;
+    if (token.type == "unofficial") {
+      type = "gpt-3.5";
+      response = await token.client.ask(message, conversationId);
+    } else {
+      type = "gpt-3";
+      response = await token.client.createCompletion({
+        model: "text-davinci-003",
+        prompt: `The following is a conversation with an AI assistant. The assistant is helpful, creative, clever, and very friendly.\n\nHuman: Hello, who are you?\nAI: I am an AI created by OpenAI. How can I help you today?\nHuman: ${message}\nAI:`,
+        temperature: 0.9,
+        max_tokens: 150,
+        top_p: 1,
+        frequency_penalty: 0.0,
+        presence_penalty: 0.6,
+        stop: [" Human:", " AI:"],
+      });
+      response = response.data.choices[0].text;
+    }
+    return { text: response, type: type };
   } catch (err) {
     console.log(err);
-    await removeMessage(token.id);
+
+    if (err == "Too many requests in 1 hour. Try again later.") {
+      await rateLimitAcc(token.id);
+    }
     return {
       error: `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)`,
     };
   }
 }
 
-export { chat, getStatus, createConversation };
+export { chat, getStatus };

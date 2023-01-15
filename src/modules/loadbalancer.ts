@@ -53,6 +53,46 @@ export async function getActiveTokens() {
   return `${clients.length}/${tokens.length}`;
 }
 
+export async function getAbleTokens() {
+  var tokens = await getTokens();
+  var t = tokens
+    .filter((x) => x.lastUse == null && x.messages <= 1)
+    .sort((a, b) => {
+      if (a.messages > b.messages) {
+        return 1;
+      }
+      if (a.messages < b.messages) {
+        return -1;
+      }
+      if (a.messages == b.messages) {
+        return 0;
+      }
+    });
+  return tokens.length;
+}
+
+export async function reloadConversations() {
+  let { data: conversations, error } = await supabase
+    .from("conversations")
+    .select("*");
+  for (var i = 0; i < conversations.length; i++) {
+    var conversation = conversations[i];
+    var diff = Date.now() - conversation.lastMessage;
+    if (diff >= ms("5m")) {
+      const { data, error } = await supabase
+        .from("conversations")
+        .delete()
+        .eq("id", conversation.id);
+      await removeMessage(conversation.account);
+    }
+  }
+}
+
+export async function getToken(id) {
+  var client = clients.find((x) => x.id == id);
+  return client;
+}
+
 async function useToken(retry) {
   var tokens = await getTokens();
   if (!tokens || tokens.length <= 0) {
