@@ -53,9 +53,8 @@ export default {
 
     if (conversationMode) {
     }
-    await interaction.reply({
-      content: `Loading...\nNow that you are waiting you can join us in [dsc.gg/turing](https://dsc.gg/turing)`,
-    });
+    await interaction.deferReply();
+
     var result;
     if (conversationMode == false) {
       let { data: results, error } = await supabase
