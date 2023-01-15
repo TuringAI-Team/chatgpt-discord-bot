@@ -57,6 +57,25 @@ export default {
     } else {
       result = await chat(message);
     }
+    if (!result) {
+      if (responseType == "image") {
+        await responseWithImage(
+          interaction,
+          message,
+          `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)`,
+          "error"
+        );
+      } else {
+        await responseWithText(
+          interaction,
+          message,
+          `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)`,
+          channel,
+          "error"
+        );
+      }
+      return;
+    }
     if (!result.error) {
       var response = result.text;
       if (result.type == "gpt-3.5") {

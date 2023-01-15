@@ -2,7 +2,12 @@
 import * as dotenv from "dotenv"; // see https://github.com/motdotla/dotenv#how-do-i-use-dotenv-with-import
 dotenv.config();
 import chalk from "chalk";
-import { useToken, addMessage, removeMessage } from "./loadbalancer.js";
+import {
+  useToken,
+  addMessage,
+  removeMessage,
+  rateLimitAcc,
+} from "./loadbalancer.js";
 import { Configuration, OpenAIApi } from "openai";
 
 var abled = false;
@@ -46,7 +51,11 @@ async function chat(message) {
     return { text: response, type: type };
   } catch (err) {
     console.log(err);
+
     await removeMessage(token.id);
+    if (err == "Too many requests in 1 hour. Try again later.") {
+      await rateLimitAcc(token.id);
+    }
     return {
       error: `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)`,
     };
