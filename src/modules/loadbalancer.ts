@@ -78,12 +78,13 @@ export async function reloadConversations() {
   for (var i = 0; i < conversations.length; i++) {
     var conversation = conversations[i];
     var diff = Date.now() - conversation.lastMessage;
+    console.log(diff);
     if (diff >= ms("5m")) {
+      await removeMessage(conversation.account);
       const { data, error } = await supabase
         .from("conversations")
         .delete()
         .eq("id", conversation.id);
-      await removeMessage(conversation.account);
     }
   }
 }

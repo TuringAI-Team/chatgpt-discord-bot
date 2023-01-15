@@ -87,8 +87,10 @@ client.once(Events.ClientReady, async (c) => {
 
   await reloadTokens();
   setInterval(async () => {
-    await reloadTokens();
     await reloadConversations();
+  }, ms("1m"));
+  setInterval(async () => {
+    await reloadTokens();
   }, ms("10m"));
   const { data, error } = await supabase.from("conversations").delete();
   await initTokens();
