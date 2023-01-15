@@ -66,15 +66,9 @@ export default {
           )} MB`,
           inline: true,
         },
-
-        {
-          name: "ChatGPT Tokens",
-          value: `${tokens}`,
-          inline: true,
-        },
         {
           name: "Version",
-          value: `v0.1.6`,
+          value: `v0.1.7`,
           inline: true,
         },
       ])

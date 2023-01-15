@@ -20,7 +20,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.1.1",
     "chalk": "^5.2.0",
-    "chatgpt-io": "^1.0.6-alpha",
+    "chatgpt-io": "^1.0.7-alpha",
     "delay": "^5.0.0",
     "discord.js": "^14.7.1",
     "discord.js-collector-utils": "1.9.1",
