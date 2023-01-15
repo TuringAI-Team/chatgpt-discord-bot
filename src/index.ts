@@ -90,12 +90,11 @@ client.once(Events.ClientReady, async (c) => {
     await reloadTokens();
     await reloadConversations();
   }, ms("10m"));
+  const { data, error } = await supabase.from("conversations").delete();
   await initTokens();
   console.log(
     chalk.white(`Ready! Logged in as `) + chalk.blue.bold(c.user.tag)
   );
-
-  const { data, error } = await supabase.from("conversations").delete();
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
