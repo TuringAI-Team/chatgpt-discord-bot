@@ -6,7 +6,7 @@ import {
 import { chat, conversationFn } from "../modules/gpt-api.js";
 import supabase from "../modules/supabase.js";
 import { renderResponse } from "../modules/render-response.js";
-import { randomUUID } from "node:crypto";
+import { v4 as uuidv4 } from "uuid";
 import { useToken, getAbleTokens } from "../modules/loadbalancer.js";
 export default {
   data: new SlashCommandBuilder()
@@ -87,7 +87,7 @@ export default {
         .eq("userId", interaction.user.id);
       var conversation;
       if (conversations) conversation = conversations[0];
-      if (!conversation) {
+      if (!conversation || conversations.length < 0) {
         var ableTokens = await getAbleTokens();
         if (ableTokens <= 11) {
           await interaction.editReply(
@@ -108,16 +108,28 @@ export default {
           );
           return;
         }
-        conversation.id = randomUUID();
+        conversation.id = uuidv4();
         conversation.account = token.id;
 
         const { data, error } = await supabase
           .from("conversations")
           .insert([
-            { id: conversation.id, account: token.id, lastMessage: Date.now() },
+            {
+              id: conversation.id,
+              account: token.id,
+              lastMessage: Date.now(),
+              userId: interaction.user.id,
+            },
           ]);
+        console.log(data, error);
       }
       console.log(conversation);
+      if (!conversation.id) {
+        await interaction.editReply(
+          `Conversations are at their capacity limit please try using isolated messages mode or wait until other users finish their conversations.`
+        );
+        return;
+      }
       result = await conversationFn(
         message,
         conversation.id,

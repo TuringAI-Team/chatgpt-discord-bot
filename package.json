@@ -32,7 +32,8 @@
     "puppeteer": "^19.5.0",
     "puppeteer-render-text": "^2.1.3",
     "random": "^4.1.0",
-    "tempy": "^3.0.0"
+    "tempy": "^3.0.0",
+    "uuid": "^9.0.0"
   },
   "devDependencies": {
     "concurrently": "^7.6.0",
