@@ -85,7 +85,7 @@ export default {
 
         // Filters
         .eq("userId", interaction.user.id);
-      var conversation;
+      var conversation: any = {};
       if (conversations) conversation = conversations[0];
       if (!conversation || conversations.length < 0) {
         var ableTokens = await getAbleTokens();
@@ -111,16 +111,14 @@ export default {
         conversation.id = uuidv4();
         conversation.account = token.id;
 
-        const { data, error } = await supabase
-          .from("conversations")
-          .insert([
-            {
-              id: conversation.id,
-              account: token.id,
-              lastMessage: Date.now(),
-              userId: interaction.user.id,
-            },
-          ]);
+        const { data, error } = await supabase.from("conversations").insert([
+          {
+            id: conversation.id,
+            account: token.id,
+            lastMessage: Date.now(),
+            userId: interaction.user.id,
+          },
+        ]);
         console.log(data, error);
       }
       console.log(conversation);
