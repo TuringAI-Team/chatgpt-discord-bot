@@ -15,7 +15,12 @@ import {
 } from "discord.js";
 import "dotenv/config";
 import supabase from "./modules/supabase.js";
-import { initTokens, reloadTokens, resetto0 } from "./modules/loadbalancer.js";
+import {
+  initTokens,
+  reloadTokens,
+  resetto0,
+  reloadConversations,
+} from "./modules/loadbalancer.js";
 
 // Create a new client instance
 const client: any = new Client({
@@ -83,16 +88,14 @@ client.once(Events.ClientReady, async (c) => {
   await reloadTokens();
   setInterval(async () => {
     await reloadTokens();
+    await reloadConversations();
   }, ms("10m"));
   await initTokens();
   console.log(
     chalk.white(`Ready! Logged in as `) + chalk.blue.bold(c.user.tag)
   );
 
-  const { data, error } = await supabase
-    .from("conversations")
-    .delete()
-    .eq("abled", true);
+  const { data, error } = await supabase.from("conversations").delete();
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
