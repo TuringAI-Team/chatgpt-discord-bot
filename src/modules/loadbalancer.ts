@@ -3,12 +3,11 @@ import supabase from "./supabase.js";
 import delay from "delay";
 var clients = [];
 import { Configuration, OpenAIApi } from "openai";
-import chatGPT from "chatgpt-io";
+import ChatGPT, { LogLevel } from "chatgpt-io";
 
 async function getTokens() {
   let { data: accounts, error } = await supabase.from("accounts").select("*");
   if (error) {
-    console.log(error);
     return null;
   }
 
@@ -16,8 +15,12 @@ async function getTokens() {
 }
 async function initChat(token, id, key) {
   try {
-    console.log(id);
-    let bot = new chatGPT(token);
+    let bot = new ChatGPT(token, {
+      reconnection: false,
+      forceNew: false,
+      logLevel: LogLevel.Info,
+      bypassNode: "https://gpt.pawan.krd",
+    });
     await bot.waitForReady();
     clients.push({ client: bot, id, type: "unofficial" });
     console.log(`loaded ${id} with unofficial`);
@@ -64,7 +67,6 @@ export async function reloadConversations() {
   for (var i = 0; i < conversations.length; i++) {
     var conversation = conversations[i];
     var diff = Date.now() - conversation.lastMessage;
-    console.log(diff);
     if (diff >= ms("5m")) {
       await removeMessage(conversation.account);
       const { data, error } = await supabase
@@ -77,7 +79,6 @@ export async function reloadConversations() {
 
 export async function getToken(id) {
   var client = clients.find((x) => x.id == id);
-  console.log(id);
   return client;
 }
 
@@ -111,7 +112,6 @@ async function useToken(retry) {
       };
     }
     if (t.length <= 0) {
-      console.log(t.length);
       return {
         error: `We are reaching our capacity limits right now please wait 1-2 minutes. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`,
       };
@@ -127,7 +127,6 @@ async function useToken(retry) {
       if (client) {
         await addMessage(token.id);
       }
-      console.log(token.id);
       return client;
     } else {
       return {
@@ -146,7 +145,7 @@ async function addMessage(id) {
     .eq("id", id);
   var tokenObj = accounts[0];
   if (tokenObj) {
-    if (tokenObj.totalMessages >= 30) {
+    if (tokenObj.totalMessages >= 50) {
       const { data, error } = await supabase
         .from("accounts")
         .update({
@@ -155,6 +154,8 @@ async function addMessage(id) {
           lastUse: Date.now(),
         })
         .eq("id", id);
+      var client = clients.find((x) => x.id == id);
+      await client.client.disconnect();
       var index = clients.findIndex((x) => x.id == id);
       clients.splice(index, 1); // 2nd parameter means remove one item only
     } else {
@@ -184,6 +185,8 @@ export async function rateLimitAcc(id) {
         lastUse: Date.now(),
       })
       .eq("id", id);
+    var client = clients.find((x) => x.id == id);
+    await client.client.disconnect();
     var index = clients.findIndex((x) => x.id == id);
     clients.splice(index, 1); // 2nd parameter means remove one item only
   }

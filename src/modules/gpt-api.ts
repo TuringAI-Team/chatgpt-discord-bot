@@ -51,7 +51,7 @@ async function chat(message) {
     await removeMessage(token.id);
     return { text: response, type: type };
   } catch (err) {
-    console.log(err);
+    console.log(err, token.id);
 
     await removeMessage(token.id);
     if (err == "Too many requests in 1 hour. Try again later.") {
@@ -95,7 +95,7 @@ export async function conversationFn(message, conversationId, accId) {
     }
     return { text: response, type: type };
   } catch (err) {
-    console.log(err);
+    console.log(err, token.id);
 
     if (err == "Too many requests in 1 hour. Try again later.") {
       await rateLimitAcc(token.id);
