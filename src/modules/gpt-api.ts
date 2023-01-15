@@ -97,10 +97,7 @@ export async function conversationFn(message, conversationId, accId) {
     return { text: response, type: type };
   } catch (err) {
     console.log(err, token.id);
-
-    if (err == "Too many requests in 1 hour. Try again later.") {
-      await rateLimitAcc(token.id);
-    }
+    await rateLimitAcc(token.id);
     return {
       error: `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)`,
     };
