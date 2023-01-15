@@ -36,21 +36,7 @@ async function initChat(token, id, key) {
 }
 
 export async function getActiveTokens() {
-  var tokens = await getTokens();
-  var t = tokens
-    .filter((x) => x.lastUse == null && x.messages <= 1)
-    .sort((a, b) => {
-      if (a.messages > b.messages) {
-        return 1;
-      }
-      if (a.messages < b.messages) {
-        return -1;
-      }
-      if (a.messages == b.messages) {
-        return 0;
-      }
-    });
-  return `${clients.length}/${tokens.length}`;
+  return `${clients.length}`;
 }
 
 export async function getAbleTokens() {
