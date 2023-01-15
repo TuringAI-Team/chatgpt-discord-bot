@@ -102,6 +102,12 @@ export default {
           );
           return;
         }
+        if (token.error) {
+          await interaction.editReply(
+            `Conversations are at their capacity limit please try using isolated messages mode or wait until other users finish their conversations.`
+          );
+          return;
+        }
         conversation.id = randomUUID();
         conversation.account = token.id;
 
