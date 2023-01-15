@@ -24,9 +24,9 @@ export default {
         .setDescription(
           "Select if you want to preserver context from the previous messages"
         )
-        .setRequired(true)
+        .setRequired(false)
         .addChoices(
-          { name: "Conversation(Alpha)", value: "true" },
+          { name: "Conversation(Beta)", value: "true" },
           { name: "Isolated message", value: "false" }
         )
     )
@@ -48,6 +48,7 @@ export default {
     if (!responseType) {
       responseType = "text";
     }
+    if (!conversationMode) conversationMode = false;
     if (conversationMode == "true") conversationMode = true;
     if (conversationMode == "false") conversationMode = false;
 
