@@ -26,6 +26,18 @@ export default {
           { name: "image", value: "image" },
           { name: "text", value: "text" }
         )
+    )
+    .addStringOption((option) =>
+      option
+        .setName("conversation")
+        .setDescription(
+          "Select if you want to preserver context from the previous messages"
+        )
+        .setRequired(false)
+        .addChoices(
+          { name: "Conversation", value: "true" },
+          { name: "Isolated message", value: "false" }
+        )
     ),
   async execute(interaction, client) {
     var message = interaction.options.getString("message");
