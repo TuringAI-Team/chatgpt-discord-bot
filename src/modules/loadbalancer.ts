@@ -91,6 +91,7 @@ export async function reloadConversations() {
 
 export async function getToken(id) {
   var client = clients.find((x) => x.id == id);
+  console.log(id);
   return client;
 }
 

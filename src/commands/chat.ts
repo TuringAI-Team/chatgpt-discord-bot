@@ -124,7 +124,6 @@ export default {
           conversation.account = token.id;
         }
       }
-      console.log(conversation);
       if (!conversation.id) {
         await interaction.editReply(
           `Conversations are at their capacity limit please try using isolated messages mode or wait until other users finish their conversations.`
