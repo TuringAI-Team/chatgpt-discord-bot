@@ -3,7 +3,7 @@ import {
   EmbedBuilder,
   AttachmentBuilder,
 } from "discord.js";
-import { chat, conversation } from "../modules/gpt-api.js";
+import { chat, conversationFn } from "../modules/gpt-api.js";
 import supabase from "../modules/supabase.js";
 import { renderResponse } from "../modules/render-response.js";
 import { randomUUID } from "node:crypto";
@@ -106,7 +106,7 @@ export default {
           ]);
       }
       console.log(conversation);
-      result = await conversation(
+      result = await conversationFn(
         message,
         conversation.id,
         conversation.account

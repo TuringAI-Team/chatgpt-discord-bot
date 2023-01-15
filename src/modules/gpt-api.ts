@@ -62,7 +62,7 @@ async function chat(message) {
     };
   }
 }
-export async function conversation(message, conversationId, accId) {
+export async function conversationFn(message, conversationId, accId) {
   var token = await getToken(accId);
 
   if (!token) {
