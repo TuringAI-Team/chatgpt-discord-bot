@@ -85,7 +85,7 @@ export default {
         },
         {
           name: "Version",
-          value: `v0.1.8`,
+          value: `v0.1.9`,
           inline: true,
         },
       ])

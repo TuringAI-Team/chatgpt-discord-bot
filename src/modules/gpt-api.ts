@@ -17,8 +17,8 @@ async function getStatus() {
   return abled;
 }
 
-async function chat(message) {
-  var token = await useToken(0);
+async function chat(message, shard) {
+  var token = await useToken(0, shard);
 
   if (!token) {
     return {

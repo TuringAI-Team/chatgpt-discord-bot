@@ -80,7 +80,7 @@ client.once(Events.ClientReady, async (c) => {
   await resetto0();
   client.user.setPresence({
     activities: [
-      { name: `v0.1.8 | dsc.gg/turing`, type: ActivityType.Playing },
+      { name: `v0.1.9 | dsc.gg/turing`, type: ActivityType.Playing },
     ],
     status: "online",
   });
@@ -93,6 +93,7 @@ client.once(Events.ClientReady, async (c) => {
     await reloadTokens();
   }, ms("10m"));
   const { data, error } = await supabase.from("conversations").delete();
+  await initTokens(client.shard.client.options.shards[0] + 1);
   console.log(
     chalk.white(`Ready! Logged in as `) + chalk.blue.bold(c.user.tag)
   );

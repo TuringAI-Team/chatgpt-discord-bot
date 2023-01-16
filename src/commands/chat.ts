@@ -51,9 +51,8 @@ export default {
     if (!conversationMode) conversationMode = false;
     if (conversationMode == "true") conversationMode = true;
     if (conversationMode == "false") conversationMode = false;
+    var shard = client.shard.client.options.shards[0] + 1;
 
-    if (conversationMode) {
-    }
     await interaction.deferReply();
 
     var result;
@@ -76,7 +75,7 @@ export default {
           .update({ uses: results[0].uses + 1 })
           .eq("id", results[0].id);
       } else {
-        result = await chat(message);
+        result = await chat(message, shard);
       }
     } else {
       let { data: conversations, error } = await supabase
@@ -95,7 +94,7 @@ export default {
           );
           return;
         }
-        var token = await useToken(0);
+        var token = await useToken(0, shard);
         if (!token) {
           await interaction.editReply(
             `Conversations are at their capacity limit please try using isolated messages mode or wait until other users finish their conversations.`

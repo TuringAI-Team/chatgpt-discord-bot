@@ -82,7 +82,7 @@ export async function getToken(id) {
   return client;
 }
 
-async function useToken(retry) {
+async function useToken(retry, shard) {
   var tokens = await getTokens();
   if (!tokens || tokens.length <= 0) {
     return {
@@ -90,7 +90,7 @@ async function useToken(retry) {
     };
   } else {
     var t = tokens
-      .filter((x) => x.lastUse == null && x.messages <= 1)
+      .filter((x) => x.lastUse == null && x.messages <= 1 && x.shard == shard)
       .sort((a, b) => {
         if (a.messages > b.messages) {
           return 1;
@@ -122,7 +122,7 @@ async function useToken(retry) {
       var client = clients.find((x) => x.id == token.id);
       var nr = retry + 1;
       if (!client && retry < 2) {
-        return useToken(nr);
+        return useToken(nr, shard);
       }
       if (client) {
         await addMessage(token.id);
@@ -208,12 +208,19 @@ export async function resetto0() {
   }
 }
 
-async function initTokens() {
-  var tokens = await getTokens();
+async function initTokens(shard) {
+  let { data: tokens, error } = await supabase
+    .from("accounts")
+    .select("*")
+    .range(shard - 1 * 10, shard * 10);
   var max = tokens.length;
   for (var i = 0; i < max; i++) {
     var token = tokens[i];
     await initChat(token.session, token.id, token.key);
+    const { data, error } = await supabase
+      .from("accounts")
+      .update({ shard: shard })
+      .eq("id", token.id);
     await delay(30000);
   }
 }
