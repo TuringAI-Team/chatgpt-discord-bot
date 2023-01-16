@@ -93,7 +93,6 @@ client.once(Events.ClientReady, async (c) => {
     await reloadTokens();
   }, ms("10m"));
   const { data, error } = await supabase.from("conversations").delete();
-  await initTokens();
   console.log(
     chalk.white(`Ready! Logged in as `) + chalk.blue.bold(c.user.tag)
   );
