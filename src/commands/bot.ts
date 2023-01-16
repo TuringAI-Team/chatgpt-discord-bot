@@ -18,15 +18,32 @@ export default {
     .setDescription("Get the info of the bot"),
   async execute(interaction, client) {
     const timeString = time(client.user.createdAt, "R");
-
-    var usersCount = 0;
-    var users = client.guilds.cache.map((guild) => guild.memberCount);
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
     var tokens = await getActiveTokens();
-    for (var i = 0; i < users.length; i++) {
-      usersCount += users[i];
-    }
+    const promises = [
+      client.shard.fetchClientValues("guilds.cache.size"),
+      client.shard.broadcastEval((c) =>
+        c.guilds.cache.reduce((acc, guild) => acc + guild.memberCount, 0)
+      ),
+    ];
+
+    await interaction.deferReply();
+    var totalGuildsR = await client.shard.fetchClientValues(
+      "guilds.cache.size"
+    );
+    const totalGuilds = totalGuildsR.reduce(
+      (acc, guildCount) => acc + guildCount,
+      0
+    );
+    var totalMembersR = await client.shard.broadcastEval((c) =>
+      c.guilds.cache.reduce((acc, guild) => acc + guild.memberCount, 0)
+    );
+    const totalMembers = totalMembersR.reduce(
+      (acc, memberCount) => acc + memberCount,
+      0
+    );
+
     var embed = new EmbedBuilder()
       .setColor("#813479")
       .setTimestamp()
@@ -41,12 +58,12 @@ export default {
         },
         {
           name: "Servers",
-          value: `${client.guilds.cache.size}`,
+          value: `${totalGuilds}`,
           inline: true,
         },
         {
           name: "Users",
-          value: `${usersCount}`,
+          value: `${totalMembers}`,
           inline: true,
         },
         {
@@ -91,7 +108,7 @@ export default {
         .setURL("https://github.com/MrlolDev/chatgpt-discord-bot")
         .setStyle(ButtonStyle.Link)
     );
-    await interaction.reply({
+    await interaction.editReply({
       embeds: [embed],
       components: [row],
     });
