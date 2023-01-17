@@ -86,9 +86,9 @@ client.once(Events.ClientReady, async (c) => {
   });
 
   await reloadTokens();
-  setInterval(async () => {
+  /*setInterval(async () => {
     await reloadConversations();
-  }, ms("1m"));
+  }, ms("1m"));*/
   setInterval(async () => {
     await reloadTokens();
   }, ms("10m"));

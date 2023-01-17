@@ -64,6 +64,7 @@ export async function reloadConversations() {
   let { data: conversations, error } = await supabase
     .from("conversations")
     .select("*");
+
   for (var i = 0; i < conversations.length; i++) {
     var conversation = conversations[i];
     var diff = Date.now() - conversation.lastMessage;
