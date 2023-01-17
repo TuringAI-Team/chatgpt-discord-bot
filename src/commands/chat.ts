@@ -9,7 +9,7 @@ import { renderResponse } from "../modules/render-response.js";
 import { v4 as uuidv4 } from "uuid";
 import { useToken, getAbleTokens } from "../modules/loadbalancer.js";
 export default {
-  cooldown: "3m",
+  cooldown: "30s",
   data: new SlashCommandBuilder()
     .setName("chat")
     .setDescription("Chat with ChatGPT")
@@ -57,6 +57,7 @@ export default {
     await interaction.deferReply();
 
     var result;
+    var cached = false;
     if (conversationMode == false) {
       let { data: results, error } = await supabase
         .from("results")
@@ -66,13 +67,14 @@ export default {
         .eq("prompt", message.toLowerCase())
         .eq("provider", "chatgpt");
       console.log(error);
-      if (!results) {
+      if (!results || error) {
+        var errr = "Error connecting with db";
         if (responseType == "image") {
-          var errr = "Error connecting with db";
           await responseWithImage(interaction, message, errr, "error");
         } else {
           await responseWithText(interaction, message, errr, channel, "error");
         }
+        return;
       }
       if (results[0] && results[0].result.text) {
         var type = "gpt-3.5";
@@ -84,6 +86,7 @@ export default {
           .from("results")
           .update({ uses: results[0].uses + 1 })
           .eq("id", results[0].id);
+        cached = true;
       } else {
         result = await chat(message, shard);
       }
@@ -185,14 +188,14 @@ export default {
 
       var channel = interaction.channel;
       if (!interaction.channel) channel = interaction.user;
-      if (cooldownAction == "create") {
+      if (cooldownAction == "create" && cached == false) {
         const { data, error } = await supabase
           .from("cooldown")
           .insert([
             { userId: interaction.user.id, command: interaction.commandName },
           ]);
       }
-      if (cooldownAction == "update") {
+      if (cooldownAction == "update" && cached == false) {
         const { data, error } = await supabase
           .from("cooldown")
           .update({ created_at: new Date() })
