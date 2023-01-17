@@ -9,6 +9,7 @@ import { renderResponse } from "../modules/render-response.js";
 import { v4 as uuidv4 } from "uuid";
 import { useToken, getAbleTokens } from "../modules/loadbalancer.js";
 export default {
+  cooldown: "3m",
   data: new SlashCommandBuilder()
     .setName("chat")
     .setDescription("Chat with ChatGPT")
@@ -40,7 +41,7 @@ export default {
           { name: "text", value: "text" }
         )
     ),
-  async execute(interaction, client) {
+  async execute(interaction, client, commands, cooldownAction) {
     var message = interaction.options.getString("message");
     var responseType = interaction.options.getString("response");
     var conversationMode = interaction.options.getString("conversation");
@@ -184,6 +185,20 @@ export default {
 
       var channel = interaction.channel;
       if (!interaction.channel) channel = interaction.user;
+      if (cooldownAction == "create") {
+        const { data, error } = await supabase
+          .from("cooldown")
+          .insert([
+            { userId: interaction.user.id, command: interaction.commandName },
+          ]);
+      }
+      if (cooldownAction == "update") {
+        const { data, error } = await supabase
+          .from("cooldown")
+          .update({ created_at: new Date() })
+          .eq("userId", interaction.user.id)
+          .eq("command", interaction.commandName);
+      }
       if (responseType == "image") {
         await responseWithImage(interaction, message, response, result.type);
       } else {

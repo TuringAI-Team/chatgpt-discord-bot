@@ -109,7 +109,36 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
 
   try {
-    await command.execute(interaction, client, commands);
+    if (command.cooldown) {
+      let { data: cooldowns, error } = await supabase
+        .from("cooldown")
+        .select("*")
+
+        // Filters
+        .eq("userId", interaction.user.id)
+        .eq("command", interaction.commandName);
+      if (cooldowns && cooldowns[0]) {
+        var cooldown = cooldowns[0];
+        var createdAt = new Date(cooldown.created_at);
+        var milliseconds = createdAt.getTime();
+        var now = Date.now();
+        var diff = now - milliseconds;
+        var count = ms(command.cooldown) - diff;
+        if (diff >= ms(command.cooldown)) {
+          await command.execute(interaction, client, commands, "update");
+        } else {
+          await interaction.reply(
+            `Please wait **${ms(
+              count
+            )}** to use this command again.\nIf you want to **avoid this cooldown** you can **boost our server**.`
+          );
+        }
+      } else {
+        await command.execute(interaction, client, commands, "create");
+      }
+    } else {
+      await command.execute(interaction, client, commands);
+    }
   } catch (error) {
     console.error(error);
     await interaction.reply({
