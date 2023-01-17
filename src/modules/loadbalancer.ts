@@ -102,7 +102,6 @@ async function useToken(retry, shard) {
           return 0;
         }
       });
-    console.log(clients.length, t.length);
     var i = getRndInteger(0, t.length - 1);
 
     if (clients.length <= 2) {
@@ -209,6 +208,7 @@ export async function resetto0() {
 }
 
 async function initTokens(shard) {
+  console.log((shard - 1) * 11, shard * 11, shard);
   let { data: tokens, error } = await supabase
     .from("accounts")
     .select("*")

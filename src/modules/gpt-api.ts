@@ -73,7 +73,6 @@ export async function conversationFn(message, conversationId, accId) {
   if (token.error) {
     return { error: token.error };
   }
-  console.log(token.id);
   try {
     var response;
     var type;
