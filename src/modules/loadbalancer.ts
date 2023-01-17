@@ -208,11 +208,11 @@ export async function resetto0() {
 }
 
 async function initTokens(shard) {
-  console.log((shard - 1) * 11, shard * 11, shard);
+  console.log((shard - 1) * 7, shard * 7, shard);
   let { data: tokens, error } = await supabase
     .from("accounts")
     .select("*")
-    .range((shard - 1) * 11, shard * 11);
+    .range((shard - 1) * 7, shard * 7);
   var max = tokens.length;
   for (var i = 0; i < max; i++) {
     var token = tokens[i];
