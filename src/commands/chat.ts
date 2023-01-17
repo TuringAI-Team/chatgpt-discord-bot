@@ -64,6 +64,15 @@ export default {
         // Filters
         .eq("prompt", message.toLowerCase())
         .eq("provider", "chatgpt");
+      console.log(error);
+      if (!results) {
+        if (responseType == "image") {
+          var errr = "Error connecting with db";
+          await responseWithImage(interaction, message, errr, "error");
+        } else {
+          await responseWithText(interaction, message, errr, channel, "error");
+        }
+      }
       if (results[0] && results[0].result.text) {
         var type = "gpt-3.5";
         if (results[0].version) {
