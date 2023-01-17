@@ -199,6 +199,10 @@ async function removeMessage(id) {
 }
 export async function resetto0() {
   let { data: accounts, error } = await supabase.from("accounts").select("*");
+  if (error) {
+    console.log(error);
+    return;
+  }
   for (var i = 0; i < accounts.length; i++) {
     var tokenObj = accounts[i];
     const { data, error } = await supabase
