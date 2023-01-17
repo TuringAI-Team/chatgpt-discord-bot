@@ -26,10 +26,7 @@ export default {
           "Select if you want to preserver context from the previous messages"
         )
         .setRequired(false)
-        .addChoices(
-          { name: "Conversation(Beta)", value: "true" },
-          { name: "Isolated message", value: "false" }
-        )
+        .addChoices({ name: "Isolated message", value: "false" })
     )
     .addStringOption((option) =>
       option
