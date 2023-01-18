@@ -130,7 +130,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
           await interaction.reply(
             `Please wait **${ms(
               count
-            )}** to use this command again.\nIf you want to **avoid this cooldown** you can **boost our server**.`
+            )}** to use this command again.\nIf you want to **avoid this cooldown** you can **join [our server](https://discord.gg/7dN9Buk5ts)**.`
           );
         }
       } else {

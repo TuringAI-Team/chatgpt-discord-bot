@@ -8,6 +8,8 @@ import supabase from "../modules/supabase.js";
 import { renderResponse } from "../modules/render-response.js";
 import { v4 as uuidv4 } from "uuid";
 import { useToken, getAbleTokens } from "../modules/loadbalancer.js";
+import { checkIsTuring } from "../modules/features.js";
+
 export default {
   cooldown: "30s",
   data: new SlashCommandBuilder()
@@ -185,20 +187,25 @@ export default {
 
       var channel = interaction.channel;
       if (!interaction.channel) channel = interaction.user;
-      if (cooldownAction == "create" && cached == false) {
-        const { data, error } = await supabase
-          .from("cooldown")
-          .insert([
-            { userId: interaction.user.id, command: interaction.commandName },
-          ]);
+      var isTuring = await checkIsTuring(client, interaction.user.id);
+      console.log(isTuring, interaction.user.id);
+      if (!isTuring) {
+        if (cooldownAction == "create" && cached == false) {
+          const { data, error } = await supabase
+            .from("cooldown")
+            .insert([
+              { userId: interaction.user.id, command: interaction.commandName },
+            ]);
+        }
+        if (cooldownAction == "update" && cached == false) {
+          const { data, error } = await supabase
+            .from("cooldown")
+            .update({ created_at: new Date() })
+            .eq("userId", interaction.user.id)
+            .eq("command", interaction.commandName);
+        }
       }
-      if (cooldownAction == "update" && cached == false) {
-        const { data, error } = await supabase
-          .from("cooldown")
-          .update({ created_at: new Date() })
-          .eq("userId", interaction.user.id)
-          .eq("command", interaction.commandName);
-      }
+
       if (responseType == "image") {
         await responseWithImage(interaction, message, response, result.type);
       } else {
