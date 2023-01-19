@@ -226,7 +226,6 @@ async function initTokens(shard) {
       .from("accounts")
       .update({ shard: shard })
       .eq("id", token.id);
-    await delay(30000);
   }
 }
 
