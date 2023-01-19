@@ -21,12 +21,8 @@ export default {
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
     var tokens = await getActiveTokens();
-    const promises = [
-      client.shard.fetchClientValues("guilds.cache.size"),
-      client.shard.broadcastEval((c) =>
-        c.guilds.cache.reduce((acc, guild) => acc + guild.memberCount, 0)
-      ),
-    ];
+
+    var shard = client.shard.client.options.shards[0] + 1;
 
     await interaction.deferReply();
     var totalGuildsR = await client.shard.fetchClientValues(
@@ -74,6 +70,11 @@ export default {
         {
           name: "Library",
           value: "Discord.js",
+          inline: true,
+        },
+        {
+          name: "Shard",
+          value: shard,
           inline: true,
         },
         {
