@@ -74,7 +74,7 @@ export default {
         },
         {
           name: "Shard",
-          value: shard,
+          value: `${shard}`,
           inline: true,
         },
         {
