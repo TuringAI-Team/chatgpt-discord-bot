@@ -16,10 +16,12 @@ async function getTokens() {
 async function initChat(token, id, key) {
   try {
     let bot = new ChatGPT(token, {
+      name: id,
       reconnection: false,
       forceNew: false,
       logLevel: LogLevel.Info,
       bypassNode: "https://gpt.pawan.krd",
+      proAccount: false,
     });
     await bot.waitForReady();
     clients.push({ client: bot, id, type: "unofficial" });
@@ -226,7 +228,6 @@ async function initTokens(shard) {
       .from("accounts")
       .update({ shard: shard })
       .eq("id", token.id);
-    await delay(30000);
   }
 }
 
