@@ -11,7 +11,7 @@ import { useToken, getAbleTokens } from "../modules/loadbalancer.js";
 import { checkIsTuring } from "../modules/features.js";
 
 export default {
-  cooldown: "20s",
+  cooldown: "1m",
   data: new SlashCommandBuilder()
     .setName("chat")
     .setDescription("Chat with ChatGPT")
