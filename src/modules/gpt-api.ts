@@ -62,6 +62,7 @@ async function chat(message, shard) {
     };
   }
 }
+/*
 export async function conversationFn(message, conversationId, accId) {
   var token = await getToken(accId);
 
@@ -101,6 +102,6 @@ export async function conversationFn(message, conversationId, accId) {
       error: `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)`,
     };
   }
-}
+}*/
 
 export { chat, getStatus };

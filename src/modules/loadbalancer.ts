@@ -219,7 +219,8 @@ async function initTokens(shard) {
   let { data: tokens, error } = await supabase
     .from("accounts")
     .select("*")
-    .range((shard - 1) * 5, shard * 5);
+    .range((shard - 1) * 5, shard * 5)
+    .eq("lastUse", null);
   var max = tokens.length;
   for (var i = 0; i < max; i++) {
     var token = tokens[i];
@@ -229,6 +230,10 @@ async function initTokens(shard) {
       .update({ shard: shard })
       .eq("id", token.id);
   }
+}
+export async function reloadAll(shard) {
+  clients = [];
+  await initTokens(shard);
 }
 
 async function reloadTokens() {
