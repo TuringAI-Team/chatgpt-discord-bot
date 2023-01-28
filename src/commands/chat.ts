@@ -65,7 +65,6 @@ export default {
         // Filters
         .eq("prompt", message.toLowerCase())
         .eq("provider", "chatgpt");
-      console.log(error);
       if (!results || error) {
         var errr = "Error connecting with db";
         if (responseType == "image") {
@@ -188,7 +187,6 @@ export default {
       var channel = interaction.channel;
       if (!interaction.channel) channel = interaction.user;
       var isTuring = await checkIsTuring(client, interaction.user.id);
-      console.log(isTuring, interaction.user.id);
       if (!isTuring) {
         if (cooldownAction == "create" && cached == false) {
           const { data, error } = await supabase

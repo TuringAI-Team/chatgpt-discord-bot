@@ -24,18 +24,18 @@ async function initChat(token, id, key) {
       proAccount: false,
     });
     await bot.waitForReady();
-    clients.push({ client: bot, id, type: "unofficial" });
+    const configuration = new Configuration({
+      apiKey: key,
+    });
+    if (key) {
+      console.log(`loaded ${id} with official`);
+      const openai = new OpenAIApi(configuration);
+      clients.push({ client: bot, id, type: "unofficial", official: openai });
+    } else {
+      clients.push({ client: bot, id, type: "unofficial" });
+    }
     console.log(`loaded ${id} with unofficial`);
   } catch (err) {
-    if (key) {
-      const configuration = new Configuration({
-        apiKey: key,
-      });
-      const openai = new OpenAIApi(configuration);
-      clients.push({ client: openai, id, type: "official" });
-      console.log(`loaded ${id} with official`);
-    }
-
     console.log(`error with ${id}:\n${err}`);
   }
 }
@@ -185,7 +185,19 @@ export async function rateLimitAcc(id) {
   var index = clients.findIndex((x) => x.id == id);
   clients.splice(index, 1); // 2nd parameter means remove one item only
 }
-
+export async function disableAcc(id) {
+  const { data, error } = await supabase
+    .from("accounts")
+    .update({
+      messages: 0,
+      lastUse: Date.now(),
+    })
+    .eq("id", id);
+  var client = clients.find((x) => x.id == id);
+  await client.client.disconnect();
+  var index = clients.findIndex((x) => x.id == id);
+  clients.splice(index, 1); // 2nd parameter means remove one item only
+}
 async function removeMessage(id) {
   let { data: accounts, error } = await supabase
     .from("accounts")
@@ -215,12 +227,12 @@ export async function resetto0() {
 }
 
 async function initTokens(shard) {
-  console.log((shard - 1) * 5, shard * 5, shard);
+  console.log((shard - 1) * 3, shard * 3, shard);
   let { data: tokens, error } = await supabase
     .from("accounts")
     .select("*")
-    .range((shard - 1) * 5, shard * 5)
-    .eq("lastUse", null);
+    .range((shard - 1) * 3, shard * 3)
+    .eq("abled", true);
   var max = tokens.length;
   for (var i = 0; i < max; i++) {
     var token = tokens[i];

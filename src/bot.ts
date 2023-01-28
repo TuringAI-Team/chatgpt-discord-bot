@@ -11,6 +11,7 @@ import {
   GatewayIntentBits,
   ActivityType,
   REST,
+  Partials,
   Routes,
 } from "discord.js";
 import "dotenv/config";
@@ -26,6 +27,10 @@ import {
 // Create a new client instance
 const client: any = new Client({
   intents: [GatewayIntentBits.Guilds],
+  partials: [
+    Partials.User, // We want to receive uncached users!
+    Partials.Channel,
+  ],
 });
 const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
 
@@ -95,7 +100,7 @@ client.once(Events.ClientReady, async (c) => {
   }, ms("10m"));
   setInterval(async () => {
     await reloadAll(client.shard.client.options.shards[0] + 1);
-  }, ms("15m"));
+  }, ms("1h"));
   const { data, error } = await supabase.from("conversations").delete();
   await initTokens(client.shard.client.options.shards[0] + 1);
   console.log(

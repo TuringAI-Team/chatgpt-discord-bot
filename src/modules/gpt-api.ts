@@ -8,6 +8,7 @@ import {
   getToken,
   removeMessage,
   rateLimitAcc,
+  disableAcc,
 } from "./loadbalancer.js";
 import { Configuration, OpenAIApi } from "openai";
 
@@ -51,9 +52,15 @@ async function chat(message, shard) {
     await removeMessage(token.id);
     return { text: response, type: type };
   } catch (err) {
-    console.log(err, token.id);
+    console.log(token.id, err);
 
     await removeMessage(token.id);
+    if (
+      err ==
+      "Error: Your authentication token has expired. Please try signing in again."
+    ) {
+      await disableAcc(token.id);
+    }
     if (err == "Too many requests in 1 hour. Try again later.") {
       await rateLimitAcc(token.id);
     }
