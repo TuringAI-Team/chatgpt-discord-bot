@@ -11,7 +11,7 @@ export default async function chatSonic(msg: string) {
         enable_memory: false,
         input_text: msg,
       },
-      { engine: "good" }
+      { engine: "premium" }
     );
     return { text: data.message, type: "chatsonic" };
   } catch (err) {
