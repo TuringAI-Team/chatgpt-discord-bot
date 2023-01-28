@@ -13,6 +13,7 @@ export default async function chatSonic(msg: string) {
       },
       { engine: "premium" }
     );
+    console.log(data);
     return { text: data.message, type: "chatsonic" };
   } catch (err) {
     return { error: err };
