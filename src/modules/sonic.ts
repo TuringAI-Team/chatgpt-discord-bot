@@ -22,7 +22,7 @@ export default async function chatSonic(msg: string) {
     };
   }
 
-  sdk.auth(process.env.CHATSONIC);
+  sdk.auth(firstOne.key);
   try {
     var { data } = await sdk.chatsonic_V2BusinessContentChatsonic_post(
       {
