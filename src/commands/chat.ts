@@ -9,17 +9,28 @@ import { renderResponse } from "../modules/render-response.js";
 import { v4 as uuidv4 } from "uuid";
 import { useToken, getAbleTokens } from "../modules/loadbalancer.js";
 import { checkIsTuring } from "../modules/features.js";
+import chatSonic from "../modules/sonic.js";
 
 export default {
   cooldown: "1m",
   data: new SlashCommandBuilder()
     .setName("chat")
-    .setDescription("Chat with ChatGPT")
+    .setDescription("Chat with an AI")
     .addStringOption((option) =>
       option
         .setName("message")
-        .setDescription("The message for ChatGPT")
+        .setDescription("The message for the AI")
         .setRequired(true)
+    )
+    .addStringOption((option) =>
+      option
+        .setName("model")
+        .setDescription("The model you want to use for the AI.")
+        .setRequired(true)
+        .addChoices(
+          { name: "chatgpt", value: "chatgpt" },
+          { name: "ChatSonic (Like ChatGPT)", value: "chatsonic" }
+        )
     )
     .addStringOption((option) =>
       option
@@ -29,7 +40,8 @@ export default {
         )
         .setRequired(false)
         .addChoices({ name: "Isolated message", value: "false" })
-    )
+    ),
+  /*
     .addStringOption((option) =>
       option
         .setName("response")
@@ -39,9 +51,9 @@ export default {
           { name: "image", value: "image" },
           { name: "text", value: "text" }
         )
-    ),
-  async execute(interaction, client, commands, cooldownAction) {
+    )*/ async execute(interaction, client, commands, cooldownAction) {
     var message = interaction.options.getString("message");
+    var model = interaction.options.getString("model");
     var responseType = interaction.options.getString("response");
     var conversationMode = interaction.options.getString("conversation");
 
@@ -52,19 +64,119 @@ export default {
     if (conversationMode == "true") conversationMode = true;
     if (conversationMode == "false") conversationMode = false;
     var shard = client.shard.client.options.shards[0] + 1;
-
     await interaction.deferReply();
 
     var result;
     var cached = false;
-    if (conversationMode == false) {
+    if (model == "chatgpt") {
+      if (conversationMode == false) {
+        let { data: results, error } = await supabase
+          .from("results")
+          .select("*")
+
+          // Filters
+          .eq("prompt", message.toLowerCase())
+          .eq("provider", "chatgpt");
+        if (!results || error) {
+          var errr = "Error connecting with db";
+          if (responseType == "image") {
+            await responseWithImage(interaction, message, errr, "error");
+          } else {
+            await responseWithText(
+              interaction,
+              message,
+              errr,
+              channel,
+              "error"
+            );
+          }
+          return;
+        }
+        if (results[0] && results[0].result.text) {
+          var type = "chatgpt";
+          if (results[0].version) {
+            type = results[0].version;
+          }
+          result = { text: results[0].result.text, type: type };
+          const { data, error } = await supabase
+            .from("results")
+            .update({ uses: results[0].uses + 1 })
+            .eq("id", results[0].id);
+          cached = true;
+        } else {
+          result = await chat(message, shard);
+        }
+      } else {
+        let { data: conversations, error } = await supabase
+          .from("conversations")
+          .select("*")
+
+          // Filters
+          .eq("userId", interaction.user.id);
+        var conversation: any = {};
+        if (conversations && conversations[0]) conversation = conversations[0];
+        if (!conversation || !conversation.id || conversations.length < 0) {
+          var ableTokens = await getAbleTokens();
+          if (ableTokens <= 11) {
+            await interaction.editReply(
+              `Conversations are at their capacity limit please try using isolated messages mode or wait until other users finish their conversations.`
+            );
+            return;
+          }
+          var token = await useToken(0, shard);
+          if (!token) {
+            await interaction.editReply(
+              `Conversations are at their capacity limit please try using isolated messages mode or wait until other users finish their conversations.`
+            );
+            return;
+          }
+          if (token.error) {
+            await interaction.editReply(
+              `Conversations are at their capacity limit please try using isolated messages mode or wait until other users finish their conversations.`
+            );
+            return;
+          }
+          var id = uuidv4();
+
+          const { data, error } = await supabase.from("conversations").insert([
+            {
+              id: id,
+              account: token.id,
+              lastMessage: Date.now(),
+              userId: interaction.user.id,
+            },
+          ]);
+
+          if (!error) {
+            conversation.id = id;
+            conversation.account = token.id;
+          }
+        }
+        if (!conversation.id) {
+          await interaction.editReply(
+            `Conversations are at their capacity limit please try using isolated messages mode or wait until other users finish their conversations.`
+          );
+          return;
+        }
+        result = await conversationFn(
+          message,
+          conversation.id,
+          conversation.account
+        );
+        const { data } = await supabase
+          .from("conversations")
+          .update({ lastMessage: Date.now() })
+          .eq("userId", interaction.user.id);
+      }
+    }
+    if (model == "chatsonic") {
       let { data: results, error } = await supabase
         .from("results")
         .select("*")
 
         // Filters
         .eq("prompt", message.toLowerCase())
-        .eq("provider", "chatgpt");
+        .eq("provider", "chatsonic");
       if (!results || error) {
         var errr = "Error connecting with db";
         if (responseType == "image") {
@@ -75,10 +187,7 @@ export default {
         return;
       }
       if (results[0] && results[0].result.text) {
-        var type = "gpt-3.5";
-        if (results[0].version) {
-          type = results[0].version;
-        }
+        var type = "chatsonic";
         result = { text: results[0].result.text, type: type };
         const { data, error } = await supabase
           .from("results")
@@ -86,71 +195,9 @@ export default {
           .eq("id", results[0].id);
         cached = true;
       } else {
-        result = await chat(message, shard);
+        result = await chatSonic(message);
       }
-    } else {
-      let { data: conversations, error } = await supabase
-        .from("conversations")
-        .select("*")
-
-        // Filters
-        .eq("userId", interaction.user.id);
-      var conversation: any = {};
-      if (conversations && conversations[0]) conversation = conversations[0];
-      if (!conversation || !conversation.id || conversations.length < 0) {
-        var ableTokens = await getAbleTokens();
-        if (ableTokens <= 11) {
-          await interaction.editReply(
-            `Conversations are at their capacity limit please try using isolated messages mode or wait until other users finish their conversations.`
-          );
-          return;
-        }
-        var token = await useToken(0, shard);
-        if (!token) {
-          await interaction.editReply(
-            `Conversations are at their capacity limit please try using isolated messages mode or wait until other users finish their conversations.`
-          );
-          return;
-        }
-        if (token.error) {
-          await interaction.editReply(
-            `Conversations are at their capacity limit please try using isolated messages mode or wait until other users finish their conversations.`
-          );
-          return;
-        }
-        var id = uuidv4();
-
-        const { data, error } = await supabase.from("conversations").insert([
-          {
-            id: id,
-            account: token.id,
-            lastMessage: Date.now(),
-            userId: interaction.user.id,
-          },
-        ]);
-
-        if (!error) {
-          conversation.id = id;
-          conversation.account = token.id;
-        }
-      }
-      if (!conversation.id) {
-        await interaction.editReply(
-          `Conversations are at their capacity limit please try using isolated messages mode or wait until other users finish their conversations.`
-        );
-        return;
-      }
-      result = await conversationFn(
-        message,
-        conversation.id,
-        conversation.account
-      );
-      const { data } = await supabase
-        .from("conversations")
-        .update({ lastMessage: Date.now() })
-        .eq("userId", interaction.user.id);
     }
-
     if (!result) {
       if (responseType == "image") {
         await responseWithImage(
@@ -172,10 +219,10 @@ export default {
     }
     if (!result.error) {
       var response = result.text;
-      if (result.type == "gpt-3.5") {
+      if (result.type != "gpt-3") {
         const { data, error } = await supabase.from("results").insert([
           {
-            provider: "chatgpt",
+            provider: model,
             version: result.type,
             prompt: message.toLowerCase(),
             result: { text: response },
@@ -238,7 +285,7 @@ async function responseWithImage(interaction, prompt, result, type) {
     response: result,
     username: interaction.user.tag,
     userImageUrl: interaction.user.avatarURL(),
-    chatgptUsername: `ChatGPT#3799(${type})`,
+    chatgptUsername: `AI(${type})`,
   });
   var image = new AttachmentBuilder(response, { name: "output.jpg" });
   try {
@@ -252,7 +299,7 @@ async function responseWithImage(interaction, prompt, result, type) {
 }
 
 async function responseWithText(interaction, prompt, result, channel, type) {
-  var completeResponse = `**Human:** ${prompt}\n**ChatGPT(${type}):** ${result}`;
+  var completeResponse = `**Human:** ${prompt}\n**AI(${type}):** ${result}`;
   var charsCount = completeResponse.split("").length;
   if (charsCount / 2000 >= 1) {
     var loops = Math.ceil(charsCount / 2000);

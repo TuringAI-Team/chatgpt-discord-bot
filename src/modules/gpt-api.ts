@@ -33,7 +33,7 @@ async function chat(message, shard) {
     var response;
     var type;
     if (token.type == "unofficial") {
-      type = "gpt-3.5";
+      type = "chatgpt";
       response = await token.client.ask(message);
     } else {
       type = "gpt-3";
@@ -84,7 +84,7 @@ export async function conversationFn(message, conversationId, accId) {
     var response;
     var type;
     if (token.type == "unofficial") {
-      type = "gpt-3.5";
+      type = "chatgpt";
       response = await token.client.ask(message, conversationId);
     } else {
       type = "gpt-3";
