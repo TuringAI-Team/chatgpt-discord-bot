@@ -17,11 +17,9 @@ import {
 import "dotenv/config";
 import supabase from "./modules/supabase.js";
 import {
-  initTokens,
   reloadTokens,
   resetto0,
   reloadConversations,
-  reloadAll,
 } from "./modules/loadbalancer.js";
 
 // Create a new client instance
@@ -98,11 +96,7 @@ client.once(Events.ClientReady, async (c) => {
   setInterval(async () => {
     await reloadTokens();
   }, ms("10m"));
-  setInterval(async () => {
-    await reloadAll(client.shard.client.options.shards[0] + 1);
-  }, ms("1h"));
   const { data, error } = await supabase.from("conversations").delete();
-  await initTokens(client.shard.client.options.shards[0] + 1);
   console.log(
     chalk.white(`Ready! Logged in as `) + chalk.blue.bold(c.user.tag)
   );
