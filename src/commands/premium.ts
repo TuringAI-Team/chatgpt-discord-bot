@@ -39,26 +39,25 @@ export default {
         content:
           `You can buy a key to get Turing AI Premium [here](https://turingai.mysellix.io/). After buying your key you can activate your subscription using the command:` +
           "`/premium claim`",
-        ephemeral: true,
+        ephemeral: false,
       });
     } else {
-      await interaction.deferReply();
       if (!key) {
-        await interaction.editReply({
+        await interaction.reply({
           content: `Invalid key`,
           ephemeral: true,
         });
       }
       var r = await activateKey(key, interaction.user.id);
       if (r.error) {
-        await interaction.editReply({
+        await interaction.reply({
           content: r.error,
           ephemeral: true,
         });
         return;
       }
       if (r.message) {
-        await interaction.editReply({
+        await interaction.reply({
           content: `${interaction.user}, ${r.message}`,
           ephemeral: true,
         });

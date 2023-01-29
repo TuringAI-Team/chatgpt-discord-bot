@@ -17,7 +17,7 @@ async function getStatus() {
   return abled;
 }
 
-async function chat(message, userName) {
+async function chat(message, userName, ispremium) {
   var token = await useToken();
   if (!token) {
     return {
@@ -27,6 +27,8 @@ async function chat(message, userName) {
   try {
     var response;
     var type;
+    var maxtokens = 150;
+    if (ispremium) maxtokens = 300;
     if (token.type == "unofficial") {
       type = "chatgpt";
       response = await token.client.ask(message);
@@ -36,7 +38,7 @@ async function chat(message, userName) {
         model: "text-davinci-003",
         prompt: `The following is a conversation with an AI assistant called Turing, the user is called ${userName}. The assistant is helpful, creative, clever, and very friendly.\n\nHuman: Hello, who are you?\nAI: I am an AI created by Turing AI. How can I help you today?\nHuman: ${message}\nAI:`,
         temperature: 0.9,
-        max_tokens: 150,
+        max_tokens: maxtokens,
         top_p: 1,
         frequency_penalty: 0.0,
         presence_penalty: 0.6,

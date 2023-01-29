@@ -94,7 +94,7 @@ export default {
             .eq("id", results[0].id);
           cached = true;
         } else {
-          result = await chat(message, interaction.user.username);
+          result = await chat(message, interaction.user.username, ispremium);
         }
       }
     }
