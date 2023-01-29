@@ -3,11 +3,11 @@ import {
   EmbedBuilder,
   AttachmentBuilder,
 } from "discord.js";
-import { chat, conversationFn } from "../modules/gpt-api.js";
+import { chat } from "../modules/gpt-api.js";
 import supabase from "../modules/supabase.js";
 import { renderResponse } from "../modules/render-response.js";
 import { v4 as uuidv4 } from "uuid";
-import { useToken, getAbleTokens } from "../modules/loadbalancer.js";
+import { useToken } from "../modules/loadbalancer.js";
 import { checkIsTuring } from "../modules/features.js";
 import chatSonic from "../modules/sonic.js";
 
@@ -28,7 +28,7 @@ export default {
         .setDescription("The model you want to use for the AI.")
         .setRequired(true)
         .addChoices(
-          { name: "chatgpt", value: "chatgpt" },
+          { name: "gpt-3", value: "gpt-3" },
           { name: "ChatSonic (Like ChatGPT)", value: "chatsonic" }
         )
     )
@@ -68,7 +68,7 @@ export default {
 
     var result;
     var cached = false;
-    if (model == "chatgpt") {
+    if (model == "gpt-3") {
       if (conversationMode == false) {
         let { data: results, error } = await supabase
           .from("results")
@@ -76,7 +76,7 @@ export default {
 
           // Filters
           .eq("prompt", message.toLowerCase())
-          .eq("provider", "chatgpt");
+          .eq("provider", "gpt-3");
         if (!results || error) {
           var errr = "Error connecting with db";
           if (responseType == "image") {
@@ -93,10 +93,8 @@ export default {
           return;
         }
         if (results[0] && results[0].result.text) {
-          var type = "chatgpt";
-          if (results[0].version) {
-            type = results[0].version;
-          }
+          var type = "gpt-3";
+
           result = { text: results[0].result.text, type: type };
           const { data, error } = await supabase
             .from("results")
@@ -106,67 +104,6 @@ export default {
         } else {
           result = await chat(message, shard);
         }
-      } else {
-        let { data: conversations, error } = await supabase
-          .from("conversations")
-          .select("*")
-
-          // Filters
-          .eq("userId", interaction.user.id);
-        var conversation: any = {};
-        if (conversations && conversations[0]) conversation = conversations[0];
-        if (!conversation || !conversation.id || conversations.length < 0) {
-          var ableTokens = await getAbleTokens();
-          if (ableTokens <= 11) {
-            await interaction.editReply(
-              `Conversations are at their capacity limit please try using isolated messages mode or wait until other users finish their conversations.`
-            );
-            return;
-          }
-          var token = await useToken(0, shard);
-          if (!token) {
-            await interaction.editReply(
-              `Conversations are at their capacity limit please try using isolated messages mode or wait until other users finish their conversations.`
-            );
-            return;
-          }
-          if (token.error) {
-            await interaction.editReply(
-              `Conversations are at their capacity limit please try using isolated messages mode or wait until other users finish their conversations.`
-            );
-            return;
-          }
-          var id = uuidv4();
-
-          const { data, error } = await supabase.from("conversations").insert([
-            {
-              id: id,
-              account: token.id,
-              lastMessage: Date.now(),
-              userId: interaction.user.id,
-            },
-          ]);
-
-          if (!error) {
-            conversation.id = id;
-            conversation.account = token.id;
-          }
-        }
-        if (!conversation.id) {
-          await interaction.editReply(
-            `Conversations are at their capacity limit please try using isolated messages mode or wait until other users finish their conversations.`
-          );
-          return;
-        }
-        result = await conversationFn(
-          message,
-          conversation.id,
-          conversation.account
-        );
-        const { data } = await supabase
-          .from("conversations")
-          .update({ lastMessage: Date.now() })
-          .eq("userId", interaction.user.id);
       }
     }
     if (model == "chatsonic") {

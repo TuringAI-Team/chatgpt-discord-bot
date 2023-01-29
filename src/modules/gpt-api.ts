@@ -5,7 +5,6 @@ import chalk from "chalk";
 import {
   useToken,
   addMessage,
-  getToken,
   removeMessage,
   rateLimitAcc,
   disableAcc,
@@ -19,15 +18,12 @@ async function getStatus() {
 }
 
 async function chat(message, shard) {
-  var token = await useToken(0, shard);
+  var token = await useToken(0);
 
   if (!token) {
     return {
-      error: `We are reaching our capacity limits right now please wait 1-2 minutes. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`,
+      error: `We are reaching our capacity limits right now. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`,
     };
-  }
-  if (token.error) {
-    return { error: token.error };
   }
   try {
     var response;
@@ -69,6 +65,7 @@ async function chat(message, shard) {
     };
   }
 }
+/*
 export async function conversationFn(message, conversationId, accId) {
   var token = await getToken(accId);
 
@@ -108,6 +105,6 @@ export async function conversationFn(message, conversationId, accId) {
       error: `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)`,
     };
   }
-}
+}*/
 
 export { chat, getStatus };
