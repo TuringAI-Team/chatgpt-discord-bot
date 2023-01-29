@@ -5,11 +5,10 @@ import {
 } from "discord.js";
 import { chat } from "../modules/gpt-api.js";
 import supabase from "../modules/supabase.js";
-import { renderResponse } from "../modules/render-response.js";
 import { v4 as uuidv4 } from "uuid";
 import { useToken } from "../modules/loadbalancer.js";
-import { checkIsTuring } from "../modules/features.js";
 import chatSonic from "../modules/sonic.js";
+import { isPremium } from "../modules/premium.js";
 
 export default {
   cooldown: "1m",
@@ -68,6 +67,8 @@ export default {
 
     var result;
     var cached = false;
+    var ispremium = await isPremium(interaction.user.id);
+
     if (model == "gpt-3") {
       if (conversationMode == false) {
         let { data: results, error } = await supabase
@@ -79,17 +80,8 @@ export default {
           .eq("provider", "gpt-3");
         if (!results || error) {
           var errr = "Error connecting with db";
-          if (responseType == "image") {
-            await responseWithImage(interaction, message, errr, "error");
-          } else {
-            await responseWithText(
-              interaction,
-              message,
-              errr,
-              channel,
-              "error"
-            );
-          }
+
+          await responseWithText(interaction, message, errr, channel, "error");
           return;
         }
         if (results[0] && results[0].result.text) {
@@ -116,11 +108,8 @@ export default {
         .eq("provider", "chatsonic");
       if (!results || error) {
         var errr = "Error connecting with db";
-        if (responseType == "image") {
-          await responseWithImage(interaction, message, errr, "error");
-        } else {
-          await responseWithText(interaction, message, errr, channel, "error");
-        }
+
+        await responseWithText(interaction, message, errr, channel, "error");
         return;
       }
       if (results[0] && results[0].result.text) {
@@ -136,22 +125,13 @@ export default {
       }
     }
     if (!result) {
-      if (responseType == "image") {
-        await responseWithImage(
-          interaction,
-          message,
-          `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)`,
-          "error"
-        );
-      } else {
-        await responseWithText(
-          interaction,
-          message,
-          `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)`,
-          channel,
-          "error"
-        );
-      }
+      await responseWithText(
+        interaction,
+        message,
+        `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)`,
+        channel,
+        "error"
+      );
       return;
     }
     if (!result.error) {
@@ -168,70 +148,26 @@ export default {
 
       var channel = interaction.channel;
       if (!interaction.channel) channel = interaction.user;
-      var isTuring = await checkIsTuring(client, interaction.user.id);
-      if (!isTuring) {
-        if (cooldownAction == "create" && cached == false) {
-          const { data, error } = await supabase
-            .from("cooldown")
-            .insert([
-              { userId: interaction.user.id, command: interaction.commandName },
-            ]);
-        }
-        if (cooldownAction == "update" && cached == false) {
-          const { data, error } = await supabase
-            .from("cooldown")
-            .update({ created_at: new Date() })
-            .eq("userId", interaction.user.id)
-            .eq("command", interaction.commandName);
-        }
-      }
 
-      if (responseType == "image") {
-        await responseWithImage(interaction, message, response, result.type);
-      } else {
-        await responseWithText(
-          interaction,
-          message,
-          response,
-          channel,
-          result.type
-        );
-      }
+      await responseWithText(
+        interaction,
+        message,
+        response,
+        channel,
+        result.type
+      );
     } else {
-      if (responseType == "image") {
-        await responseWithImage(interaction, message, result.error, "error");
-      } else {
-        await responseWithText(
-          interaction,
-          message,
-          result.error,
-          channel,
-          "error"
-        );
-      }
+      await responseWithText(
+        interaction,
+        message,
+        result.error,
+        channel,
+        "error"
+      );
     }
     return;
   },
 };
-
-async function responseWithImage(interaction, prompt, result, type) {
-  var response = await renderResponse({
-    prompt: prompt,
-    response: result,
-    username: interaction.user.tag,
-    userImageUrl: interaction.user.avatarURL(),
-    chatgptUsername: `AI(${type})`,
-  });
-  var image = new AttachmentBuilder(response, { name: "output.jpg" });
-  try {
-    await interaction.editReply({
-      content: "",
-      files: [image],
-    });
-  } catch (err) {
-    console.log(err);
-  }
-}
 
 async function responseWithText(interaction, prompt, result, channel, type) {
   var completeResponse = `**Human:** ${prompt}\n**AI(${type}):** ${result}`;
