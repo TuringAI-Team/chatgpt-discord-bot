@@ -1,6 +1,7 @@
 # chatgpt-bot
 
 A discord bot for interact with ChatGPT
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/U7U5H70V5)
 
 ## Setup Guide
 
