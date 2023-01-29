@@ -9,7 +9,6 @@ import {
 } from "discord.js";
 import fs from "node:fs";
 import path from "node:path";
-import { getActiveTokens } from "../modules/loadbalancer.js";
 import { fileURLToPath } from "url";
 
 export default {
@@ -20,7 +19,6 @@ export default {
     const timeString = time(client.user.createdAt, "R");
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
-    var tokens = await getActiveTokens();
 
     var shard = client.shard.client.options.shards[0] + 1;
 
