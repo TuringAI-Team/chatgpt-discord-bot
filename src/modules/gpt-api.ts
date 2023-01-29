@@ -17,9 +17,8 @@ async function getStatus() {
   return abled;
 }
 
-async function chat(message, shard) {
-  var token = await useToken(0);
-
+async function chat(message, userName) {
+  var token = await useToken();
   if (!token) {
     return {
       error: `We are reaching our capacity limits right now. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`,
@@ -35,7 +34,7 @@ async function chat(message, shard) {
       type = "gpt-3";
       response = await token.client.createCompletion({
         model: "text-davinci-003",
-        prompt: `The following is a conversation with an AI assistant. The assistant is helpful, creative, clever, and very friendly.\n\nHuman: Hello, who are you?\nAI: I am an AI created by OpenAI. How can I help you today?\nHuman: ${message}\nAI:`,
+        prompt: `The following is a conversation with an AI assistant called Turing, the user is called ${userName}. The assistant is helpful, creative, clever, and very friendly.\n\nHuman: Hello, who are you?\nAI: I am an AI created by Turing AI. How can I help you today?\nHuman: ${message}\nAI:`,
         temperature: 0.9,
         max_tokens: 150,
         top_p: 1,
@@ -48,18 +47,9 @@ async function chat(message, shard) {
     await removeMessage(token.id);
     return { text: response, type: type };
   } catch (err) {
-    console.log(token.id, err);
-
     await removeMessage(token.id);
-    if (
-      err ==
-      "Error: Your authentication token has expired. Please try signing in again."
-    ) {
-      await disableAcc(token.id);
-    }
-    if (err == "Too many requests in 1 hour. Try again later.") {
-      await rateLimitAcc(token.id);
-    }
+    await disableAcc(token.id);
+    //await rateLimitAcc(token.id);
     return {
       error: `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)`,
     };

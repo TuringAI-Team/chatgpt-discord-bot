@@ -52,6 +52,8 @@ export default {
           { name: "text", value: "text" }
         )
     )*/ async execute(interaction, client, commands, cooldownAction) {
+    await interaction.deferReply();
+
     var message = interaction.options.getString("message");
     var model = interaction.options.getString("model");
     var responseType = interaction.options.getString("response");
@@ -63,8 +65,6 @@ export default {
     if (!conversationMode) conversationMode = false;
     if (conversationMode == "true") conversationMode = true;
     if (conversationMode == "false") conversationMode = false;
-    var shard = client.shard.client.options.shards[0] + 1;
-    await interaction.deferReply();
 
     var result;
     var cached = false;
@@ -102,7 +102,7 @@ export default {
             .eq("id", results[0].id);
           cached = true;
         } else {
-          result = await chat(message, shard);
+          result = await chat(message, interaction.user.username);
         }
       }
     }
@@ -156,17 +156,15 @@ export default {
     }
     if (!result.error) {
       var response = result.text;
-      if (result.type != "gpt-3") {
-        const { data, error } = await supabase.from("results").insert([
-          {
-            provider: model,
-            version: result.type,
-            prompt: message.toLowerCase(),
-            result: { text: response },
-            guildId: interaction.guildId,
-          },
-        ]);
-      }
+      const { data, error } = await supabase.from("results").insert([
+        {
+          provider: model,
+          version: result.type,
+          prompt: message.toLowerCase(),
+          result: { text: response },
+          guildId: interaction.guildId,
+        },
+      ]);
 
       var channel = interaction.channel;
       if (!interaction.channel) channel = interaction.user;

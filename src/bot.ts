@@ -144,7 +144,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
   } catch (error) {
     console.error(error);
-    await interaction.reply({
+    await interaction.editReply({
       content: "There was an error while executing this command!",
       ephemeral: true,
     });

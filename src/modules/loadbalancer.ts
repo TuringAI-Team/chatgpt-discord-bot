@@ -59,9 +59,11 @@ export async function reloadConversations() {
   }
 }
 
-async function useToken(
-  retry
-): Promise<null | { id: string; type: string; client: any }> {
+async function useToken(): Promise<null | {
+  id: string;
+  type: string;
+  client: any;
+}> {
   var tokens = await getTokens();
   if (!tokens || tokens.length <= 0) {
     return;
@@ -84,13 +86,13 @@ async function useToken(
     return;
   }
   var token = t[i];
-
   if (token) {
     await addMessage(token.id);
     const configuration = new Configuration({
       apiKey: token.key,
     });
     const openai = new OpenAIApi(configuration);
+
     var client = {
       id: token.id,
       client: openai,
@@ -111,6 +113,15 @@ async function addMessage(id) {
     .eq("id", id);
   var tokenObj = accounts[0];
   if (tokenObj) {
+    const { data, error } = await supabase
+      .from("accounts")
+      .update({
+        messages: 1,
+        totalMessages: tokenObj.totalMessages + 1,
+      })
+      .eq("id", id);
+
+    /*
     if (tokenObj.totalMessages >= 50) {
       const { data, error } = await supabase
         .from("accounts")
@@ -132,7 +143,7 @@ async function addMessage(id) {
           totalMessages: tokenObj.totalMessages + 1,
         })
         .eq("id", id);
-    }
+    }*/
   }
 }
 
@@ -155,12 +166,15 @@ export async function disableAcc(id) {
     .update({
       messages: 0,
       lastUse: Date.now(),
+      key: null,
     })
     .eq("id", id);
+  /*
   var client = clients.find((x) => x.id == id);
   await client.client.disconnect();
   var index = clients.findIndex((x) => x.id == id);
   clients.splice(index, 1); // 2nd parameter means remove one item only
+  */
 }
 
 async function removeMessage(id) {
