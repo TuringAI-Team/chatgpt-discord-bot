@@ -94,6 +94,7 @@ export default {
             .eq("id", results[0].id);
           cached = true;
         } else {
+          console.log(interaction.user.tag, ispremium);
           result = await chat(message, interaction.user.username, ispremium);
         }
       }
