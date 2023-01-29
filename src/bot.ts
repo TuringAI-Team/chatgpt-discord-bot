@@ -10,7 +10,6 @@ import {
 import "dotenv/config";
 import eventHandler from "./handlers/events.js";
 import commandHandler from "./handlers/commands.js";
-import interactionsHandler from "./handlers/interactions.js";
 // Create a new client instance
 const client: any = new Client({
   intents: [GatewayIntentBits.Guilds],
@@ -27,6 +26,5 @@ client.interactions = new Collection();
 // Handlers
 eventHandler(client);
 commandHandler(client);
-interactionsHandler(client);
 // Log in to Discord with your client's token
 client.login(process.env.TOKEN);
