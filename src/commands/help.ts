@@ -7,9 +7,11 @@ export default {
   async execute(interaction, client, commands) {
     var fields = [];
     for (var i = 0; i < commands.length; i++) {
-      var command = commands[i];
+      var command = commands[i].data;
       var optionMsg = "";
-      for (var j = 0; j < command.options.length; j++) {
+      var maxLength = command.options.length;
+      if (maxLength > 3) maxLength = 3;
+      for (var j = 0; j < maxLength; j++) {
         var option = command.options[j];
         optionMsg += " `" + `${option.name}: ${option.description}` + "`";
       }
