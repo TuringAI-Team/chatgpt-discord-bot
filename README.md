@@ -15,6 +15,21 @@ A discord bot for interact with ChatGPT
 
 3. Create supabase tables
 
+Table: accounts
+Fields (name, dataType): (id,uuid), (created_at, timestamp), (email, text), (password, text), (abled, boolean), (totalMessages, numeric), (lastUse, numeric), (key, text), (session, text), (shard,numeric)
+
+Table: chatsonic
+Fields (name, dataType): (id,uuid), (created_at, timestamp), (key, text)
+
+Table: conversations
+Fields (name, dataType): (id,uuid), (created_at, timestamp), (account, uuid, foreign key points to Account) , (conversation, jsonb), (lastMessage, numeric), (userId, text)
+
+Table: cooldown
+Fields (name, dataType): (id,uuid), (created_at, timestamp), (userId, text), (command, text)
+
+Table: results
+Fields (name, dataType): (id,uuid), (created_at, timestamp), (prompt, text), (provider, text), (result, jsonb), (uses, numeric), (guildId, text)
+
 4. Upload open ai accounts
 
 5. Install dependencies
