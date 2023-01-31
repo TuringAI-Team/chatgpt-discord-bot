@@ -11,7 +11,7 @@ export default {
     await resetto0();
     client.user.setPresence({
       activities: [
-        { name: `v0.1.9 | dsc.gg/turing`, type: ActivityType.Playing },
+        { name: `v0.2.0 | dsc.gg/turing`, type: ActivityType.Playing },
       ],
       status: "online",
     });

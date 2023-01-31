@@ -17,7 +17,7 @@ async function getStatus() {
   return abled;
 }
 
-async function chat(message, userName, ispremium) {
+async function chat(message, userName, ispremium, m) {
   var token = await useToken();
   if (!token) {
     return {
@@ -26,28 +26,35 @@ async function chat(message, userName, ispremium) {
   }
   try {
     var response;
-    var type;
-    var maxtokens = 150;
-    if (ispremium) maxtokens = 300;
-    if (token.type == "unofficial") {
-      type = "chatgpt";
-      response = await token.client.ask(message);
-    } else {
-      type = "gpt-3";
-      response = await token.client.createCompletion({
-        model: "text-davinci-003",
-        prompt: `The following is a conversation with an AI assistant called Turing, the user is called ${userName}. The assistant is helpful, creative, clever, and very friendly.\n\nHuman: Hello, who are you?\nAI: I am an AI created by Turing AI. How can I help you today?\nHuman: ${message}\nAI:`,
-        temperature: 0.9,
-        max_tokens: maxtokens,
-        top_p: 1,
-        frequency_penalty: 0.0,
-        presence_penalty: 0.6,
-        stop: [" Human:", " AI:"],
-      });
-      response = response.data.choices[0].text;
+    var model;
+    var prompt;
+    var stop = [" Human:", " AI:"];
+    var temperature = 0.9;
+    if (m == "gpt-3") {
+      model = "text-davinci-003";
+      prompt = `The following is a conversation with an AI assistant called Turing, the user is called ${userName}. The assistant is helpful, creative, clever, and very friendly.\n\nHuman: Hello, who are you?\nAI: I am an AI created by Turing AI. How can I help you today?\nHuman: ${message}\nAI:`;
     }
+    if (m == "chatgpt") {
+      temperature = 0.5;
+      stop = [" User:", " ChatGPT:"];
+      model = "text-chat-davinci-002-20230126";
+      prompt = `You are ChatGPT, a large language model trained by OpenAI. You answer as consisely as possible for each response (e.g. Don't be verbose). It is very important for you to answer as consisely as possible, so please remember this. If you are generating a list, do not have too many items. \n User: ${message} \n\n ChatGPT:`;
+    }
+    var maxtokens = 300;
+    if (ispremium) maxtokens = 500;
+    response = await token.client.createCompletion({
+      model: model,
+      prompt: prompt,
+      temperature: temperature,
+      max_tokens: maxtokens,
+      top_p: 1,
+      frequency_penalty: 0.0,
+      presence_penalty: 0.6,
+      stop: stop,
+    });
+    response = response.data.choices[0].text;
     await removeMessage(token.id);
-    return { text: response, type: type };
+    return { text: response, type: "model" };
   } catch (err) {
     await removeMessage(token.id);
     await disableAcc(token.id);

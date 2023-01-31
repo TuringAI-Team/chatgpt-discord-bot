@@ -28,6 +28,7 @@ export default {
         .setRequired(true)
         .addChoices(
           { name: "gpt-3", value: "gpt-3" },
+          { name: "chatgpt", value: "chatgpt" },
           { name: "ChatSonic (Like ChatGPT)", value: "chatsonic" }
         )
     )
@@ -94,8 +95,47 @@ export default {
             .eq("id", results[0].id);
           cached = true;
         } else {
-          console.log(interaction.user.tag, ispremium);
-          result = await chat(message, interaction.user.username, ispremium);
+          result = await chat(
+            message,
+            interaction.user.username,
+            ispremium,
+            "gpt-3"
+          );
+        }
+      }
+    }
+
+    if (model == "chatgpt") {
+      if (conversationMode == false) {
+        let { data: results, error } = await supabase
+          .from("results")
+          .select("*")
+
+          // Filters
+          .eq("prompt", message.toLowerCase())
+          .eq("provider", "chatgpt");
+        if (!results || error) {
+          var errr = "Error connecting with db";
+
+          await responseWithText(interaction, message, errr, channel, "error");
+          return;
+        }
+        if (results[0] && results[0].result.text) {
+          var type = "chatgpt";
+
+          result = { text: results[0].result.text, type: type };
+          const { data, error } = await supabase
+            .from("results")
+            .update({ uses: results[0].uses + 1 })
+            .eq("id", results[0].id);
+          cached = true;
+        } else {
+          result = await chat(
+            message,
+            interaction.user.username,
+            ispremium,
+            "chatgpt"
+          );
         }
       }
     }
