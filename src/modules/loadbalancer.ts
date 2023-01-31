@@ -40,24 +40,6 @@ async function initChat(token, id, key) {
   }
 }*/
 
-export async function reloadConversations() {
-  let { data: conversations, error } = await supabase
-    .from("conversations")
-    .select("*");
-
-  for (var i = 0; i < conversations.length; i++) {
-    var conversation = conversations[i];
-    var diff = Date.now() - conversation.lastMessage;
-    if (diff >= ms("5m")) {
-      await removeMessage(conversation.account);
-      const { data, error } = await supabase
-        .from("conversations")
-        .delete()
-        .eq("id", conversation.id);
-    }
-  }
-}
-
 async function useToken(): Promise<null | {
   id: string;
   type: string;
@@ -67,23 +49,9 @@ async function useToken(): Promise<null | {
   if (!tokens || tokens.length <= 0) {
     return;
   }
-  var t = tokens
-    .filter((x) => x.messages <= 1 && x.abled != false)
-    .sort((a, b) => {
-      if (a.messages > b.messages) {
-        return 1;
-      }
-      if (a.messages < b.messages) {
-        return -1;
-      }
-      if (a.messages == b.messages) {
-        return 0;
-      }
-    });
+  var t = tokens.filter((x) => x.messages <= 1 && x.abled != false);
   var i = getRndInteger(0, t.length - 1);
-  if (t.length <= 0) {
-    return;
-  }
+  if (t.length <= 0) return;
   var token = t[i];
   if (token) {
     await addMessage(token.id);

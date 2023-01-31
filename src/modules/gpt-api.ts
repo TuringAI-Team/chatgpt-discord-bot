@@ -20,10 +20,12 @@ async function chat(message, userName, ispremium, m, userId) {
     var stop = [" Human:", " AI:"];
     var temperature = 0.9;
     var basePrompt;
+    var conversation = await getConversation(userId, m);
+
     if (m == "gpt-3") {
       basePrompt = `The following is a conversation with an AI assistant called Turing, the user is called ${userName}. The assistant is helpful, creative, clever, and very friendly.\n`;
       model = "text-davinci-003";
-      prompt = `${basePrompt} Human: ${message}\nAI:`;
+      prompt = `${basePrompt}${conversation} Human: ${message}\nAI:`;
     }
     if (m == "chatgpt") {
       temperature = 0.5;
@@ -32,7 +34,7 @@ async function chat(message, userName, ispremium, m, userId) {
       basePrompt = `You are ChatGPT, a large language model trained by OpenAI. You answer as concisely as possible for each response (e.g. don’t be verbose). It is very important that you answer as concisely as possible, so please remember this. If you are generating a list, do not have too many items. Keep the number of items short.
       Knowledge cutoff: 2021-09
       Current date: ${getToday()}\n`;
-      prompt = `${basePrompt} User: ${message} \n ChatGPT:`;
+      prompt = `${basePrompt}${conversation} User: ${message} \n ChatGPT:`;
     }
     var maxtokens = 300;
     if (ispremium) maxtokens = 500;
@@ -65,21 +67,32 @@ async function chat(message, userName, ispremium, m, userId) {
     };
   }
 }
+async function getConversation(id, model) {
+  var { data } = await supabase
+    .from("conversations")
+    .select("*")
+    .eq("id", id)
+    .eq("model", model);
+  if (data && data[0]) {
+    return data[0].conversation;
+  }
+  return;
+}
 
 async function saveMsg(model, userMsg, aiMsg, id) {
   var conversation;
   if (model == "gpt-3") {
-    conversation = `Human: ${userMsg}\n AI: ${aiMsg}`;
+    conversation = `\n Human: ${userMsg}\n AI: ${aiMsg}`;
   }
   if (model == "chatgpt") {
-    conversation = `User: ${userMsg} \n\n ChatGPT: ${aiMsg}`;
+    conversation = `\n User: ${userMsg} \n\n ChatGPT: ${aiMsg}`;
   }
   var { data } = await supabase
     .from("conversations")
     .select("*")
     .eq("id", id)
     .eq("model", model);
-  if (!data) {
+  if (!data || !data[0]) {
     await supabase.from("conversations").insert({
       id: id,
       model: model,
