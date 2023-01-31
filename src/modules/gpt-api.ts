@@ -37,7 +37,7 @@ async function chat(message, userName, ispremium, m, id) {
       prompt = `${basePrompt}${conversation}User: ${message}\n ChatGPT:`;
     }
     var maxtokens = 300;
-    if (ispremium) maxtokens = 500;
+    if (ispremium) maxtokens = 600;
     response = await token.client.createCompletion({
       model: model,
       prompt: prompt,
@@ -107,7 +107,7 @@ async function saveMsg(model, userMsg, aiMsg, id, ispremium) {
     previous = previous.filter((x) => x != "");
     var length = previous.length;
     var max = 3;
-    if (ispremium == true) max = 5;
+    if (ispremium == true) max = 6;
     if (length > max) {
       previous.shift();
     }
