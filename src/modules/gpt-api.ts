@@ -53,6 +53,11 @@ async function chat(message, userName, ispremium, m) {
       stop: stop,
     });
     response = response.data.choices[0].text;
+    if (m == "chatgpt") {
+      response = response
+        .split("<|im_end|>")[0]
+        .replaceAll("<@", "pingSecurity");
+    }
     await removeMessage(token.id);
     return { text: response, type: "model" };
   } catch (err) {
