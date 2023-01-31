@@ -16,6 +16,7 @@ const client: any = new Client({
   partials: [
     Partials.User, // We want to receive uncached users!
     Partials.Channel,
+    Partials.Message,
   ],
 });
 const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);

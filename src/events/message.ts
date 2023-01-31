@@ -10,6 +10,7 @@ export default {
   once: false,
   async execute(message, client) {
     if (message.mentions.has(client.user)) {
+      console.log(message);
       var fields = [];
       var commands = await client.commands.toJSON();
       for (var i = 0; i < commands.length; i++) {
