@@ -25,7 +25,7 @@ async function chat(message, userName, ispremium, m, userId) {
     if (m == "gpt-3") {
       basePrompt = `The following is a conversation with an AI assistant called Turing, the user is called ${userName}. The assistant is helpful, creative, clever, and very friendly.\n`;
       model = "text-davinci-003";
-      prompt = `${basePrompt}${conversation} Human: ${message}\nAI:`;
+      prompt = `${basePrompt}${conversation} Human: ${message}\n AI:`;
     }
     if (m == "chatgpt") {
       temperature = 0.5;
@@ -34,7 +34,7 @@ async function chat(message, userName, ispremium, m, userId) {
       basePrompt = `You are ChatGPT, a large language model trained by OpenAI. You answer as concisely as possible for each response (e.g. don’t be verbose). It is very important that you answer as concisely as possible, so please remember this. If you are generating a list, do not have too many items. Keep the number of items short.
       Knowledge cutoff: 2021-09
       Current date: ${getToday()}\n`;
-      prompt = `${basePrompt}${conversation} User: ${message} \n ChatGPT:`;
+      prompt = `${basePrompt}${conversation} User: ${message}\n ChatGPT:`;
     }
     var maxtokens = 300;
     if (ispremium) maxtokens = 500;
@@ -86,7 +86,7 @@ async function saveMsg(model, userMsg, aiMsg, id) {
     conversation = `\n Human: ${userMsg}\n AI: ${aiMsg}`;
   }
   if (model == "chatgpt") {
-    conversation = `\n User: ${userMsg} \n\n ChatGPT: ${aiMsg}`;
+    conversation = `\n User: ${userMsg}\n ChatGPT: ${aiMsg}`;
   }
   var { data } = await supabase
     .from("conversations")
@@ -102,13 +102,16 @@ async function saveMsg(model, userMsg, aiMsg, id) {
     });
   } else {
     var previous = data[0].conversation;
-    previous = previous.split("\n ");
+    if (model == "chatgpt") {
+    }
+    previous = previous.split(" \n ");
+    console.log(previous);
     var length = previous.length / 2;
     if (length >= 3) {
-      previous = previous.shift().shift();
+      previous = previous.shift();
     }
-    previous = previous.join("\n ");
-    conversation = `${previous}\n ${conversation}`;
+    previous = previous.join(" \n ");
+    conversation = `${previous} \n ${conversation}`;
 
     await supabase
       .from("conversations")
