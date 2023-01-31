@@ -56,7 +56,7 @@ async function chat(message, userName, ispremium, m, id) {
         .trim();
     }
     await removeMessage(token.id);
-    await saveMsg(m, message, response, id);
+    await saveMsg(m, message, response, id, ispremium);
     return { text: response, type: m };
   } catch (err) {
     console.log(err);
@@ -80,7 +80,7 @@ async function getConversation(id, model) {
   return;
 }
 
-async function saveMsg(model, userMsg, aiMsg, id) {
+async function saveMsg(model, userMsg, aiMsg, id, ispremium) {
   var conversation;
   if (model == "gpt-3") {
     conversation = `\n<split>Human: ${userMsg}\nAI: ${aiMsg}`;
@@ -104,10 +104,14 @@ async function saveMsg(model, userMsg, aiMsg, id) {
     var previous = data[0].conversation;
 
     previous = previous.split("\n<split>");
+    previous = previous.filter((x) => x != "");
     console.log(previous);
     var length = previous.length / 2;
-    if (length > 3) {
+    var max = 3;
+    //if (ispremium == true) max = 5;
+    if (length > max) {
       previous = previous.shift();
+      console.log(previous);
     }
     previous = previous.join("\n<split>");
     conversation = `${previous}${conversation}`;
