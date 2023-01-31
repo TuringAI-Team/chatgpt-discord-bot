@@ -59,7 +59,7 @@ async function chat(message, userName, ispremium, m) {
         .replaceAll("<@", "pingSecurity");
     }
     await removeMessage(token.id);
-    return { text: response, type: "model" };
+    return { text: response, type: m };
   } catch (err) {
     await removeMessage(token.id);
     await disableAcc(token.id);
