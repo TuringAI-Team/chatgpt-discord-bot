@@ -110,8 +110,8 @@ async function saveMsg(model, userMsg, aiMsg, id, ispremium) {
     var max = 3;
     //if (ispremium == true) max = 5;
     if (length > max) {
-      previous = previous.shift();
-      console.log(previous);
+      previous.shift();
+      console.log("shift");
     }
     previous = previous.join("\n<split>");
     conversation = `${previous}${conversation}`;
