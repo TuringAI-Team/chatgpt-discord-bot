@@ -53,6 +53,7 @@ export default {
       await interaction.editReply(
         "Service under maintenance, for more information join us on [dsc.gg/turing](https://dsc.gg/turing)"
       );
+      return;
     }
     var message = interaction.options.getString("message");
     var model = interaction.options.getString("model");
