@@ -28,8 +28,8 @@ export default {
         .setRequired(true)
         .addChoices(
           { name: "gpt-3", value: "gpt-3" },
-          { name: "chatgpt", value: "chatgpt" },
-          { name: "ChatSonic (Like ChatGPT)", value: "chatsonic" }
+          { name: "ChatGPT(Real)", value: "chatgpt" }
+          //   { name: "ChatSonic (Like ChatGPT)", value: "chatsonic" }
         )
     )
     .addStringOption((option) =>
