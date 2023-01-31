@@ -59,6 +59,7 @@ async function chat(message, userName, ispremium, m, userId) {
     await saveMsg(m, message, response, userId);
     return { text: response, type: m };
   } catch (err) {
+    console.log(err);
     await removeMessage(token.id);
     await disableAcc(token.id);
     //await rateLimitAcc(token.id);
