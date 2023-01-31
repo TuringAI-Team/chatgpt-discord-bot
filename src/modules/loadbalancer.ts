@@ -68,7 +68,7 @@ async function useToken(): Promise<null | {
     return;
   }
   var t = tokens
-    .filter((x) => x.lastUse == null && x.messages <= 1 && x.key != null)
+    .filter((x) => x.lastUse == null && x.messages <= 1 && x.abled != false)
     .sort((a, b) => {
       if (a.messages > b.messages) {
         return 1;
@@ -165,7 +165,7 @@ export async function disableAcc(id) {
     .update({
       messages: 0,
       lastUse: Date.now(),
-      key: null,
+      abled: false,
     })
     .eq("id", id);
   /*
