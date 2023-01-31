@@ -68,7 +68,7 @@ async function useToken(): Promise<null | {
     return;
   }
   var t = tokens
-    .filter((x) => x.lastUse == null && x.messages <= 1 && x.abled != false)
+    .filter((x) => x.messages <= 1 && x.abled != false)
     .sort((a, b) => {
       if (a.messages > b.messages) {
         return 1;
@@ -127,7 +127,6 @@ async function addMessage(id) {
         .update({
           messages: 1,
           totalMessages: tokenObj.totalMessages + 1,
-          lastUse: Date.now(),
         })
         .eq("id", id);
       var client = clients.find((x) => x.id == id);
@@ -146,25 +145,11 @@ async function addMessage(id) {
   }
 }
 
-export async function rateLimitAcc(id) {
-  const { data, error } = await supabase
-    .from("accounts")
-    .update({
-      messages: 0,
-      lastUse: Date.now(),
-    })
-    .eq("id", id);
-  var client = clients.find((x) => x.id == id);
-  await client.client.disconnect();
-  var index = clients.findIndex((x) => x.id == id);
-  clients.splice(index, 1); // 2nd parameter means remove one item only
-}
 export async function disableAcc(id) {
   const { data, error } = await supabase
     .from("accounts")
     .update({
       messages: 0,
-      lastUse: Date.now(),
       abled: false,
     })
     .eq("id", id);
@@ -205,21 +190,4 @@ export async function resetto0() {
   }
 }
 
-async function reloadTokens() {
-  var tokens = await getTokens();
-  var t = tokens.filter((x) => x.lastUse != null);
-  for (var i = 0; i < t.length; i++) {
-    var token = t[i];
-    var now = Date.now();
-    var diff = now - token.lastUse;
-    if (diff >= ms("20min")) {
-      const { data, error } = await supabase
-        .from("accounts")
-        .update({ lastUse: null, messages: 0, totalMessages: 0 })
-        .eq("id", token.id);
-      //await initChat(token.session, token.id, token.key);
-    }
-  }
-}
-
-export { addMessage, removeMessage, useToken, reloadTokens };
+export { addMessage, removeMessage, useToken };
