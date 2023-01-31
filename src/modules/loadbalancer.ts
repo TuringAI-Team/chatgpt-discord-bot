@@ -3,7 +3,6 @@ import supabase from "./supabase.js";
 import delay from "delay";
 var clients = [];
 import { Configuration, OpenAIApi } from "openai";
-import ChatGPT, { LogLevel } from "chatgpt-io";
 
 async function getTokens() {
   let { data: accounts, error } = await supabase.from("accounts").select("*");

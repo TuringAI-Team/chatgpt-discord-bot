@@ -2,20 +2,9 @@
 import * as dotenv from "dotenv"; // see https://github.com/motdotla/dotenv#how-do-i-use-dotenv-with-import
 dotenv.config();
 import chalk from "chalk";
-import {
-  useToken,
-  addMessage,
-  removeMessage,
-  rateLimitAcc,
-  disableAcc,
-} from "./loadbalancer.js";
+import { useToken, removeMessage, disableAcc } from "./loadbalancer.js";
 import { Configuration, OpenAIApi } from "openai";
-
-var abled = false;
-
-async function getStatus() {
-  return abled;
-}
+import supabase from "./supabase.js";
 
 async function chat(message, userName, ispremium, m) {
   var token = await useToken();
@@ -30,15 +19,20 @@ async function chat(message, userName, ispremium, m) {
     var prompt;
     var stop = [" Human:", " AI:"];
     var temperature = 0.9;
+    var basePrompt;
     if (m == "gpt-3") {
+      basePrompt =
+        "The following is a conversation with an AI assistant called Turing, the user is called ${userName}. The assistant is helpful, creative, clever, and very friendly.\n";
       model = "text-davinci-003";
-      prompt = `The following is a conversation with an AI assistant called Turing, the user is called ${userName}. The assistant is helpful, creative, clever, and very friendly.\n\nHuman: Hello, who are you?\nAI: I am an AI created by Turing AI. How can I help you today?\nHuman: ${message}\nAI:`;
+      prompt = `${basePrompt} Human: ${message}\nAI:`;
     }
     if (m == "chatgpt") {
       temperature = 0.5;
       stop = [" User:", " ChatGPT:"];
       model = "text-chat-davinci-002-20230126";
-      prompt = `You are ChatGPT, a large language model trained by OpenAI. You answer as consisely as possible for each response (e.g. Don't be verbose). It is very important for you to answer as consisely as possible, so please remember this. If you are generating a list, do not have too many items. \n User: ${message} \n\n ChatGPT:`;
+      basePrompt =
+        "You are ChatGPT, a large language model trained by OpenAI. You answer as consisely as possible for each response (e.g. Don't be verbose). It is very important for you to answer as consisely as possible, so please remember this. If you are generating a list, do not have too many items. \n";
+      prompt = `${basePrompt} User: ${message} \n\n ChatGPT:`;
     }
     var maxtokens = 300;
     if (ispremium) maxtokens = 500;
@@ -69,46 +63,46 @@ async function chat(message, userName, ispremium, m) {
     };
   }
 }
-/*
-export async function conversationFn(message, conversationId, accId) {
-  var token = await getToken(accId);
 
-  if (!token) {
-    return {
-      error: `We are reaching our capacity limits right now please wait 1-2 minutes. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`,
-    };
+async function saveMsg(model, userMsg, aiMsg, id) {
+  var conversation;
+  if (model == "gpt-3") {
+    conversation = `Human: ${userMsg}\n AI: ${aiMsg}`;
   }
-  if (token.error) {
-    return { error: token.error };
+  if (model == "chatgpt") {
+    conversation = `User: ${userMsg} \n\n ChatGPT: ${aiMsg}`;
   }
-  try {
-    var response;
-    var type;
-    if (token.type == "unofficial") {
-      type = "chatgpt";
-      response = await token.client.ask(message, conversationId);
-    } else {
-      type = "gpt-3";
-      response = await token.client.createCompletion({
-        model: "text-davinci-003",
-        prompt: `The following is a conversation with an AI assistant. The assistant is helpful, creative, clever, and very friendly.\n\nHuman: Hello, who are you?\nAI: I am an AI created by OpenAI. How can I help you today?\nHuman: ${message}\nAI:`,
-        temperature: 0.9,
-        max_tokens: 150,
-        top_p: 1,
-        frequency_penalty: 0.0,
-        presence_penalty: 0.6,
-        stop: [" Human:", " AI:"],
-      });
-      response = response.data.choices[0].text;
+  var { data } = await supabase
+    .from("conversations")
+    .select("*")
+    .eq("id", id)
+    .eq("model", model);
+  if (!data) {
+    await supabase.from("conversations").insert({
+      id: id,
+      model: model,
+      conversation: conversation,
+      lastMessage: Date.now(),
+    });
+  } else {
+    var previous = data[0].conversation;
+    previous = previous.split("\n ");
+    var length = previous.length / 2;
+    if (length >= 3) {
+      previous = previous.shift().shift();
     }
-    return { text: response, type: type };
-  } catch (err) {
-    console.log(err, token.id);
-    await rateLimitAcc(token.id);
-    return {
-      error: `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)`,
-    };
-  }
-}*/
+    previous = previous.join("\n ");
+    conversation = `${previous}\n ${conversation}`;
 
-export { chat, getStatus };
+    await supabase
+      .from("conversations")
+      .update({
+        conversation: conversation,
+        lastMessage: Date.now(),
+      })
+      .eq("id", id)
+      .eq("model", model);
+  }
+}
+
+export { chat };

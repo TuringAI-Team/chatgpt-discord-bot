@@ -29,27 +29,22 @@ export default {
         .addChoices(
           { name: "gpt-3", value: "gpt-3" },
           { name: "ChatGPT(Real)", value: "chatgpt" }
-          //   { name: "ChatSonic (Like ChatGPT)", value: "chatsonic" }
         )
-    )
-    .addStringOption((option) =>
-      option
-        .setName("conversation")
-        .setDescription(
-          "Select if you want to preserver context from the previous messages"
-        )
-        .setRequired(false)
-        .addChoices({ name: "Isolated message", value: "false" })
     ),
   /*
     .addStringOption((option) =>
       option
-        .setName("response")
-        .setDescription("The type of resoibse message that you want")
+        .setName("cache")
+        .setDescription(
+          "Select if you want to generate a totally new response or not.(premium only)"
+        )
         .setRequired(false)
         .addChoices(
-          { name: "image", value: "image" },
-          { name: "text", value: "text" }
+          { name: "enabled", value: "true" },
+          {
+            name: "disabled",
+            value: "false",
+          }
         )
     )*/ async execute(interaction, client, commands, cooldownAction) {
     await interaction.deferReply();
@@ -57,86 +52,78 @@ export default {
     var message = interaction.options.getString("message");
     var model = interaction.options.getString("model");
     var responseType = interaction.options.getString("response");
-    var conversationMode = interaction.options.getString("conversation");
 
     if (!responseType) {
       responseType = "text";
     }
-    if (!conversationMode) conversationMode = false;
-    if (conversationMode == "true") conversationMode = true;
-    if (conversationMode == "false") conversationMode = false;
 
     var result;
     var cached = false;
     var ispremium = await isPremium(interaction.user.id);
 
     if (model == "gpt-3") {
-      if (conversationMode == false) {
-        let { data: results, error } = await supabase
+      let { data: results, error } = await supabase
+        .from("results")
+        .select("*")
+
+        // Filters
+        .eq("prompt", message.toLowerCase())
+        .eq("provider", "gpt-3");
+      if (!results || error) {
+        var errr = "Error connecting with db";
+
+        await responseWithText(interaction, message, errr, channel, "error");
+        return;
+      }
+      if (results[0] && results[0].result.text) {
+        var type = "gpt-3";
+
+        result = { text: results[0].result.text, type: type };
+        const { data, error } = await supabase
           .from("results")
-          .select("*")
-
-          // Filters
-          .eq("prompt", message.toLowerCase())
-          .eq("provider", "gpt-3");
-        if (!results || error) {
-          var errr = "Error connecting with db";
-
-          await responseWithText(interaction, message, errr, channel, "error");
-          return;
-        }
-        if (results[0] && results[0].result.text) {
-          var type = "gpt-3";
-
-          result = { text: results[0].result.text, type: type };
-          const { data, error } = await supabase
-            .from("results")
-            .update({ uses: results[0].uses + 1 })
-            .eq("id", results[0].id);
-          cached = true;
-        } else {
-          result = await chat(
-            message,
-            interaction.user.username,
-            ispremium,
-            "gpt-3"
-          );
-        }
+          .update({ uses: results[0].uses + 1 })
+          .eq("id", results[0].id);
+        cached = true;
+      } else {
+        result = await chat(
+          message,
+          interaction.user.username,
+          ispremium,
+          "gpt-3"
+        );
       }
     }
 
     if (model == "chatgpt") {
-      if (conversationMode == false) {
-        let { data: results, error } = await supabase
+      let { data: results, error } = await supabase
+        .from("results")
+        .select("*")
+
+        // Filters
+        .eq("prompt", message.toLowerCase())
+        .eq("provider", "chatgpt");
+      if (!results || error) {
+        var errr = "Error connecting with db";
+
+        await responseWithText(interaction, message, errr, channel, "error");
+        return;
+      }
+      if (results[0] && results[0].result.text) {
+        var type = "chatgpt";
+
+        result = { text: results[0].result.text, type: type };
+        const { data, error } = await supabase
           .from("results")
-          .select("*")
-
-          // Filters
-          .eq("prompt", message.toLowerCase())
-          .eq("provider", "chatgpt");
-        if (!results || error) {
-          var errr = "Error connecting with db";
-
-          await responseWithText(interaction, message, errr, channel, "error");
-          return;
-        }
-        if (results[0] && results[0].result.text) {
-          var type = "chatgpt";
-
-          result = { text: results[0].result.text, type: type };
-          const { data, error } = await supabase
-            .from("results")
-            .update({ uses: results[0].uses + 1 })
-            .eq("id", results[0].id);
-          cached = true;
-        } else {
-          result = await chat(
-            message,
-            interaction.user.username,
-            ispremium,
-            "chatgpt"
-          );
-        }
+          .update({ uses: results[0].uses + 1 })
+          .eq("id", results[0].id);
+        cached = true;
+      } else {
+        result = await chat(
+          message,
+          interaction.user.username,
+          ispremium,
+          "chatgpt"
+        );
       }
     }
     if (model == "chatsonic") {
@@ -177,16 +164,17 @@ export default {
     }
     if (!result.error) {
       var response = result.text;
-      const { data, error } = await supabase.from("results").insert([
-        {
-          provider: model,
-          version: result.type,
-          prompt: message.toLowerCase(),
-          result: { text: response },
-          guildId: interaction.guildId,
-        },
-      ]);
-
+      if (ispremium == false) {
+        const { data, error } = await supabase.from("results").insert([
+          {
+            provider: model,
+            version: result.type,
+            prompt: message.toLowerCase(),
+            result: { text: response },
+            guildId: interaction.guildId,
+          },
+        ]);
+      }
       var channel = interaction.channel;
       if (!interaction.channel) channel = interaction.user;
 
