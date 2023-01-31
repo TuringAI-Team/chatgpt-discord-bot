@@ -75,7 +75,6 @@ async function getConversation(id, model) {
     .eq("id", id)
     .eq("model", model);
   if (data && data[0]) {
-    console.log("read", data[0].conversation.replaceAll("<split>", ""));
     return data[0].conversation.replaceAll("<split>", "");
   }
   return;
@@ -110,7 +109,7 @@ async function saveMsg(model, userMsg, aiMsg, id) {
     if (length > 3) {
       previous = previous.shift();
     }
-    previous = previous.join("\n");
+    previous = previous.join("\n<split>");
     conversation = `${previous}${conversation}`;
 
     await supabase
