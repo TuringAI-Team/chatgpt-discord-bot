@@ -9,10 +9,10 @@ import { v4 as uuidv4 } from "uuid";
 import { useToken } from "../modules/loadbalancer.js";
 import chatSonic from "../modules/sonic.js";
 import { isPremium } from "../modules/premium.js";
-var maintenance = true;
+var maintenance = false;
 
 export default {
-  cooldown: "1m",
+  cooldown: "90s",
   data: new SlashCommandBuilder()
     .setName("chat")
     .setDescription("Chat with an AI")
@@ -49,7 +49,7 @@ export default {
         )
     )*/ async execute(interaction, client, commands, cooldownAction) {
     await interaction.deferReply();
-    if (maintenance && interaction.user.id != "530102778408861706") {
+    if (maintenance == true && interaction.user.id != "530102778408861706") {
       await interaction.editReply(
         "Service under maintenance, for more information join us on [dsc.gg/turing](https://dsc.gg/turing)"
       );
@@ -68,7 +68,7 @@ export default {
     var ispremium = await isPremium(interaction.user.id);
 
     if (model == "gpt-3") {
-      let { data: results, error } = await supabase
+      /*     let { data: results, error } = await supabase
         .from("results")
         .select("*")
 
@@ -90,19 +90,18 @@ export default {
           .update({ uses: results[0].uses + 1 })
           .eq("id", results[0].id);
         cached = true;
-      } else {
-        result = await chat(
-          message,
-          interaction.user.username,
-          ispremium,
-          "gpt-3",
-          interaction.user.id + `-gpt-3`
-        );
-      }
+      } */
+      result = await chat(
+        message,
+        interaction.user.username,
+        ispremium,
+        "gpt-3",
+        interaction.user.id + `-gpt-3`
+      );
     }
 
     if (model == "chatgpt") {
-      let { data: results, error } = await supabase
+      /* let { data: results, error } = await supabase
         .from("results")
         .select("*")
 
@@ -124,15 +123,14 @@ export default {
           .update({ uses: results[0].uses + 1 })
           .eq("id", results[0].id);
         cached = true;
-      } else {
-        result = await chat(
-          message,
-          interaction.user.username,
-          ispremium,
-          "chatgpt",
-          interaction.user.id + `-chatgpt`
-        );
-      }
+      } */
+      result = await chat(
+        message,
+        interaction.user.username,
+        ispremium,
+        "chatgpt",
+        interaction.user.id + `-chatgpt`
+      );
     }
     if (model == "chatsonic") {
       let { data: results, error } = await supabase
