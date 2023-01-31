@@ -21,7 +21,10 @@ export default async function eventHandler(client: Client) {
         event.execute(...args, client)
       );
     } else {
-      client.on(event.name, async (...args) => event.execute(...args, client));
+      client.on(event.name, async (...args) => {
+        console.log(event.name);
+        await event.execute(...args, client);
+      });
     }
   }
 }
