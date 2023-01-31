@@ -94,6 +94,7 @@ async function saveMsg(model, userMsg, aiMsg, id) {
     .select("*")
     .eq("id", id)
     .eq("model", model);
+  console.log(conversation);
   if (!data || !data[0]) {
     await supabase.from("conversations").insert({
       id: id,
@@ -112,7 +113,6 @@ async function saveMsg(model, userMsg, aiMsg, id) {
     }
     previous = previous.join(" \n ");
     conversation = `${previous} \n ${conversation}`;
-    console.log(conversation);
 
     await supabase
       .from("conversations")
