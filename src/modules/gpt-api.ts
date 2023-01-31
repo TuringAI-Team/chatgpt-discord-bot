@@ -84,17 +84,16 @@ async function getConversation(id, model) {
 async function saveMsg(model, userMsg, aiMsg, id) {
   var conversation;
   if (model == "gpt-3") {
-    conversation = `<split>Human: ${userMsg}\nAI: ${aiMsg}`;
+    conversation = `\n<split>Human: ${userMsg}\nAI: ${aiMsg}`;
   }
   if (model == "chatgpt") {
-    conversation = `<split>User: ${userMsg}\nChatGPT: ${aiMsg}`;
+    conversation = `\n<split>User: ${userMsg}\nChatGPT: ${aiMsg}`;
   }
   var { data } = await supabase
     .from("conversations")
     .select("*")
     .eq("id", id)
     .eq("model", model);
-  console.log(conversation);
   if (!data || !data[0]) {
     await supabase.from("conversations").insert({
       id: id,
@@ -112,7 +111,7 @@ async function saveMsg(model, userMsg, aiMsg, id) {
       previous = previous.shift();
     }
     previous = previous.join("\n");
-    conversation = `${previous}\n${conversation}`;
+    conversation = `${previous}${conversation}`;
 
     await supabase
       .from("conversations")
