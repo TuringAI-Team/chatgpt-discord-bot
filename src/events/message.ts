@@ -9,7 +9,7 @@ export default {
   name: Events.MessageCreate,
   once: false,
   async execute(message, client) {
-    if (message.isMemberMentioned(client.user)) {
+    if (message.mentions.has(client.user)) {
       var fields = [];
       var commands = await client.commands.toJSON();
       for (var i = 0; i < commands.length; i++) {
