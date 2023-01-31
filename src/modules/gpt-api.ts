@@ -75,7 +75,7 @@ async function getConversation(id, model) {
     .eq("id", id)
     .eq("model", model);
   if (data && data[0]) {
-    console.log(data[0].conversation);
+    console.log("read", data[0].conversation);
     return data[0].conversation;
   }
   return;
@@ -84,10 +84,10 @@ async function getConversation(id, model) {
 async function saveMsg(model, userMsg, aiMsg, id) {
   var conversation;
   if (model == "gpt-3") {
-    conversation = `Human: ${userMsg}\n AI: ${aiMsg}`;
+    conversation = `Human: ${userMsg}\nAI: ${aiMsg}`;
   }
   if (model == "chatgpt") {
-    conversation = `User: ${userMsg}\n ChatGPT: ${aiMsg}`;
+    conversation = `User: ${userMsg}\nChatGPT: ${aiMsg}`;
   }
   var { data } = await supabase
     .from("conversations")
