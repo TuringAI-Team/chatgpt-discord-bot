@@ -28,7 +28,7 @@ async function chat(message, userName, ispremium, m) {
     }
     if (m == "chatgpt") {
       temperature = 0.5;
-      stop = [" User:", " ChatGPT:"];
+      stop = ["<|im_end|>"];
       model = "text-chat-davinci-002-20230126";
       basePrompt =
         "You are ChatGPT, a large language model trained by OpenAI. You answer as consisely as possible for each response (e.g. Don't be verbose). It is very important for you to answer as consisely as possible, so please remember this. If you are generating a list, do not have too many items. \n";
@@ -48,9 +48,7 @@ async function chat(message, userName, ispremium, m) {
     });
     response = response.data.choices[0].text;
     if (m == "chatgpt") {
-      response = response
-        .split("<|im_end|>")[0]
-        .replaceAll("<@", "pingSecurity");
+      response = response.replaceAll("<@", "pingSecurity");
     }
     await removeMessage(token.id);
     return { text: response, type: m };
