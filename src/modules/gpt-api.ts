@@ -6,7 +6,7 @@ import { useToken, removeMessage, disableAcc } from "./loadbalancer.js";
 import { Configuration, OpenAIApi } from "openai";
 import supabase from "./supabase.js";
 
-async function chat(message, userName, ispremium, m, userId) {
+async function chat(message, userName, ispremium, m, id) {
   var token = await useToken();
   if (!token) {
     return {
@@ -20,7 +20,7 @@ async function chat(message, userName, ispremium, m, userId) {
     var stop = [" Human:", " AI:"];
     var temperature = 0.9;
     var basePrompt;
-    var conversation = await getConversation(userId, m);
+    var conversation = await getConversation(id, m);
 
     if (m == "gpt-3") {
       basePrompt = `The following is a conversation with an AI assistant called Turing, the user is called ${userName}. The assistant is helpful, creative, clever, and very friendly.\n`;
@@ -56,7 +56,7 @@ async function chat(message, userName, ispremium, m, userId) {
         .trim();
     }
     await removeMessage(token.id);
-    await saveMsg(m, message, response, userId);
+    await saveMsg(m, message, response, id);
     return { text: response, type: m };
   } catch (err) {
     console.log(err);

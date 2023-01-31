@@ -96,7 +96,7 @@ export default {
           interaction.user.username,
           ispremium,
           "gpt-3",
-          interaction.user.id
+          interaction.user.id + `-gpt-3`
         );
       }
     }
@@ -130,7 +130,7 @@ export default {
           interaction.user.username,
           ispremium,
           "chatgpt",
-          interaction.user.id
+          interaction.user.id + `-chatgpt`
         );
       }
     }
