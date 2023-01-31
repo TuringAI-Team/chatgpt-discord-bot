@@ -75,8 +75,8 @@ async function getConversation(id, model) {
     .eq("id", id)
     .eq("model", model);
   if (data && data[0]) {
-    console.log("read", data[0].conversation);
-    return data[0].conversation;
+    console.log("read", data[0].conversation.replaceAll("<split>", ""));
+    return data[0].conversation.replaceAll("<split>", "");
   }
   return;
 }
@@ -84,10 +84,10 @@ async function getConversation(id, model) {
 async function saveMsg(model, userMsg, aiMsg, id) {
   var conversation;
   if (model == "gpt-3") {
-    conversation = `Human: ${userMsg}\nAI: ${aiMsg}`;
+    conversation = `<split>Human: ${userMsg}\nAI: ${aiMsg}`;
   }
   if (model == "chatgpt") {
-    conversation = `User: ${userMsg}\nChatGPT: ${aiMsg}`;
+    conversation = `<split>User: ${userMsg}\nChatGPT: ${aiMsg}`;
   }
   var { data } = await supabase
     .from("conversations")
@@ -105,14 +105,14 @@ async function saveMsg(model, userMsg, aiMsg, id) {
   } else {
     var previous = data[0].conversation;
 
-    previous = previous.split(" \n ");
+    previous = previous.split("\n<split>");
     console.log(previous);
     var length = previous.length / 2;
     if (length > 3) {
       previous = previous.shift();
     }
-    previous = previous.join(" \n ");
-    conversation = `${previous} \n ${conversation}`;
+    previous = previous.join("\n");
+    conversation = `${previous}\n${conversation}`;
 
     await supabase
       .from("conversations")
