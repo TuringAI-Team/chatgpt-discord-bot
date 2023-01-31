@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from "uuid";
 import { useToken } from "../modules/loadbalancer.js";
 import chatSonic from "../modules/sonic.js";
 import { isPremium } from "../modules/premium.js";
+var maintenance = true;
 
 export default {
   cooldown: "1m",
@@ -48,7 +49,11 @@ export default {
         )
     )*/ async execute(interaction, client, commands, cooldownAction) {
     await interaction.deferReply();
-
+    if (maintenance && interaction.user.id != "530102778408861706") {
+      await interaction.editReply(
+        "Service under maintenance, for more information join us on [dsc.gg/turing](https://dsc.gg/turing)"
+      );
+    }
     var message = interaction.options.getString("message");
     var model = interaction.options.getString("model");
     var responseType = interaction.options.getString("response");
