@@ -89,7 +89,8 @@ export default {
           message,
           interaction.user.username,
           ispremium,
-          "gpt-3"
+          "gpt-3",
+          interaction.user.id
         );
       }
     }
@@ -122,7 +123,8 @@ export default {
           message,
           interaction.user.username,
           ispremium,
-          "chatgpt"
+          "chatgpt",
+          interaction.user.id
         );
       }
     }

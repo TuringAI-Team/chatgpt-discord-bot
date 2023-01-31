@@ -6,7 +6,7 @@ import { useToken, removeMessage, disableAcc } from "./loadbalancer.js";
 import { Configuration, OpenAIApi } from "openai";
 import supabase from "./supabase.js";
 
-async function chat(message, userName, ispremium, m) {
+async function chat(message, userName, ispremium, m, userId) {
   var token = await useToken();
   if (!token) {
     return {
@@ -21,8 +21,7 @@ async function chat(message, userName, ispremium, m) {
     var temperature = 0.9;
     var basePrompt;
     if (m == "gpt-3") {
-      basePrompt =
-        "The following is a conversation with an AI assistant called Turing, the user is called ${userName}. The assistant is helpful, creative, clever, and very friendly.\n";
+      basePrompt = `The following is a conversation with an AI assistant called Turing, the user is called ${userName}. The assistant is helpful, creative, clever, and very friendly.\n`;
       model = "text-davinci-003";
       prompt = `${basePrompt} Human: ${message}\nAI:`;
     }
@@ -30,9 +29,10 @@ async function chat(message, userName, ispremium, m) {
       temperature = 0.5;
       stop = ["<|im_end|>"];
       model = "text-chat-davinci-002-20230126";
-      basePrompt =
-        "You are ChatGPT, a large language model trained by OpenAI. You answer as consisely as possible for each response (e.g. Don't be verbose). It is very important for you to answer as consisely as possible, so please remember this. If you are generating a list, do not have too many items. \n";
-      prompt = `${basePrompt} User: ${message} \n\n ChatGPT:`;
+      basePrompt = `You are ChatGPT, a large language model trained by OpenAI. You answer as concisely as possible for each response (e.g. don’t be verbose). It is very important that you answer as concisely as possible, so please remember this. If you are generating a list, do not have too many items. Keep the number of items short.
+      Knowledge cutoff: 2021-09
+      Current date: ${getToday()}\n`;
+      prompt = `${basePrompt} User: ${message} \n ChatGPT:`;
     }
     var maxtokens = 300;
     if (ispremium) maxtokens = 500;
@@ -48,9 +48,13 @@ async function chat(message, userName, ispremium, m) {
     });
     response = response.data.choices[0].text;
     if (m == "chatgpt") {
-      response = response.replaceAll("<@", "pingSecurity");
+      response = response
+        .replaceAll("<@", "pingSecurity")
+        .replace(/<|im_end|>/g, "")
+        .trim();
     }
     await removeMessage(token.id);
+    await saveMsg(m, message, response, userId);
     return { text: response, type: m };
   } catch (err) {
     await removeMessage(token.id);
@@ -101,6 +105,13 @@ async function saveMsg(model, userMsg, aiMsg, id) {
       .eq("id", id)
       .eq("model", model);
   }
+}
+function getToday() {
+  let today = new Date();
+  let dd = String(today.getDate()).padStart(2, "0");
+  let mm = String(today.getMonth() + 1).padStart(2, "0");
+  let yyyy = today.getFullYear();
+  return `${yyyy}-${mm}-${dd}`;
 }
 
 export { chat };
