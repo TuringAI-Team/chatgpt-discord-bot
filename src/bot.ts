@@ -12,7 +12,7 @@ import eventHandler from "./handlers/events.js";
 import commandHandler from "./handlers/commands.js";
 // Create a new client instance
 const client: any = new Client({
-  intents: [GatewayIntentBits.Guilds],
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.MessageContent],
   partials: [
     Partials.User, // We want to receive uncached users!
     Partials.Channel,

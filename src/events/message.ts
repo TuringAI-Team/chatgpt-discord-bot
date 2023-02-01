@@ -9,7 +9,6 @@ export default {
   name: Events.MessageCreate,
   once: false,
   async execute(message, client) {
-    console.log(message);
     if (message.mentions.has(client.user)) {
       console.log(message);
       var fields = [];
