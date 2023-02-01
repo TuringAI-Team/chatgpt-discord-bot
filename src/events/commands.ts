@@ -10,7 +10,7 @@ const interactionType = {
     await interaction.deferReply();
   },
   reply: async (interaction, content) => {
-    if (interaction.deferred) {
+    if (interaction.deferred || interaction.replied) {
       interaction.reply(content);
     } else {
       interaction.editReply(content);

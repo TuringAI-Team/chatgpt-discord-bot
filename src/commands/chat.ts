@@ -29,7 +29,7 @@ export default {
         .setRequired(true)
         .addChoices(
           { name: "gpt-3", value: "gpt-3" },
-          { name: "ChatGPT(Real)", value: "chatgpt" }
+          { name: "ChatGPT(gpt-3.5)", value: "chatgpt" }
         )
     ),
   /*
