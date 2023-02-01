@@ -4,7 +4,7 @@ export default {
   data: new SlashCommandBuilder()
     .setName("help")
     .setDescription("Get the command list of the bot"),
-  async execute(interaction, client, commands) {
+  async execute(interaction, client, commands, commandType) {
     var fields = [];
     for (var i = 0; i < commands.length; i++) {
       var command = commands[i].data;
@@ -30,7 +30,7 @@ export default {
       .setFooter({
         text: "This is not an official bot.",
       });
-    await interaction.reply({
+    await commandType.reply(interaction, {
       embeds: [embed],
     });
     return;

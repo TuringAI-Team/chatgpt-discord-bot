@@ -4,6 +4,20 @@ import ms from "ms";
 import supabase from "../modules/supabase.js";
 import { isPremium } from "../modules/premium.js";
 
+const interactionType = {
+  type: "interaction",
+  load: async (interaction) => {
+    await interaction.deferReply();
+  },
+  reply: async (interaction, content) => {
+    if (interaction.deferred) {
+      interaction.reply(content);
+    } else {
+      interaction.editReply(content);
+    }
+  },
+};
+
 export default {
   name: Events.InteractionCreate,
   once: false,
@@ -42,7 +56,12 @@ export default {
               .update({ created_at: new Date() })
               .eq("userId", interaction.user.id)
               .eq("command", interaction.commandName);
-            await command.execute(interaction, client, commands);
+            await command.execute(
+              interaction,
+              client,
+              commands,
+              interactionType
+            );
           } else {
             await interaction.reply({
               content:
@@ -59,10 +78,10 @@ export default {
             .insert([
               { userId: interaction.user.id, command: interaction.commandName },
             ]);
-          await command.execute(interaction, client, commands);
+          await command.execute(interaction, client, commands, interactionType);
         }
       } else {
-        await command.execute(interaction, client, commands);
+        await command.execute(interaction, client, commands, interactionType);
       }
     } catch (error) {
       console.error(error);

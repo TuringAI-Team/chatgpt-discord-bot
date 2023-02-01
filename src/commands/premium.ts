@@ -32,7 +32,8 @@ var data = new SlashCommandBuilder()
   );
 export default {
   data,
-  async execute(interaction, client) {
+  disablePing: true,
+  async execute(interaction, client, commands) {
     var key = interaction.options.getString("key");
     if (interaction.options.getSubcommand() === "buy") {
       await interaction.reply({

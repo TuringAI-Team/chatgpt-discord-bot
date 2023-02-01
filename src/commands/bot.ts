@@ -15,14 +15,14 @@ export default {
   data: new SlashCommandBuilder()
     .setName("bot")
     .setDescription("Get the info of the bot"),
-  async execute(interaction, client) {
+  async execute(interaction, client, commands, commandType) {
     const timeString = time(client.user.createdAt, "R");
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
 
     var shard = client.shard.client.options.shards[0] + 1;
 
-    await interaction.deferReply();
+    await commandType.load(interaction);
     var totalGuildsR = await client.shard.fetchClientValues(
       "guilds.cache.size"
     );
@@ -107,7 +107,7 @@ export default {
         .setURL("https://github.com/MrlolDev/chatgpt-discord-bot")
         .setStyle(ButtonStyle.Link)
     );
-    await interaction.editReply({
+    await commandType.reply(interaction, {
       embeds: [embed],
       components: [row],
     });

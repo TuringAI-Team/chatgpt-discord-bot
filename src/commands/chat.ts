@@ -47,50 +47,31 @@ export default {
             value: "false",
           }
         )
-    )*/ async execute(interaction, client, commands, cooldownAction) {
-    await interaction.deferReply();
+    )*/ async execute(interaction, client, commands, commandType, options) {
+    await commandType.load(interaction);
     if (maintenance == true && interaction.user.id != "530102778408861706") {
-      await interaction.editReply(
+      await commandType.reply(
+        interaction,
         "Service under maintenance, for more information join us on [dsc.gg/turing](https://dsc.gg/turing)"
       );
       return;
     }
-    var message = interaction.options.getString("message");
-    var model = interaction.options.getString("model");
-    var responseType = interaction.options.getString("response");
-
-    if (!responseType) {
-      responseType = "text";
+    var message;
+    var model;
+    if (!interaction.options) {
+      message = options.message;
+      model = options.model;
+    } else {
+      message = interaction.options.getString("message");
+      model = interaction.options.getString("model");
     }
+    console.log(options);
 
     var result;
     var cached = false;
     var ispremium = await isPremium(interaction.user.id);
 
     if (model == "gpt-3") {
-      /*     let { data: results, error } = await supabase
-        .from("results")
-        .select("*")
-
-        // Filters
-        .eq("prompt", message.toLowerCase())
-        .eq("provider", "gpt-3");
-      if (!results || error) {
-        var errr = "Error connecting with db";
-
-        await responseWithText(interaction, message, errr, channel, "error");
-        return;
-      }
-      if (results[0] && results[0].result.text) {
-        var type = "gpt-3";
-
-        result = { text: results[0].result.text, type: type };
-        const { data, error } = await supabase
-          .from("results")
-          .update({ uses: results[0].uses + 1 })
-          .eq("id", results[0].id);
-        cached = true;
-      } */
       result = await chat(
         message,
         interaction.user.username,
@@ -101,29 +82,6 @@ export default {
     }
 
     if (model == "chatgpt") {
-      /* let { data: results, error } = await supabase
-        .from("results")
-        .select("*")
-
-        // Filters
-        .eq("prompt", message.toLowerCase())
-        .eq("provider", "chatgpt");
-      if (!results || error) {
-        var errr = "Error connecting with db";
-
-        await responseWithText(interaction, message, errr, channel, "error");
-        return;
-      }
-      if (results[0] && results[0].result.text) {
-        var type = "chatgpt";
-
-        result = { text: results[0].result.text, type: type };
-        const { data, error } = await supabase
-          .from("results")
-          .update({ uses: results[0].uses + 1 })
-          .eq("id", results[0].id);
-        cached = true;
-      } */
       result = await chat(
         message,
         interaction.user.username,
@@ -143,7 +101,14 @@ export default {
       if (!results || error) {
         var errr = "Error connecting with db";
 
-        await responseWithText(interaction, message, errr, channel, "error");
+        await responseWithText(
+          interaction,
+          message,
+          errr,
+          channel,
+          "error",
+          commandType
+        );
         return;
       }
       if (results[0] && results[0].result.text) {
@@ -164,7 +129,8 @@ export default {
         message,
         `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)`,
         channel,
-        "error"
+        "error",
+        commandType
       );
       return;
     }
@@ -189,7 +155,8 @@ export default {
         message,
         response,
         channel,
-        result.type
+        result.type,
+        commandType
       );
     } else {
       await responseWithText(
@@ -197,14 +164,22 @@ export default {
         message,
         result.error,
         channel,
-        "error"
+        "error",
+        commandType
       );
     }
     return;
   },
 };
 
-async function responseWithText(interaction, prompt, result, channel, type) {
+async function responseWithText(
+  interaction,
+  prompt,
+  result,
+  channel,
+  type,
+  commandType
+) {
   var completeResponse = `**Human:** ${prompt}\n**AI(${type}):** ${result}`;
   var charsCount = completeResponse.split("").length;
   if (charsCount / 2000 >= 1) {
@@ -212,7 +187,8 @@ async function responseWithText(interaction, prompt, result, channel, type) {
     for (var i = 0; i < loops; i++) {
       if (i == 0) {
         try {
-          interaction.editReply(
+          commandType.reply(
+            interaction,
             completeResponse.split("").slice(0, 2000).join("")
           );
         } catch (err) {
@@ -228,6 +204,6 @@ async function responseWithText(interaction, prompt, result, channel, type) {
       }
     }
   } else {
-    interaction.editReply(completeResponse);
+    commandType.reply(interaction, completeResponse);
   }
 }
