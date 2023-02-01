@@ -11,8 +11,10 @@ const msgType = {
     await msg.react("<a:loading:1051419341914132554>");
   },
   reply: async (msg, content) => {
-    msg.reply(content);
-    await msg.reactions.removeAll();
+    await msg.reply(content);
+    try {
+      await msg.reactions.removeAll();
+    } catch (err) {}
   },
 };
 
