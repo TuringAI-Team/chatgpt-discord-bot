@@ -43,7 +43,7 @@ export default {
       if (command.disablePing) return;
       if (commandName == "chat") {
         options.message = content.replace("chat ", "");
-        options.model = "chatgpt";
+        options.model = "gpt-3";
       }
       var ispremium = await isPremium(message.author.id);
       try {
