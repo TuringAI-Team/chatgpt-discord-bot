@@ -8,7 +8,7 @@ import supabase from "./supabase.js";
 import axios from "axios";
 
 async function chat(message, userName, ispremium, m, id) {
-  var token = await useToken(model);
+  var token = await useToken(m);
   if (!token) {
     return {
       error: `We are reaching our capacity limits right now. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`,
