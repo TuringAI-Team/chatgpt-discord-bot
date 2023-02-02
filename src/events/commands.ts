@@ -86,7 +86,6 @@ export default {
         await command.execute(interaction, client, commands, interactionType);
       }
     } catch (error) {
-      console.error(error);
       await interaction.reply({
         content: "There was an error while executing this command!",
         ephemeral: true,
