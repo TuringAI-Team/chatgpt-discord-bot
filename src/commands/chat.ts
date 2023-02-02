@@ -64,7 +64,6 @@ export default {
       message = interaction.options.getString("message");
       model = interaction.options.getString("model");
     }
-    console.log(options);
 
     var result;
     var cached = false;

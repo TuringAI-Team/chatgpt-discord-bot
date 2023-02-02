@@ -42,7 +42,6 @@ async function chat(message, userName, ispremium, m, id) {
       });
       response = response.data.choices[0].text;
     } else {
-      console.log(token);
       response = await getResponse(message, id, token.key);
       console.log(response);
     }
@@ -70,11 +69,13 @@ async function chat(message, userName, ispremium, m, id) {
 
 async function getResponse(text, id, key) {
   try {
-    const response = await axios.post("https://chatgpt.pawan.krd/ask", {
+    const response = await axios({
+      method: "post",
+      url: "https://chatgpt.pawan.krd/ask",
       headers: {
         "Content-Type": "application/json",
       },
-      data: JSON.stringify({ prompt: text, id, key }),
+      data: JSON.stringify({ prompt: text, id, key: key }),
     });
     return response.data.response;
   } catch (error) {
