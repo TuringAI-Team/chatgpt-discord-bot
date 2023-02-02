@@ -5,12 +5,10 @@ import chalk from "chalk";
 import { useToken, removeMessage, disableAcc } from "./loadbalancer.js";
 import { Configuration, OpenAIApi } from "openai";
 import supabase from "./supabase.js";
+import axios from "axios";
 
 async function chat(message, userName, ispremium, m, id) {
-  var token = await useToken({
-    stop: stop,
-    model: model,
-  });
+  var token = await useToken(model);
   if (!token) {
     return {
       error: `We are reaching our capacity limits right now. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`,
@@ -27,36 +25,35 @@ async function chat(message, userName, ispremium, m, id) {
     if (m == "gpt-3") {
       var basePrompt = `The following is a conversation with an AI assistant called Turing, the user is called ${userName}. The assistant is helpful, creative, clever, and very friendly.\n`;
       model = "text-davinci-003";
-      prompt = `Human: ${message}\n AI:`;
-    }
-    if (m == "chatgpt") {
-      stop = ["<|im_end|>", "<|im_sep|>"];
-      model = "text-chat-davinci-002-20230126";
-
-      prompt = `${basePrompt}${conversation}User: ${message}\n ChatGPT:`;
+      prompt = `${basePrompt}${conversation}Human: ${message}\n AI:`;
     }
     var maxtokens = 300;
     if (ispremium) maxtokens = 600;
-
-    response = await token.client.createCompletion({
-      model: model,
-      prompt: prompt,
-      temperature: temperature,
-      max_tokens: maxtokens,
-      top_p: 1,
-      frequency_penalty: 0.0,
-      presence_penalty: 0.6,
-      stop: stop,
-    });
-    response = response.data.choices[0].text;
-    if (m == "chatgpt") {
-      response = response
-        .replaceAll("<@", "pingSecurity")
-        .replace(/<|im_end|>/g, "")
-        .trim();
+    if (m == "gpt-3") {
+      response = await token.client.createCompletion({
+        model: model,
+        prompt: prompt,
+        temperature: temperature,
+        max_tokens: maxtokens,
+        top_p: 1,
+        frequency_penalty: 0.0,
+        presence_penalty: 0.6,
+        stop: stop,
+      });
+      response = response.data.choices[0].text;
+    } else {
+      response = await getResponse(message, id, token.key);
     }
+
+    if (m == "chatgpt") {
+      response = response.replace(/<|im_end|>/g, "").trim();
+    }
+
+    response = response.replaceAll("<@", "pingSecurity");
     await removeMessage(token.id);
-    await saveMsg(m, message, response, id, ispremium);
+    if (m == "gpt-3") {
+      await saveMsg(m, message, response, id, ispremium);
+    }
     return { text: response, type: m };
   } catch (err) {
     console.log(err);
@@ -68,6 +65,21 @@ async function chat(message, userName, ispremium, m, id) {
     };
   }
 }
+
+async function getResponse(text, id, key) {
+  try {
+    const response = await axios.post("https://api.pawan.krd/chat/gpt", {
+      headers: {
+        "Content-Type": "application/json",
+      },
+      data: JSON.stringify({ prompt: text, id, key }),
+    });
+    return response.data.response;
+  } catch (error) {
+    console.error(error);
+  }
+}
+
 async function getConversation(id, model) {
   var { data } = await supabase
     .from("conversations")

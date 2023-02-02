@@ -4,8 +4,7 @@ import delay from "delay";
 var clients = [];
 import { Configuration, OpenAIApi } from "openai";
 // @ts-ignore
-import ChatGPTClient from "@waylaidwanderer/chatgpt-api";
-import Keyv from "keyv";
+import chatGPT from "chatgpt-io";
 
 async function getTokens() {
   let { data: accounts, error } = await supabase.from("accounts").select("*");
@@ -15,44 +14,21 @@ async function getTokens() {
 
   return accounts;
 }
-/*
-async function initChat(token, id, key) {
-  try {
-    let bot = new ChatGPT(token, {
-      name: id,
-      reconnection: false,
-      forceNew: false,
-      logLevel: LogLevel.Info,
-      bypassNode: "https://gpt.pawan.krd",
-      proAccount: false,
-    });
-    await bot.waitForReady();
-    const configuration = new Configuration({
-      apiKey: key,
-    });
-    if (key) {
-      console.log(`loaded ${id} with official`);
-      const openai = new OpenAIApi(configuration);
-      clients.push({ client: bot, id, type: "unofficial", official: openai });
-    } else {
-      clients.push({ client: bot, id, type: "unofficial" });
-    }
-    console.log(`loaded ${id} with unofficial`);
-  } catch (err) {
-    console.log(`error with ${id}:\n${err}`);
-  }
-}*/
 
-async function useToken(options): Promise<null | {
+async function useToken(model): Promise<null | {
   id: string;
   type: string;
   client: any;
+  key: string;
 }> {
   var tokens = await getTokens();
   if (!tokens || tokens.length <= 0) {
     return;
   }
   var t = tokens.filter((x) => x.messages <= 1 && x.abled != false);
+  if (model == "chatgpt") {
+    t = tokens.filter((x) => x.messages <= 2 && x.key != null);
+  }
   var i = getRndInteger(0, t.length - 1);
   if (t.length <= 0) return;
   var token = t[i];
@@ -61,26 +37,16 @@ async function useToken(options): Promise<null | {
     const configuration = new Configuration({
       apiKey: token.key,
     });
-    const openai = new OpenAIApi(configuration);
-    const keyv = new Keyv(process.env.SUPABSE_DB, {
-      table: "conversations",
-    });
-    /* const chatGptClient = new ChatGPTClient(
-      token.key,
-      {
-        modelOptions: options,
-        // (Optional) Set a custom prompt prefix. As per my testing it should work with two newlines
-        // promptPrefix: 'You are not ChatGPT...\n\n',
-        // (Optional) Set to true to enable `console.debug()` logging
-        debug: false,
-      },
-      keyv
-    );*/
-
+    var c: any = new OpenAIApi(configuration);
+    /* if (model == "chatgpt") {
+      c = new chatGPT(token.key);
+      await c.waitForReady();
+    }*/
     var client = {
       id: token.id,
-      client: openai,
+      client: c,
       type: "official",
+      key: token.key,
     };
     return client;
   } else {

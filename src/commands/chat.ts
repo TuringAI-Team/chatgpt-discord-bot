@@ -5,7 +5,6 @@ import {
 } from "discord.js";
 import { chat } from "../modules/gpt-api.js";
 import supabase from "../modules/supabase.js";
-import { v4 as uuidv4 } from "uuid";
 import { useToken } from "../modules/loadbalancer.js";
 import chatSonic from "../modules/sonic.js";
 import { isPremium } from "../modules/premium.js";
@@ -28,8 +27,8 @@ export default {
         .setDescription("The model you want to use for the AI.")
         .setRequired(true)
         .addChoices(
-          { name: "gpt-3", value: "gpt-3" }
-          //   { name: "ChatGPT(gpt-3.5)", value: "chatgpt" }
+          { name: "gpt-3", value: "gpt-3" },
+          { name: "ChatGPT(gpt-3.5)", value: "chatgpt" }
         )
     ),
   /*

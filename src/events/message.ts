@@ -25,6 +25,7 @@ export default {
     if (message.mentions.has(client.user) && !message.author.bot) {
       var content = message.content;
       if (message.content.includes(`<@${client.user.id}>`)) {
+        if (!message.content.startsWith(`<@${client.user.id}>`)) return;
         content = message.content.split(`<@${client.user.id}> `)[1];
       }
 
@@ -43,7 +44,7 @@ export default {
       if (command.disablePing) return;
       if (commandName == "chat") {
         options.message = content.replace("chat ", "");
-        options.model = "gpt-3";
+        options.model = "chatgpt";
       }
       var ispremium = await isPremium(message.author.id);
       try {
