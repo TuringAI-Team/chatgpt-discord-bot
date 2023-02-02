@@ -68,7 +68,7 @@ async function chat(message, userName, ispremium, m, id) {
 
 async function getResponse(text, id, key) {
   try {
-    const response = await axios.post("https://api.pawan.krd/chat/gpt", {
+    const response = await axios.post("https://chatgpt.pawan.krd/ask", {
       headers: {
         "Content-Type": "application/json",
       },
