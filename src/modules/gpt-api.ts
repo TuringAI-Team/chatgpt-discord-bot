@@ -75,7 +75,7 @@ async function getResponse(text, id, key) {
       headers: {
         "Content-Type": "application/json",
       },
-      data: JSON.stringify({ prompt: text, id, key: key }),
+      data: JSON.stringify({ prompt: text, id: id, key: key }),
     });
     return response.data.response;
   } catch (error) {
