@@ -65,7 +65,7 @@ async function useToken(options): Promise<null | {
     const keyv = new Keyv(process.env.SUPABSE_DB, {
       table: "conversations",
     });
-    const chatGptClient = new ChatGPTClient(
+    /* const chatGptClient = new ChatGPTClient(
       token.key,
       {
         modelOptions: options,
@@ -75,11 +75,11 @@ async function useToken(options): Promise<null | {
         debug: false,
       },
       keyv
-    );
+    );*/
 
     var client = {
       id: token.id,
-      client: chatGptClient,
+      client: openai,
       type: "official",
     };
     return client;
