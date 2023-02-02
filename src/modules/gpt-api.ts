@@ -7,6 +7,15 @@ import { Configuration, OpenAIApi } from "openai";
 import supabase from "./supabase.js";
 
 async function chat(message, userName, ispremium, m, id) {
+  var token = await useToken({
+    stop: stop,
+    model: model,
+  });
+  if (!token) {
+    return {
+      error: `We are reaching our capacity limits right now. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`,
+    };
+  }
   try {
     var response;
     var model;
@@ -28,15 +37,7 @@ async function chat(message, userName, ispremium, m, id) {
     }
     var maxtokens = 300;
     if (ispremium) maxtokens = 600;
-    var token = await useToken({
-      stop: stop,
-      model: model,
-    });
-    if (!token) {
-      return {
-        error: `We are reaching our capacity limits right now. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`,
-      };
-    }
+
     response = await token.client.createCompletion({
       model: model,
       prompt: prompt,
