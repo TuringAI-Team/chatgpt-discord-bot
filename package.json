@@ -17,6 +17,7 @@
     "@keyv/postgres": "^1.4.1",
     "@supabase/supabase-js": "^2.1.1",
     "@waylaidwanderer/chatgpt-api": "^1.3.1",
+    "api": "^5.0.7",
     "chalk": "^5.2.0",
     "chatgpt": "^3.3.13",
     "chatgpt-io": "^1.0.6-alpha",
