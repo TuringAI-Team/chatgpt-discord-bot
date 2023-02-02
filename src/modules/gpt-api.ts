@@ -43,7 +43,6 @@ async function chat(message, userName, ispremium, m, id) {
       response = response.data.choices[0].text;
     } else {
       response = await getResponse(message, id, token.key);
-      console.log(response);
     }
 
     if (m == "chatgpt") {
