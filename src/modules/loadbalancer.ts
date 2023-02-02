@@ -3,6 +3,9 @@ import supabase from "./supabase.js";
 import delay from "delay";
 var clients = [];
 import { Configuration, OpenAIApi } from "openai";
+// @ts-ignore
+import ChatGPTClient from "@waylaidwanderer/chatgpt-api";
+import Keyv from "keyv";
 
 async function getTokens() {
   let { data: accounts, error } = await supabase.from("accounts").select("*");
@@ -40,7 +43,7 @@ async function initChat(token, id, key) {
   }
 }*/
 
-async function useToken(): Promise<null | {
+async function useToken(options): Promise<null | {
   id: string;
   type: string;
   client: any;
@@ -59,10 +62,24 @@ async function useToken(): Promise<null | {
       apiKey: token.key,
     });
     const openai = new OpenAIApi(configuration);
+    const keyv = new Keyv(process.env.SUPABSE_DB, {
+      table: "conversations",
+    });
+    const chatGptClient = new ChatGPTClient(
+      token.key,
+      {
+        modelOptions: options,
+        // (Optional) Set a custom prompt prefix. As per my testing it should work with two newlines
+        // promptPrefix: 'You are not ChatGPT...\n\n',
+        // (Optional) Set to true to enable `console.debug()` logging
+        debug: false,
+      },
+      keyv
+    );
 
     var client = {
       id: token.id,
-      client: openai,
+      client: chatGptClient,
       type: "official",
     };
     return client;

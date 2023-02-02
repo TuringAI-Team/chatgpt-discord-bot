@@ -61,7 +61,9 @@ export default {
             var milliseconds = createdAt.getTime();
             var now = Date.now();
             var diff = now - milliseconds;
+            //@ts-ignore
             var count = ms(command.cooldown) - diff;
+            //@ts-ignore
             if (diff >= ms(command.cooldown)) {
               const { data, error } = await supabase
                 .from("cooldown")

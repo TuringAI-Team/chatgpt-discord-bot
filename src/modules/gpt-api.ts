@@ -7,37 +7,36 @@ import { Configuration, OpenAIApi } from "openai";
 import supabase from "./supabase.js";
 
 async function chat(message, userName, ispremium, m, id) {
-  var token = await useToken();
-  if (!token) {
-    return {
-      error: `We are reaching our capacity limits right now. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`,
-    };
-  }
   try {
     var response;
     var model;
     var prompt;
     var stop = [" Human:", " AI:"];
     var temperature = 0.9;
-    var basePrompt;
     var conversation = await getConversation(id, m);
 
     if (m == "gpt-3") {
-      basePrompt = `The following is a conversation with an AI assistant called Turing, the user is called ${userName}. The assistant is helpful, creative, clever, and very friendly.\n`;
+      var basePrompt = `The following is a conversation with an AI assistant called Turing, the user is called ${userName}. The assistant is helpful, creative, clever, and very friendly.\n`;
       model = "text-davinci-003";
-      prompt = `${basePrompt}${conversation}Human: ${message}\n AI:`;
+      prompt = `Human: ${message}\n AI:`;
     }
     if (m == "chatgpt") {
-      temperature = 0.5;
-      stop = ["<|im_end|>"];
+      stop = ["<|im_end|>", "<|im_sep|>"];
       model = "text-chat-davinci-002-20230126";
-      basePrompt = `You are ChatGPT, a large language model trained by OpenAI. You answer as concisely as possible for each response (e.g. don’t be verbose). It is very important that you answer as concisely as possible, so please remember this. If you are generating a list, do not have too many items. Keep the number of items short.
-      Knowledge cutoff: 2021-09
-      Current date: ${getToday()}\n`;
+
       prompt = `${basePrompt}${conversation}User: ${message}\n ChatGPT:`;
     }
     var maxtokens = 300;
     if (ispremium) maxtokens = 600;
+    var token = await useToken({
+      stop: stop,
+      model: model,
+    });
+    if (!token) {
+      return {
+        error: `We are reaching our capacity limits right now. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`,
+      };
+    }
     response = await token.client.createCompletion({
       model: model,
       prompt: prompt,
