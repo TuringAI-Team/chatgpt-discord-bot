@@ -46,7 +46,6 @@ TOKEN=Your discord bot token https://discord.dev
 CLIENT_ID=Your discord bot id https://discord.dev
 SUPABASE_KEY=Your supabase service role key https://app.supabase.com
 SUPABASE_URL=Your supabase project url https://app.supabase.com
-NOPECHA_KEY=Your nopecha key https://nopecha.com
 ```
 
 7. Run the bot
