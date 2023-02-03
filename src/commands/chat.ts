@@ -27,7 +27,7 @@ export default {
         .setDescription("The model you want to use for the AI.")
         .setRequired(true)
         .addChoices(
-          { name: "gpt-3", value: "gpt-3" },
+          { name: "gpt-3(under maintenance)", value: "gpt-3" },
           { name: "ChatGPT(gpt-3.5)", value: "chatgpt" }
         )
     ),
@@ -178,7 +178,7 @@ async function responseWithText(
   type,
   commandType
 ) {
-  var completeResponse = `**Human:** ${prompt}\n**AI(${type}):** ${result}`;
+  var completeResponse = `**${interaction.user.tag}:** ${prompt}\n**AI(${type}):** ${result}`;
   var charsCount = completeResponse.split("").length;
   if (charsCount / 2000 >= 1) {
     var loops = Math.ceil(charsCount / 2000);
