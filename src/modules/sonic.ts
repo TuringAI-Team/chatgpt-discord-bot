@@ -15,7 +15,6 @@ export default async function chatSonic(msg: string) {
     };
   }
   var firstOne = await accounts[0];
-  console.log(firstOne.id);
   if (!firstOne) {
     return {
       error: `We are running out of credits, please wait until we solve the issue.`,

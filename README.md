@@ -16,7 +16,8 @@ A discord bot for interact with ChatGPT
 3. Create supabase tables
 
 Table: accounts
-Fields (name, dataType): (id,uuid), (created_at, timestamp), (email, text), (password, text), (abled, boolean), (totalMessages, numeric), (lastUse, numeric), (key, text), (session, text), (shard,numeric)
+Fields (name, dataType): (id,uuid), (created_at, timestamp), (email, text), (password, text), (abled, boolean), (totalMessages, numeric), (lastUse, numeric), (key, text)
+In this table it is only required the key(open ai key), abled(true), messages(0) and id property(random UUID).
 
 Table: chatsonic
 Fields (name, dataType): (id,uuid), (created_at, timestamp), (key, text)
@@ -65,15 +66,6 @@ npm run dev
 ```
 npm run git
 ```
-
-## Get session key
-
-1. Go to https://chat.openai.com/chat
-2. Log in to your account
-3. Open developer tools
-4. Go to the application section
-5. Go to the cookies section
-6. And get your session token which is the cookie with the name: "\_\_Secure-next-auth.session-token"
 
 ## TO DO:
 
