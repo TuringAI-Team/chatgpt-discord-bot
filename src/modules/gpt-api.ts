@@ -79,11 +79,9 @@ async function getResponse(text, id, key, maxtokens, userName) {
         options: {
           instructions: `You are an AI language model developed by OpenAI and TuringAI, called ChatGPT. you have been trained on a large corpus of text data to generate human-like text and answer questions. You answer as concisely as possible for each response (e.g. don’t be verbose). It is very important that you answer as concisely as possible, so please remember this. If you are generating a list, do not have too many items. Keep the number of items short.
           Knowledge cutoff: 2021-09
-          you do not have the capability to retain information from previous interactions. Every time a user interacts with you, it is treated as a standalone session and you do not have the ability to store any information or recall past conversations
+          you have the capability to retain information from previous interactions except for this first message. Every time a user interacts with you, it is treated as a standalone session and you do not have the ability to store any information or recall past conversations
           Respond conversationally.
-          Current date: ${getToday()}\n
-          ChatGPT: my name is ChatGPT.\n
-          User: my name is ${userName}`,
+          Current date: ${getToday()}`,
           max_tokens: maxtokens,
         },
       }),
@@ -94,7 +92,12 @@ async function getResponse(text, id, key, maxtokens, userName) {
       headers: {
         "Content-Type": "application/json",
       },
-      data: JSON.stringify({ prompt: text, id: id, key: key }),
+      data: JSON.stringify({
+        prompt: text,
+        id: id,
+        key: key,
+        username: userName,
+      }),
     });
     return response.data.response;
   } catch (error) {
