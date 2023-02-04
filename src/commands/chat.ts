@@ -85,7 +85,7 @@ export default {
         interaction.user.username,
         ispremium,
         "chatgpt",
-        `${interaction.user.id}-chat`
+        `chat-${interaction.user.id}`
       );
     }
     if (model == "chatsonic") {

@@ -10,6 +10,8 @@ import {
 import "dotenv/config";
 import eventHandler from "./handlers/events.js";
 import commandHandler from "./handlers/commands.js";
+import interactionsHandler from "./handlers/interactions.js";
+
 // Create a new client instance
 const client: any = new Client({
   intents: [
@@ -17,6 +19,7 @@ const client: any = new Client({
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.GuildMessageReactions,
     GatewayIntentBits.DirectMessages,
+    GatewayIntentBits.GuildVoiceStates,
   ],
   partials: [
     Partials.User, // We want to receive uncached users!
@@ -28,9 +31,12 @@ const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
 
 client.commands = new Collection();
 client.interactions = new Collection();
+client.voiceConnections = [];
 
 // Handlers
 eventHandler(client);
 commandHandler(client);
+interactionsHandler(client);
+
 // Log in to Discord with your client's token
 client.login(process.env.TOKEN);

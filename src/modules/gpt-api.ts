@@ -67,7 +67,6 @@ async function chat(message, userName, ispremium, m, id) {
 }
 
 async function getResponse(text, id, key, maxtokens, userName) {
-  console.log(id);
   try {
     const res = await axios({
       method: "post",
@@ -77,7 +76,13 @@ async function getResponse(text, id, key, maxtokens, userName) {
       },
       data: JSON.stringify({
         key: key,
-        options: {},
+        options: {
+          /*instructions: `You are an AI language model developed by OpenAI and TuringAI, called ChatGPT. you have been trained on a large corpus of text data to generate human-like text and answer questions. You answer as concisely as possible for each response (e.g. don’t be verbose). It is very important that you answer as concisely as possible, so please remember this. If you are generating a list, do not have too many items. Keep the number of items short.
+          Knowledge cutoff: 2021-09
+          you have the capability to retain information from previous interactions.
+          Respond conversationally.
+          Current date: ${getToday()}`,*/
+        },
       }),
     });
     const response = await axios({
@@ -91,15 +96,7 @@ async function getResponse(text, id, key, maxtokens, userName) {
         id: id,
         key: key,
         username: userName,
-        options: {
-          /*
-          instructions: `You are an AI language model developed by OpenAI and TuringAI, called ChatGPT. you have been trained on a large corpus of text data to generate human-like text and answer questions. You answer as concisely as possible for each response (e.g. don’t be verbose). It is very important that you answer as concisely as possible, so please remember this. If you are generating a list, do not have too many items. Keep the number of items short.
-          Knowledge cutoff: 2021-09
-          you have the capability to retain information from previous interactions except for this message. Every time a user interacts with you, it is treated as a standalone session and you do not have the ability to store any information or recall past conversations
-          Respond conversationally.
-          Current date: ${getToday()}`,*/
-          max_tokens: maxtokens,
-        },
+        options: {},
       }),
     });
     return response.data.response;

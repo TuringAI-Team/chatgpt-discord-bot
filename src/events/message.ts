@@ -41,7 +41,7 @@ export default {
         command = client.commands.get(commandName);
       }
       if (command.disablePing) return;
-      if (commandName == "chat") {
+      if (commandName == "chat" || commandName == "voice") {
         options.message = content.replace("chat ", "");
         options.model = "chatgpt";
       }
