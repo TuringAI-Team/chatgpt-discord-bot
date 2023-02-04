@@ -12,7 +12,10 @@ export default {
     description: "Make the bot leave a voice channel",
   },
   async execute(interaction, client) {
-    if (getVoiceConnection(interaction.guildId)) {
+    if (
+      getVoiceConnection(interaction.guildId) &&
+      interaction.member.voice.channelId
+    ) {
       getVoiceConnection(interaction.guildId).disconnect();
       await interaction.update({
         content: "ChatGPT voice off",
