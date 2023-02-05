@@ -8,22 +8,24 @@ export default {
     var fields = [];
     for (var i = 0; i < commands.length; i++) {
       var command = commands[i].data;
-      var optionMsg = "";
-      if (command.options) {
-        var maxLength = command.options.length;
-        if (maxLength > 3) maxLength = 3;
-        for (var j = 0; j < maxLength; j++) {
-          var option = command.options[j];
-          optionMsg += " `" + `${option.name}: ${option.description}` + "`";
+      if (command.description) {
+        var optionMsg = "";
+        if (command.options) {
+          var maxLength = command.options.length;
+          if (maxLength > 3) maxLength = 3;
+          for (var j = 0; j < maxLength; j++) {
+            var option = command.options[j];
+            optionMsg += " `" + `${option.name}: ${option.description}` + "`";
+          }
         }
-      }
 
-      var newField = {
-        name: `/${command.name} ${optionMsg}`,
-        value: command.description,
-        inline: false,
-      };
-      fields.push(newField);
+        var newField = {
+          name: `/${command.name} ${optionMsg}`,
+          value: command.description,
+          inline: false,
+        };
+        fields.push(newField);
+      }
     }
     var embed = new EmbedBuilder()
       .setColor("#5865F2")
