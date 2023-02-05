@@ -120,10 +120,7 @@ export async function createListeningStream(
     },
   });
 
-  const filename = `./recordings/${Date.now()}-${getDisplayName(
-    userId,
-    user
-  )}.ogg`;
+  const filename = `./recordings/${Date.now()}-${userId}.ogg`;
 
   const out = createWriteStream(filename);
   console.log(`👂 Started recording ${filename}`);
