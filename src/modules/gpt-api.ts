@@ -61,7 +61,7 @@ async function chat(message, userName, ispremium, m, id) {
   } catch (err) {
     console.log(err);
     await removeMessage(token.id);
-    await disableAcc(token.id);
+    // await disableAcc(token.id);
     //await rateLimitAcc(token.id);
     return {
       error: `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)`,
