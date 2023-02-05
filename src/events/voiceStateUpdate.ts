@@ -17,6 +17,11 @@ export default {
       if (channel) {
         if (channel.members.size > 1) return;
         if (channel.members.has(client.user.id)) {
+          const index = client.guildsVoice.indexOf(oldState.guildId);
+          if (index > -1) {
+            // only splice array when item is found
+            client.guildsVoice.splice(index, 1); // 2nd parameter means remove one item only
+          }
           voiceConnection!.destroy();
         }
       }

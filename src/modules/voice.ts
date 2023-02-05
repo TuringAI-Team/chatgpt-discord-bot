@@ -39,6 +39,13 @@ export async function voiceAudio(interaction, client, commandType) {
     });
     return;
   }
+  if (!interaction.member.voice.channelId) {
+    await commandType.reply(interaction, {
+      ephemeral: true,
+      content: `You are not connected to a voice channel.`,
+    });
+    return;
+  }
   client.guildsVoice.push(interaction.guildId);
   let audioPlayer = new AudioPlayer();
 
