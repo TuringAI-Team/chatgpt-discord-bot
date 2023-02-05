@@ -92,7 +92,7 @@ export async function createListeningStream(
   const opusStream = receiver.subscribe(userId, {
     end: {
       behavior: EndBehaviorType.AfterSilence,
-      duration: 1500,
+      duration: 2000,
     },
   });
   const oggStream = new prism.opus.OggLogicalBitstream({

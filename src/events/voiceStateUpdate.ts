@@ -9,18 +9,14 @@ export default {
   name: Events.VoiceStateUpdate,
   once: false,
   async execute(oldState, newState, client) {
-    if (
-      client.voiceConnections.find(
-        (x) => x.joinConfig.guildId == oldState.guild.id
-      )
-    ) {
+    if (getVoiceConnection(oldState.guild.id)) {
       var voiceConnection = getVoiceConnection(oldState.guild.id);
       var channel = client.channels.cache.get(
         voiceConnection.joinConfig.channelId
       );
       if (channel) {
         if (channel.members.size > 1) return;
-        if (channel.members.has(client.user!.id)) {
+        if (channel.members.has(client.user.id)) {
           voiceConnection!.destroy();
         }
       }

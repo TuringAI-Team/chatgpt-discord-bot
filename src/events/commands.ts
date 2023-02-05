@@ -22,7 +22,11 @@ export default {
   name: Events.InteractionCreate,
   once: false,
   async execute(interaction, client) {
-    if (!interaction.isChatInputCommand()) return;
+    if (
+      !interaction.isChatInputCommand() &&
+      !interaction.isContextMenuCommand()
+    )
+      return;
     var commands = await client.commands.toJSON();
     const command = interaction.client.commands.get(interaction.commandName);
 

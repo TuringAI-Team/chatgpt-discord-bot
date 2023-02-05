@@ -5,6 +5,8 @@ import {
 } from "discord.js";
 import supabase from "../modules/supabase.js";
 import { voiceAudio } from "../modules/voice.js";
+import ms from "ms";
+import { isPremium } from "../modules/premium.js";
 
 export default {
   data: {
@@ -12,7 +14,50 @@ export default {
     description: "Chat with the bot in a voice channel",
   },
   async execute(interaction, client) {
-    await voiceAudio(interaction, client, interactionType);
+    var ispremium = await isPremium(interaction.user.id);
+    if (ispremium) {
+      let { data: cooldowns, error } = await supabase
+        .from("cooldown")
+        .select("*")
+
+        // Filters
+        .eq("userId", interaction.user.id)
+        .eq("command", "chat-vc");
+      if (cooldowns && cooldowns[0]) {
+        var cooldown = cooldowns[0];
+        var createdAt = new Date(cooldown.created_at);
+        var milliseconds = createdAt.getTime();
+        var now = Date.now();
+        var diff = now - milliseconds;
+        // @ts-ignore
+        var count = ms("20s") - diff;
+        // @ts-ignore
+        if (diff >= ms("20s")) {
+          const { data, error } = await supabase
+            .from("cooldown")
+            .update({ created_at: new Date() })
+            .eq("userId", interaction.user.id)
+            .eq("command", "chat-vc");
+          await voiceAudio(interaction, client, interactionType);
+        } else {
+          await interaction.reply({
+            content:
+              `Please wait **${ms(
+                count
+              )}** to use this command again.\nIf you want to **avoid this cooldown** you can **donate to get premium**. If you want to donate use the command ` +
+              "`/premium buy` .",
+            ephemeral: true,
+          });
+        }
+      } else {
+        const { data, error } = await supabase
+          .from("cooldown")
+          .insert([{ userId: interaction.user.id, command: "chat-vc" }]);
+        await voiceAudio(interaction, client, interactionType);
+      }
+    } else {
+      await voiceAudio(interaction, client, interactionType);
+    }
   },
 };
 

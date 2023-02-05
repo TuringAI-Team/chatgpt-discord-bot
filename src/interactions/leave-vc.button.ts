@@ -12,21 +12,34 @@ export default {
     description: "Make the bot leave a voice channel",
   },
   async execute(interaction, client) {
-    if (
-      getVoiceConnection(interaction.guildId) &&
-      interaction.member.voice.channelId
-    ) {
-      getVoiceConnection(interaction.guildId).disconnect();
-      await interaction.update({
-        content: "ChatGPT voice off",
-        components: [],
-        embeds: [],
-      });
+    if (getVoiceConnection(interaction.guildId)) {
+      var voiceConnection = getVoiceConnection(interaction.guildId);
+
+      var channel = client.channels.cache.get(
+        voiceConnection.joinConfig.channelId
+      );
+      if (channel.members.has(interaction.user.id)) {
+        getVoiceConnection(interaction.guildId).disconnect();
+        await interaction.update({
+          content: "ChatGPT voice off",
+          components: [],
+          embeds: [],
+        });
+      } else {
+        await interaction.reply({
+          content:
+            "You are not connnected to the same voice channel as the bot.",
+          components: [],
+          embeds: [],
+          ephemeral: true,
+        });
+      }
     } else {
-      await interaction.update({
+      await interaction.reply({
         content: "No voice connection was found to this discord channel",
         components: [],
         embeds: [],
+        ephemeral: true,
       });
     }
   },

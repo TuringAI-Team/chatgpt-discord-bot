@@ -37,6 +37,5 @@ client.voiceConnections = [];
 eventHandler(client);
 commandHandler(client);
 interactionsHandler(client);
-
 // Log in to Discord with your client's token
 client.login(process.env.TOKEN);

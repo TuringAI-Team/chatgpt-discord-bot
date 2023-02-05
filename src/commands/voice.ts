@@ -27,16 +27,6 @@ export default {
     .setName("voice")
     .setDescription("Chat with an AI using your voice"),
   async execute(interaction, client, commands, commandType, options) {
-    var ispremium = await isPremium(interaction.user.id);
-    if (ispremium) {
-      await voiceAudio(interaction, client, commandType);
-    } else {
-      await commandType.reply(interaction, {
-        content:
-          "This feature is only available for premium users, right now. If you want to donate  to get premium use the command " +
-          "`/premium buy` .",
-        ephemeral: true,
-      });
-    }
+    await voiceAudio(interaction, client, commandType);
   },
 };
