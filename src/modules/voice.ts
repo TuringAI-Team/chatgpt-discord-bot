@@ -79,7 +79,7 @@ export async function voiceAudio(interaction, client, commandType) {
 async function getTranscription(file) {
   try {
     const response = await axios({
-      baseURL: `https://api-inference.huggingface.co/models/openai/whisper-medium`,
+      baseURL: `https://api-inference.huggingface.co/models/openai/whisper-large`,
       headers: { Authorization: `Bearer ${process.env.HF}` },
       method: "POST",
       data: file,
