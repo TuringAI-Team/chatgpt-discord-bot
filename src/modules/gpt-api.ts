@@ -49,9 +49,11 @@ async function chat(message, userName, ispremium, m, id) {
       response = response.replace(/<|im_end|>/g, "").trim();
     }
 */
-    response = response.replaceAll("<@", "pingSecurity");
-    response = response.replaceAll("@everyone", "pingSecurity");
-    response = response.replaceAll("@here", "pingSecurity");
+    if (response) {
+      response = response.replaceAll("<@", "pingSecurity");
+      response = response.replaceAll("@everyone", "pingSecurity");
+      response = response.replaceAll("@here", "pingSecurity");
+    }
 
     await removeMessage(token.id);
     if (m == "gpt-3") {

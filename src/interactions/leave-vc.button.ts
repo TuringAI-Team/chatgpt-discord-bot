@@ -20,7 +20,7 @@ export default {
       );
       if (channel.members.has(interaction.user.id)) {
         getVoiceConnection(interaction.guildId).disconnect();
-        await interaction.update({
+        await interaction.reply({
           content: "ChatGPT voice off",
           components: [],
           embeds: [],
