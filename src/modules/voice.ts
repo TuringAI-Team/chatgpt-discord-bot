@@ -311,6 +311,7 @@ async function startVoiceConnection(interaction, client) {
   if (getVoiceConnection(interaction.guildId)) {
     console.log("using preload connection");
     voiceConnection = getVoiceConnection(interaction.guildId);
+    console.log(voiceConnection);
   }
   if (
     !voiceConnection ||
