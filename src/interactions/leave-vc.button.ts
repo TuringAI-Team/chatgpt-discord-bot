@@ -18,6 +18,14 @@ export default {
       var channel = client.channels.cache.get(
         voiceConnection.joinConfig.channelId
       );
+      if (!channel) {
+        await interaction.reply({
+          content: "No voice connection was found to this discord channel",
+          components: [],
+          embeds: [],
+          ephemeral: true,
+        });
+      }
       if (channel.members.has(interaction.user.id)) {
         getVoiceConnection(interaction.guildId).disconnect();
         const index = client.guildsVoice.indexOf(interaction.guildId);
