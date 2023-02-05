@@ -20,10 +20,16 @@ export default {
       );
       if (channel.members.has(interaction.user.id)) {
         getVoiceConnection(interaction.guildId).disconnect();
+        const index = client.guildsVoice.indexOf(interaction.guildId);
+        if (index > -1) {
+          // only splice array when item is found
+          client.guildsVoice.splice(index, 1); // 2nd parameter means remove one item only
+        }
         await interaction.reply({
           content: "ChatGPT voice off",
           components: [],
           embeds: [],
+          ephemeral: true,
         });
       } else {
         await interaction.reply({

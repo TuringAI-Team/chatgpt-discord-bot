@@ -31,6 +31,14 @@ import { isPremium } from "./premium.js";
 
 export async function voiceAudio(interaction, client, commandType) {
   await commandType.load(interaction);
+  if (client.guildsVoice.find((x) => x == interaction.guildId)) {
+    await commandType.reply(interaction, {
+      ephemeral: true,
+      content: `The bot is already processing a request in this server, please wait until the bot finish this request.`,
+    });
+    return;
+  }
+  client.guildsVoice.push(interaction.guildId);
   let audioPlayer = new AudioPlayer();
 
   let voiceConnection = await startVoiceConnection(interaction, client);
@@ -57,6 +65,12 @@ export async function voiceAudio(interaction, client, commandType) {
       audioPlayer,
       interaction.user
     );
+    const index = client.guildsVoice.indexOf(interaction.guildId);
+    if (index > -1) {
+      // only splice array when item is found
+      client.guildsVoice.splice(index, 1); // 2nd parameter means remove one item only
+    }
+
     /*  var text = await getTranscription();
     console.log(text);*/
   }
@@ -92,7 +106,7 @@ export async function createListeningStream(
   const opusStream = receiver.subscribe(userId, {
     end: {
       behavior: EndBehaviorType.AfterSilence,
-      duration: 2000,
+      duration: 1750,
     },
   });
   const oggStream = new prism.opus.OggLogicalBitstream({
@@ -222,11 +236,14 @@ async function responseWithVoice(
 ) {
   var charsCount = result.split("").length;
   var audioResources = [];
-  var langObj = await cld.detect(result);
   var langCode = "en";
-  if (langObj.reliable && langObj.languages[0].code != "en") {
-    langCode = langObj.languages[0].code;
-  }
+  try {
+    var langObj = await cld.detect(result);
+    if (langObj.reliable && langObj.languages[0].code != "en") {
+      langCode = langObj.languages[0].code;
+    }
+  } catch (err) {}
+
   if (charsCount >= 200) {
     if (charsCount >= 1000) {
       commandType.reply(interaction, `Answer is too long to read it`);
@@ -309,13 +326,11 @@ async function infoEmbed(interaction, status, commandType, process?) {
 async function startVoiceConnection(interaction, client) {
   let voiceConnection;
   if (getVoiceConnection(interaction.guildId)) {
-    console.log("using preload connection");
     voiceConnection = getVoiceConnection(interaction.guildId);
-    console.log(voiceConnection);
   }
   if (
     !voiceConnection ||
-    voiceConnection?.status === VoiceConnectionStatus.Disconnected
+    voiceConnection._state.status === VoiceConnectionStatus.Disconnected
   ) {
     voiceConnection = joinVoiceChannel({
       channelId: interaction.member.voice.channelId,
@@ -329,8 +344,6 @@ async function startVoiceConnection(interaction, client) {
       VoiceConnectionStatus.Connecting,
       10_000
     );
-
-    client.voiceConnections.push(voiceConnection);
   }
   return voiceConnection;
 }
