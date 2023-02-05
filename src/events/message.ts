@@ -97,10 +97,12 @@ export default {
           await command.execute(message, client, commands, msgType, options);
         }
       } catch (error) {
-        await message.reply({
-          content: "There was an error while executing this command!",
-          ephemeral: true,
-        });
+        try {
+          await message.reply({
+            content: "There was an error while executing this command!",
+            ephemeral: true,
+          });
+        } catch (err) {}
       }
     }
   },

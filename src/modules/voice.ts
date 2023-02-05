@@ -235,6 +235,7 @@ async function responseWithVoice(
   commandType,
   audioPlayer
 ) {
+  if (!result) result = "Something went wrong with your prompt.";
   var charsCount = result.split("").length;
   var audioResources = [];
   var langCode = "en";
