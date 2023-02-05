@@ -9,12 +9,15 @@ export default {
     for (var i = 0; i < commands.length; i++) {
       var command = commands[i].data;
       var optionMsg = "";
-      var maxLength = command.options.length;
-      if (maxLength > 3) maxLength = 3;
-      for (var j = 0; j < maxLength; j++) {
-        var option = command.options[j];
-        optionMsg += " `" + `${option.name}: ${option.description}` + "`";
+      if (command.options) {
+        var maxLength = command.options.length;
+        if (maxLength > 3) maxLength = 3;
+        for (var j = 0; j < maxLength; j++) {
+          var option = command.options[j];
+          optionMsg += " `" + `${option.name}: ${option.description}` + "`";
+        }
       }
+
       var newField = {
         name: `/${command.name} ${optionMsg}`,
         value: command.description,
