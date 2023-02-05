@@ -27,6 +27,7 @@ import {
 } from "discord.js";
 import cld from "cld";
 import { chat } from "./gpt-api.js";
+import Stream from "node:stream";
 import { isPremium } from "./premium.js";
 
 export async function voiceAudio(interaction, client, commandType) {
@@ -304,7 +305,7 @@ async function responseWithVoice(
 
 async function infoEmbed(interaction, status, commandType, process?) {
   var embed = new EmbedBuilder()
-    .setTitle("ChatGPT Voice")
+    .setTitle("ChatGPT Voice(Beta)")
     .setColor("#5865F2")
     .setTimestamp();
   if (status == "hearing") {
@@ -322,7 +323,35 @@ async function infoEmbed(interaction, status, commandType, process?) {
     components: row,
   });
 }
+export async function Elevenlabs(string) {
+  try {
+    var res = await axios({
+      baseURL: "https://api.pawan.krd/tts",
+      method: "POST",
+      headers: {
+        "Content-type": "application/json",
+      },
+      data: JSON.stringify({
+        text: string,
+        voice: "adam",
+      }),
+      responseType: "arraybuffer",
+    });
+    var data = res.data;
+    var stream = await convertBufferToStream(data);
+    return stream;
+  } catch (err) {
+    console.log(err);
+    return null;
+  }
+}
 
+async function convertBufferToStream(buffer) {
+  const binaryStream = new Stream.Readable();
+  binaryStream.push(buffer);
+  binaryStream.push(null);
+  return binaryStream;
+}
 async function startVoiceConnection(interaction, client) {
   let voiceConnection;
   if (getVoiceConnection(interaction.guildId)) {

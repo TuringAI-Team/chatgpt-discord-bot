@@ -19,7 +19,7 @@ import {
 import discordTTS from "discord-tts";
 import cld from "cld";
 import CountryLanguage from "@ladjs/country-language";
-import { voiceAudio } from "../modules/voice.js";
+import { voiceAudio, Elevenlabs } from "../modules/voice.js";
 
 export default {
   cooldown: "2m",
