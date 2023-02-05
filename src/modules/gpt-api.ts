@@ -45,10 +45,10 @@ async function chat(message, userName, ispremium, m, id) {
       response = await getResponse(message, id, token.key, maxtokens, userName);
     }
 
-    if (m == "chatgpt") {
+    /*  if (m == "chatgpt") {
       response = response.replace(/<|im_end|>/g, "").trim();
     }
-
+*/
     response = response.replaceAll("<@", "pingSecurity");
     response = response.replaceAll("@everyone", "pingSecurity");
     response = response.replaceAll("@here", "pingSecurity");
