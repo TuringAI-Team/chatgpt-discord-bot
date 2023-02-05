@@ -50,6 +50,9 @@ async function chat(message, userName, ispremium, m, id) {
     }
 
     response = response.replaceAll("<@", "pingSecurity");
+    response = response.replaceAll("@everyone", "pingSecurity");
+    response = response.replaceAll("@here", "pingSecurity");
+
     await removeMessage(token.id);
     if (m == "gpt-3") {
       await saveMsg(m, message, response, id, ispremium);
