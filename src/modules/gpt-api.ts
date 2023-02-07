@@ -6,6 +6,7 @@ import { useToken, removeMessage, disableAcc } from "./loadbalancer.js";
 import supabase from "./supabase.js";
 import axios from "axios";
 import ChatGPT from "chatgpt-official";
+import { v5 as uuidv5 } from "uuid";
 
 async function chat(message, userName, ispremium, m, id) {
   var token = await useToken(m);
@@ -30,19 +31,18 @@ async function chat(message, userName, ispremium, m, id) {
     var maxtokens = 300;
     if (ispremium) maxtokens = 600;
     let bot = new ChatGPT(token.key, {
-      temperature: 0.7, // OpenAI parameter
       max_tokens: maxtokens, // OpenAI parameter [Max response size by tokens]
-      top_p: 1, // OpenAI parameter
-      frequency_penalty: 0, // OpenAI parameter
-      presence_penalty: 0, // OpenAI parameter
-      //  instructions: `You are ChatGPT, a large language model trained by OpenAI.`, // initial instructions for the bot
       stop: stop, // OpenAI parameter
       aiName: "TuringAI",
       model: model,
       revProxy: revProxy,
     }); // Note: options is optional
 
-    let response = await bot.ask(message, id, userName);
+    let response = await bot.ask(
+      `${conversation ? conversation : ""}\n${userName}: ${message}`,
+      id,
+      userName
+    );
 
     if (response) {
       response = response.replaceAll("<@", "pingSecurity");
@@ -51,9 +51,7 @@ async function chat(message, userName, ispremium, m, id) {
     }
 
     await removeMessage(token.id);
-    if (m == "gpt-3") {
-      await saveMsg(m, message, response, id, ispremium);
-    }
+    await saveMsg(m, message, response, id, ispremium, userName);
     return { text: response, type: m };
   } catch (err) {
     console.log(err);
@@ -128,13 +126,13 @@ async function getConversation(id, model) {
   return;
 }
 
-async function saveMsg(model, userMsg, aiMsg, id, ispremium) {
+async function saveMsg(model, userMsg, aiMsg, id, ispremium, userName) {
   var conversation;
   if (model == "gpt-3") {
-    conversation = `\n<split>Human: ${userMsg}\nAI: ${aiMsg}`;
+    conversation = `\n<split>${userName}: ${userMsg}\nTuringAI: ${aiMsg}`;
   }
   if (model == "chatgpt") {
-    conversation = `\n<split>User: ${userMsg}\nChatGPT: ${aiMsg}`;
+    conversation = `\n<split>${userName}: ${userMsg}\nTuringAI: ${aiMsg}`;
   }
   var { data } = await supabase
     .from("conversations")
