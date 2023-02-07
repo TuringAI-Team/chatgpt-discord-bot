@@ -17,7 +17,7 @@ async function chat(message, userName, ispremium, m, id) {
   }
   try {
     var model;
-    var stop: any = "\n";
+    var stop: any = "Human:";
     var conversation = await getConversation(id, m);
     var revProxy = "https://chatgpt.pawan.krd/conversation";
     if (m == "gpt-3") {
