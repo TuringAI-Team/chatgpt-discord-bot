@@ -3,9 +3,9 @@ import * as dotenv from "dotenv"; // see https://github.com/motdotla/dotenv#how-
 dotenv.config();
 import chalk from "chalk";
 import { useToken, removeMessage, disableAcc } from "./loadbalancer.js";
-import { Configuration, OpenAIApi } from "openai";
 import supabase from "./supabase.js";
 import axios from "axios";
+import ChatGPT from "chatgpt-official";
 
 async function chat(message, userName, ispremium, m, id) {
   var token = await useToken(m);
@@ -15,40 +15,35 @@ async function chat(message, userName, ispremium, m, id) {
     };
   }
   try {
-    var response;
     var model;
-    var prompt;
-    var stop = [" Human:", " AI:"];
-    var temperature = 0.9;
+    var stop: any = "\n";
     var conversation = await getConversation(id, m);
-
+    var revProxy = "https://chatgpt.pawan.krd/conversation";
     if (m == "gpt-3") {
-      var basePrompt = `The following is a conversation with an AI assistant called Turing, the user is called ${userName}. The assistant is helpful, creative, clever, and very friendly.\n`;
       model = "text-davinci-003";
-      prompt = `${basePrompt}${conversation}Human: ${message}\n AI:`;
+      revProxy = null;
+      //prompt = `${basePrompt}${conversation}Human: ${message}\n AI:`;
+    } else {
+      model = null;
+      stop = "<|im_end|>";
     }
     var maxtokens = 300;
     if (ispremium) maxtokens = 600;
-    if (m == "gpt-3") {
-      response = await token.client.createCompletion({
-        model: model,
-        prompt: prompt,
-        temperature: temperature,
-        max_tokens: maxtokens,
-        top_p: 1,
-        frequency_penalty: 0.0,
-        presence_penalty: 0.6,
-        stop: stop,
-      });
-      response = response.data.choices[0].text;
-    } else {
-      response = await getResponse(message, id, token.key, maxtokens, userName);
-    }
+    let bot = new ChatGPT(token.key, {
+      temperature: 0.7, // OpenAI parameter
+      max_tokens: maxtokens, // OpenAI parameter [Max response size by tokens]
+      top_p: 1, // OpenAI parameter
+      frequency_penalty: 0, // OpenAI parameter
+      presence_penalty: 0, // OpenAI parameter
+      //  instructions: `You are ChatGPT, a large language model trained by OpenAI.`, // initial instructions for the bot
+      stop: stop, // OpenAI parameter
+      aiName: "TuringAI",
+      model: model,
+      revProxy: revProxy,
+    }); // Note: options is optional
 
-    /*  if (m == "chatgpt") {
-      response = response.replace(/<|im_end|>/g, "").trim();
-    }
-*/
+    let response = await bot.ask(message, id, userName);
+
     if (response) {
       response = response.replaceAll("<@", "pingSecurity");
       response = response.replaceAll("@everyone", "pingSecurity");
@@ -62,6 +57,17 @@ async function chat(message, userName, ispremium, m, id) {
     return { text: response, type: m };
   } catch (err) {
     console.log(err);
+    if (
+      err ==
+      "Error: You exceeded your current quota, please check your plan and billing details."
+    ) {
+      await disableAcc(token.id);
+      return {
+        error:
+          `We are running out of credits, please wait until we solve this issue. If you want to donate use the command ` +
+          "`/premium buy` .",
+      };
+    }
     await removeMessage(token.id);
     // await disableAcc(token.id);
     //await rateLimitAcc(token.id);

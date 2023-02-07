@@ -27,7 +27,7 @@ export default {
         .setDescription("The model you want to use for the AI.")
         .setRequired(true)
         .addChoices(
-          { name: "gpt-3(under maintenance)", value: "gpt-3" },
+          { name: "gpt-3", value: "gpt-3" },
           { name: "ChatGPT(gpt-3.5)", value: "chatgpt" }
         )
     ),

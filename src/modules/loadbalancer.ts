@@ -18,7 +18,6 @@ async function getTokens() {
 async function useToken(model): Promise<null | {
   id: string;
   type: string;
-  client: any;
   key: string;
 }> {
   var tokens = await getTokens();
@@ -34,13 +33,9 @@ async function useToken(model): Promise<null | {
   var token = t[i];
   if (token) {
     await addMessage(token.id);
-    const configuration = new Configuration({
-      apiKey: token.key,
-    });
-    var c: any = new OpenAIApi(configuration);
+
     var client = {
       id: token.id,
-      client: c,
       type: "official",
       key: token.key,
     };
