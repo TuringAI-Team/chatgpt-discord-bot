@@ -25,7 +25,8 @@ async function chat(message, userName, ispremium, m, id) {
       revProxy = null;
       //prompt = `${basePrompt}${conversation}Human: ${message}\n AI:`;
     } else {
-      model = null;
+      model = "text-chat-davinci-002-20221122";
+      revProxy = null;
       stop = "<|im_end|>";
     }
     var maxtokens = 300;
