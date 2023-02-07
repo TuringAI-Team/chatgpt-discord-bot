@@ -9,7 +9,7 @@ import ChatGPT from "chatgpt-official";
 import { v5 as uuidv5 } from "uuid";
 
 async function chat(message, userName, ispremium, m, id) {
-  var token = await useToken(m);
+  var token = await useToken("gpt-3");
   if (!token) {
     return {
       error: `We are reaching our capacity limits right now. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`,
@@ -25,7 +25,7 @@ async function chat(message, userName, ispremium, m, id) {
       revProxy = null;
       //prompt = `${basePrompt}${conversation}Human: ${message}\n AI:`;
     } else {
-      model = "text-chat-davinci-002-20221122";
+      model = "text-davinci-003";
       revProxy = null;
       stop = "<|im_end|>";
     }
@@ -34,7 +34,7 @@ async function chat(message, userName, ispremium, m, id) {
     let bot = new ChatGPT(token.key, {
       max_tokens: maxtokens, // OpenAI parameter [Max response size by tokens]
       stop: stop, // OpenAI parameter
-      aiName: "TuringAI",
+      aiName: "ChatGPT",
       model: model,
       revProxy: revProxy,
     }); // Note: options is optional
