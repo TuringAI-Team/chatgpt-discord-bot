@@ -92,7 +92,7 @@ export default {
         return;
       }
       if (results[0] && results[0].result.text) {
-        result = { text: results[0].result.text, type: type };
+        result = { text: results[0].result.text, type: "gpt-3" };
         const { data, error } = await supabase
           .from("results")
           .update({ uses: results[0].uses + 1 })
@@ -131,7 +131,7 @@ export default {
         return;
       }
       if (results[0] && results[0].result.text && !ispremium) {
-        result = { text: results[0].result.text, type: type };
+        result = { text: results[0].result.text, type: "chatgpt" };
         const { data, error } = await supabase
           .from("results")
           .update({ uses: results[0].uses + 1 })
@@ -178,8 +178,7 @@ export default {
         return;
       }
       if (results[0] && results[0].result.text) {
-        var type = "chatsonic";
-        result = { text: results[0].result.text, type: type };
+        result = { text: results[0].result.text, type: "chatsonic" };
         const { data, error } = await supabase
           .from("results")
           .update({ uses: results[0].uses + 1 })
