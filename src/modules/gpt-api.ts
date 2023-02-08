@@ -25,7 +25,7 @@ async function chat(message, userName, ispremium, m, id) {
       revProxy = null;
       //prompt = `${basePrompt}${conversation}Human: ${message}\n AI:`;
     } else {
-      model = "text-davinci-003";
+      model = "text-chat-davinci-002-20221122";
       revProxy = null;
       stop = "<|im_end|>";
     }
@@ -34,7 +34,7 @@ async function chat(message, userName, ispremium, m, id) {
     let bot = new ChatGPT(token.key, {
       max_tokens: maxtokens, // OpenAI parameter [Max response size by tokens]
       stop: stop, // OpenAI parameter
-      aiName: "ChatGPT",
+      aiName: "TuringAI",
       model: model,
       revProxy: revProxy,
     }); // Note: options is optional
