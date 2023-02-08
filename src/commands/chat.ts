@@ -152,7 +152,7 @@ export default {
         await commandType.reply(interaction, {
           ephemeral: true,
           content:
-            `This command is only for premium users. If you want to donate use the command ` +
+            `This model is only for premium users. If you want to donate use the command ` +
             "`/premium buy` .",
         });
         return;
