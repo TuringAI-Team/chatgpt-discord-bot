@@ -91,7 +91,7 @@ export default {
         );
         return;
       }
-      if (results[0] && results[0].result.text && !ispremium) {
+      if (results[0] && results[0].result.text) {
         result = { text: results[0].result.text, type: type };
         const { data, error } = await supabase
           .from("results")
@@ -177,7 +177,7 @@ export default {
         );
         return;
       }
-      if (results[0] && results[0].result.text && !ispremium) {
+      if (results[0] && results[0].result.text) {
         var type = "chatsonic";
         result = { text: results[0].result.text, type: type };
         const { data, error } = await supabase
