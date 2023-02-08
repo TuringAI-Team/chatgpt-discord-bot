@@ -28,7 +28,8 @@ export default {
         .setRequired(true)
         .addChoices(
           { name: "gpt-3", value: "gpt-3" },
-          { name: "ChatGPT(gpt-3.5)", value: "chatgpt" }
+          { name: "ChatGPT(gpt-3.5)", value: "chatgpt" },
+          { name: "ChatSonic(premium only)", value: "chatsonic" }
         )
     ),
   /*
@@ -70,25 +71,92 @@ export default {
     var ispremium = await isPremium(interaction.user.id);
 
     if (model == "gpt-3") {
-      result = await chat(
-        message,
-        interaction.user.username,
-        ispremium,
-        "gpt-3",
-        `${interaction.user.id}-gpt-3`
-      );
+      let { data: results, error } = await supabase
+        .from("results")
+        .select("*")
+
+        // Filters
+        .eq("prompt", message.toLowerCase())
+        .eq("provider", "gpt-3");
+      if (!results || error) {
+        var errr = "Error connecting with db";
+
+        await responseWithText(
+          interaction,
+          message,
+          errr,
+          channel,
+          "error",
+          commandType
+        );
+        return;
+      }
+      if (results[0] && results[0].result.text && !ispremium) {
+        result = { text: results[0].result.text, type: type };
+        const { data, error } = await supabase
+          .from("results")
+          .update({ uses: results[0].uses + 1 })
+          .eq("id", results[0].id);
+        cached = true;
+      } else {
+        result = await chat(
+          message,
+          interaction.user.username,
+          ispremium,
+          "gpt-3",
+          `${interaction.user.id}-gpt-3`
+        );
+      }
     }
 
     if (model == "chatgpt") {
-      result = await chat(
-        message,
-        interaction.user.username,
-        ispremium,
-        "chatgpt",
-        `chat-${interaction.user.id}`
-      );
+      let { data: results, error } = await supabase
+        .from("results")
+        .select("*")
+
+        // Filters
+        .eq("prompt", message.toLowerCase())
+        .eq("provider", "chatgpt");
+      if (!results || error) {
+        var errr = "Error connecting with db";
+
+        await responseWithText(
+          interaction,
+          message,
+          errr,
+          channel,
+          "error",
+          commandType
+        );
+        return;
+      }
+      if (results[0] && results[0].result.text && !ispremium) {
+        result = { text: results[0].result.text, type: type };
+        const { data, error } = await supabase
+          .from("results")
+          .update({ uses: results[0].uses + 1 })
+          .eq("id", results[0].id);
+        cached = true;
+      } else {
+        result = await chat(
+          message,
+          interaction.user.username,
+          ispremium,
+          "chatgpt",
+          `chat-${interaction.user.id}`
+        );
+      }
     }
     if (model == "chatsonic") {
+      if (!ispremium) {
+        await commandType.reply(interaction, {
+          ephemeral: true,
+          content:
+            `This command is only for premium users. If you want to donate use the command ` +
+            "`/premium buy` .",
+        });
+        return;
+      }
       let { data: results, error } = await supabase
         .from("results")
         .select("*")
@@ -109,7 +177,7 @@ export default {
         );
         return;
       }
-      if (results[0] && results[0].result.text) {
+      if (results[0] && results[0].result.text && !ispremium) {
         var type = "chatsonic";
         result = { text: results[0].result.text, type: type };
         const { data, error } = await supabase
@@ -134,16 +202,16 @@ export default {
     }
     if (!result.error) {
       var response = result.text;
-      if (ispremium == false) {
+      if (cached == false) {
         const { data, error } = await supabase.from("results").insert([
           {
             provider: model,
-            version: result.type,
             prompt: message.toLowerCase(),
             result: { text: response },
             guildId: interaction.guildId,
           },
         ]);
+        // console.log(error);
       }
       var channel = interaction.channel;
       if (!interaction.channel) channel = interaction.user;
