@@ -9,7 +9,7 @@ import ChatGPT from "chatgpt-official";
 import { v5 as uuidv5 } from "uuid";
 
 async function chat(message, userName, ispremium, m, id) {
-  var token = await useToken("gpt-3");
+  var token = await useToken(m);
   if (!token) {
     return {
       error: `We are reaching our capacity limits right now. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`,
