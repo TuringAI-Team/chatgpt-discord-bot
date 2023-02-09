@@ -26,14 +26,13 @@ async function useToken(model): Promise<null | {
   }
   var t = tokens.filter((x) => x.messages <= 2 && x.abled != false);
   if (model == "chatgpt") {
-    t = tokens.filter((x) => x.messages <= 1 && x.session != null);
+    t = tokens.filter((x) => x.messages <= 1 && x.key != null);
   }
   var i = getRndInteger(0, t.length - 1);
   if (t.length <= 0) return;
   var token = t[i];
   if (token) {
     await addMessage(token.id);
-
     var client = {
       id: token.id,
       type: "official",
