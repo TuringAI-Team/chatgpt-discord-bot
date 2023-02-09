@@ -55,7 +55,9 @@ async function chat(message, userName, ispremium, m, id) {
     await saveMsg(m, message, response, id, ispremium, userName);
     return { text: response, type: m };
   } catch (err) {
-    console.log(err);
+    if (m == "gpt-3") {
+      console.log(err);
+    }
     if (
       err ==
       "Error: You exceeded your current quota, please check your plan and billing details."
