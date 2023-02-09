@@ -20,7 +20,8 @@ async function chat(message, userName, ispremium, m, id) {
     var stop: any = " Human:";
     var instructions;
     var conversation;
-    if (ispremium) conversation = await getConversation(id, m);
+    if (ispremium || m == "chatgpt")
+      conversation = await getConversation(id, m);
     var revProxy = "https://chatgpt.pawan.krd/conversation";
     if (m == "gpt-3") {
       instructions = `[START_INSTRUCTIONS]
@@ -32,19 +33,26 @@ async function chat(message, userName, ispremium, m, id) {
       model = "text-davinci-003";
       revProxy = null;
     } else if (m == "chatgpt") {
-      model = "text-chat-davinci-002-20221122";
-      revProxy = null;
+      model = null;
       stop = "<|im_end|>";
-    } else if (m == "code-davinci-002") {
-      instructions = `[START_INSTRUCTIONS]
-      You are TuringAI, a language model developed by OpenAI and TuringAI.
-       Current date: ${getToday()}
-       Name of the user talking to: ${userName}
-      [END_INSTRUCTIONS]\n`;
-      model = "code-davinci-002";
-      stop = "\n";
-      revProxy = null;
     }
+    var response;
+    /* if (m == "chatgpt") {
+      var res = await axios({
+        method: "POST",
+        url: `http://localhost:3255/chat`,
+        headers: {
+          "Content-type": "application/json",
+        },
+        data: JSON.stringify({
+          id: token.id,
+          message: `${
+            conversation ? conversation : ""
+          }\n${userName}: ${message}`,
+        }),
+      });
+      response = res.data.response;
+    } else {*/
     var maxtokens = 300;
     if (ispremium) maxtokens = 600;
     let bot = new ChatGPT(token.key, {
@@ -53,13 +61,15 @@ async function chat(message, userName, ispremium, m, id) {
       instructions: instructions,
       aiName: "TuringAI",
       model: model,
+      revProxy: revProxy,
     }); // Note: options is optional
 
-    let response = await bot.ask(
+    response = await bot.ask(
       `${conversation ? conversation : ""}\n${userName}: ${message}`,
       id,
       userName
     );
+    // }
 
     if (response) {
       response = response.replaceAll("<@", "pingSecurity");
@@ -67,7 +77,8 @@ async function chat(message, userName, ispremium, m, id) {
       response = response.replaceAll("@here", "pingSecurity");
     }
 
-    if (ispremium) await saveMsg(m, message, response, id, ispremium, userName);
+    if (ispremium || m == "chatgpt")
+      await saveMsg(m, message, response, id, ispremium, userName);
     setTimeout(async () => {
       await removeMessage(token.id);
     }, 5000);

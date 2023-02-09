@@ -28,9 +28,8 @@ export default {
         .setRequired(true)
         .addChoices(
           { name: "GPT-3", value: "gpt-3" },
-          { name: "Codex(GPT-3 for coding)", value: "code-davinci-002" },
-          { name: "ChatGPT(gpt-3.5)(down)", value: "chatgpt" },
-          { name: "ChatSonic(premium only)", value: "chatsonic" }
+          { name: "ChatGPT(gpt-3.5)", value: "chatgpt" }
+          //      { name: "ChatSonic(premium only)", value: "chatsonic" }
         )
     ),
   /*
@@ -109,44 +108,7 @@ export default {
         );
       }
     }
-    if (model == "code-davinci-002") {
-      let { data: results, error } = await supabase
-        .from("results")
-        .select("*")
 
-        // Filters
-        .eq("prompt", message.toLowerCase())
-        .eq("provider", "code-davinci-002");
-      if (!results || error) {
-        var errr = "Error connecting with db";
-
-        await responseWithText(
-          interaction,
-          message,
-          errr,
-          channel,
-          "error",
-          commandType
-        );
-        return;
-      }
-      if (results[0] && results[0].result.text) {
-        result = { text: results[0].result.text, type: "code-davinci-002" };
-        const { data, error } = await supabase
-          .from("results")
-          .update({ uses: results[0].uses + 1 })
-          .eq("id", results[0].id);
-        cached = true;
-      } else {
-        result = await chat(
-          message,
-          interaction.user.username,
-          ispremium,
-          "code-davinci-002",
-          `${interaction.user.id}-code-davinci-002`
-        );
-      }
-    }
     if (model == "chatgpt") {
       let { data: results, error } = await supabase
         .from("results")
