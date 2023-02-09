@@ -11,7 +11,7 @@ import { isPremium } from "../modules/premium.js";
 var maintenance = false;
 
 export default {
-  cooldown: "2m",
+  cooldown: "90s",
   data: new SlashCommandBuilder()
     .setName("chat")
     .setDescription("Chat with an AI")
@@ -27,8 +27,8 @@ export default {
         .setDescription("The model you want to use for the AI.")
         .setRequired(true)
         .addChoices(
-          { name: "gpt-3", value: "gpt-3" },
-          { name: "ChatGPT(gpt-3.5)", value: "chatgpt" },
+          { name: "GPT-3", value: "gpt-3" },
+          { name: "ChatGPT(gpt-3.5)(down)", value: "chatgpt" },
           { name: "ChatSonic(premium only)", value: "chatsonic" }
         )
     ),
