@@ -84,7 +84,7 @@ async function chat(message, userName, ispremium, m, id) {
     }, 5000);
     return { text: response, type: m };
   } catch (err) {
-    console.log(err);
+    console.log(`${token.id}: ${err}`);
     if (
       err ==
       "Error: You exceeded your current quota, please check your plan and billing details."
