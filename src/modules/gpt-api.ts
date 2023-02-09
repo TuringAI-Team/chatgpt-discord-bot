@@ -19,7 +19,8 @@ async function chat(message, userName, ispremium, m, id) {
     var model;
     var stop: any = " Human:";
     var instructions;
-    var conversation = await getConversation(id, m);
+    var conversation;
+    if (ispremium) conversation = await getConversation(id, m);
     var revProxy = "https://chatgpt.pawan.krd/conversation";
     if (m == "gpt-3") {
       instructions = `[START_INSTRUCTIONS]
@@ -66,7 +67,7 @@ async function chat(message, userName, ispremium, m, id) {
       response = response.replaceAll("@here", "pingSecurity");
     }
 
-    await saveMsg(m, message, response, id, ispremium, userName);
+    if (ispremium) await saveMsg(m, message, response, id, ispremium, userName);
     setTimeout(async () => {
       await removeMessage(token.id);
     }, 5000);
