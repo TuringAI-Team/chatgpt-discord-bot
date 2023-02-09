@@ -24,7 +24,7 @@ async function useToken(model): Promise<null | {
   if (!tokens || tokens.length <= 0) {
     return;
   }
-  var t = tokens.filter((x) => x.messages <= 1 && x.abled != false);
+  var t = tokens.filter((x) => x.messages <= 2 && x.abled != false);
   if (model == "chatgpt") {
     t = tokens.filter((x) => x.messages <= 2 && x.key != null);
   }
