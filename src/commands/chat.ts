@@ -110,7 +110,7 @@ export default {
     }
 
     if (model == "chatgpt") {
-      let { data: results, error } = await supabase
+      /*   let { data: results, error } = await supabase
         .from("results")
         .select("*")
 
@@ -130,22 +130,22 @@ export default {
         );
         return;
       }
-      if (results[0] && results[0].result.text && !ispremium) {
+  if (results[0] && results[0].result.text && !ispremium) {
         result = { text: results[0].result.text, type: "chatgpt" };
         const { data, error } = await supabase
           .from("results")
           .update({ uses: results[0].uses + 1 })
           .eq("id", results[0].id);
         cached = true;
-      } else {
-        result = await chat(
-          message,
-          interaction.user.username,
-          ispremium,
-          "chatgpt",
-          `chat-${interaction.user.id}`
-        );
-      }
+      } else {*/
+      result = await chat(
+        message,
+        interaction.user.username,
+        ispremium,
+        "chatgpt",
+        `chat-${interaction.user.id}`
+      );
+      // }
     }
     if (model == "chatsonic") {
       if (!ispremium) {
