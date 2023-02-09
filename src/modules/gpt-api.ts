@@ -18,25 +18,40 @@ async function chat(message, userName, ispremium, m, id) {
   try {
     var model;
     var stop: any = " Human:";
+    var instructions;
     var conversation = await getConversation(id, m);
     var revProxy = "https://chatgpt.pawan.krd/conversation";
     if (m == "gpt-3") {
+      instructions = `[START_INSTRUCTIONS]
+      You are TuringAI, a language model developed by OpenAI and TuringAI. You are designed to respond to user input in a conversational manner, Answer as concisely as possible. Your training data comes from a diverse range of internet text and You have been trained to generate human-like responses to various questions and prompts. You can provide information on a wide range of topics, but your knowledge is limited to what was present in your training data, which has a cutoff date of 2021. You strive to provide accurate and helpful information to the best of your ability.
+      \nKnowledge cutoff: 2021-09
+      \nCurrent date: ${getToday()}
+      \nName of the user talking to: ${userName}
+      [END_INSTRUCTIONS]\n`;
       model = "text-davinci-003";
       revProxy = null;
-      //prompt = `${basePrompt}${conversation}Human: ${message}\n AI:`;
-    } else {
+    } else if (m == "chatgpt") {
       model = "text-chat-davinci-002-20221122";
       revProxy = null;
       stop = "<|im_end|>";
+    } else if (m == "code-davinci-002") {
+      instructions = `[START_INSTRUCTIONS]
+      You are TuringAI, a language model developed by OpenAI and TuringAI.
+       Current date: ${getToday()}
+       Name of the user talking to: ${userName}
+      [END_INSTRUCTIONS]\n`;
+      model = "code-davinci-002";
+      stop = "\n";
+      revProxy = null;
     }
     var maxtokens = 300;
     if (ispremium) maxtokens = 600;
     let bot = new ChatGPT(token.key, {
       max_tokens: maxtokens, // OpenAI parameter [Max response size by tokens]
       stop: stop, // OpenAI parameter
+      instructions: instructions,
       aiName: "TuringAI",
       model: model,
-      revProxy: revProxy,
     }); // Note: options is optional
 
     let response = await bot.ask(
@@ -51,13 +66,13 @@ async function chat(message, userName, ispremium, m, id) {
       response = response.replaceAll("@here", "pingSecurity");
     }
 
-    await removeMessage(token.id);
     await saveMsg(m, message, response, id, ispremium, userName);
+    setTimeout(async () => {
+      await removeMessage(token.id);
+    }, 5000);
     return { text: response, type: m };
   } catch (err) {
-    if (m == "gpt-3") {
-      console.log(err);
-    }
+    console.log(err);
     if (
       err ==
       "Error: You exceeded your current quota, please check your plan and billing details."
@@ -124,6 +139,7 @@ async function getConversation(id, model) {
     .eq("id", id)
     .eq("model", model);
   if (data && data[0]) {
+    if (!data[0].conversation) return;
     return data[0].conversation.replaceAll("<split>", "");
   }
   return;
@@ -151,17 +167,19 @@ async function saveMsg(model, userMsg, aiMsg, id, ispremium, userName) {
     });
   } else {
     var previous = data[0].conversation;
-
-    previous = previous.split("\n<split>");
-    previous = previous.filter((x) => x != "");
-    var length = previous.length;
-    var max = 3;
-    if (ispremium == true) max = 6;
-    if (length > max) {
-      previous.shift();
+    if (previous) {
+      previous = previous.split("\n<split>");
+      previous = previous.filter((x) => x != "");
+      var length = previous.length;
+      var max = 3;
+      if (ispremium == true) max = 6;
+      if (length > max) {
+        previous.shift();
+      }
+      previous = previous.join("\n<split>");
     }
-    previous = previous.join("\n<split>");
-    conversation = `${previous}${conversation}`;
+
+    conversation = `${previous ? previous : ""}${conversation}`;
 
     await supabase
       .from("conversations")
