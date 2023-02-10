@@ -37,7 +37,7 @@ export default {
       return;
     }
 
-    var ispremium = await isPremium(interaction.user.id);
+    var ispremium = await isPremium(interaction.user.id, interaction.guildId);
     try {
       if (command.cooldown && ispremium == false) {
         let { data: cooldowns, error } = await supabase

@@ -29,12 +29,28 @@ var data = new SlashCommandBuilder()
           .setDescription("The key you have bought in our shop.")
           .setRequired(true)
       )
+      .addStringOption((option) =>
+        option
+          .setName("type")
+          .setDescription("The key type you have bought in our shop.")
+          .setRequired(true)
+          .addChoices(
+            {
+              name: "Key for users",
+              value: "user",
+            },
+            {
+              name: "Key for servers",
+              value: "server",
+            }
+          )
+      )
   );
 export default {
   data,
-  disablePing: true,
-  async execute(interaction, client, commands) {
+  async execute(interaction, client) {
     var key = interaction.options.getString("key");
+    var type = interaction.options.getString("type");
     if (interaction.options.getSubcommand() === "buy") {
       await interaction.reply({
         content:
@@ -49,7 +65,12 @@ export default {
           ephemeral: true,
         });
       }
-      var r = await activateKey(key, interaction.user.id);
+      var r;
+      if (type == "server") {
+        r = await activateKey(key, interaction.guild.id, type);
+      } else {
+        r = await activateKey(key, interaction.user.id, type);
+      }
       if (r.error) {
         await interaction.reply({
           content: r.error,

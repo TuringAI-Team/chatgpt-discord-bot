@@ -14,7 +14,7 @@ export default {
     description: "Chat with the bot in a voice channel",
   },
   async execute(interaction, client) {
-    var ispremium = await isPremium(interaction.user.id);
+    var ispremium = await isPremium(interaction.user.id, interaction.guild.id);
     if (ispremium) {
       let { data: cooldowns, error } = await supabase
         .from("cooldown")
