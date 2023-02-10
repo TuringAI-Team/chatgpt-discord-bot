@@ -155,10 +155,9 @@ export async function createListeningStream(
       var text = await getTranscription(buffer);
       console.log(text);
       await fs.unlinkSync(filename);
-      var ispremium = await isPremium(
-        interaction.user.id,
-        interaction.guild.id
-      );
+      var guildId;
+      if (interaction.guild) guildId = interaction.guild.id;
+      var ispremium = await isPremium(interaction.user.id, guildId);
       await infoEmbed(interaction, "processing", commandType, "chatgpt");
 
       var result = await chat(

@@ -45,7 +45,9 @@ export default {
         options.message = content.replace("chat ", "");
         options.model = "chatgpt";
       }
-      var ispremium = await isPremium(message.author.id, message.guild.id);
+      var guildId;
+      if (message.guild) guildId = message.guild.id;
+      var ispremium = await isPremium(message.author.id, guildId);
       try {
         if (command.cooldown && ispremium == false) {
           let { data: cooldowns, error } = await supabase

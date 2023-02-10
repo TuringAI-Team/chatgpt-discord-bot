@@ -70,7 +70,9 @@ export default {
 
     var result;
     var cached = false;
-    var ispremium = await isPremium(interaction.user.id, interaction.guildId);
+    var guildId;
+    if (interaction.guild) guildId = interaction.guild.id;
+    var ispremium = await isPremium(interaction.user.id, guildId);
 
     if (model == "gpt-3") {
       let { data: results, error } = await supabase

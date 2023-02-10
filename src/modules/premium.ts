@@ -20,6 +20,7 @@ export async function isPremium(userId: string, serverId: string) {
     }
     return true;
   }
+  if (!serverId) return false;
   let { data: premiumServer } = await supabase
     .from("premium")
     .select("*")
