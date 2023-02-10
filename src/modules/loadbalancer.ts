@@ -28,6 +28,9 @@ async function useToken(model): Promise<null | {
   if (model == "chatgpt") {
     t = tokens.filter((x) => x.messages <= 1 && x.key != null);
   }
+  if (model == "dan") {
+    t = tokens.filter((x) => x.messages <= 1 && x.key != null);
+  }
   var i = getRndInteger(0, t.length - 1);
   if (t.length <= 0) return;
   var token = t[i];
