@@ -28,7 +28,9 @@ export default {
         .setRequired(true)
         .addChoices(
           { name: "GPT-3", value: "gpt-3" },
-          { name: "ChatGPT(gpt-3.5)", value: "chatgpt" }
+          { name: "ChatGPT(gpt-3.5)", value: "chatgpt" },
+          { name: "DAN(gpt-3.5)", value: "dan" }
+
           //      { name: "ChatSonic(premium only)", value: "chatsonic" }
         )
     ),
@@ -146,6 +148,15 @@ export default {
         `chat-${interaction.user.id}`
       );
       // }
+    }
+    if (model == "dan") {
+      result = await chat(
+        message,
+        interaction.user.username,
+        ispremium,
+        "dan",
+        `dan-${interaction.user.id}`
+      );
     }
     if (model == "chatsonic") {
       if (!ispremium) {
