@@ -17,7 +17,7 @@ async function chat(message, userName, ispremium, m, id) {
   }
   try {
     var model;
-    var stop: any = " Human:";
+    var stop: any;
     var instructions;
     var conversation;
     if (ispremium || m == "chatgpt" || m == "dan")
@@ -35,6 +35,7 @@ async function chat(message, userName, ispremium, m, id) {
       \nName of the user talking to: ${userName}
       [END_INSTRUCTIONS]\n`;
       model = "text-davinci-003";
+      stop = " Human:";
       revProxy = null;
     } else if (m == "chatgpt") {
       model = "text-davinci-002-render";
