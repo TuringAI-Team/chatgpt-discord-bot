@@ -19,6 +19,7 @@ async function useToken(model): Promise<null | {
   id: string;
   type: string;
   key: string;
+  session: string;
 }> {
   var tokens = await getTokens();
   if (!tokens || tokens.length <= 0) {
@@ -26,10 +27,10 @@ async function useToken(model): Promise<null | {
   }
   var t = tokens.filter((x) => x.messages <= 2 && x.abled != false);
   if (model == "chatgpt") {
-    t = tokens.filter((x) => x.messages <= 1 && x.key != null);
+    t = tokens.filter((x) => x.messages <= 1 && x.access != null);
   }
   if (model == "dan") {
-    t = tokens.filter((x) => x.messages <= 1 && x.key != null);
+    t = tokens.filter((x) => x.messages <= 1 && x.access != null);
   }
   var i = getRndInteger(0, t.length - 1);
   if (t.length <= 0) return;
@@ -40,6 +41,7 @@ async function useToken(model): Promise<null | {
       id: token.id,
       type: "official",
       key: token.key,
+      session: token.access,
     };
     return client;
   } else {
