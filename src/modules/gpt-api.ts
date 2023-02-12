@@ -25,7 +25,9 @@ async function chat(message, userName, ispremium, m, id) {
     var revProxy = "https://chatgpt.pawan.krd/conversation";
 
     var dan;
+    var key = token.session;
     if (m == "gpt-3") {
+      key = token.key;
       instructions = `[START_INSTRUCTIONS]
       You are TuringAI, a language model developed by OpenAI and TuringAI. You are designed to respond to user input in a conversational manner, Answer as concisely as possible. Your training data comes from a diverse range of internet text and You have been trained to generate human-like responses to various questions and prompts. You can provide information on a wide range of topics, but your knowledge is limited to what was present in your training data, which has a cutoff date of 2021. You strive to provide accurate and helpful information to the best of your ability.
       \nKnowledge cutoff: 2021-09
@@ -49,7 +51,7 @@ async function chat(message, userName, ispremium, m, id) {
     var response;
     var maxtokens = 300;
     if (ispremium) maxtokens = 600;
-    let bot = new ChatGPT(token.session, {
+    let bot = new ChatGPT(key, {
       max_tokens: maxtokens, // OpenAI parameter [Max response size by tokens]
       stop: stop, // OpenAI parameter
       instructions: instructions,
