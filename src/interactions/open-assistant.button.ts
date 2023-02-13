@@ -206,6 +206,14 @@ export async function getTranlation(lang: string) {
 }
 
 async function taskInteraction(interaction, lang, user, translation) {
+  var ispremium = await isPremium(interaction.user.id, interaction.guildId);
+  if (!ispremium) {
+    await interaction.editReply({
+      ephemeral: true,
+      content: `This feature is only for premium users.`,
+    });
+    return;
+  }
   var task = await oa.getTask({
     type: "random",
     user: user,
