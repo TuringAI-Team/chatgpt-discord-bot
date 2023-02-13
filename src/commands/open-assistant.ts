@@ -10,35 +10,31 @@ import {
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "url";
+import { getUserLang } from "../modules/open-assistant.js";
+import {
+  langInteraction,
+  initInteraction,
+  getTranlation,
+} from "../interactions/open-assistant.button.js";
 
 export default {
   data: new SlashCommandBuilder()
     .setName("open-assistant")
     .setDescription("Help in the data collection of open assistant"),
   async execute(interaction, client, commands, commandType) {
-    var embed = new EmbedBuilder()
-      .setColor("#3a82f7")
-      .setTimestamp()
-      .setTitle("Open assistant")
-      .setDescription(`Conversational AI for everyone.`)
-      .setURL("https://open-assistant.io/?ref=turing")
-      .setThumbnail("https://open-assistant.io/images/logos/logo.svg");
+    /*  var lang = await getUserLang(interaction.user.id);
+    await interaction.deferReply();
 
-    const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setLabel("What is this?")
-        .setCustomId("open-assistant_info")
-        .setStyle(ButtonStyle.Primary),
-      new ButtonBuilder()
-        .setLabel("Grab a task")
-        .setCustomId("open-assistant_tasks")
-        .setStyle(ButtonStyle.Secondary)
-        .setDisabled(true)
-    );
-    await commandType.reply(interaction, {
-      embeds: [embed],
-      components: [row],
+    if (!lang) {
+      await langInteraction(interaction);
+    } else {
+      var translation = await getTranlation(lang);
+      await initInteraction(interaction, translation, lang);
+      return;
+    }*/
+    await interaction.reply({
+      content: `Under development`,
+      ephemeral: true,
     });
-    return;
   },
 };

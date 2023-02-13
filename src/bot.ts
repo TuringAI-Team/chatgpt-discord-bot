@@ -1,5 +1,4 @@
 // Require the necessary discord.js classes
-import chalk from "chalk";
 import {
   Client,
   Collection,

@@ -8,7 +8,7 @@ export default {
   name: Events.ClientReady,
   once: true,
   async execute(client) {
-    await resetto0();
+    //await resetto0();
     client.user.setPresence({
       activities: [
         { name: `v0.2.4 | dsc.gg/turing`, type: ActivityType.Playing },
