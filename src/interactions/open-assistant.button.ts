@@ -69,11 +69,11 @@ export default {
       }
     }
     if (action == "tasks") {
+      await interaction.deferUpdate();
       var lang = await getUserLang(interaction.user.id);
       if (!lang) {
         await langInteraction(interaction);
       } else {
-        await interaction.deferUpdate();
         var translation = await getTranlation(lang);
         await taskInteraction(interaction, lang, user, translation);
       }
@@ -91,16 +91,19 @@ export default {
       });
     }
     if (action == "lang-btn") {
+      await interaction.deferUpdate();
+
       await langInteraction(interaction);
     }
     if (action == "skip") {
+      await interaction.deferUpdate();
+
       var lang = await getUserLang(interaction.user.id);
       if (!lang) {
         await langInteraction(interaction);
       } else {
         await oa.rejectTask(taskId, "", user);
         // await rejectTask(taskId, lang);
-        await interaction.deferUpdate();
         var translation = await getTranlation(lang);
 
         await taskInteraction(interaction, lang, user, translation);
@@ -124,6 +127,8 @@ export default {
       await interaction.showModal(modal);
     }
     if (action == "initial-prompt-submit") {
+      await interaction.deferUpdate();
+
       var lang = await getUserLang(interaction.user.id);
       if (!lang) {
         await langInteraction(interaction);
@@ -154,7 +159,6 @@ export default {
           )
           .setURL("https://open-assistant.io/?ref=turing")
           .setFooter({ text: `${getLocaleDisplayName(lang)}` });
-        await interaction.deferUpdate();
         await interaction.editReply({
           embeds: [successEmbed],
           components: [],
@@ -312,7 +316,7 @@ export async function langInteraction(interaction) {
       .setMaxValues(1)
       .setOptions(arr)
   );
-  await interaction.update({
+  await interaction.editReply({
     embeds: [embed],
     components: [row],
   });
