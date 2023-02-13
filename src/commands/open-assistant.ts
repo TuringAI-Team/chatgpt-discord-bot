@@ -22,7 +22,7 @@ export default {
     .setName("open-assistant")
     .setDescription("Help in the data collection of open assistant"),
   async execute(interaction, client, commands, commandType) {
-    /*  var lang = await getUserLang(interaction.user.id);
+    var lang = await getUserLang(interaction.user.id);
     await interaction.deferReply();
 
     if (!lang) {
@@ -31,10 +31,10 @@ export default {
       var translation = await getTranlation(lang);
       await initInteraction(interaction, translation, lang);
       return;
-    }*/
+    } /*
     await interaction.reply({
       content: `Under development`,
       ephemeral: true,
-    });
+    });*/
   },
 };

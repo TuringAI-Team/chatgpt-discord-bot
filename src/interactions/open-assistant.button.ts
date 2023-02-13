@@ -33,27 +33,40 @@ export default {
       auth_method: "discord",
     };
     if (action == "info") {
-      var embed = new EmbedBuilder()
-        .setColor("#3a82f7")
-        .setTimestamp()
-        .setTitle("Open assistant Info")
-        .setDescription(
-          `Open Assistant is a project organized by LAION and is aimed to be the next ChatGPT but open source making it public of everyone. Now is creating the dataset that you can help to create with this bot. \n\n
+      await interaction.deferUpdate();
+      var lang = await getUserLang(interaction.user.id);
+      if (!lang) {
+        await langInteraction(interaction);
+      } else {
+        var translation = await getTranlation(lang);
+        var embed = new EmbedBuilder()
+          .setColor("#3a82f7")
+          .setTimestamp()
+          .setTitle("Open assistant Info")
+          .setDescription(
+            `Open Assistant is a project organized by LAION and is aimed to be the next ChatGPT but open source making it public of everyone. Now is creating the dataset that you can help to create with this bot. \n\n
           **How it works?**\nClick the button "Grab a task" the first time you click it would ask you to know the language you want to use after that it would show a task you can solve in order to contribute to the dataset. If you don't know what you have to do in that task it would be explained in a short way in the top and you can click the button "what i have to do" to get more information, once you have completed the task you submit it.`
-        )
-        .setURL("https://open-assistant.io/?ref=turing")
-        .setThumbnail("https://open-assistant.io/images/logos/logo.svg");
-      const row = new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-          .setLabel("Grab a task")
-          .setCustomId("open-assistant_tasks")
-          .setStyle(ButtonStyle.Primary)
-          .setDisabled(true)
-      );
-      await interaction.update({
-        embeds: [embed],
-        components: [row],
-      });
+          )
+          .setURL("https://open-assistant.io/?ref=turing")
+          .setFooter({ text: `${getLocaleDisplayName(lang)}` })
+          .setThumbnail("https://open-assistant.io/images/logos/logo.png");
+        const row = new ActionRowBuilder().addComponents(
+          new ButtonBuilder()
+            .setLabel(translation.grab_a_task)
+            .setCustomId("open-assistant_tasks")
+            .setStyle(ButtonStyle.Primary)
+            .setDisabled(false),
+          new ButtonBuilder()
+            .setLabel("Change language")
+            .setCustomId("open-assistant_lang-btn")
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(false)
+        );
+        await interaction.editReply({
+          embeds: [embed],
+          components: [row],
+        });
+      }
     }
     if (action == "tasks") {
       var lang = await getUserLang(interaction.user.id);
@@ -120,6 +133,7 @@ export default {
           type: "initial_prompt",
         };
         var text = interaction.fields.getTextInputValue("initial-prompt-input");
+        console.log(interaction.id);
         var messageId = await oa.acceptTask(taskId, user);
         var solveTask = await oa.solveTask(
           task,
@@ -128,11 +142,28 @@ export default {
           { text: text },
           messageId
         );
-
-        //   await initPrompt(taskId, lang, text);
+        var successEmbed = new EmbedBuilder()
+          .setColor(`${solveTask.type == "task_done" ? "#51F73A" : "#F73A3A"}`)
+          .setTimestamp()
+          .setDescription(
+            `${
+              solveTask.type == "task_done"
+                ? "Task done"
+                : "Something went wrong"
+            }`
+          )
+          .setURL("https://open-assistant.io/?ref=turing")
+          .setFooter({ text: `${getLocaleDisplayName(lang)}` });
         await interaction.deferUpdate();
-        var translation = await getTranlation(lang);
-        await taskInteraction(interaction, lang, user, translation);
+        await interaction.editReply({
+          embeds: [successEmbed],
+          components: [],
+          content: "",
+        });
+        setTimeout(async () => {
+          var translation = await getTranlation(lang);
+          await taskInteraction(interaction, lang, user, translation);
+        }, 5000);
       }
     }
   },
@@ -143,8 +174,35 @@ export async function getTranlation(lang: string) {
     `https://open-assistant.io/locales/${lang}/common.json`
   );
   var json = await res.json();
-  console.log(json);
-  return json;
+  var res2 = await fetch(
+    `https://open-assistant.io/locales/${lang}/tasks.json`
+  );
+  var json2 = await res2.json();
+  var res3 = await fetch(
+    `https://open-assistant.io/locales/${lang}/dashboard.json`
+  );
+  var json3 = await res3.json();
+  var res4 = await fetch(
+    `https://open-assistant.io/locales/${lang}/leaderboard.json`
+  );
+  var json4 = await res4.json();
+  var res5 = await fetch(
+    `https://open-assistant.io/locales/${lang}/labelling.json`
+  );
+  var json5 = await res5.json();
+  var res6 = await fetch(
+    `https://open-assistant.io/locales/${lang}/message.json`
+  );
+  var json6 = await res6.json();
+  var translationObject = {
+    ...json,
+    ...json2,
+    ...json3,
+    ...json4,
+    ...json5,
+    ...json6,
+  };
+  return translationObject;
 }
 
 async function taskInteraction(interaction, lang, user, translation) {
@@ -154,26 +212,21 @@ async function taskInteraction(interaction, lang, user, translation) {
     collective: false,
     lang: lang,
   });
-  console.log(task);
   var embeds = [];
   var embed = new EmbedBuilder()
     .setColor("#3a82f7")
     .setTimestamp()
+    .setThumbnail("https://open-assistant.io/images/logos/logo.png")
     .setFooter({ text: `${getLocaleDisplayName(lang)}` })
-    .setTitle(`${translation[formatTaskType(task.type)].label}`)
+    .setTitle(`${translation[formatTaskType(task.type)].instruction}`)
     .setDescription(`${translation[formatTaskType(task.type)].overview}`);
   var rows = [];
-  const row = new ActionRowBuilder().addComponents(
-    new ButtonBuilder()
-      .setCustomId(`open-assistant_skip_${task.id}`)
-      .setLabel("Skip")
-      .setStyle(ButtonStyle.Danger)
-  );
+  const row = new ActionRowBuilder();
   if (task.type == "initial_prompt") {
     row.addComponents(
       new ButtonBuilder()
         .setCustomId(`open-assistant_initial-prompt_${task.id}`)
-        .setLabel("Initial prompt")
+        .setLabel(`${translation[formatTaskType(task.type)].label}`)
         .setStyle(ButtonStyle.Primary)
     );
     embeds.push(embed);
@@ -185,6 +238,7 @@ async function taskInteraction(interaction, lang, user, translation) {
       var emb = new EmbedBuilder()
         .setColor("#3a82f7")
         .setTitle(username)
+        .setThumbnail("https://open-assistant.io/images/logos/logo.png")
         .setDescription(x.text)
         .setFooter({ text: x.frontend_message_id });
       embeds.push(emb);
@@ -196,17 +250,29 @@ async function taskInteraction(interaction, lang, user, translation) {
         .setStyle(ButtonStyle.Primary)
     );
   }
+  row.addComponents(
+    new ButtonBuilder()
+      .setCustomId(`open-assistant_skip_${task.id}`)
+      .setLabel(`${translation.skip}`)
+      .setStyle(ButtonStyle.Danger),
+    new ButtonBuilder()
+      .setLabel("Change language")
+      .setCustomId("open-assistant_lang-btn")
+      .setStyle(ButtonStyle.Secondary)
+      .setDisabled(false)
+  );
   rows.push(row);
   await interaction.editReply({
     components: rows,
     embeds: embeds,
+    content: "",
   });
 }
 
 function formatTaskType(type: string) {
   if (type == "assistant_reply") {
     return "reply_as_assistant";
-  } else if ((type = "user_reply")) {
+  } else if (type == "user_reply") {
     return "reply_as_user";
   } else if (type == "initial_prompt") {
     return "create_initial_prompt";
@@ -224,7 +290,11 @@ export async function langInteraction(interaction) {
   });
   var embed = new EmbedBuilder()
     .setColor("#3a82f7")
-    .setTitle("Select the lang.");
+    .setThumbnail("https://open-assistant.io/images/logos/logo.png")
+    .setTitle("Select the lang.")
+    .setDescription(
+      `By selecting a language you accept our [tos](https://open-assistant.io/terms-of-service)`
+    );
   //   .setTimestamp();
   const row = new ActionRowBuilder().addComponents(
     new StringSelectMenuBuilder()
@@ -247,23 +317,23 @@ export async function initInteraction(interaction, translation, lang) {
     .setTitle("Open assistant")
     .setDescription(`${translation["conversational"]}`)
     .setURL("https://open-assistant.io/?ref=turing")
-    .setThumbnail("https://open-assistant.io/images/logos/logo.svg");
+    .setThumbnail("https://open-assistant.io/images/logos/logo.png");
 
   const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
-      .setLabel("What is this?")
+      .setLabel(translation.about)
       .setCustomId("open-assistant_info")
       .setStyle(ButtonStyle.Primary),
     new ButtonBuilder()
-      .setLabel("Grab a task")
+      .setLabel(translation.grab_a_task)
       .setCustomId("open-assistant_tasks")
       .setStyle(ButtonStyle.Primary)
-      .setDisabled(true),
+      .setDisabled(false),
     new ButtonBuilder()
       .setLabel("Change language")
       .setCustomId("open-assistant_lang-btn")
       .setStyle(ButtonStyle.Secondary)
-      .setDisabled(true)
+      .setDisabled(false)
   );
   await interaction.editReply({
     embeds: [embed],
