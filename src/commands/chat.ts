@@ -65,6 +65,9 @@ export default {
       model = options.model;
     } else {
       message = interaction.options.getString("message");
+      if (message.includes("@everyone") || message.includes("<@") || message.includes("@here")){
+        return; 
+      }
       model = interaction.options.getString("model");
     }
 
