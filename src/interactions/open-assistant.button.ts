@@ -83,12 +83,22 @@ export default {
       await interaction.deferUpdate();
       await setUserLang(interaction.user.id, selected);
       var translation = await getTranlation(selected);
-      await initInteraction(interaction, translation, selected);
+      var successEmbed = new EmbedBuilder()
+        .setColor(`#51F73A`)
+        .setTimestamp()
+        .setDescription(
+          `Language changed to **${getLocaleDisplayName(
+            selected
+          )}(${selected})**`
+        )
+        .setURL("https://open-assistant.io/?ref=turing");
       interaction.editReply({
-        content: `Language changed to **${getLocaleDisplayName(
-          selected
-        )}(${selected})**`,
+        embeds: [successEmbed],
+        components: [],
       });
+      setTimeout(async () => {
+        await initInteraction(interaction, translation, selected);
+      }, 3000);
     }
     if (action == "lang-btn") {
       await interaction.deferUpdate();
@@ -128,7 +138,6 @@ export default {
     }
     if (action == "initial-prompt-submit") {
       await interaction.deferUpdate();
-
       var lang = await getUserLang(interaction.user.id);
       if (!lang) {
         await langInteraction(interaction);
@@ -138,8 +147,7 @@ export default {
           type: "initial_prompt",
         };
         var text = interaction.fields.getTextInputValue("initial-prompt-input");
-        console.log(interaction.id);
-        var messageId = await oa.acceptTask(taskId, user);
+        var messageId = await oa.acceptTask(taskId, user, interaction.id);
         var solveTask = await oa.solveTask(
           task,
           user,
@@ -155,19 +163,18 @@ export default {
               solveTask.type == "task_done"
                 ? "Task done"
                 : "Something went wrong"
-            }`
+            }(loading new task...)`
           )
           .setURL("https://open-assistant.io/?ref=turing")
           .setFooter({ text: `${getLocaleDisplayName(lang)}` });
         await interaction.editReply({
           embeds: [successEmbed],
           components: [],
-          content: "",
         });
         setTimeout(async () => {
           var translation = await getTranlation(lang);
           await taskInteraction(interaction, lang, user, translation);
-        }, 5000);
+        }, 3000);
       }
     }
   },
@@ -218,22 +225,34 @@ async function taskInteraction(interaction, lang, user, translation) {
     });
     return;
   }
+  console.log(await oa.getAvailability(user, lang));
+
   var task = await oa.getTask({
     type: "random",
     user: user,
     collective: false,
     lang: lang,
   });
+  console.log(task);
+  if (task.message) {
+    var embd = await sendErr(task.message);
+    await interaction.editReply({
+      embeds: [embd],
+      components: [],
+    });
+    return;
+  }
   var embeds = [];
   var embed = new EmbedBuilder()
     .setColor("#3a82f7")
     .setTimestamp()
     .setThumbnail("https://open-assistant.io/images/logos/logo.png")
     .setFooter({ text: `${getLocaleDisplayName(lang)}` })
-    .setTitle(`${translation[formatTaskType(task.type)].instruction}`)
+    .setTitle(`${translation[formatTaskType(task.type)].label}`)
     .setDescription(`${translation[formatTaskType(task.type)].overview}`);
   var rows = [];
   const row = new ActionRowBuilder();
+
   if (task.type == "initial_prompt") {
     row.addComponents(
       new ButtonBuilder()
@@ -244,15 +263,24 @@ async function taskInteraction(interaction, lang, user, translation) {
     embeds.push(embed);
   } else {
     embeds.push(embed);
-    task.conversation.messages.forEach((x) => {
-      var username = "User:";
-      if (x.is_assistant) username = "AI:";
+    task.conversation.messages.forEach((x, i) => {
+      var username = "User";
+      if (x.is_assistant) username = "AI";
+
       var emb = new EmbedBuilder()
-        .setColor("#3a82f7")
-        .setTitle(username)
-        .setThumbnail("https://open-assistant.io/images/logos/logo.png")
+        .setAuthor({
+          iconURL: `${
+            username == "User"
+              ? "https://open-assistant.io/images/temp-avatars/av1.jpg"
+              : "https://open-assistant.io/images/logos/logo.png"
+          }`,
+          name: username,
+        })
         .setDescription(x.text)
         .setFooter({ text: x.frontend_message_id });
+      if (i == task.conversation.messages.length - 1) {
+        emb.setColor("#3a82f7");
+      }
       embeds.push(emb);
     });
     row.addComponents(
@@ -277,8 +305,15 @@ async function taskInteraction(interaction, lang, user, translation) {
   await interaction.editReply({
     components: rows,
     embeds: embeds,
-    content: "",
   });
+}
+
+async function sendErr(err: string) {
+  var embed = new EmbedBuilder()
+    .setColor("#F73A3A")
+    .setDescription(err)
+    .setTimestamp();
+  return embed;
 }
 
 function formatTaskType(type: string) {
