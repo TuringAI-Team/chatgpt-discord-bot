@@ -27,6 +27,8 @@ export default {
     .setName("voice")
     .setDescription("Chat with an AI using your voice"),
   async execute(interaction, client, commands, commandType, options) {
+    await commandType.reply(interaction, "Function under maintenance");
+    return;
     await voiceAudio(interaction, client, commandType);
   },
 };

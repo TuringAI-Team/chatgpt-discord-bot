@@ -83,6 +83,7 @@ If you break character, I will let you know by saying "Stay in character!" and y
       id,
       userName
     );
+    console.log(token.id, response);
 
     if (response) {
       response = response.replaceAll("<@", "pingSecurity");

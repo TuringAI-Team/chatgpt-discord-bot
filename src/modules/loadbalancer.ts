@@ -26,11 +26,10 @@ async function useToken(model): Promise<null | {
     return;
   }
   var t = tokens.filter((x) => x.messages <= 2 && x.abled != false);
-  if (model == "chatgpt") {
-    t = tokens.filter((x) => x.messages <= 1 && x.access != null);
-  }
-  if (model == "dan") {
-    t = tokens.filter((x) => x.messages <= 1 && x.access != null);
+  if (model == "chatgpt" || model == "dan") {
+    t = tokens.filter(
+      (x) => x.messages <= 1 && x.access != null && x.access.includes("ey")
+    );
   }
   var i = getRndInteger(0, t.length - 1);
   if (t.length <= 0) return;
