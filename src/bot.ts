@@ -31,6 +31,7 @@ const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
 client.commands = new Collection();
 client.interactions = new Collection();
 client.guildsVoice = [];
+client.tasks = [];
 
 // Handlers
 eventHandler(client);

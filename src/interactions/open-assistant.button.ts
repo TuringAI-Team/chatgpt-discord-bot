@@ -26,7 +26,7 @@ export default {
     customId: "open-assistant",
     description: "Open assistant buttons.",
   },
-  async execute(interaction, client, action, taskId) {
+  async execute(interaction, client, action, taskId, authorId) {
     var user = {
       id: interaction.user.id,
       display_name: interaction.user.username,
@@ -75,7 +75,7 @@ export default {
         await langInteraction(interaction);
       } else {
         var translation = await getTranlation(lang);
-        await taskInteraction(interaction, lang, user, translation);
+        await taskInteraction(interaction, lang, user, translation, client);
       }
     }
     if (action == "lang") {
@@ -106,47 +106,87 @@ export default {
       await langInteraction(interaction);
     }
     if (action == "skip") {
+      if (authorId != interaction.user.id) {
+        await interaction.reply({
+          ephemeral: true,
+          content: `${interaction.user}, you can't do this action please use '/open-assistant' to get a task.`,
+        });
+      }
       await interaction.deferUpdate();
 
       var lang = await getUserLang(interaction.user.id);
       if (!lang) {
         await langInteraction(interaction);
       } else {
-        await oa.rejectTask(taskId, "", user);
-        // await rejectTask(taskId, lang);
         var translation = await getTranlation(lang);
-
-        await taskInteraction(interaction, lang, user, translation);
+        await oa.rejectTask(taskId, "", user);
+        var index = client.tasks.findIndex((x) => x.id == taskId);
+        if (index > -1) {
+          client.tasks.splice(index, 1);
+        }
+        await taskInteraction(interaction, lang, user, translation, client);
       }
     }
-    if (action == "initial-prompt") {
-      const promptInput = new TextInputBuilder()
-        .setCustomId("initial-prompt-input")
-        .setMinLength(10)
-        .setLabel("Prompt:")
-        .setPlaceholder("Write your prompt here...")
-        .setRequired(true)
-        // Paragraph means multiple lines of text.
-        .setStyle(TextInputStyle.Paragraph);
-      const firstActionRow =
-        new ActionRowBuilder<TextInputBuilder>().addComponents(promptInput);
-      const modal = new ModalBuilder()
-        .setCustomId(`open-assistant_initial-prompt-submit_${taskId}`)
-        .setTitle("Provide the initial prompts");
-      modal.addComponents(firstActionRow);
-      await interaction.showModal(modal);
+    if (action == "text-modal") {
+      if (authorId != interaction.user.id) {
+        await interaction.reply({
+          ephemeral: true,
+          content: `${interaction.user}, you can't do this action please use '/open-assistant' to get a task.`,
+        });
+      }
+      var lang = await getUserLang(interaction.user.id);
+      if (!lang) {
+        await langInteraction(interaction);
+      } else {
+        var task = client.tasks.find((x) => x.id == taskId);
+
+        if (!task) {
+          await interaction.reply({
+            ephemeral: true,
+            content: `Task not found, please use skip button to get a new task.`,
+          });
+          return;
+        }
+        var translation = await getTranlation(lang);
+        const promptInput = new TextInputBuilder()
+          .setCustomId("modal-input")
+          .setMinLength(10)
+          .setLabel(translation[formatTaskType(task.type)].label)
+          .setPlaceholder(
+            translation[formatTaskType(task.type)].response_placeholder
+          )
+          .setRequired(true)
+          // Paragraph means multiple lines of text.
+          .setStyle(TextInputStyle.Paragraph);
+        const firstActionRow =
+          new ActionRowBuilder<TextInputBuilder>().addComponents(promptInput);
+        const modal = new ModalBuilder()
+          .setCustomId(`open-assistant_modal-submit_${taskId}`)
+          .setTitle(
+            translation[formatTaskType(task.type)].instruction
+              ? translation[formatTaskType(task.type)].instruction
+              : translation[formatTaskType(task.type)].label
+          );
+        modal.addComponents(firstActionRow);
+        await interaction.showModal(modal);
+      }
     }
-    if (action == "initial-prompt-submit") {
+    if (action == "modal-submit") {
       await interaction.deferUpdate();
       var lang = await getUserLang(interaction.user.id);
       if (!lang) {
         await langInteraction(interaction);
       } else {
-        var task = {
-          id: taskId,
-          type: "initial_prompt",
-        };
-        var text = interaction.fields.getTextInputValue("initial-prompt-input");
+        var task = client.tasks.find((x) => x.id == taskId);
+
+        if (!task) {
+          await interaction.reply({
+            ephemeral: true,
+            content: `Task not found, please use skip button to get a new task.`,
+          });
+          return;
+        }
+        var text = interaction.fields.getTextInputValue("modal-input");
         var messageId = await oa.acceptTask(taskId, user, interaction.id);
         var solveTask = await oa.solveTask(
           task,
@@ -155,6 +195,11 @@ export default {
           { text: text },
           messageId
         );
+        await saveTask(task, lang, user, { text: text, messageId: messageId });
+        var index = client.tasks.findIndex((x) => x.id == taskId);
+        if (index > -1) {
+          client.tasks.splice(index, 1);
+        }
         var successEmbed = new EmbedBuilder()
           .setColor(`${solveTask.type == "task_done" ? "#51F73A" : "#F73A3A"}`)
           .setTimestamp()
@@ -173,8 +218,59 @@ export default {
         });
         setTimeout(async () => {
           var translation = await getTranlation(lang);
-          await taskInteraction(interaction, lang, user, translation);
+          await taskInteraction(interaction, lang, user, translation, client);
         }, 3000);
+      }
+    }
+    if (action == "label") {
+      if (authorId != interaction.user.id) {
+        await interaction.reply({
+          ephemeral: true,
+          content: `${interaction.user}, you can't do this action please use '/open-assistant' to get a task.`,
+        });
+      }
+      await interaction.deferUpdate();
+      var lang = await getUserLang(interaction.user.id);
+      if (!lang) {
+        await langInteraction(interaction);
+      } else {
+        var task = client.tasks.find((x) => x.id == taskId);
+
+        if (!task) {
+          await interaction.reply({
+            ephemeral: true,
+            content: `Task not found, please use skip button to get a new task.`,
+          });
+          return;
+        }
+        var embed = new EmbedBuilder()
+          .setColor("#3a82f7")
+          .setTimestamp()
+          .setThumbnail("https://open-assistant.io/images/logos/logo.png")
+          .setFooter({ text: `${getLocaleDisplayName(lang)}` })
+          .setTitle(`${translation["spam.question"]}`)
+          .setDescription(
+            `${translation["spam.one_desc.line_1"]}\n${translation["spam.one_desc.line_2"]}`
+          );
+        const row = new ActionRowBuilder().addComponents(
+          new ButtonBuilder()
+            .setCustomId(
+              `open-assistant_label_${taskId}_${interaction.user.id}_spam_yes`
+            )
+            .setLabel(`✔`)
+            .setStyle(ButtonStyle.Secondary),
+          new ButtonBuilder()
+            .setCustomId(
+              `open-assistant_label_${taskId}_${interaction.user.id}_spam_no`
+            )
+            .setLabel(`❌`)
+            .setStyle(ButtonStyle.Secondary)
+        );
+
+        await interaction.editReply({
+          embeds: [embed],
+          components: [row],
+        });
       }
     }
   },
@@ -216,7 +312,19 @@ export async function getTranlation(lang: string) {
   return translationObject;
 }
 
-async function taskInteraction(interaction, lang, user, translation) {
+async function saveTask(task, lang, user, answer) {
+  var taskData = {
+    ...task,
+    lang: lang,
+    ...answer,
+  };
+  var { data, error } = await supabase
+    .from("open_assistant_tasks")
+    .insert([{ id: task.id, completedBy: user.id, task: taskData }]);
+  return true;
+}
+
+async function taskInteraction(interaction, lang, user, translation, client) {
   var ispremium = await isPremium(interaction.user.id, interaction.guildId);
   if (!ispremium) {
     await interaction.editReply({
@@ -234,6 +342,7 @@ async function taskInteraction(interaction, lang, user, translation) {
     lang: lang,
   });
   console.log(task);
+  client.tasks.push(task);
   if (task.message) {
     var embd = await sendErr(task.message);
     await interaction.editReply({
@@ -253,15 +362,49 @@ async function taskInteraction(interaction, lang, user, translation) {
   var rows = [];
   const row = new ActionRowBuilder();
 
-  if (task.type == "initial_prompt") {
+  if (
+    task.type == "initial_prompt" ||
+    task.type == "assistant_reply" ||
+    task.type == "prompter_reply"
+  ) {
     row.addComponents(
       new ButtonBuilder()
-        .setCustomId(`open-assistant_initial-prompt_${task.id}`)
+        .setCustomId(
+          `open-assistant_text-modal_${task.id}_${interaction.user.id}`
+        )
         .setLabel(`${translation[formatTaskType(task.type)].label}`)
         .setStyle(ButtonStyle.Primary)
     );
     embeds.push(embed);
+    if (task.type == "assistant_reply" || task.type == "prompter_reply") {
+      task.conversation.messages.forEach((x, i) => {
+        var username = "User";
+        if (x.is_assistant) username = "AI";
+
+        var emb = new EmbedBuilder()
+          .setAuthor({
+            iconURL: `${
+              username == "User"
+                ? "https://open-assistant.io/images/temp-avatars/av1.jpg"
+                : "https://open-assistant.io/images/logos/logo.png"
+            }`,
+            name: username,
+          })
+          .setDescription(x.text)
+          .setFooter({ text: x.frontend_message_id });
+        if (i == task.conversation.messages.length - 1) {
+          emb.setColor("#3a82f7");
+        }
+        embeds.push(emb);
+      });
+    }
   } else {
+    row.addComponents(
+      new ButtonBuilder()
+        .setCustomId(`open-assistant_label_${task.id}_${interaction.user.id}`)
+        .setLabel(`${translation[formatTaskType(task.type)].label}`)
+        .setStyle(ButtonStyle.Primary)
+    );
     embeds.push(embed);
     task.conversation.messages.forEach((x, i) => {
       var username = "User";
@@ -283,16 +426,10 @@ async function taskInteraction(interaction, lang, user, translation) {
       }
       embeds.push(emb);
     });
-    row.addComponents(
-      new ButtonBuilder()
-        .setCustomId(`open-assistant_reply_${task.id}`)
-        .setLabel("Reply")
-        .setStyle(ButtonStyle.Primary)
-    );
   }
   row.addComponents(
     new ButtonBuilder()
-      .setCustomId(`open-assistant_skip_${task.id}`)
+      .setCustomId(`open-assistant_skip_${task.id}_${interaction.user.id}`)
       .setLabel(`${translation.skip}`)
       .setStyle(ButtonStyle.Danger),
     new ButtonBuilder()
@@ -319,7 +456,7 @@ async function sendErr(err: string) {
 function formatTaskType(type: string) {
   if (type == "assistant_reply") {
     return "reply_as_assistant";
-  } else if (type == "user_reply") {
+  } else if (type == "user_reply" || type == "prompter_reply") {
     return "reply_as_user";
   } else if (type == "initial_prompt") {
     return "create_initial_prompt";

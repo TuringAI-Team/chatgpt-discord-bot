@@ -1,6 +1,6 @@
 {
   "name": "chatgpt-bot",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "",
   "main": "dist/index.js",
   "type": "module",
@@ -20,6 +20,7 @@
     "@supabase/supabase-js": "^2.1.1",
     "api": "^5.0.7",
     "chalk": "^5.2.0",
+    "chatgpt-io": "^1.1.2-alpha.0",
     "chatgpt-official": "^1.1.2",
     "cld": "^2.8.4",
     "delay": "^5.0.0",
