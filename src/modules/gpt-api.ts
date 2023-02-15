@@ -80,6 +80,7 @@ If you break character, I will let you know by saying "Stay in character!" and y
         configsDir: "./chatgpt-io",
         saveInterval: ms("5m"),
       }); // Note: options is optional
+      console.log(token.id);
     }
 
     response = await bot.ask(
