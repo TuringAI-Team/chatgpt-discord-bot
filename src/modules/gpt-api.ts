@@ -8,6 +8,7 @@ import axios from "axios";
 import ChatGPT from "chatgpt-official";
 import ChatGPTIO from "chatgpt-io";
 import { v5 as uuidv5 } from "uuid";
+import ms from "ms";
 
 async function chat(message, userName, ispremium, m, id) {
   var token = await useToken(m);
@@ -77,6 +78,7 @@ If you break character, I will let you know by saying "Stay in character!" and y
       bot = new ChatGPTIO(key, {
         name: token.id,
         configsDir: "./chatgpt-io",
+        saveInterval: ms("5m"),
       }); // Note: options is optional
     }
 
