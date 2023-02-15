@@ -28,7 +28,11 @@ async function useToken(model): Promise<null | {
   var t = tokens.filter((x) => x.messages <= 2 && x.abled != false);
   if (model == "chatgpt" || model == "dan") {
     t = tokens.filter(
-      (x) => x.messages <= 1 && x.access != null && x.access.includes("ey")
+      (x) =>
+        x.messages <= 1 &&
+        x.access != null &&
+        x.access.includes("ey") &&
+        x.limited == false
     );
   }
   var i = getRndInteger(0, t.length - 1);
@@ -95,7 +99,7 @@ export async function disableAcc(id) {
     .from("accounts")
     .update({
       messages: 0,
-      abled: false,
+      limited: true,
     })
     .eq("id", id);
   /*
