@@ -80,7 +80,6 @@ If you break character, I will let you know by saying "Stay in character!" and y
         configsDir: "./chatgpt-io",
         saveInterval: ms("5m"),
       }); // Note: options is optional
-      console.log(token.id);
     }
 
     response = await bot.ask(
@@ -115,10 +114,10 @@ If you break character, I will let you know by saying "Stay in character!" and y
       };
     }
     await removeMessage(token.id);
-    // await disableAcc(token.id);
+    await disableAcc(token.id);
     //await rateLimitAcc(token.id);
     return {
-      error: `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)`,
+      error: `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing). Developer: ${token.id}`,
     };
   }
 }
