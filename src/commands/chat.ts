@@ -65,8 +65,12 @@ export default {
       model = options.model;
     } else {
       message = interaction.options.getString("message");
-      if (message.includes("@everyone") || message.includes("<@") || message.includes("@here")){
-        return; 
+      if (
+        message.includes("@everyone") ||
+        message.includes("<@") ||
+        message.includes("@here")
+      ) {
+        return;
       }
       model = interaction.options.getString("model");
     }
@@ -276,12 +280,14 @@ async function responseWithText(
           console.log(err);
         }
       } else {
-        channel.send(
-          completeResponse
-            .split("")
-            .slice(2000 * i, 2000 * i + 2000)
-            .join("")
-        );
+        if (channel) {
+          channel.send(
+            completeResponse
+              .split("")
+              .slice(2000 * i, 2000 * i + 2000)
+              .join("")
+          );
+        }
       }
     }
   } else {
