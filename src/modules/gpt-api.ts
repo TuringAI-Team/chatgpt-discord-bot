@@ -106,7 +106,7 @@ If you break character, I will let you know by saying "Stay in character!" and y
       err ==
       "Error: You exceeded your current quota, please check your plan and billing details."
     ) {
-      await disableAcc(token.id);
+      await disableAcc(token.id, true);
       return {
         error:
           `We are running out of credits, please wait until we solve this issue. If you want to donate use the command ` +
@@ -114,7 +114,7 @@ If you break character, I will let you know by saying "Stay in character!" and y
       };
     }
     await removeMessage(token.id);
-    await disableAcc(token.id);
+    await disableAcc(token.id, false);
     //await rateLimitAcc(token.id);
     return {
       error: `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing). Developer: ${token.id}`,

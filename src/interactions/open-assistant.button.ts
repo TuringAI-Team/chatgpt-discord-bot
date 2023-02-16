@@ -26,7 +26,15 @@ export default {
     customId: "open-assistant",
     description: "Open assistant buttons.",
   },
-  async execute(interaction, client, action, taskId, authorId) {
+  async execute(
+    interaction,
+    client,
+    action,
+    taskId,
+    authorId,
+    labelTag,
+    labelValue
+  ) {
     var user = {
       id: interaction.user.id,
       display_name: interaction.user.username,
@@ -229,11 +237,13 @@ export default {
           content: `${interaction.user}, you can't do this action please use '/open-assistant' to get a task.`,
         });
       }
-      await interaction.deferUpdate();
       var lang = await getUserLang(interaction.user.id);
       if (!lang) {
+        await interaction.deferUpdate();
+
         await langInteraction(interaction);
       } else {
+        var translation = await getTranlation(lang);
         var task = client.tasks.find((x) => x.id == taskId);
 
         if (!task) {
@@ -243,38 +253,98 @@ export default {
           });
           return;
         }
-        var embed = new EmbedBuilder()
+        await interaction.deferUpdate();
+        var embeds = [];
+        var infoEmbed = new EmbedBuilder()
           .setColor("#3a82f7")
           .setTimestamp()
           .setThumbnail("https://open-assistant.io/images/logos/logo.png")
           .setFooter({ text: `${getLocaleDisplayName(lang)}` })
-          .setTitle(`${translation["spam.question"]}`)
-          .setDescription(
-            `${translation["spam.one_desc.line_1"]}\n${translation["spam.one_desc.line_2"]}`
-          );
-        const row = new ActionRowBuilder().addComponents(
-          new ButtonBuilder()
-            .setCustomId(
-              `open-assistant_label_${taskId}_${interaction.user.id}_spam_yes`
-            )
-            .setLabel(`✔`)
-            .setStyle(ButtonStyle.Secondary),
-          new ButtonBuilder()
-            .setCustomId(
-              `open-assistant_label_${taskId}_${interaction.user.id}_spam_no`
-            )
-            .setLabel(`❌`)
-            .setStyle(ButtonStyle.Secondary)
-        );
+          .setTitle(`${translation[formatTaskType(task.type)].label}`)
+          .setDescription(`${translation[formatTaskType(task.type)].overview}`);
+        embeds.push(infoEmbed);
+        task.conversation.messages.forEach((x, i) => {
+          var username = "User";
+          if (x.is_assistant) username = "AI";
 
+          var emb = new EmbedBuilder()
+            .setAuthor({
+              iconURL: `${
+                username == "User"
+                  ? "https://open-assistant.io/images/temp-avatars/av1.jpg"
+                  : "https://open-assistant.io/images/logos/logo.png"
+              }`,
+              name: username,
+            })
+            .setDescription(x.text)
+            .setFooter({ text: x.frontend_message_id });
+          if (i == task.conversation.messages.length - 1) {
+            emb.setColor("#3a82f7");
+          }
+          embeds.push(emb);
+        });
+        const row = new ActionRowBuilder();
+        if (!labelTag) {
+          var embed = new EmbedBuilder()
+            .setColor("#3a82f7")
+            .setTimestamp()
+            .setThumbnail("https://open-assistant.io/images/logos/logo.png")
+            .setFooter({ text: `${getLocaleDisplayName(lang)}` })
+            .setTitle(`${translation["spam.question"]}`)
+            .setDescription(
+              `${translation["spam.one_desc.line_1"]}\n${translation["spam.one_desc.line_2"]}`
+            );
+          row.addComponents(
+            new ButtonBuilder()
+              .setCustomId(
+                `open-assistant_label_${taskId}_${interaction.user.id}_spam_yes`
+              )
+              .setLabel(`✔`)
+              .setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder()
+              .setCustomId(
+                `open-assistant_label_${taskId}_${interaction.user.id}_spam_no`
+              )
+              .setLabel(`❌`)
+              .setStyle(ButtonStyle.Secondary)
+          );
+          embeds.push(embed);
+        } else {
+          task.labels.find((x) => x.name == labelTag).value =
+            formatLabel(labelValue);
+          console.log(task);
+        }
+        row.addComponents(
+          new ButtonBuilder()
+            .setCustomId(
+              `open-assistant_skip_${task.id}_${interaction.user.id}`
+            )
+            .setLabel(`${translation.skip} task`)
+            .setStyle(ButtonStyle.Danger),
+          new ButtonBuilder()
+            .setLabel("Change language")
+            .setCustomId("open-assistant_lang-btn")
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(false)
+        );
         await interaction.editReply({
-          embeds: [embed],
+          embeds: embeds,
           components: [row],
         });
       }
     }
   },
 };
+
+function formatLabel(label: string) {
+  if (label == "yes") {
+    return 1;
+  } else if (label == "no") {
+    return 0;
+  } else {
+    return parseInt(label);
+  }
+}
 
 export async function getTranlation(lang: string) {
   var res = await fetch(

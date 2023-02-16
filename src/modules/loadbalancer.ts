@@ -71,13 +71,22 @@ async function addMessage(id) {
   }
 }
 
-export async function disableAcc(id) {
-  const { data, error } = await supabase
-    .from("accounts")
-    .update({
+export async function disableAcc(id, bool) {
+  var update = {};
+  if (bool) {
+    update = {
+      messages: 0,
+      abled: false,
+    };
+  } else {
+    update = {
       messages: 0,
       limited: Date.now(),
-    })
+    };
+  }
+  const { data, error } = await supabase
+    .from("accounts")
+    .update(update)
     .eq("id", id);
 }
 
@@ -91,6 +100,7 @@ export async function checkLimited() {
   );
   for (var i = 0; i < t.length; i++) {
     var diff = Date.now() - t[i].limited;
+    console.log(diff >= ms("30m"));
     if (diff >= ms("30m")) {
       const { data, error } = await supabase
         .from("accounts")
