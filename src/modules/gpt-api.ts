@@ -98,10 +98,10 @@ If you break character, I will let you know by saying "Stay in character!" and y
       await saveMsg(m, message, response, id, ispremium, userName);
     setTimeout(async () => {
       await removeMessage(token.id);
-    }, 5000);
+    }, 19000);
     return { text: response, type: m };
   } catch (err) {
-    console.log(`${token.id}: ${err}`);
+    //console.log(`${token.id}: ${err}`);
     if (
       err ==
       "Error: You exceeded your current quota, please check your plan and billing details."

@@ -283,6 +283,60 @@ export default {
           }
           embeds.push(emb);
         });
+        var tasks = [
+          {
+            name: "spam",
+            type: "yes/no",
+          },
+          {
+            name: "fails_task",
+            type: "yes/no",
+          },
+          {
+            name: "lang_mismatch",
+            type: "yes/no",
+          },
+          {
+            name: "not_appropriate",
+            type: "yes/no",
+          },
+          {
+            name: "pii",
+            type: "yes/no",
+          },
+          {
+            name: "hate_speech",
+            type: "yes/no",
+          },
+          {
+            name: "sexual_content",
+            type: "yes/no",
+          },
+          {
+            name: "quality",
+            type: "number",
+          },
+          {
+            name: "helpfulness",
+            type: "number",
+          },
+          {
+            name: "creativity",
+            type: "number",
+          },
+          {
+            name: "humor",
+            type: "number",
+          },
+          {
+            name: "toxicity",
+            type: "number",
+          },
+          {
+            name: "violence",
+            type: "number",
+          },
+        ];
         const row = new ActionRowBuilder();
         if (!labelTag) {
           var embed = new EmbedBuilder()

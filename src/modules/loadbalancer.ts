@@ -98,9 +98,12 @@ export async function checkLimited() {
   var t = tokens.filter(
     (x) => x.access != null && x.access.includes("ey") && x.limited !== null
   );
+  console.log(`checking ${t.length} tokens`);
+  var enabled = 0;
   for (var i = 0; i < t.length; i++) {
     var diff = Date.now() - t[i].limited;
     if (diff >= ms("30m")) {
+      enabled++;
       const { data, error } = await supabase
         .from("accounts")
         .update({
@@ -110,6 +113,7 @@ export async function checkLimited() {
         .eq("id", t[i].id);
     }
   }
+  console.log(`enabled ${enabled} tokens`);
 }
 
 async function removeMessage(id) {
