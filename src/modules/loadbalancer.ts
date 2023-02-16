@@ -32,7 +32,7 @@ async function useToken(model): Promise<null | {
         x.messages <= 1 &&
         x.access != null &&
         x.access.includes("ey") &&
-        x.limited == false
+        x.limited == null
     );
   }
   var i = getRndInteger(0, t.length - 1);
@@ -68,29 +68,6 @@ async function addMessage(id) {
         totalMessages: tokenObj.totalMessages + 1,
       })
       .eq("id", id);
-
-    /*
-    if (tokenObj.totalMessages >= 50) {
-      const { data, error } = await supabase
-        .from("accounts")
-        .update({
-          messages: 1,
-          totalMessages: tokenObj.totalMessages + 1,
-        })
-        .eq("id", id);
-      var client = clients.find((x) => x.id == id);
-      await client.client.disconnect();
-      var index = clients.findIndex((x) => x.id == id);
-      clients.splice(index, 1); // 2nd parameter means remove one item only
-    } else {
-      const { data, error } = await supabase
-        .from("accounts")
-        .update({
-          messages: 1,
-          totalMessages: tokenObj.totalMessages + 1,
-        })
-        .eq("id", id);
-    }*/
   }
 }
 
@@ -99,15 +76,31 @@ export async function disableAcc(id) {
     .from("accounts")
     .update({
       messages: 0,
-      limited: true,
+      limited: Date.now(),
     })
     .eq("id", id);
-  /*
-  var client = clients.find((x) => x.id == id);
-  await client.client.disconnect();
-  var index = clients.findIndex((x) => x.id == id);
-  clients.splice(index, 1); // 2nd parameter means remove one item only
-  */
+}
+
+export async function checkLimited() {
+  var tokens = await getTokens();
+  if (!tokens || tokens.length <= 0) {
+    return;
+  }
+  var t = tokens.filter(
+    (x) => x.access != null && x.access.includes("ey") && x.limited !== null
+  );
+  for (var i = 0; i < t.length; i++) {
+    var diff = Date.now() - t[i].limited;
+    if (diff >= ms("30m")) {
+      const { data, error } = await supabase
+        .from("accounts")
+        .update({
+          messages: 0,
+          limited: null,
+        })
+        .eq("id", t[i].id);
+    }
+  }
 }
 
 async function removeMessage(id) {
