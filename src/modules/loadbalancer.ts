@@ -100,7 +100,6 @@ export async function checkLimited() {
   );
   for (var i = 0; i < t.length; i++) {
     var diff = Date.now() - t[i].limited;
-    console.log(diff >= ms("30m"));
     if (diff >= ms("30m")) {
       const { data, error } = await supabase
         .from("accounts")
