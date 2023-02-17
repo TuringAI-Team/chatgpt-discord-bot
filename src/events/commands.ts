@@ -39,7 +39,6 @@ export default {
     var guildId;
     if (interaction.guild) guildId = interaction.guild.id;
     var ispremium = await isPremium(interaction.user.id, guildId);
-    console.log(command.cooldown, ispremium);
 
     try {
       if (command.cooldown && ispremium == false) {
@@ -50,7 +49,6 @@ export default {
           // Filters
           .eq("userId", interaction.user.id)
           .eq("command", interaction.commandName);
-        console.log(error);
         if (cooldowns && cooldowns[0]) {
           var cooldown = cooldowns[0];
           var createdAt = new Date(cooldown.created_at);
