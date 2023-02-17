@@ -21,7 +21,6 @@ export default {
     console.log(
       chalk.white(`Ready! Logged in as `) + chalk.blue.bold(client.user.tag)
     );
-    console.log(client.shard.client.options.shards[0] + 1);
     if (client.shard.client.options.shards[0] + 1 == 1) {
       await checkLimited();
       setInterval(async () => {

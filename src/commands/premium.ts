@@ -4,6 +4,7 @@ import {
   EmbedBuilder,
   ActionRowBuilder,
   ButtonBuilder,
+  PermissionsBitField,
   ButtonStyle,
   StringSelectMenuBuilder,
 } from "discord.js";
@@ -67,6 +68,16 @@ export default {
       }
       var r;
       if (type == "server") {
+        if (
+          !interaction.member.permissions.has(
+            PermissionsBitField.Flags.Administrator
+          )
+        ) {
+          await interaction.reply({
+            content: `You need to be an administrator to activate a server key.`,
+            ephemeral: true,
+          });
+        }
         r = await activateKey(key, interaction.guild.id, type);
       } else {
         r = await activateKey(key, interaction.user.id, type);
