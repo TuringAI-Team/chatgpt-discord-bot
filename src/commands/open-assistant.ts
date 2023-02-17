@@ -15,7 +15,7 @@ import {
   langInteraction,
   initInteraction,
   getTranlation,
-} from "../interactions/open-assistant.button.js";
+} from "../interactions/open-assistant.js";
 
 export default {
   data: new SlashCommandBuilder()

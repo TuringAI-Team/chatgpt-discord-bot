@@ -2,6 +2,9 @@ import {
   SlashCommandBuilder,
   EmbedBuilder,
   AttachmentBuilder,
+  ActionRowBuilder,
+  ButtonStyle,
+  ButtonBuilder,
 } from "discord.js";
 import { chat } from "../modules/gpt-api.js";
 import supabase from "../modules/supabase.js";
@@ -115,46 +118,18 @@ export default {
           interaction.user.username,
           ispremium,
           "gpt-3",
-          `${interaction.user.id}-gpt-3`
+          `gpt-3-${interaction.user.id}`
         );
       }
     }
 
     if (model == "chatgpt") {
-      /*   let { data: results, error } = await supabase
-        .from("results")
-        .select("*")
-
-        // Filters
-        .eq("prompt", message.toLowerCase())
-        .eq("provider", "chatgpt");
-      if (!results || error) {
-        var errr = "Error connecting with db";
-
-        await responseWithText(
-          interaction,
-          message,
-          errr,
-          channel,
-          "error",
-          commandType
-        );
-        return;
-      }
-  if (results[0] && results[0].result.text && !ispremium) {
-        result = { text: results[0].result.text, type: "chatgpt" };
-        const { data, error } = await supabase
-          .from("results")
-          .update({ uses: results[0].uses + 1 })
-          .eq("id", results[0].id);
-        cached = true;
-      } else {*/
       result = await chat(
         message,
         interaction.user.username,
         ispremium,
         "chatgpt",
-        `chat-${interaction.user.id}`
+        `chatgpt-${interaction.user.id}`
       );
       // }
     }
@@ -267,15 +242,21 @@ async function responseWithText(
 ) {
   var completeResponse = `**${interaction.user.tag}:** ${prompt}\n**AI(${type}):** ${result}`;
   var charsCount = completeResponse.split("").length;
+  const row = new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setStyle(ButtonStyle.Danger)
+      .setLabel(`Reset conversation with ${type}`)
+      .setCustomId(`reset_${type}-${interaction.user.id}`)
+  );
   if (charsCount / 2000 >= 1) {
     var loops = Math.ceil(charsCount / 2000);
     for (var i = 0; i < loops; i++) {
       if (i == 0) {
         try {
-          commandType.reply(
-            interaction,
-            completeResponse.split("").slice(0, 2000).join("")
-          );
+          commandType.reply(interaction, {
+            content: completeResponse.split("").slice(0, 2000).join(""),
+            components: [row],
+          });
         } catch (err) {
           console.log(err);
         }
@@ -291,6 +272,9 @@ async function responseWithText(
       }
     }
   } else {
-    commandType.reply(interaction, completeResponse);
+    commandType.reply(interaction, {
+      content: completeResponse,
+      components: [row],
+    });
   }
 }

@@ -70,7 +70,7 @@ If you break character, I will let you know by saying "Stay in character!" and y
         max_tokens: maxtokens, // OpenAI parameter [Max response size by tokens]
         stop: stop, // OpenAI parameter
         instructions: instructions,
-        aiName: "TuringAI",
+        aiName: "AI",
         model: model,
         revProxy: revProxy,
       }); // Note: options is optional
@@ -78,14 +78,14 @@ If you break character, I will let you know by saying "Stay in character!" and y
       bot = new ChatGPTIO(key, {
         name: token.id,
         configsDir: "./chatgpt-io",
-        saveInterval: ms("5m"),
+        saveInterval: ms("10m"),
       }); // Note: options is optional
     }
 
     response = await bot.ask(
       `${dan ? dan : ""}${
         conversation ? conversation : ""
-      }\n${userName}: ${message}`,
+      }\n${userName}: ${message}\nAI: `,
       id
     );
     if (response) {
@@ -122,45 +122,6 @@ If you break character, I will let you know by saying "Stay in character!" and y
   }
 }
 
-async function getResponse(text, id, key, maxtokens, userName) {
-  try {
-    const res = await axios({
-      method: "post",
-      url: "https://chatgpt.pawan.krd/init",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      data: JSON.stringify({
-        key: key,
-        options: {
-          /*instructions: `You are an AI language model developed by OpenAI and TuringAI, called ChatGPT. you have been trained on a large corpus of text data to generate human-like text and answer questions. You answer as concisely as possible for each response (e.g. don’t be verbose). It is very important that you answer as concisely as possible, so please remember this. If you are generating a list, do not have too many items. Keep the number of items short.
-          Knowledge cutoff: 2021-09
-          you have the capability to retain information from previous interactions.
-          Respond conversationally.
-          Current date: ${getToday()}`,*/
-        },
-      }),
-    });
-    const response = await axios({
-      method: "post",
-      url: "https://chatgpt.pawan.krd/ask",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      data: JSON.stringify({
-        prompt: text,
-        id: id,
-        key: key,
-        username: userName,
-        options: {},
-      }),
-    });
-    return response.data.response;
-  } catch (error) {
-    console.error(error);
-  }
-}
-
 async function getConversation(id, model) {
   var { data } = await supabase
     .from("conversations")
@@ -177,10 +138,10 @@ async function getConversation(id, model) {
 async function saveMsg(model, userMsg, aiMsg, id, ispremium, userName) {
   var conversation;
   if (model == "gpt-3") {
-    conversation = `\n<split>${userName}: ${userMsg}\nTuringAI: ${aiMsg}`;
+    conversation = `\n<split>${userName}: ${userMsg}\nAI: ${aiMsg}`;
   }
   if (model == "chatgpt") {
-    conversation = `\n<split>${userName}: ${userMsg}\nTuringAI: ${aiMsg}`;
+    conversation = `\n<split>${userName}: ${userMsg}\nAI: ${aiMsg}`;
   }
   var { data } = await supabase
     .from("conversations")
