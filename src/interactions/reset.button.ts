@@ -42,7 +42,7 @@ export default {
     try {
       await supabase.from("conversations").delete().eq("id", conversationId);
       await interaction.reply({
-        content: "Conversation reseted",
+        content: "Conversation has been reset",
         ephemeral: true,
       });
     } catch (err) {
