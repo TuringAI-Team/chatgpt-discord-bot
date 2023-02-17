@@ -283,60 +283,8 @@ export default {
           }
           embeds.push(emb);
         });
-        var tasks = [
-          {
-            name: "spam",
-            type: "yes/no",
-          },
-          {
-            name: "fails_task",
-            type: "yes/no",
-          },
-          {
-            name: "lang_mismatch",
-            type: "yes/no",
-          },
-          {
-            name: "not_appropriate",
-            type: "yes/no",
-          },
-          {
-            name: "pii",
-            type: "yes/no",
-          },
-          {
-            name: "hate_speech",
-            type: "yes/no",
-          },
-          {
-            name: "sexual_content",
-            type: "yes/no",
-          },
-          {
-            name: "quality",
-            type: "number",
-          },
-          {
-            name: "helpfulness",
-            type: "number",
-          },
-          {
-            name: "creativity",
-            type: "number",
-          },
-          {
-            name: "humor",
-            type: "number",
-          },
-          {
-            name: "toxicity",
-            type: "number",
-          },
-          {
-            name: "violence",
-            type: "number",
-          },
-        ];
+
+        var taskInfo = await formatLabelName(translation, labelTag);
         const row = new ActionRowBuilder();
         if (!labelTag) {
           var embed = new EmbedBuilder()
@@ -389,6 +337,90 @@ export default {
     }
   },
 };
+
+function formatLabelName(translation, previousTask: string) {
+  var tasks = [
+    {
+      name: "spam",
+      type: "yes/no",
+    },
+    {
+      name: "fails_task",
+      type: "yes/no",
+    },
+    {
+      name: "lang_mismatch",
+      type: "yes/no",
+    },
+    {
+      name: "not_appropriate",
+      type: "yes/no",
+    },
+    {
+      name: "pii",
+      type: "yes/no",
+    },
+    {
+      name: "hate_speech",
+      type: "yes/no",
+    },
+    {
+      name: "sexual_content",
+      type: "yes/no",
+    },
+    {
+      name: "quality",
+      type: "number",
+    },
+    {
+      name: "helpfulness",
+      type: "number",
+    },
+    {
+      name: "creativity",
+      type: "number",
+    },
+    {
+      name: "humor",
+      type: "number",
+    },
+    {
+      name: "toxicity",
+      type: "number",
+    },
+    {
+      name: "violence",
+      type: "number",
+    },
+  ];
+  var previousTaskIndex = tasks.findIndex((x) => x.name == previousTask);
+  var task = tasks[previousTaskIndex + 1];
+  var resultTask: {
+    name: string;
+    type: string;
+    question?: string;
+    description?: string;
+  } = {
+    name: task.name,
+    type: task.type,
+  };
+  if (task.name == "spam") {
+    resultTask.question = translation["spam.question"];
+    resultTask.description = `${translation["spam.one_desc.line_1"]}\n${translation["spam.one_desc.line_2"]}`;
+  } else if (task.name == "fails_task") {
+    resultTask.question = translation["fails_task.question"];
+    resultTask.description = `${translation["fails_task.one_desc"]}`;
+  } else if (task.name == "lang_mismatch") {
+    resultTask.question = `${translation["lang_mismatch"]}`;
+  } else if (task.name == "not_appropriate") {
+    resultTask.question = `${translation["inappropriate.one_desc"]}`;
+  } else if (task.name == "pii") {
+    resultTask.question = `${translation["pii"]}`;
+    resultTask.description = `${translation["pii.explanation"]}`;
+  }
+
+  return resultTask;
+}
 
 function formatLabel(label: string) {
   if (label == "yes") {
