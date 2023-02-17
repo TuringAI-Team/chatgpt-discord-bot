@@ -77,6 +77,7 @@ export default {
             content: `You need to be an administrator to activate a server key.`,
             ephemeral: true,
           });
+          return;
         }
         r = await activateKey(key, interaction.guild.id, type);
       } else {

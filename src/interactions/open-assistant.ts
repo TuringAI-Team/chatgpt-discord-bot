@@ -284,38 +284,77 @@ export default {
           embeds.push(emb);
         });
 
-        var taskInfo = await formatLabelName(translation, labelTag);
+        var label = await getLabel(translation, labelTag);
         const row = new ActionRowBuilder();
-        if (!labelTag) {
-          var embed = new EmbedBuilder()
-            .setColor("#3a82f7")
-            .setTimestamp()
-            .setThumbnail("https://open-assistant.io/images/logos/logo.png")
-            .setFooter({ text: `${getLocaleDisplayName(lang)}` })
-            .setTitle(`${translation["spam.question"]}`)
-            .setDescription(
-              `${translation["spam.one_desc.line_1"]}\n${translation["spam.one_desc.line_2"]}`
-            );
+        if (labelTag) {
+          console.log(labelTag, task.labels);
+          task.labels.find((x) => x.name == labelTag).value =
+            formatLabel(labelValue);
+        }
+        var embed = new EmbedBuilder()
+          .setColor("#3a82f7")
+          .setTimestamp()
+          .setFooter({ text: `${getLocaleDisplayName(lang)}` })
+          .setTitle(
+            `${label.question.replaceAll(
+              "{{language}}",
+              getLocaleDisplayName(lang)
+            )}`
+          );
+        if (label.description) {
+          embed.setDescription(`${label.description}`);
+        }
+        if (label.type == "yes/no") {
+          embeds.push(embed);
           row.addComponents(
             new ButtonBuilder()
               .setCustomId(
-                `open-assistant_label_${taskId}_${interaction.user.id}_spam_yes`
+                `open-assistant_label_${taskId}_${interaction.user.id}_${label.name}_yes`
               )
               .setLabel(`✔`)
               .setStyle(ButtonStyle.Secondary),
             new ButtonBuilder()
               .setCustomId(
-                `open-assistant_label_${taskId}_${interaction.user.id}_spam_no`
+                `open-assistant_label_${taskId}_${interaction.user.id}_${label.name}_no`
               )
               .setLabel(`❌`)
               .setStyle(ButtonStyle.Secondary)
           );
-          embeds.push(embed);
         } else {
-          task.labels.find((x) => x.name == labelTag).value =
-            formatLabel(labelValue);
-          console.log(task);
+          row.addComponents(
+            new ButtonBuilder()
+              .setCustomId(
+                `open-assistant_label_${taskId}_${interaction.user.id}_${label.name}_1`
+              )
+              .setLabel(`1(${label.min})`)
+              .setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder()
+              .setCustomId(
+                `open-assistant_label_${taskId}_${interaction.user.id}_${label.name}_2`
+              )
+              .setLabel(`2`)
+              .setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder()
+              .setCustomId(
+                `open-assistant_label_${taskId}_${interaction.user.id}_${label.name}_3`
+              )
+              .setLabel(`4`)
+              .setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder()
+              .setCustomId(
+                `open-assistant_label_${taskId}_${interaction.user.id}_${label.name}_4`
+              )
+              .setLabel(`4`)
+              .setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder()
+              .setCustomId(
+                `open-assistant_label_${taskId}_${interaction.user.id}_${label.name}_5`
+              )
+              .setLabel(`5(${label.max})`)
+              .setStyle(ButtonStyle.Secondary)
+          );
         }
+
         row.addComponents(
           new ButtonBuilder()
             .setCustomId(
@@ -338,16 +377,16 @@ export default {
   },
 };
 
-function formatLabelName(translation, previousTask: string) {
+function getLabel(translation, previousTask: string) {
   var tasks = [
     {
       name: "spam",
       type: "yes/no",
     },
-    {
+    /*  {
       name: "fails_task",
       type: "yes/no",
-    },
+    },*/
     {
       name: "lang_mismatch",
       type: "yes/no",
@@ -393,13 +432,21 @@ function formatLabelName(translation, previousTask: string) {
       type: "number",
     },
   ];
-  var previousTaskIndex = tasks.findIndex((x) => x.name == previousTask);
+  if (previousTask) {
+    var previousTaskIndex = tasks.findIndex((x) => x.name == previousTask);
+  } else {
+    var previousTaskIndex = -1;
+  }
+
   var task = tasks[previousTaskIndex + 1];
+  if (!task) return;
   var resultTask: {
     name: string;
     type: string;
     question?: string;
     description?: string;
+    max?: string;
+    min?: string;
   } = {
     name: task.name,
     type: task.type,
@@ -417,8 +464,17 @@ function formatLabelName(translation, previousTask: string) {
   } else if (task.name == "pii") {
     resultTask.question = `${translation["pii"]}`;
     resultTask.description = `${translation["pii.explanation"]}`;
+  } else if (task.name == "hate_speech") {
+    resultTask.question = `${translation["hate_speech"]}`;
+    resultTask.description = `${translation["hate_speech.explanation"]}`;
+  } else if (task.name == "sexual_content") {
+    resultTask.question = `${translation["sexual_content"]}`;
+    resultTask.description = `${translation["sexual_content.explanation"]}`;
+  } else if (task.name == "quality") {
+    resultTask.max = `${translation["high_quality"]}`;
+    resultTask.max = `${translation["low_quality"]}`;
+  } else if (task.name == "helpfulness") {
   }
-
   return resultTask;
 }
 
@@ -497,7 +553,6 @@ async function taskInteraction(interaction, lang, user, translation, client) {
     collective: false,
     lang: lang,
   });
-  console.log(task);
   client.tasks.push(task);
   if (task.message) {
     var embd = await sendErr(task.message);
