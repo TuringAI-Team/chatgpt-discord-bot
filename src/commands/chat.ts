@@ -14,7 +14,7 @@ import { isPremium } from "../modules/premium.js";
 var maintenance = false;
 
 export default {
-  cooldown: "90s",
+  cooldown: "2m",
   data: new SlashCommandBuilder()
     .setName("chat")
     .setDescription("Chat with an AI")
