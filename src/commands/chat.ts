@@ -118,7 +118,8 @@ export default {
           interaction.user.username,
           ispremium,
           "gpt-3",
-          `gpt-3-${interaction.user.id}`
+          `gpt-3-${interaction.user.id}`,
+          0
         );
       }
     }
@@ -129,7 +130,8 @@ export default {
         interaction.user.username,
         ispremium,
         "chatgpt",
-        `chatgpt-${interaction.user.id}`
+        `chatgpt-${interaction.user.id}`,
+        0
       );
       // }
     }
@@ -139,7 +141,8 @@ export default {
         interaction.user.username,
         ispremium,
         "dan",
-        `dan-${interaction.user.id}`
+        `dan-${interaction.user.id}`,
+        0
       );
     }
     if (model == "chatsonic") {

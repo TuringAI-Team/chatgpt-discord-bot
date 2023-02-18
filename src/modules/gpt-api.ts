@@ -10,7 +10,7 @@ import ChatGPTIO from "chatgpt-io";
 import { v5 as uuidv5 } from "uuid";
 import ms from "ms";
 
-async function chat(message, userName, ispremium, m, id) {
+async function chat(message, userName, ispremium, m, id, retries) {
   var token = await useToken(m);
   if (!token) {
     return {
@@ -116,8 +116,9 @@ If you break character, I will let you know by saying "Stay in character!" and y
     await removeMessage(token.id);
     await disableAcc(token.id, false);
     //await rateLimitAcc(token.id);
-    if (ispremium) {
-      return await chat(message, userName, ispremium, m, id);
+    if (ispremium && retries < 3) {
+      retries += 1;
+      return await chat(message, userName, ispremium, m, id, retries);
     }
     return {
       error: `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing). Developer: ${token.id}`,
