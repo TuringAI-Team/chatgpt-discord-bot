@@ -165,7 +165,8 @@ export async function createListeningStream(
         interaction.user.username,
         ispremium,
         "chatgpt",
-        `chat-${interaction.user.id}`
+        `chat-${interaction.user.id}`,
+        0
       );
       if (!result.error) {
         await responseWithVoice(
