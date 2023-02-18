@@ -195,39 +195,15 @@ export default {
           return;
         }
         var text = interaction.fields.getTextInputValue("modal-input");
-        var messageId = await oa.acceptTask(taskId, user, interaction.id);
-        var solveTask = await oa.solveTask(
-          task,
+        await submitTask(
+          taskId,
           user,
+          interaction,
+          { text },
           lang,
-          { text: text },
-          messageId
+          task,
+          client
         );
-        await saveTask(task, lang, user, { text: text, messageId: messageId });
-        var index = client.tasks.findIndex((x) => x.id == taskId);
-        if (index > -1) {
-          client.tasks.splice(index, 1);
-        }
-        var successEmbed = new EmbedBuilder()
-          .setColor(`${solveTask.type == "task_done" ? "#51F73A" : "#F73A3A"}`)
-          .setTimestamp()
-          .setDescription(
-            `${
-              solveTask.type == "task_done"
-                ? "Task done"
-                : "Something went wrong"
-            }(loading new task...)`
-          )
-          .setURL("https://open-assistant.io/?ref=turing")
-          .setFooter({ text: `${getLocaleDisplayName(lang)}` });
-        await interaction.editReply({
-          embeds: [successEmbed],
-          components: [],
-        });
-        setTimeout(async () => {
-          var translation = await getTranlation(lang);
-          await taskInteraction(interaction, lang, user, translation, client);
-        }, 3000);
       }
     }
     if (action == "label") {
@@ -283,39 +259,78 @@ export default {
           }
           embeds.push(emb);
         });
-
-        var label = await getLabel(translation, labelTag);
+        if (labelTag == "submit") {
+          var solutions = {};
+          await submitTask(
+            taskId,
+            user,
+            interaction,
+            { text: "unused", ...solutions },
+            lang,
+            task,
+            client
+          );
+          return;
+        }
+        var label = await getLabel(translation, labelTag, task);
         const row = new ActionRowBuilder();
+        const row2 = new ActionRowBuilder();
+        var rows = [];
         if (labelTag) {
-          console.log(labelTag, task.labels);
+          labelTag = labelTag.replaceAll("-", "_");
           task.labels.find((x) => x.name == labelTag).value =
             formatLabel(labelValue);
         }
-        var embed = new EmbedBuilder()
-          .setColor("#3a82f7")
-          .setTimestamp()
-          .setFooter({ text: `${getLocaleDisplayName(lang)}` })
-          .setTitle(
-            `${label.question.replaceAll(
-              "{{language}}",
-              getLocaleDisplayName(lang)
-            )}`
-          );
-        if (label.description) {
-          embed.setDescription(`${label.description}`);
-        }
-        if (label.type == "yes/no") {
-          embeds.push(embed);
+        if (!label) {
+          var readyEmbed = new EmbedBuilder()
+            .setColor("#3a82f7")
+            .setTimestamp()
+            .setFooter({ text: `${getLocaleDisplayName(lang)}` })
+            .setTitle(`Are you sure?`);
           row.addComponents(
             new ButtonBuilder()
               .setCustomId(
-                `open-assistant_label_${taskId}_${interaction.user.id}_${label.name}_yes`
+                `open-assistant_label_${taskId}_${interaction.user.id}_submit`
+              )
+              .setLabel(`Submit`)
+              .setStyle(ButtonStyle.Success)
+          );
+          await interaction.editReply({
+            embeds: [readyEmbed],
+            components: [row],
+          });
+          return;
+        }
+
+        if (label.type == "yes/no") {
+          var embed = new EmbedBuilder()
+            .setColor("#3a82f7")
+            .setTimestamp()
+            .setFooter({ text: `${getLocaleDisplayName(lang)}` })
+            .setTitle(
+              `${label.question.replaceAll(
+                "{{language}}",
+                getLocaleDisplayName(lang)
+              )}`
+            );
+          if (label.description) {
+            embed.setDescription(`${label.description}`);
+          }
+          embeds.push(embed);
+          row2.addComponents(
+            new ButtonBuilder()
+              .setCustomId(
+                `open-assistant_label_${taskId}_${
+                  interaction.user.id
+                }_${label.name.replaceAll("_", "-")}_yes`
               )
               .setLabel(`✔`)
               .setStyle(ButtonStyle.Secondary),
             new ButtonBuilder()
               .setCustomId(
-                `open-assistant_label_${taskId}_${interaction.user.id}_${label.name}_no`
+                `open-assistant_label_${taskId}_${
+                  interaction.user.id
+                }_${label.name.replaceAll("_", "-")}_no`
               )
               .setLabel(`❌`)
               .setStyle(ButtonStyle.Secondary)
@@ -324,38 +339,60 @@ export default {
           row.addComponents(
             new ButtonBuilder()
               .setCustomId(
-                `open-assistant_label_${taskId}_${interaction.user.id}_${label.name}_1`
+                `open-assistant_label_${taskId}_${
+                  interaction.user.id
+                }_${label.name.replaceAll("_", "-")}_1`
               )
               .setLabel(`1(${label.min})`)
               .setStyle(ButtonStyle.Secondary),
             new ButtonBuilder()
               .setCustomId(
-                `open-assistant_label_${taskId}_${interaction.user.id}_${label.name}_2`
+                `open-assistant_label_${taskId}_${
+                  interaction.user.id
+                }_${label.name.replaceAll("_", "-")}_2`
               )
               .setLabel(`2`)
               .setStyle(ButtonStyle.Secondary),
             new ButtonBuilder()
               .setCustomId(
-                `open-assistant_label_${taskId}_${interaction.user.id}_${label.name}_3`
+                `open-assistant_label_${taskId}_${
+                  interaction.user.id
+                }_${label.name.replaceAll("_", "-")}_3`
+              )
+              .setLabel(`3`)
+              .setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder()
+              .setCustomId(
+                `open-assistant_label_${taskId}_${
+                  interaction.user.id
+                }_${label.name.replaceAll("_", "-")}_4`
               )
               .setLabel(`4`)
               .setStyle(ButtonStyle.Secondary),
             new ButtonBuilder()
               .setCustomId(
-                `open-assistant_label_${taskId}_${interaction.user.id}_${label.name}_4`
-              )
-              .setLabel(`4`)
-              .setStyle(ButtonStyle.Secondary),
-            new ButtonBuilder()
-              .setCustomId(
-                `open-assistant_label_${taskId}_${interaction.user.id}_${label.name}_5`
+                `open-assistant_label_${taskId}_${
+                  interaction.user.id
+                }_${label.name.replaceAll("_", "-")}_5`
               )
               .setLabel(`5(${label.max})`)
               .setStyle(ButtonStyle.Secondary)
           );
+          rows.push(row);
         }
-
-        row.addComponents(
+        if (labelTag) {
+          row2.addComponents(
+            new ButtonBuilder()
+              .setCustomId(
+                `open-assistant_label_${task.id}_${
+                  interaction.user.id
+                }_${label.name.replaceAll("_", "-")}_skip`
+              )
+              .setLabel(`${translation.skip} label`)
+              .setStyle(ButtonStyle.Danger)
+          );
+        }
+        row2.addComponents(
           new ButtonBuilder()
             .setCustomId(
               `open-assistant_skip_${task.id}_${interaction.user.id}`
@@ -368,78 +405,66 @@ export default {
             .setStyle(ButtonStyle.Secondary)
             .setDisabled(false)
         );
+
+        rows.push(row2);
         await interaction.editReply({
           embeds: embeds,
-          components: [row],
+          components: rows,
         });
       }
     }
   },
 };
 
-function getLabel(translation, previousTask: string) {
-  var tasks = [
-    {
-      name: "spam",
-      type: "yes/no",
-    },
-    /*  {
-      name: "fails_task",
-      type: "yes/no",
-    },*/
-    {
-      name: "lang_mismatch",
-      type: "yes/no",
-    },
-    {
-      name: "not_appropriate",
-      type: "yes/no",
-    },
-    {
-      name: "pii",
-      type: "yes/no",
-    },
-    {
-      name: "hate_speech",
-      type: "yes/no",
-    },
-    {
-      name: "sexual_content",
-      type: "yes/no",
-    },
-    {
-      name: "quality",
-      type: "number",
-    },
-    {
-      name: "helpfulness",
-      type: "number",
-    },
-    {
-      name: "creativity",
-      type: "number",
-    },
-    {
-      name: "humor",
-      type: "number",
-    },
-    {
-      name: "toxicity",
-      type: "number",
-    },
-    {
-      name: "violence",
-      type: "number",
-    },
-  ];
+async function submitTask(
+  taskId,
+  user,
+  interaction,
+  solution,
+  lang,
+  task,
+  client
+) {
+  var messageId = await oa.acceptTask(taskId, user, interaction.id);
+  var solveTask = await oa.solveTask(task, user, lang, solution, messageId);
+  await saveTask(task, lang, user, { messageId: messageId, ...solution });
+  var index = client.tasks.findIndex((x) => x.id == taskId);
+  if (index > -1) {
+    client.tasks.splice(index, 1);
+  }
+  var successEmbed = new EmbedBuilder()
+    .setColor(`${solveTask.type == "task_done" ? "#51F73A" : "#F73A3A"}`)
+    .setTimestamp()
+    .setDescription(
+      `${
+        solveTask.type == "task_done" ? "Task done" : "Something went wrong"
+      }(loading new task...)`
+    )
+    .setURL("https://open-assistant.io/?ref=turing")
+    .setFooter({ text: `${getLocaleDisplayName(lang)}` });
+  await interaction.editReply({
+    embeds: [successEmbed],
+    components: [],
+  });
+  setTimeout(async () => {
+    var translation = await getTranlation(lang);
+    await taskInteraction(interaction, lang, user, translation, client);
+  }, 3000);
+}
+
+async function getLabel(translation, previousTask: string, task) {
+  var labels = await getLabels(task);
   if (previousTask) {
-    var previousTaskIndex = tasks.findIndex((x) => x.name == previousTask);
+    var previousTaskIndex = labels.findIndex(
+      (x) => x.name == previousTask.replaceAll("-", "_")
+    );
   } else {
     var previousTaskIndex = -1;
   }
 
-  var task = tasks[previousTaskIndex + 1];
-  if (!task) return;
+  var label = labels[previousTaskIndex + 1];
+  console.log(label);
+  if (!label) return;
   var resultTask: {
     name: string;
     type: string;
@@ -448,40 +473,79 @@ function getLabel(translation, previousTask: string) {
     max?: string;
     min?: string;
   } = {
-    name: task.name,
-    type: task.type,
+    name: label.name,
+    type: label.type,
   };
-  if (task.name == "spam") {
+  if (label.name == "spam") {
     resultTask.question = translation["spam.question"];
     resultTask.description = `${translation["spam.one_desc.line_1"]}\n${translation["spam.one_desc.line_2"]}`;
-  } else if (task.name == "fails_task") {
+  } else if (label.name == "fails_task") {
     resultTask.question = translation["fails_task.question"];
     resultTask.description = `${translation["fails_task.one_desc"]}`;
-  } else if (task.name == "lang_mismatch") {
+  } else if (label.name == "lang_mismatch") {
     resultTask.question = `${translation["lang_mismatch"]}`;
-  } else if (task.name == "not_appropriate") {
+  } else if (label.name == "not_appropriate") {
     resultTask.question = `${translation["inappropriate.one_desc"]}`;
-  } else if (task.name == "pii") {
+  } else if (label.name == "pii") {
     resultTask.question = `${translation["pii"]}`;
     resultTask.description = `${translation["pii.explanation"]}`;
-  } else if (task.name == "hate_speech") {
+  } else if (label.name == "hate_speech") {
     resultTask.question = `${translation["hate_speech"]}`;
     resultTask.description = `${translation["hate_speech.explanation"]}`;
-  } else if (task.name == "sexual_content") {
+  } else if (label.name == "sexual_content") {
     resultTask.question = `${translation["sexual_content"]}`;
     resultTask.description = `${translation["sexual_content.explanation"]}`;
-  } else if (task.name == "quality") {
+  } else if (label.name == "quality") {
     resultTask.max = `${translation["high_quality"]}`;
-    resultTask.max = `${translation["low_quality"]}`;
-  } else if (task.name == "helpfulness") {
+    resultTask.min = `${translation["low_quality"]}`;
+  } else if (label.name == "helpfulness") {
+    resultTask.max = `${translation["helpful"]}`;
+    resultTask.min = `${translation["unhelpful"]}`;
+  } else if (label.name == "creativity") {
+    resultTask.max = `${translation["creative"]}`;
+    resultTask.min = `${translation["ordinary"]}`;
+  } else if (label.name == "humor") {
+    resultTask.max = `${translation["humorous"]}`;
+    resultTask.min = `${translation["serious"]}`;
+  } else if (label.name == "toxicity") {
+    resultTask.max = `${translation["polite"]}`;
+    resultTask.min = `${translation["rude"]}`;
+  } else if (label.name == "violence") {
+    resultTask.max = `${translation["harmless"]}`;
+    resultTask.min = `${translation["violent"]}`;
   }
+
   return resultTask;
+}
+
+async function getLabels(task) {
+  var labels = [];
+  for (var i = 0; i < task.valid_labels.length; i++) {
+    var type = "yes/no";
+    if (
+      task.valid_labels[i] == "quality" ||
+      task.valid_labels[i] == "toxicity" ||
+      task.valid_labels[i] == "humor" ||
+      task.valid_labels[i] == "helpfulness" ||
+      task.valid_labels[i] == "creativity" ||
+      task.valid_labels[i] == "violence"
+    ) {
+      type = "number";
+    }
+    labels.push({
+      name: task.valid_labels[i],
+      type: type,
+    });
+  }
+  return labels;
 }
 
 function formatLabel(label: string) {
   if (label == "yes") {
     return 1;
   } else if (label == "no") {
+    return 0;
+  } else if (label == "skip") {
     return 0;
   } else {
     return parseInt(label);
@@ -545,7 +609,6 @@ async function taskInteraction(interaction, lang, user, translation, client) {
     });
     return;
   }
-  console.log(await oa.getAvailability(user, lang));
 
   var task = await oa.getTask({
     type: "random",
@@ -553,6 +616,7 @@ async function taskInteraction(interaction, lang, user, translation, client) {
     collective: false,
     lang: lang,
   });
+  console.log(task);
   client.tasks.push(task);
   if (task.message) {
     var embd = await sendErr(task.message);
