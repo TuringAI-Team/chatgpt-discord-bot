@@ -265,12 +265,14 @@ async function responseWithText(
         }
       } else {
         if (channel) {
-          channel.send(
-            completeResponse
-              .split("")
-              .slice(2000 * i, 2000 * i + 2000)
-              .join("")
-          );
+          try {
+            channel.send(
+              completeResponse
+                .split("")
+                .slice(2000 * i, 2000 * i + 2000)
+                .join("")
+            );
+          } catch (err) {}
         }
       }
     }
