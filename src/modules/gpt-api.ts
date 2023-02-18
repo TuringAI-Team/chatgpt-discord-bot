@@ -121,7 +121,7 @@ If you break character, I will let you know by saying "Stay in character!" and y
       return await chat(message, userName, ispremium, m, id, retries);
     }
     return {
-      error: `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing). Developer: ${token.id}`,
+      error: `Something wrong happened, please retry again [dsc.gg/turing](https://dsc.gg/turing) .\n*Developer: ${token.id}*`,
     };
   }
 }
