@@ -73,9 +73,9 @@ export default {
           } else {
             await interaction.reply({
               content:
-                `Use this command again <t:${Math.floor(
-                  count / 1000
-                )}:R>.\nIf you want to **avoid this cooldown** you can **donate to get premium**. If you want to donate use the command ` +
+                `Use this command again **${ms(
+                  count
+                )}>**.\nIf you want to **avoid this cooldown** you can **donate to get premium**. If you want to donate use the command ` +
                 "`/premium buy` .",
               ephemeral: true,
             });
