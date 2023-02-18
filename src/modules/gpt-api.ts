@@ -116,6 +116,9 @@ If you break character, I will let you know by saying "Stay in character!" and y
     await removeMessage(token.id);
     await disableAcc(token.id, false);
     //await rateLimitAcc(token.id);
+    if (ispremium) {
+      return await chat(message, userName, ispremium, m, id);
+    }
     return {
       error: `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing). Developer: ${token.id}`,
     };
