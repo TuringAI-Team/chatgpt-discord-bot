@@ -30,7 +30,7 @@ async function useToken(model): Promise<null | {
     t = tokens.filter(
       (x) =>
         x.messages <= 1 &&
-        x.abled == false&&
+        x.abled == false &&
         x.access != null &&
         x.access.includes("ey") &&
         x.limited == null
@@ -103,7 +103,7 @@ export async function checkLimited() {
   var enabled = 0;
   for (var i = 0; i < t.length; i++) {
     var diff = Date.now() - t[i].limited;
-    if (diff >= ms("30m")) {
+    if (diff >= ms("20m")) {
       enabled++;
       const { data, error } = await supabase
         .from("accounts")
