@@ -286,7 +286,19 @@ export default {
             .setColor("#3a82f7")
             .setTimestamp()
             .setFooter({ text: `${getLocaleDisplayName(lang)}` })
-            .setTitle(`Are you sure?`);
+            .setTitle(`Are you sure?`)
+            .addFields(
+              task.labels.forEach((x) => {
+                console.log(x);
+                if (x) {
+                  return {
+                    name: x.name,
+                    value: x.value,
+                    inline: true,
+                  };
+                }
+              })
+            );
           row.addComponents(
             new ButtonBuilder()
               .setCustomId(
@@ -463,7 +475,6 @@ async function getLabel(translation, previousTask: string, task) {
   }
 
   var label = labels[previousTaskIndex + 1];
-  console.log(label);
   if (!label) return;
   var resultTask: {
     name: string;

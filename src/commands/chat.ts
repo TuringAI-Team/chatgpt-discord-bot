@@ -251,6 +251,10 @@ async function responseWithText(
       .setLabel(`Reset conversation with ${type}`)
       .setCustomId(`reset_${type}-${interaction.user.id}`)
   );
+  var rows = [];
+  if (type != "error") {
+    rows.push(row);
+  }
   if (charsCount / 2000 >= 1) {
     var loops = Math.ceil(charsCount / 2000);
     for (var i = 0; i < loops; i++) {
@@ -258,7 +262,7 @@ async function responseWithText(
         try {
           commandType.reply(interaction, {
             content: completeResponse.split("").slice(0, 2000).join(""),
-            components: [row],
+            components: rows,
           });
         } catch (err) {
           console.log(err);
@@ -279,7 +283,7 @@ async function responseWithText(
   } else {
     commandType.reply(interaction, {
       content: completeResponse,
-      components: [row],
+      components: rows,
     });
   }
 }

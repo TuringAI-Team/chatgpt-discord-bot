@@ -120,6 +120,10 @@ If you break character, I will let you know by saying "Stay in character!" and y
       retries += 1;
       return await chat(message, userName, ispremium, m, id, retries);
     }
+    if (!ispremium && retries < 2) {
+      retries += 1;
+      return await chat(message, userName, ispremium, m, id, retries);
+    }
     return {
       error: `Something wrong happened, please retry again [dsc.gg/turing](https://dsc.gg/turing) .\n*Developer: ${token.id}*`,
     };
