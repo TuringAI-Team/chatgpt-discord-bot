@@ -115,7 +115,6 @@ If you break character, I will let you know by saying "Stay in character!" and y
     }
     await removeMessage(token.id);
     await disableAcc(token.id, false);
-    //await rateLimitAcc(token.id);
     if (ispremium && retries < 3) {
       retries += 1;
       return await chat(message, userName, ispremium, m, id, retries);
@@ -125,7 +124,7 @@ If you break character, I will let you know by saying "Stay in character!" and y
       return await chat(message, userName, ispremium, m, id, retries);
     }
     return {
-      error: `Something wrong happened, please retry again [dsc.gg/turing](https://dsc.gg/turing) .\n*Developer: ${token.id}*`,
+      error: `Something wrong happened, please retry again [dsc.gg/turing](https://dsc.gg/turing) .`,
     };
   }
 }
