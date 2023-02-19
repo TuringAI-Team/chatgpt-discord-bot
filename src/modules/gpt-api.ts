@@ -85,7 +85,7 @@ If you break character, I will let you know by saying "Stay in character!" and y
     response = await bot.ask(
       `${dan ? dan : ""}${
         conversation ? conversation : ""
-      }\n${userName}: ${message}\nAI: `,
+      }\n${userName}: ${message}\nAI:`,
       id
     );
     if (response) {

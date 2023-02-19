@@ -14,11 +14,17 @@ export default {
     description: "Chat with the bot in a voice channel",
   },
   async execute(interaction, client) {
-    await interaction.reply("Function under maintenance");
-    return;
     var guildId;
     if (interaction.guild) guildId = interaction.guild.id;
     var ispremium = await isPremium(interaction.user.id, guildId);
+    if (!ispremium) {
+      await interaction.reply({
+        content:
+          "This command is premium only since is in a test phase, to get premium use the command `/premium buy`",
+        ephemeral: true,
+      });
+      return;
+    }
     if (ispremium) {
       let { data: cooldowns, error } = await supabase
         .from("cooldown")

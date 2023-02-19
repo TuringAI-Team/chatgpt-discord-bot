@@ -27,8 +27,17 @@ export default {
     .setName("voice")
     .setDescription("Chat with an AI using your voice"),
   async execute(interaction, client, commands, commandType, options) {
-    await commandType.reply(interaction, "Function under maintenance");
-    return;
+    var guildId;
+    if (interaction.guild) guildId = interaction.guild.id;
+    var ispremium = await isPremium(interaction.user.id, guildId);
+    if (!ispremium) {
+      await commandType.reply(interaction, {
+        content:
+          "This command is premium only since is in a test phase, to get premium use the command `/premium buy`",
+        ephemeral: true,
+      });
+      return;
+    }
     await voiceAudio(interaction, client, commandType);
   },
 };
