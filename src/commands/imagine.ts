@@ -33,6 +33,11 @@ export default {
   cooldown: "2m",
   data,
   async execute(interaction, client) {
+    await interaction.reply({
+      content: `Under development`,
+      ephemeral: true,
+    });
+    return;
     var tags = [];
     var guildId;
     if (interaction.guild) guildId = interaction.guild.id;

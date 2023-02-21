@@ -30,7 +30,6 @@ async function useToken(model): Promise<null | {
     t = tokens.filter(
       (x) =>
         x.messages <= 1 &&
-        x.abled == false &&
         x.access != null &&
         x.access.includes("ey") &&
         x.limited == null
