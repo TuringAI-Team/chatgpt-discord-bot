@@ -256,11 +256,12 @@ async function responseWithText(
     rows.push(row);
   }
   if (charsCount / 2000 >= 1) {
+    var lastMsg;
     var loops = Math.ceil(charsCount / 2000);
     for (var i = 0; i < loops; i++) {
       if (i == 0) {
         try {
-          commandType.reply(interaction, {
+          lastMsg = await commandType.reply(interaction, {
             content: completeResponse.split("").slice(0, 2000).join(""),
             components: rows,
           });
@@ -270,7 +271,7 @@ async function responseWithText(
       } else {
         if (channel) {
           try {
-            channel.send(
+            lastMsg = await lastMsg.reply(
               completeResponse
                 .split("")
                 .slice(2000 * i, 2000 * i + 2000)

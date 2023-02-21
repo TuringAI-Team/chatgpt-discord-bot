@@ -2196,10 +2196,10 @@ onetime@^5.1.0, onetime@^5.1.2:
   dependencies:
     mimic-fn "^2.1.0"
 
-open-assistant.js@^1.0.2:
-  version "1.0.2"
-  resolved "https://registry.npmjs.org/open-assistant.js/-/open-assistant.js-1.0.2.tgz"
-  integrity sha512-O1d5N2GYykIQS+k6qegvJOZ6+1ByeTP8PiKRwPKU/yZEo2Tf/Ry5NOml15rBhcS/ZU5hTeBmBNV1YMZjb6Hw8g==
+open-assistant.js@^1.0.4:
+  version "1.0.4"
+  resolved "https://registry.npmjs.org/open-assistant.js/-/open-assistant.js-1.0.4.tgz"
+  integrity sha512-qdIli/rFOs07EXgfwnuxkS/7z+1JoqUyuuejUId1W7SkEdJLlyzjvCfUdtHYKQgpAWiqMVS8U0YIkiw8QWiz8Q==
 
 openai@^3.1.0, openai@3.1.0:
   version "3.1.0"

@@ -260,12 +260,20 @@ export default {
           embeds.push(emb);
         });
         if (labelTag == "submit") {
-          var solutions = {};
+          var solutions: any = {
+            text: "",
+            labels: {},
+          };
+          task.labels.forEach((x) => {
+            if (x) {
+              solutions.labels[x.name] = parseFloat(x.value);
+            }
+          });
           await submitTask(
             taskId,
             user,
             interaction,
-            { text: "unused", ...solutions },
+            solutions,
             lang,
             task,
             client
@@ -278,22 +286,46 @@ export default {
         var rows = [];
         if (labelTag) {
           labelTag = labelTag.replaceAll("-", "_");
-          task.labels.find((x) => x.name == labelTag).value =
-            formatLabel(labelValue);
+          if (
+            !task.labels.find((x) => x.name == labelTag).value &&
+            labelValue != "skip"
+          ) {
+            task.labels.find((x) => x.name == labelTag).value =
+              formatLabel(labelValue);
+          }
         }
         if (!label) {
+          var labels = await getLabels(task);
           var readyEmbed = new EmbedBuilder()
             .setColor("#3a82f7")
             .setTimestamp()
             .setFooter({ text: `${getLocaleDisplayName(lang)}` })
             .setTitle(`Are you sure?`)
             .addFields(
-              task.labels.forEach((x) => {
-                console.log(x);
+              task.labels.map((x) => {
                 if (x) {
+                  var value = x.value;
+                  var label = labels.find((y) => y.name == x.name);
+                  if (label.type == "yes/no") {
+                    value = value == 1 ? "Yes" : "No";
+                  } else {
+                    value = `${value * 100}%`;
+                  }
+                  var name = x.name.replaceAll("_", "");
+                  var labelTxt = labelText(label, translation);
+                  if (labelTxt.question) {
+                    name = labelTxt.question.replaceAll(
+                      "{{language}}",
+                      getLocaleDisplayName(lang)
+                    );
+                  }
+                  if (labelTxt.max) {
+                    name = `${labelTxt.min}/${labelTxt.max}`;
+                  }
+
                   return {
-                    name: x.name,
-                    value: x.value,
+                    name: `${name}`,
+                    value: `${value}`,
                     inline: true,
                   };
                 }
@@ -305,7 +337,19 @@ export default {
                 `open-assistant_label_${taskId}_${interaction.user.id}_submit`
               )
               .setLabel(`Submit`)
-              .setStyle(ButtonStyle.Success)
+              .setStyle(ButtonStyle.Success),
+            new ButtonBuilder()
+              .setCustomId(
+                `open-assistant_label_${taskId}_${interaction.user.id}`
+              )
+              .setLabel(`Modify one`)
+              .setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder()
+              .setCustomId(
+                `open-assistant_skip_${task.id}_${interaction.user.id}`
+              )
+              .setLabel(`${translation.skip} task`)
+              .setStyle(ButtonStyle.Danger)
           );
           await interaction.editReply({
             embeds: [readyEmbed],
@@ -392,7 +436,7 @@ export default {
           );
           rows.push(row);
         }
-        if (labelTag) {
+        if (labelTag || task.labels.find((x) => x.name == "spam").value) {
           row2.addComponents(
             new ButtonBuilder()
               .setCustomId(
@@ -437,7 +481,7 @@ async function submitTask(
   task,
   client
 ) {
-  var messageId = await oa.acceptTask(taskId, user, interaction.id);
+  var messageId = await oa.acceptTask(taskId, user);
   var solveTask = await oa.solveTask(task, user, lang, solution, messageId);
   await saveTask(task, lang, user, { messageId: messageId, ...solution });
   var index = client.tasks.findIndex((x) => x.id == taskId);
@@ -445,11 +489,23 @@ async function submitTask(
     client.tasks.splice(index, 1);
   }
   var successEmbed = new EmbedBuilder()
-    .setColor(`${solveTask.type == "task_done" ? "#51F73A" : "#F73A3A"}`)
+    .setColor(
+      `${
+        solveTask.type == "task_done"
+          ? "#51F73A"
+          : solveTask == true
+          ? "#51F73A"
+          : "#F73A3A"
+      }`
+    )
     .setTimestamp()
     .setDescription(
       `${
-        solveTask.type == "task_done" ? "Task done" : "Something went wrong"
+        solveTask.type == "task_done"
+          ? "Task done"
+          : solveTask == true
+          ? "Task done"
+          : "Task failed"
       }(loading new task...)`
     )
     .setURL("https://open-assistant.io/?ref=turing")
@@ -486,7 +542,19 @@ async function getLabel(translation, previousTask: string, task) {
   } = {
     name: label.name,
     type: label.type,
+    ...labelText(label, translation),
   };
+
+  return resultTask;
+}
+
+function labelText(label, translation) {
+  var resultTask: {
+    question?: string;
+    description?: string;
+    max?: string;
+    min?: string;
+  } = {};
   if (label.name == "spam") {
     resultTask.question = translation["spam.question"];
     resultTask.description = `${translation["spam.one_desc.line_1"]}\n${translation["spam.one_desc.line_2"]}`;
@@ -525,7 +593,6 @@ async function getLabel(translation, previousTask: string, task) {
     resultTask.max = `${translation["harmless"]}`;
     resultTask.min = `${translation["violent"]}`;
   }
-
   return resultTask;
 }
 
@@ -558,6 +625,16 @@ function formatLabel(label: string) {
     return 0;
   } else if (label == "skip") {
     return 0;
+  } else if (label == "1") {
+    return 0.0;
+  } else if (label == "2") {
+    return 0.25;
+  } else if (label == "3") {
+    return 0.5;
+  } else if (label == "4") {
+    return 0.75;
+  } else if (label == "5") {
+    return 1.0;
   } else {
     return parseInt(label);
   }
@@ -627,7 +704,6 @@ async function taskInteraction(interaction, lang, user, translation, client) {
     collective: false,
     lang: lang,
   });
-  console.log(task);
   client.tasks.push(task);
   if (task.message) {
     var embd = await sendErr(task.message);

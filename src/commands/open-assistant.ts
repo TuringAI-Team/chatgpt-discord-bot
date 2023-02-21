@@ -22,11 +22,11 @@ export default {
     .setName("open-assistant")
     .setDescription("Help in the data collection of open assistant"),
   async execute(interaction, client, commands, commandType) {
-    await interaction.reply({
+    /*await interaction.reply({
       content: `Under development`,
       ephemeral: true,
     });
-    return;
+    return;*/
     var lang = await getUserLang(interaction.user.id);
     await interaction.deferReply();
 
