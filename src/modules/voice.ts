@@ -87,7 +87,6 @@ export async function voiceAudio(interaction, client, commandType) {
 
 async function getTranscription(filePath, fileName) {
   try {
-    console.log(filePath);
     var file = await fs.readFileSync(`${filePath}`);
     const form = new FormData();
     form.append("audio", file, `${fileName};audio/ogg`);
@@ -98,7 +97,7 @@ async function getTranscription(filePath, fileName) {
       form,
       {
         params: {
-          model: "medium",
+          model: "large-v2",
         },
         headers: {
           ...form.getHeaders(),
