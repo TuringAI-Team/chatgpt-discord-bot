@@ -115,6 +115,13 @@
   resolved "https://registry.npmjs.org/@exodus/schemasafe/-/schemasafe-1.0.0-rc.9.tgz"
   integrity sha512-dGGHpb61hLwifAu7sotuHFDBw6GTdpG8aKC0fsK17EuTzMRvUrH7lEAr6LTJ+sx3AZYed9yZ77rltVDHyg2hRg==
 
+"@gladiaio/sdk@^0.10.45":
+  version "0.10.45"
+  resolved "https://registry.npmjs.org/@gladiaio/sdk/-/sdk-0.10.45.tgz"
+  integrity sha512-UGQDk3rFDpZEHRHq6MtnIJJ+1mRBwidKAlhN9XkzuV2+CnhRVqBd/gsIsPQiO4GDpYR3iBxeKABcKZNQq+xODA==
+  dependencies:
+    core-js "^3.9.1"
+
 "@humanwhocodes/momoa@^2.0.3":
   version "2.0.4"
   resolved "https://registry.npmjs.org/@humanwhocodes/momoa/-/momoa-2.0.4.tgz"
@@ -864,6 +871,11 @@ console-control-strings@^1.0.0, console-control-strings@^1.1.0:
   version "1.1.0"
   resolved "https://registry.npmjs.org/console-control-strings/-/console-control-strings-1.1.0.tgz"
   integrity sha512-ty/fTekppD2fIwRvnZAVdeOiGd1c7YXEixbgJTNzqcxJWKQnjJ/V1bNEEE6hygpM3WjwHFUVK6HTjWSzV4a8sQ==
+
+core-js@^3.9.1:
+  version "3.28.0"
+  resolved "https://registry.npmjs.org/core-js/-/core-js-3.28.0.tgz"
+  integrity sha512-GiZn9D4Z/rSYvTeg1ljAIsEqFm0LaN9gVtwDCrKL80zHtS31p9BAjmTxVqTQDMpwlMolJZOFntUG2uwyj7DAqw==
 
 cosmiconfig@8.0.0:
   version "8.0.0"

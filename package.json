@@ -16,6 +16,7 @@
   "dependencies": {
     "@discordjs/opus": "^0.8.0",
     "@discordjs/voice": "^0.14.0",
+    "@gladiaio/sdk": "^0.10.45",
     "@ladjs/country-language": "^1.0.3",
     "@supabase/supabase-js": "^2.1.1",
     "@zeldafan0225/stable_horde": "^2.3.5",
@@ -30,6 +31,7 @@
     "discord.js": "^14.7.1",
     "dotenv": "^16.0.3",
     "ffmpeg": "^0.0.4",
+    "form-data": "^4.0.0",
     "highlight.js": "^11.7.0",
     "keyv": "^4.5.2",
     "libsodium-wrappers": "^0.7.10",

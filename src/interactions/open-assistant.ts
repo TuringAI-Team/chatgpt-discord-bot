@@ -35,12 +35,20 @@ export default {
     labelTag,
     labelValue
   ) {
+    if (!interaction) return;
     var user = {
       id: interaction.user.id,
       display_name: interaction.user.username,
       auth_method: "discord",
     };
     if (action == "info") {
+      if (authorId != interaction.user.id) {
+        await interaction.reply({
+          ephemeral: true,
+          content: `${interaction.user}, you can't do this action please use '/open-assistant' to get a task.`,
+        });
+        return;
+      }
       await interaction.deferUpdate();
       var lang = await getUserLang(interaction.user.id);
       if (!lang) {
@@ -61,12 +69,12 @@ export default {
         const row = new ActionRowBuilder().addComponents(
           new ButtonBuilder()
             .setLabel(translation.grab_a_task)
-            .setCustomId("open-assistant_tasks")
+            .setCustomId(`open-assistant_tasks_n_${interaction.user.id}`)
             .setStyle(ButtonStyle.Primary)
             .setDisabled(false),
           new ButtonBuilder()
             .setLabel("Change language")
-            .setCustomId("open-assistant_lang-btn")
+            .setCustomId(`open-assistant_lang-btn_n_${interaction.user.id}`)
             .setStyle(ButtonStyle.Secondary)
             .setDisabled(false)
         );
@@ -77,6 +85,13 @@ export default {
       }
     }
     if (action == "tasks") {
+      if (authorId != interaction.user.id) {
+        await interaction.reply({
+          ephemeral: true,
+          content: `${interaction.user}, you can't do this action please use '/open-assistant' to get a task.`,
+        });
+        return;
+      }
       await interaction.deferUpdate();
       var lang = await getUserLang(interaction.user.id);
       if (!lang) {
@@ -87,6 +102,13 @@ export default {
       }
     }
     if (action == "lang") {
+      if (authorId != interaction.user.id) {
+        await interaction.reply({
+          ephemeral: true,
+          content: `${interaction.user}, you can't do this action please use '/open-assistant' to get a task.`,
+        });
+        return;
+      }
       var selected = interaction.values[0];
       await interaction.deferUpdate();
       await setUserLang(interaction.user.id, selected);
@@ -97,7 +119,7 @@ export default {
         .setDescription(
           `Language changed to **${getLocaleDisplayName(
             selected
-          )}(${selected})**`
+          )} (${selected})**`
         )
         .setURL("https://open-assistant.io/?ref=turing");
       interaction.editReply({
@@ -109,6 +131,13 @@ export default {
       }, 3000);
     }
     if (action == "lang-btn") {
+      if (authorId != interaction.user.id) {
+        await interaction.reply({
+          ephemeral: true,
+          content: `${interaction.user}, you can't do this action please use '/open-assistant' to get a task.`,
+        });
+        return;
+      }
       await interaction.deferUpdate();
 
       await langInteraction(interaction);
@@ -119,6 +148,7 @@ export default {
           ephemeral: true,
           content: `${interaction.user}, you can't do this action please use '/open-assistant' to get a task.`,
         });
+        return;
       }
       await interaction.deferUpdate();
 
@@ -141,6 +171,7 @@ export default {
           ephemeral: true,
           content: `${interaction.user}, you can't do this action please use '/open-assistant' to get a task.`,
         });
+        return;
       }
       var lang = await getUserLang(interaction.user.id);
       if (!lang) {
@@ -212,6 +243,7 @@ export default {
           ephemeral: true,
           content: `${interaction.user}, you can't do this action please use '/open-assistant' to get a task.`,
         });
+        return;
       }
       var lang = await getUserLang(interaction.user.id);
       if (!lang) {
@@ -269,6 +301,7 @@ export default {
               solutions.labels[x.name] = parseFloat(x.value);
             }
           });
+          console.log(solutions);
           await submitTask(
             taskId,
             user,
@@ -292,6 +325,7 @@ export default {
           ) {
             task.labels.find((x) => x.name == labelTag).value =
               formatLabel(labelValue);
+            console.log(formatLabel(labelValue));
           }
         }
         if (!label) {
@@ -392,6 +426,15 @@ export default {
               .setStyle(ButtonStyle.Secondary)
           );
         } else {
+          var embed = new EmbedBuilder()
+            .setColor("#3a82f7")
+            .setTimestamp()
+            .setFooter({ text: `${getLocaleDisplayName(lang)}` })
+            .setTitle(`${label.min}/${label.max}`);
+          if (label.description) {
+            embed.setDescription(`${label.description}`);
+          }
+          embeds.push(embed);
           row.addComponents(
             new ButtonBuilder()
               .setCustomId(
@@ -457,7 +500,7 @@ export default {
             .setStyle(ButtonStyle.Danger),
           new ButtonBuilder()
             .setLabel("Change language")
-            .setCustomId("open-assistant_lang-btn")
+            .setCustomId(`open-assistant_lang-btn_n_${interaction.user.id}`)
             .setStyle(ButtonStyle.Secondary)
             .setDisabled(false)
         );
@@ -673,6 +716,10 @@ export async function getTranlation(lang: string) {
     ...json5,
     ...json6,
   };
+  if (!translationObject["skip"]) {
+    var englishTranslation = await getTranlation("en");
+    translationObject["skip"] = englishTranslation["skip"];
+  }
   return translationObject;
 }
 
@@ -689,14 +736,14 @@ async function saveTask(task, lang, user, answer) {
 }
 
 async function taskInteraction(interaction, lang, user, translation, client) {
-  var ispremium = await isPremium(interaction.user.id, interaction.guildId);
+  /*var ispremium = await isPremium(interaction.user.id, interaction.guildId);
   if (!ispremium) {
     await interaction.editReply({
       ephemeral: true,
       content: `This feature is only for premium users.`,
     });
     return;
-  }
+  }*/
 
   var task = await oa.getTask({
     type: "random",
@@ -796,7 +843,7 @@ async function taskInteraction(interaction, lang, user, translation, client) {
       .setStyle(ButtonStyle.Danger),
     new ButtonBuilder()
       .setLabel("Change language")
-      .setCustomId("open-assistant_lang-btn")
+      .setCustomId(`open-assistant_lang-btn_n_${interaction.user.id}`)
       .setStyle(ButtonStyle.Secondary)
       .setDisabled(false)
   );
@@ -844,7 +891,7 @@ export async function langInteraction(interaction) {
   //   .setTimestamp();
   const row = new ActionRowBuilder().addComponents(
     new StringSelectMenuBuilder()
-      .setCustomId("open-assistant_lang")
+      .setCustomId(`open-assistant_lang_n_${interaction.user.id}`)
       .setPlaceholder("Nothing selected")
       .setMinValues(1)
       .setMaxValues(1)
@@ -868,16 +915,16 @@ export async function initInteraction(interaction, translation, lang) {
   const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setLabel(translation.about)
-      .setCustomId("open-assistant_info")
+      .setCustomId(`open-assistant_info_n_${interaction.user.id}`)
       .setStyle(ButtonStyle.Primary),
     new ButtonBuilder()
       .setLabel(translation.grab_a_task)
-      .setCustomId("open-assistant_tasks")
+      .setCustomId(`open-assistant_tasks_n_${interaction.user.id}`)
       .setStyle(ButtonStyle.Primary)
       .setDisabled(false),
     new ButtonBuilder()
       .setLabel("Change language")
-      .setCustomId("open-assistant_lang-btn")
+      .setCustomId(`open-assistant_lang-btn_n_${interaction.user.id}`)
       .setStyle(ButtonStyle.Secondary)
       .setDisabled(false)
   );
@@ -888,12 +935,12 @@ export async function initInteraction(interaction, translation, lang) {
 }
 
 var locales = [
+  "en",
   "ar",
   "bn",
   "ca",
   "da",
   "de",
-  "en",
   "es",
   "eu",
   "fa",

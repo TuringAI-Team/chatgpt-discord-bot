@@ -29,7 +29,7 @@ export default {
   async execute(interaction, client, commands, commandType, options) {
     var guildId;
     if (interaction.guild) guildId = interaction.guild.id;
-    var ispremium = await isPremium(interaction.user.id, guildId);
+    /*var ispremium = await isPremium(interaction.user.id, guildId);
     if (!ispremium) {
       await commandType.reply(interaction, {
         content:
@@ -37,7 +37,7 @@ export default {
         ephemeral: true,
       });
       return;
-    }
+    }*/
     await voiceAudio(interaction, client, commandType);
   },
 };

@@ -29,7 +29,8 @@ import cld from "cld";
 import { chat } from "./gpt-api.js";
 import Stream from "node:stream";
 import { isPremium } from "./premium.js";
-
+import fetch from "node-fetch";
+import FormData from "form-data";
 export async function voiceAudio(interaction, client, commandType) {
   await commandType.load(interaction);
   if (client.guildsVoice.find((x) => x == interaction.guildId)) {
@@ -84,17 +85,38 @@ export async function voiceAudio(interaction, client, commandType) {
   }
 }
 
-async function getTranscription(file) {
+async function getTranscription(filePath, fileName) {
   try {
-    const response = await axios({
-      baseURL: `https://api-inference.huggingface.co/models/openai/whisper-medium`,
-      headers: { Authorization: `Bearer ${process.env.HF}` },
-      method: "POST",
-      data: file,
-    });
-    const result = response.data;
-    return result;
+    console.log(filePath);
+    var file = await fs.readFileSync(`${filePath}`);
+    const form = new FormData();
+    form.append("audio", file, `${fileName};audio/ogg`);
+    form.append("language_behaviour", "automatic single language");
+
+    const response = await axios.post(
+      "https://api.gladia.io/audio/text/audio-transcription/",
+      form,
+      {
+        params: {
+          model: "medium",
+        },
+        headers: {
+          ...form.getHeaders(),
+          accept: "application/json",
+          "x-gladia-key": process.env.GLADIA_API_KEY,
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+    var res = response.data;
+    var transcription = "";
+    for (var i = 0; i < res.prediction.length; i++) {
+      var tr = res.prediction[i];
+      transcription += `${tr.transcription} `;
+    }
+    return transcription;
   } catch (err) {
+    console.log(err);
     return { error: err };
   }
 }
@@ -150,9 +172,7 @@ export async function createListeningStream(
         commandType,
         "transcribing audio"
       );
-
-      var buffer = await fs.readFileSync(filename);
-      var text = await getTranscription(buffer);
+      var text = await getTranscription(filename, filename.split("/")[2]);
       console.log(text);
       await fs.unlinkSync(filename);
       var guildId;
@@ -161,7 +181,7 @@ export async function createListeningStream(
       await infoEmbed(interaction, "processing", commandType, "chatgpt");
 
       var result = await chat(
-        text.text,
+        text,
         interaction.user.username,
         ispremium,
         "chatgpt",
@@ -179,7 +199,7 @@ export async function createListeningStream(
         if (!interaction.channel) channel = interaction.user;
         await responseWithText(
           interaction,
-          text.text,
+          text,
           result.text,
           channel,
           "chatgpt",
