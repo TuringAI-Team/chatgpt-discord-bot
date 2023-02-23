@@ -31,7 +31,7 @@ import Stream from "node:stream";
 import { isPremium } from "./premium.js";
 import fetch from "node-fetch";
 import FormData from "form-data";
-export async function voiceAudio(interaction, client, commandType) {
+export async function voiceAudio(interaction, client, commandType, model) {
   await commandType.load(interaction);
   if (client.guildsVoice.find((x) => x == interaction.guildId)) {
     await commandType.reply(interaction, {
@@ -72,7 +72,8 @@ export async function voiceAudio(interaction, client, commandType) {
       interaction,
       commandType,
       audioPlayer,
-      interaction.user
+      interaction.user,
+      model
     );
     const index = client.guildsVoice.indexOf(interaction.guildId);
     if (index > -1) {
@@ -130,7 +131,8 @@ export async function createListeningStream(
   interaction,
   commandType,
   audioPlayer,
-  user?: User
+  user?: User,
+  model?: string
 ) {
   const opusStream = receiver.subscribe(userId, {
     end: {
@@ -177,14 +179,14 @@ export async function createListeningStream(
       var guildId;
       if (interaction.guild) guildId = interaction.guild.id;
       var ispremium = await isPremium(interaction.user.id, guildId);
-      await infoEmbed(interaction, "processing", commandType, "chatgpt");
+      await infoEmbed(interaction, "processing", commandType, model);
 
       var result = await chat(
         text,
         interaction.user.username,
         ispremium,
-        "chatgpt",
-        `chat-${interaction.user.id}`,
+        model,
+        `${model}-${interaction.user.id}`,
         0
       );
       if (!result.error) {
@@ -201,7 +203,7 @@ export async function createListeningStream(
           text,
           result.text,
           channel,
-          "chatgpt",
+          model,
           commandType
         );
       } else {
@@ -223,7 +225,7 @@ async function responseWithText(
 ) {
   var completeResponse = `**${interaction.user.tag}:** ${prompt}\n**AI(${type}):** ${result}`;
   var charsCount = completeResponse.split("").length;
-  var row = await buttons(true);
+  var row = await buttons(true, type);
   if (charsCount / 2000 >= 1) {
     var loops = Math.ceil(charsCount / 2000);
     for (var i = 0; i < loops; i++) {
@@ -330,7 +332,7 @@ async function responseWithVoice(
   }
 }
 
-async function infoEmbed(interaction, status, commandType, process?) {
+async function infoEmbed(interaction, status, commandType, process?, model?) {
   var embed = new EmbedBuilder()
     .setTitle("ChatGPT Voice(Beta)")
     .setColor("#5865F2")
@@ -344,7 +346,7 @@ async function infoEmbed(interaction, status, commandType, process?) {
   if (status == "result") {
     embed.setDescription("ChatGPT successfully.");
   }
-  var row = await buttons(false);
+  var row = await buttons(false, model);
   await commandType.reply(interaction, {
     embeds: [embed],
     components: row,
@@ -403,7 +405,7 @@ async function startVoiceConnection(interaction, client) {
   }
   return voiceConnection;
 }
-async function buttons(bool) {
+async function buttons(bool, model) {
   const row = new ActionRowBuilder();
   var btn1 = new ButtonBuilder() //1
     .setCustomId(`leave-vc`)
@@ -412,7 +414,7 @@ async function buttons(bool) {
   row.addComponents(btn1);
   if (bool) {
     var btn2 = new ButtonBuilder() //1
-      .setCustomId(`chat-vc`)
+      .setCustomId(`chat-vc_${model}`)
       .setStyle(ButtonStyle.Secondary)
       .setLabel(`🎙️New command`);
     row.addComponents(btn2);

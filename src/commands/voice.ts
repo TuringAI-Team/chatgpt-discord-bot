@@ -25,7 +25,17 @@ export default {
   cooldown: "2m",
   data: new SlashCommandBuilder()
     .setName("voice")
-    .setDescription("Chat with an AI using your voice"),
+    .setDescription("Chat with an AI using your voice")
+    .addStringOption((option) =>
+      option
+        .setName("model")
+        .setDescription("The model you want to use for the AI.")
+        .setRequired(true)
+        .addChoices(
+          { name: "GPT-3", value: "gpt-3" },
+          { name: "ChatGPT(gpt-3.5)", value: "chatgpt" }
+        )
+    ),
   async execute(interaction, client, commands, commandType, options) {
     var guildId;
     if (interaction.guild) guildId = interaction.guild.id;
@@ -38,6 +48,8 @@ export default {
       });
       return;
     }*/
-    await voiceAudio(interaction, client, commandType);
+    var model = interaction.options.getString("model");
+
+    await voiceAudio(interaction, client, commandType, model);
   },
 };

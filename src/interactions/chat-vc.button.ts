@@ -13,7 +13,7 @@ export default {
     customId: "chat-vc",
     description: "Chat with the bot in a voice channel",
   },
-  async execute(interaction, client) {
+  async execute(interaction, client, model) {
     var guildId;
     if (interaction.guild) guildId = interaction.guild.id;
     var ispremium = await isPremium(interaction.user.id, guildId);
@@ -48,7 +48,7 @@ export default {
             .update({ created_at: new Date() })
             .eq("userId", interaction.user.id)
             .eq("command", "chat-vc");
-          await voiceAudio(interaction, client, interactionType);
+          await voiceAudio(interaction, client, interactionType, model);
         } else {
           await interaction.reply({
             content:
@@ -63,10 +63,10 @@ export default {
         const { data, error } = await supabase
           .from("cooldown")
           .insert([{ userId: interaction.user.id, command: "chat-vc" }]);
-        await voiceAudio(interaction, client, interactionType);
+        await voiceAudio(interaction, client, interactionType, model);
       }
     } else {
-      await voiceAudio(interaction, client, interactionType);
+      await voiceAudio(interaction, client, interactionType, model);
     }
   },
 };
