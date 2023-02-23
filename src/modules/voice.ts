@@ -160,7 +160,7 @@ export async function createListeningStream(
       console.warn(`❌ Error recording file ${filename} - ${err.message}`);
     } else {
       console.log(`✅ Recorded ${filename}`);
-      await responseWithVoice(
+      responseWithVoice(
         interaction,
         "Processing your request",
         commandType,
