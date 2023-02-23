@@ -1,5 +1,5 @@
 import axios from "axios";
-import supabase from "./supabase.js";
+import supabase from "../supabase.js";
 
 export async function getUserLang(userId: string) {
   var { data: user } = await supabase

@@ -10,12 +10,12 @@ import {
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "url";
-import { getUserLang } from "../modules/open-assistant.js";
+import { getUserLang } from "../modules/open-assistant/user.js";
+import { getTranlation } from "../modules/open-assistant/langs.js";
 import {
   langInteraction,
   initInteraction,
-  getTranlation,
-} from "../interactions/open-assistant.js";
+} from "../modules/open-assistant/interactions.js";
 
 export default {
   data: new SlashCommandBuilder()

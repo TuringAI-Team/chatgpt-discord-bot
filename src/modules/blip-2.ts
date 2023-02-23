@@ -1,5 +1,11 @@
 import axios from "axios";
-export async function chatBlip(image: File, question: string) {
+export async function chat(
+  image: Buffer,
+  question: string,
+  username: string,
+  id: string
+) {
+  console.log(process.env.REPLICATE_API_KEY);
   var res = await axios({
     method: "post",
     url: "https://api.replicate.com/v1/predictions",
@@ -15,6 +21,7 @@ export async function chatBlip(image: File, question: string) {
       caption: false,
     },
   });
-  var resoibse = res.data;
-  return resoibse;
+  var response = res.data;
+  console.log(response);
+  return response;
 }

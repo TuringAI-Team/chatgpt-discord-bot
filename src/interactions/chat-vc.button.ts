@@ -17,15 +17,15 @@ export default {
     var guildId;
     if (interaction.guild) guildId = interaction.guild.id;
     var ispremium = await isPremium(interaction.user.id, guildId);
-    if (!ispremium) {
+    /*  if (!ispremium) {
       await interaction.reply({
         content:
           "This command is premium only since is in a test phase, to get premium use the command `/premium buy`",
         ephemeral: true,
       });
       return;
-    }
-    if (ispremium) {
+    }*/
+    if (!ispremium) {
       let { data: cooldowns, error } = await supabase
         .from("cooldown")
         .select("*")
