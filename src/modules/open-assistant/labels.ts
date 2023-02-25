@@ -10,20 +10,57 @@ export async function getLabel(translation, previousTask: string, task) {
 
   var label = labels[previousTaskIndex + 1];
   if (!label) return;
-  var resultTask: {
+  if (label.type == "flags") {
+    var resultsTask: Array<{
+      name: string;
+      type: string;
+      question?: string;
+      description?: string;
+      max?: string;
+      min?: string;
+    }> = await getFlags(translation, task);
+    return { resultsTask, list: true };
+  } else {
+    let resultTask: {
+      name: string;
+      type: string;
+      question?: string;
+      description?: string;
+      max?: string;
+      min?: string;
+    } = {
+      name: label.name,
+      type: label.type,
+      ...labelText(label, translation),
+    };
+
+    return { resultsTask: [{ ...resultTask }], list: false };
+  }
+}
+
+export async function getFlags(translation, task) {
+  var labels = await getLabels(task);
+  labels = labels.filter((x) => x.type == "flags");
+  var resultsTask: Array<{
     name: string;
     type: string;
     question?: string;
     description?: string;
     max?: string;
     min?: string;
-  } = {
-    name: label.name,
-    type: label.type,
-    ...labelText(label, translation),
-  };
-
-  return resultTask;
+  }> = [];
+  for (var i = 0; i < labels.length; i++) {
+    let lbl = labels[i];
+    let resultTask = {
+      name: lbl.name,
+      type: lbl.type,
+      ...labelText(lbl, translation),
+    };
+    if (resultTask) {
+      resultsTask.push(resultTask);
+    }
+  }
+  return resultsTask;
 }
 
 export function labelText(label, translation) {
@@ -76,37 +113,49 @@ export function labelText(label, translation) {
 
 export async function getLabels(task) {
   var labels = [];
-  for (var i = 0; i < task.valid_labels.length; i++) {
+  var workingLabels = [
+    "spam",
+    "quality",
+    "lang_mismatch",
+    "not_appropriate",
+    "pii",
+    "hate_speech",
+    "sexual_content",
+    "political_content",
+  ];
+  for (var i = 0; i < workingLabels.length; i++) {
     var type = "flags";
     if (
-      task.valid_labels[i] == "quality" ||
-      task.valid_labels[i] == "toxicity" ||
-      task.valid_labels[i] == "humor" ||
-      task.valid_labels[i] == "helpfulness" ||
-      task.valid_labels[i] == "creativity" ||
-      task.valid_labels[i] == "violence"
+      workingLabels[i] == "quality" ||
+      workingLabels[i] == "toxicity" ||
+      workingLabels[i] == "humor" ||
+      workingLabels[i] == "helpfulness" ||
+      workingLabels[i] == "creativity" ||
+      workingLabels[i] == "violence"
     ) {
       type = "number";
     }
-    if (task.valid_labels[i] == "spam" || task.valid_labels[i] == "fails_task")
-      type = "yes/now";
+    if (workingLabels[i] == "spam" || workingLabels[i] == "fails_task")
+      type = "yes/no";
 
-    labels.push({
-      name: task.valid_labels[i],
-      type: type,
-    });
+    if (task.valid_labels.includes(workingLabels[i])) {
+      labels.push({
+        name: workingLabels[i],
+        type: type,
+      });
+    }
   }
   return labels;
 }
 
-export function formatLabel(label: string) {
+export function formatLabel(label: string, type1?: boolean) {
   if (label == "yes") {
     return 1;
   } else if (label == "no") {
     return 0;
   } else if (label == "skip") {
     return 0;
-  } else if (label == "1") {
+  } else if (label == "1" && !type1) {
     return 0.0;
   } else if (label == "2") {
     return 0.25;

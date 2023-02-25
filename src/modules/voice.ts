@@ -90,6 +90,7 @@ async function getTranscription(filePath, fileName) {
   try {
     var file = await fs.readFileSync(`${filePath}`);
     const form = new FormData();
+    console.log(fileName);
     form.append("audio", file, `${fileName};audio/ogg`);
     form.append("language_behaviour", "automatic single language");
 
@@ -175,6 +176,18 @@ export async function createListeningStream(
       );
       var text = await getTranscription(filename, filename.split("/")[2]);
       console.log(text);
+      if (typeof text == "object") {
+        return;
+      }
+      /*   if (text == "" || text == "stop") {
+        return;
+      }
+      if (
+        !text.toLowerCase().startsWith("gpt") &&
+        !text.toLowerCase().startsWith("hey gpt")
+      ) {
+        return;
+      }*/
       await fs.unlinkSync(filename);
       var guildId;
       if (interaction.guild) guildId = interaction.guild.id;
@@ -190,12 +203,16 @@ export async function createListeningStream(
         0
       );
       if (!result.error) {
-        await responseWithVoice(
+        responseWithVoice(interaction, result.text, commandType, audioPlayer);
+        /*  createListeningStream(
+          receiver,
+          userId,
           interaction,
-          result.text,
           commandType,
-          audioPlayer
-        );
+          audioPlayer,
+          user,
+          model
+        );*/
         var channel = interaction.channel;
         if (!interaction.channel) channel = interaction.user;
         await responseWithText(
