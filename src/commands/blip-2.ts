@@ -101,7 +101,7 @@ export default {
           {
             provider: "blip-2",
             prompt: message.toLowerCase(),
-            result: { text: response },
+            result: { text: response, image: attachment.url },
             guildId: interaction.guildId,
           },
         ]);

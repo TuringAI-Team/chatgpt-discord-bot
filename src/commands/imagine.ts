@@ -31,7 +31,7 @@ var data = new SlashCommandBuilder()
       .setRequired(true)
   );
 export default {
-  cooldown: "2m",
+  cooldown: "4m",
   data,
   async execute(interaction, client) {
     /*await interaction.reply({
