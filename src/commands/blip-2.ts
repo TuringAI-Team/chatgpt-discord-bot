@@ -30,11 +30,11 @@ export default {
         .setRequired(true)
     ),
   async execute(interaction, client, commands, commandType, options) {
-    await interaction.reply({
+    /*  await interaction.reply({
       content: `Under development`,
       ephemeral: true,
     });
-    return;
+    return;*/
     var ispremium = await isPremium(interaction.user.id, guildId);
     if (!ispremium) {
       await commandType.reply(interaction, {
@@ -74,9 +74,8 @@ export default {
     var img = await axios.get(attachment.url, {
       responseType: "arraybuffer",
     });
-    const imageBuffer = Buffer.from(img.data, "binary");
     result = await chat(
-      imageBuffer,
+      attachment.url,
       message,
       interaction.user.username,
       `blip-${interaction.user.id}`
@@ -90,7 +89,8 @@ export default {
         `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)`,
         channel,
         "error",
-        commandType
+        commandType,
+        attachment.url
       );
       return;
     }
@@ -115,8 +115,9 @@ export default {
         message,
         response,
         channel,
-        result.type,
-        commandType
+        "blip-2",
+        commandType,
+        attachment.url
       );
     } else {
       await responseWithText(
@@ -125,7 +126,8 @@ export default {
         result.error,
         channel,
         "error",
-        commandType
+        commandType,
+        attachment.url
       );
     }
     return;
@@ -138,7 +140,8 @@ async function responseWithText(
   result,
   channel,
   type,
-  commandType
+  commandType,
+  image?
 ) {
   var completeResponse = `**${interaction.user.tag}:** ${prompt}\n**AI(${type}):** ${result}`;
   var charsCount = completeResponse.split("").length;
@@ -161,6 +164,12 @@ async function responseWithText(
           lastMsg = await commandType.reply(interaction, {
             content: completeResponse.split("").slice(0, 2000).join(""),
             components: rows,
+            files: [
+              {
+                attachment: image,
+                name: "image.png",
+              },
+            ],
           });
         } catch (err) {
           console.log(err);
@@ -181,7 +190,12 @@ async function responseWithText(
   } else {
     commandType.reply(interaction, {
       content: completeResponse,
-      components: rows,
+      files: [
+        {
+          attachment: image,
+          name: "image.png",
+        },
+      ],
     });
   }
 }
