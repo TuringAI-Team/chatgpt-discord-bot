@@ -26,17 +26,38 @@ export default {
   data: new SlashCommandBuilder()
     .setName("voice")
     .setDescription("Chat with an AI using your voice")
-    .addStringOption((option) =>
-      option
-        .setName("model")
-        .setDescription("The model you want to use for the AI.")
-        .setRequired(false)
-        .addChoices(
-          { name: "GPT-3", value: "gpt-3" },
-          { name: "ChatGPT(gpt-3.5)", value: "chatgpt" }
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("manual")
+        .setDescription("Start a voice chat with an AI manually")
+        .addStringOption((option) =>
+          option
+            .setName("model")
+            .setDescription("The model you want to use for the AI.")
+            .setRequired(false)
+            .addChoices(
+              { name: "GPT-3", value: "gpt-3" },
+              { name: "ChatGPT(gpt-3.5)", value: "chatgpt" }
+            )
         )
     ),
-  async execute(interaction, client, commands, commandType, options) {
+  /* .addSubcommand((subcommand) =>
+      subcommand
+        .setName("auto")
+        .setDescription(
+          "Start a voice chat with an AI automatically when you say gpt + text"
+        )
+        .addStringOption((option) =>
+          option
+            .setName("model")
+            .setDescription("The model you want to use for the AI.")
+            .setRequired(false)
+            .addChoices(
+              { name: "GPT-3", value: "gpt-3" },
+              { name: "ChatGPT(gpt-3.5)", value: "chatgpt" }
+            )
+        )
+    )*/ async execute(interaction, client, commands, commandType, options) {
     var guildId;
     if (interaction.guild) guildId = interaction.guild.id;
     /*var ispremium = await isPremium(interaction.user.id, guildId);
@@ -49,7 +70,21 @@ export default {
       return;
     }*/
     var model = interaction.options.getString("model");
+    if (!model) model = "chatgpt";
+    var listen = false;
+    if (interaction.options.getSubcommand() == "auto") {
+      var ispremium = await isPremium(interaction.user.id, guildId);
+      if (!ispremium) {
+        await commandType.reply(interaction, {
+          content:
+            "This feature(`/voice auto`) is premium only since is in a test phase, to get premium use the command `/premium buy`",
+          ephemeral: true,
+        });
+        return;
+      }
+      listen = true;
+    }
 
-    await voiceAudio(interaction, client, commandType, model);
+    await voiceAudio(interaction, client, commandType, model, listen);
   },
 };

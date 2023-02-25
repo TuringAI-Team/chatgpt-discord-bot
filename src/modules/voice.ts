@@ -31,7 +31,13 @@ import Stream from "node:stream";
 import { isPremium } from "./premium.js";
 import fetch from "node-fetch";
 import FormData from "form-data";
-export async function voiceAudio(interaction, client, commandType, model) {
+export async function voiceAudio(
+  interaction,
+  client,
+  commandType,
+  model,
+  listen
+) {
   await commandType.load(interaction);
   if (client.guildsVoice.find((x) => x == interaction.guildId)) {
     await commandType.reply(interaction, {
@@ -57,13 +63,14 @@ export async function voiceAudio(interaction, client, commandType, model) {
     voiceConnection._state.status === VoiceConnectionStatus.Ready
   ) {
     await voiceConnection.subscribe(audioPlayer);
-    await infoEmbed(interaction, "hearing", commandType);
+
     await responseWithVoice(
       interaction,
       "Waiting for your request",
       commandType,
       audioPlayer
     );
+    infoEmbed(interaction, "hearing", commandType);
 
     const receiver = voiceConnection.receiver;
     await createListeningStream(
@@ -73,7 +80,8 @@ export async function voiceAudio(interaction, client, commandType, model) {
       commandType,
       audioPlayer,
       interaction.user,
-      model
+      model,
+      listen
     );
     const index = client.guildsVoice.indexOf(interaction.guildId);
     if (index > -1) {
@@ -90,7 +98,6 @@ async function getTranscription(filePath, fileName) {
   try {
     var file = await fs.readFileSync(`${filePath}`);
     const form = new FormData();
-    console.log(fileName);
     form.append("audio", file, `${fileName};audio/ogg`);
     form.append("language_behaviour", "automatic single language");
 
@@ -117,7 +124,6 @@ async function getTranscription(filePath, fileName) {
     }
     return transcription;
   } catch (err) {
-    console.log(err);
     return { error: err };
   }
 }
@@ -133,12 +139,13 @@ export async function createListeningStream(
   commandType,
   audioPlayer,
   user?: User,
-  model?: string
+  model?: string,
+  listen?: boolean
 ) {
   const opusStream = receiver.subscribe(userId, {
     end: {
       behavior: EndBehaviorType.AfterSilence,
-      duration: 1750,
+      duration: 1500,
     },
   });
   const oggStream = new prism.opus.OggLogicalBitstream({
@@ -161,38 +168,103 @@ export async function createListeningStream(
       console.warn(`❌ Error recording file ${filename} - ${err.message}`);
     } else {
       console.log(`✅ Recorded ${filename}`);
-      responseWithVoice(
-        interaction,
-        "Processing your request",
-        commandType,
-        audioPlayer
-      );
+      if (!listen) {
+        responseWithVoice(
+          interaction,
+          "Processing your request",
+          commandType,
+          audioPlayer
+        );
 
-      await infoEmbed(
-        interaction,
-        "processing",
-        commandType,
-        "transcribing audio"
-      );
+        await infoEmbed(
+          interaction,
+          "processing",
+          commandType,
+          "transcribing audio",
+          listen
+        );
+      }
+
       var text = await getTranscription(filename, filename.split("/")[2]);
-      console.log(text);
-      if (typeof text == "object") {
-        return;
-      }
-      /*   if (text == "" || text == "stop") {
-        return;
-      }
-      if (
-        !text.toLowerCase().startsWith("gpt") &&
-        !text.toLowerCase().startsWith("hey gpt")
-      ) {
-        return;
-      }*/
       await fs.unlinkSync(filename);
+      if (!text) {
+        await commandType.reply(interaction, {
+          content: `Sorry, I couldn't hear you.`,
+        });
+        return;
+      }
+      if (typeof text == "object") {
+        await delay(3000);
+        await commandType.reply(interaction, {
+          content: `Sorry, I couldn't hear you.`,
+        });
+        if (listen) {
+          createListeningStream(
+            receiver,
+            userId,
+            interaction,
+            commandType,
+            audioPlayer,
+            user,
+            model,
+            listen
+          );
+        }
+
+        return;
+      }
+      if (listen) {
+        if (text == "stop") {
+          await commandType.reply(interaction, {
+            content: `Listening stopped.`,
+          });
+          return;
+        }
+
+        if (
+          text == "" ||
+          (!text.toLowerCase().includes("gpt") &&
+            !text.toLowerCase().includes("hey gpt"))
+        ) {
+          await commandType.reply(interaction, {
+            content: `Sorry, I couldn't hear you.`,
+          });
+          await delay(3000);
+          createListeningStream(
+            receiver,
+            userId,
+            interaction,
+            commandType,
+            audioPlayer,
+            user,
+            model,
+            listen
+          );
+          return;
+        }
+        if (text.toLowerCase().includes("hey gpt"))
+          text = text.split("hey gpt")[1];
+        if (text.toLowerCase().includes("gpt")) text = text.split("gpt")[1];
+        console.log(text);
+        responseWithVoice(
+          interaction,
+          "Processing your request",
+          commandType,
+          audioPlayer
+        );
+
+        await infoEmbed(
+          interaction,
+          "processing",
+          commandType,
+          "transcribing audio"
+        );
+      }
+
       var guildId;
       if (interaction.guild) guildId = interaction.guild.id;
       var ispremium = await isPremium(interaction.user.id, guildId);
-      await infoEmbed(interaction, "processing", commandType, model);
+      await infoEmbed(interaction, "processing", commandType, model, listen);
 
       var result = await chat(
         text,
@@ -204,15 +276,20 @@ export async function createListeningStream(
       );
       if (!result.error) {
         responseWithVoice(interaction, result.text, commandType, audioPlayer);
-        /*  createListeningStream(
-          receiver,
-          userId,
-          interaction,
-          commandType,
-          audioPlayer,
-          user,
-          model
-        );*/
+        if (listen) {
+          await delay(1000);
+          createListeningStream(
+            receiver,
+            userId,
+            interaction,
+            commandType,
+            audioPlayer,
+            user,
+            model,
+            listen
+          );
+        }
+
         var channel = interaction.channel;
         if (!interaction.channel) channel = interaction.user;
         await responseWithText(
@@ -221,7 +298,8 @@ export async function createListeningStream(
           result.text,
           channel,
           model,
-          commandType
+          commandType,
+          listen
         );
       } else {
         await commandType.reply(
@@ -238,11 +316,12 @@ async function responseWithText(
   result,
   channel,
   type,
-  commandType
+  commandType,
+  listen
 ) {
   var completeResponse = `**${interaction.user.tag}:** ${prompt}\n**AI(${type}):** ${result}`;
   var charsCount = completeResponse.split("").length;
-  var row = await buttons(true, type);
+  var row = await buttons(listen ? false : true, type);
   if (charsCount / 2000 >= 1) {
     var loops = Math.ceil(charsCount / 2000);
     for (var i = 0; i < loops; i++) {
@@ -349,9 +428,16 @@ async function responseWithVoice(
   }
 }
 
-async function infoEmbed(interaction, status, commandType, process?, model?) {
+async function infoEmbed(
+  interaction,
+  status,
+  commandType,
+  process?,
+  model?,
+  listen?
+) {
   var embed = new EmbedBuilder()
-    .setTitle("ChatGPT Voice(Beta)")
+    .setTitle(`ChatGPT Voice(${listen == true ? "Alpha" : "Beta"})`)
     .setColor("#5865F2")
     .setTimestamp();
   if (status == "hearing") {

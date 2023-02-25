@@ -48,7 +48,7 @@ export default {
             .update({ created_at: new Date() })
             .eq("userId", interaction.user.id)
             .eq("command", "chat-vc");
-          await voiceAudio(interaction, client, interactionType, model);
+          await voiceAudio(interaction, client, interactionType, model, false);
         } else {
           await interaction.reply({
             content:
@@ -63,10 +63,10 @@ export default {
         const { data, error } = await supabase
           .from("cooldown")
           .insert([{ userId: interaction.user.id, command: "chat-vc" }]);
-        await voiceAudio(interaction, client, interactionType, model);
+        await voiceAudio(interaction, client, interactionType, model, false);
       }
     } else {
-      await voiceAudio(interaction, client, interactionType, model);
+      await voiceAudio(interaction, client, interactionType, model, false);
     }
   },
 };
