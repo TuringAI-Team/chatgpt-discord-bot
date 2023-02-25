@@ -63,6 +63,18 @@ export default {
       });
       return;
     }
+    var userBans = await supabase
+      .from("bans")
+      .select("*")
+      .eq("id", interaction.user.id);
+    if (userBans.data[0] && userBans.data[0].banned) {
+      interaction.reply({
+        content: `You are banned from using this utility, If you think this is an error please contact [the support server](https://dsc.gg/tureing) .`,
+        ephemeral: true,
+      });
+      return;
+    }
+
     var steps = 30;
     if (ispremium) steps = 50;
 
@@ -83,16 +95,67 @@ export default {
       generation = await generateImg(prompt, steps, nsfw);
 
       if (generation.message) {
-        if (
-          generation.message.includes(
-            "This prompt appears to violate our terms of service and will be reported. Please contact us if you think this is an error."
-          )
-        ) {
+        if (generation.message.toLowerCase().includes("nsfw")) {
           const channel = client.channels.cache.get("1055943633716641853");
-          console.log(channel);
           channel.send(
-            `**Wrong prompt from __${interaction.user.tag}__** (${interaction.user.id})\n**Prompt:** ${prompt}\n**NSFW:** ${nsfw}`
+            `**Wrong prompt from __${interaction.user.tag}__** (${
+              interaction.user.id
+            })\n**Prompt:** ${prompt}\n**Model:** Open Journey Beta\n**NSFW:** ${nsfw}\n**Turing filter:** ${
+              generation.filter ? "yes" : "no"
+            }`
           );
+          if (!userBans.data[0]) {
+            await supabase.from("bans").insert([
+              {
+                id: interaction.user.id,
+                tries: 1,
+                banned: false,
+                prompts: [
+                  {
+                    prompt: prompt,
+                    model: "imagine",
+                    nsfw: nsfw,
+                    date: new Date(),
+                  },
+                ],
+              },
+            ]);
+          } else {
+            if (userBans.data[0].tries >= 2) {
+              await supabase
+                .from("bans")
+                .update({
+                  banned: true,
+                  tries: userBans.data[0].tries + 1,
+                  prompts: [
+                    ...userBans.data[0].prompts,
+                    {
+                      prompt: prompt,
+                      model: "imagine",
+                      nsfw: nsfw,
+                      date: new Date(),
+                    },
+                  ],
+                })
+                .eq("id", interaction.user.id);
+            } else {
+              await supabase
+                .from("bans")
+                .update({
+                  tries: userBans.data[0].tries + 1,
+                  prompts: [
+                    ...userBans.data[0].prompts,
+                    {
+                      prompt: prompt,
+                      model: "imagine",
+                      nsfw: nsfw,
+                      date: new Date(),
+                    },
+                  ],
+                })
+                .eq("id", interaction.user.id);
+            }
+          }
         }
 
         await interaction.editReply({
