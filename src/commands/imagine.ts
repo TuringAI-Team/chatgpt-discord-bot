@@ -95,12 +95,15 @@ export default {
       generation = await generateImg(prompt, steps, nsfw);
 
       if (generation.message) {
-        if (generation.message.toLowerCase().includes("nsfw")) {
+        if (
+          generation.message.toLowerCase().includes("nsfw") ||
+          generation.message.includes("unethical image")
+        ) {
           const channel = client.channels.cache.get("1055943633716641853");
           channel.send(
             `**Wrong prompt from __${interaction.user.tag}__** (${
               interaction.user.id
-            })\n**Prompt:** ${prompt}\n**Model:** Open Journey Beta\n**NSFW:** ${nsfw}\n**Turing filter:** ${
+            })\n**Prompt:** ${prompt}\n**Model:** Open Journey Beta\n**NSFW:** ${nsfw}\n**ChatGPT filter:** ${
               generation.filter ? "yes" : "no"
             }`
           );

@@ -35,6 +35,7 @@ export async function generateImg(
     return {
       message:
         "To prevent generation of unethical images, we cannot allow this prompt with NSFW models/tags.",
+      filter: true,
     };
   }
 
