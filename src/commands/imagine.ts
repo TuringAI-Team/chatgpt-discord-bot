@@ -19,6 +19,7 @@ import { isPremium } from "../modules/premium.js";
 //import { createCanvas, loadImage, Image } from "canvas";
 import sharp from "sharp";
 import { generateRateRow, generateUpscaleRow } from "../modules/stablehorde.js";
+var maintenance = true;
 
 var data = new SlashCommandBuilder()
   .setName("imagine")
@@ -33,11 +34,19 @@ export default {
   cooldown: "2m",
   data,
   async execute(interaction, client) {
-    await interaction.reply({
+    /*await interaction.reply({
       content: `Under development`,
       ephemeral: true,
     });
-    return;
+    return;*/
+    if (maintenance == true && interaction.user.id != "530102778408861706") {
+      await interaction.reply({
+        content:
+          "Service under maintenance, for more information join us on [dsc.gg/turing](https://dsc.gg/turing)",
+        ephemeral: true,
+      });
+      return;
+    }
     var tags = [];
     var guildId;
     if (interaction.guild) guildId = interaction.guild.id;
@@ -54,8 +63,8 @@ export default {
       });
       return;
     }
-    var steps = 50;
-    if (ispremium) steps = 100;
+    var steps = 30;
+    if (ispremium) steps = 50;
 
     var prompt = interaction.options.getString("prompt");
 
@@ -67,8 +76,6 @@ export default {
     if (interaction.channel && interaction.channel.nsfw) nsfw = true;
     if (!interaction.channel) nsfw = true;
 
-    var width = 512;
-    var height = 512;
     await interaction.deferReply();
 
     try {
