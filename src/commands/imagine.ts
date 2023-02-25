@@ -34,11 +34,11 @@ export default {
   cooldown: "4m",
   data,
   async execute(interaction, client) {
-    /*await interaction.reply({
+    await interaction.reply({
       content: `Under development`,
       ephemeral: true,
     });
-    return;*/
+    return;
     if (maintenance == true && interaction.user.id != "530102778408861706") {
       await interaction.reply({
         content:
