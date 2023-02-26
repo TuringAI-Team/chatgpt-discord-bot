@@ -113,7 +113,6 @@ If you break character, I will let you know by saying "Stay in character!" and y
     var prompt = `${instructions ? instructions : ""}${
       conversation ? conversation : ""
     }\nUser: ${fullMsg}\nAI:\n`;
-    console.log(prompt);
     response = await bot.ask(prompt, id);
     if (response) {
       response = response.replaceAll("<@", "pingSecurity");
