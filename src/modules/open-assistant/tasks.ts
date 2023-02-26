@@ -43,6 +43,7 @@ export async function submitTask(
 ) {
   var messageId = await oa.acceptTask(taskId, user);
   var solveTask = await oa.solveTask(task, user, lang, solution, messageId);
+  console.log(solveTask);
   await saveTask(task, lang, user, { messageId: messageId, ...solution });
   var index = client.tasks.findIndex((x) => x.id == taskId);
   if (index > -1) {

@@ -78,7 +78,6 @@ export async function labelInteraction(
         solutions.labels[x.name] = parseFloat(x.value);
       }
     });
-    console.log(solutions);
     await submitTask(taskId, user, interaction, solutions, lang, task, client);
     return;
   }
