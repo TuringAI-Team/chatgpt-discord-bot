@@ -78,8 +78,8 @@ var data = new SlashCommandBuilder()
       return;
     }
 
-    var steps = 30;
-    if (ispremium) steps = 50;
+    var steps = 50;
+    if (ispremium) steps = 100;
 
     var prompt = interaction.options.getString("prompt");
 
