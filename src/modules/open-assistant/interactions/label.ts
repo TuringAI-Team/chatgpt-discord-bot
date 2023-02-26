@@ -78,7 +78,19 @@ export async function labelInteraction(
         solutions.labels[x.name] = parseFloat(x.value);
       }
     });
-    await submitTask(taskId, user, interaction, solutions, lang, task, client);
+    var messageId =
+      task.conversation.messages[task.conversation.messages.length - 1]
+        .frontend_message_id;
+    await submitTask(
+      taskId,
+      user,
+      interaction,
+      solutions,
+      lang,
+      task,
+      client,
+      messageId
+    );
     return;
   }
   if (labelTag) {
