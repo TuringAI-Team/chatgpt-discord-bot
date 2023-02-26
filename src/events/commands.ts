@@ -9,7 +9,9 @@ const interactionType = {
   load: async (interaction) => {
     if (interaction) {
       try {
-        await interaction.deferReply();
+        await interaction.deferReply({
+          ephemeral: true,
+        });
       } catch (err) {}
     }
   },
