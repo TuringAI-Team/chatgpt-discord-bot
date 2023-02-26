@@ -3,7 +3,7 @@ import {
   EmbedBuilder,
   PermissionFlagsBits,
 } from "discord.js";
-import { isPremium } from "src/modules/premium";
+import { isPremium } from "../modules/premium.js";
 
 export default {
   data: new SlashCommandBuilder()
