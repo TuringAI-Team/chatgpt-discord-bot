@@ -48,7 +48,6 @@ export default {
       (acc, memberCount) => acc + memberCount,
       0
     );
-
     var embed = new EmbedBuilder()
       .setColor("#5865F2")
       .setTimestamp()
@@ -93,10 +92,7 @@ export default {
           )} MB`,
           inline: true,
         },
-        {
-          name: "CPU Usage",
-          value: `${(process.cpuUsage().user / 1024 / 1024).toFixed(2)} MB`,
-        },
+
         {
           name: "Version",
           value: `v0.2.7`,
