@@ -13,7 +13,7 @@ export async function infoInteraction(translation, interaction, lang) {
     .setTimestamp()
     .setTitle("Open assistant Info")
     .setDescription(
-      `${translation.blurb}${translation.blurb2}${translation.description}\n**${translation.faq_title}**`
+      `${translation.blurb}${translation.blurb1}${translation.description}\n**${translation.faq_title}**`
     )
     .setFields(
       {
