@@ -49,8 +49,6 @@ export async function generateImg(
     params: {
       n: 2,
       steps: steps,
-      //      width,
-      //      height,
     },
   });
   return generation;

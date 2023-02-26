@@ -249,6 +249,9 @@ async function sendResults(images, interaction, prompt, id: string, userId) {
     .setColor("#347d9c")
     .setTimestamp()
     .setImage(`attachment://output.png`)
+    .setFooter({
+      text: `Thanks to https://stablehorde.net/`,
+    })
     .setFields({
       name: "Prompt",
       value: prompt,
@@ -289,7 +292,7 @@ async function mergeBase64(imgs: string[], width, height) {
   if (imgs.length == 2) {
     totalH = totalH / 2;
   }
-  var canvas; //= createCanvas(totalW, totalH);
+  var canvas = createCanvas(totalW, totalH);
   const ctx = canvas.getContext("2d");
   ctx.fillStyle = "white";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
