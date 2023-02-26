@@ -227,21 +227,15 @@ export default {
           .setDescription(`${task.text}`);
         row.addComponents(
           new ButtonBuilder()
-            .setCustomId(
-              `open-assistant_modal-submit_${taskId}_${interaction.user.id}`
-            )
+            .setCustomId(`oa_modal-submit_${taskId}_${interaction.user.id}`)
             .setLabel(`Submit`)
             .setStyle(ButtonStyle.Success),
           new ButtonBuilder()
-            .setCustomId(
-              `open-assistant_text-modal_${taskId}_${interaction.user.id}`
-            )
+            .setCustomId(`oa_text-modal_${taskId}_${interaction.user.id}`)
             .setLabel(`Modify`)
             .setStyle(ButtonStyle.Secondary),
           new ButtonBuilder()
-            .setCustomId(
-              `open-assistant_skip_${task.id}_${interaction.user.id}`
-            )
+            .setCustomId(`oa_skip_${task.id}_${interaction.user.id}`)
             .setLabel(`${translation.skip} task`)
             .setStyle(ButtonStyle.Danger)
         );

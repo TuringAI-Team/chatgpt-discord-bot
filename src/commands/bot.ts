@@ -33,7 +33,7 @@ export default {
     }
     var shard = client.shard.client.options.shards[0] + 1;
 
-    await commandType.load(interaction);
+    await commandType.load(interaction, hide);
     var totalGuildsR = await client.shard.fetchClientValues(
       "guilds.cache.size"
     );
