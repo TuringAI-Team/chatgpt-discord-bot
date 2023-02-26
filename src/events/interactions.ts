@@ -49,10 +49,17 @@ export default {
       );
     } catch (error) {
       console.error(error);
-      await interaction.reply({
-        content: "There was an error while executing this interaction!",
-        ephemeral: true,
-      });
+      if (interaction.deferred || interaction.replied) {
+        await interaction.editReply({
+          content: "There was an error while executing this interaction!",
+          ephemeral: true,
+        });
+      } else {
+        await interaction.reply({
+          content: "There was an error while executing this interaction!",
+          ephemeral: true,
+        });
+      }
     }
   },
 };

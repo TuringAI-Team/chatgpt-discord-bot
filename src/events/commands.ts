@@ -7,7 +7,11 @@ import { isPremium } from "../modules/premium.js";
 const interactionType = {
   type: "interaction",
   load: async (interaction) => {
-    await interaction.deferReply();
+    if (interaction) {
+      try {
+        await interaction.deferReply();
+      } catch (err) {}
+    }
   },
   reply: async (interaction, content) => {
     if (interaction.deferred || interaction.replied) {
@@ -93,6 +97,7 @@ export default {
       }
     } catch (error) {
       console.log(error);
+
       await interactionType.reply(interaction, {
         content: "There was an error while executing this command!",
         ephemeral: true,
