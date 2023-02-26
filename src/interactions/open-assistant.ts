@@ -39,7 +39,7 @@ import {
 
 export default {
   data: {
-    customId: "open-assistant",
+    customId: "oa",
     description: "Open assistant buttons.",
   },
   async execute(
@@ -191,7 +191,7 @@ export default {
         const firstActionRow =
           new ActionRowBuilder<TextInputBuilder>().addComponents(promptInput);
         const modal = new ModalBuilder()
-          .setCustomId(`open-assistant_modal-review_${taskId}`)
+          .setCustomId(`oa_modal-review_${taskId}`)
           .setTitle(
             translation[formatTaskType(task.type)].instruction
               ? translation[formatTaskType(task.type)].instruction

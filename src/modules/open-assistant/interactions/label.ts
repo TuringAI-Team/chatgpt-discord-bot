@@ -78,9 +78,7 @@ export async function labelInteraction(
         solutions.labels[x.name] = parseFloat(x.value);
       }
     });
-    var messageId =
-      task.conversation.messages[task.conversation.messages.length - 1]
-        .frontend_message_id;
+    var messageId = task.message_id;
     await submitTask(
       taskId,
       user,
@@ -175,17 +173,15 @@ export async function labelInteraction(
       );
     row.addComponents(
       new ButtonBuilder()
-        .setCustomId(
-          `open-assistant_label_${taskId}_${interaction.user.id}_submit`
-        )
+        .setCustomId(`oa_label_${taskId}_${interaction.user.id}_submit`)
         .setLabel(`Submit`)
         .setStyle(ButtonStyle.Success),
       new ButtonBuilder()
-        .setCustomId(`open-assistant_label_${taskId}_${interaction.user.id}`)
+        .setCustomId(`oa_label_${taskId}_${interaction.user.id}`)
         .setLabel(`Modify one`)
         .setStyle(ButtonStyle.Secondary),
       new ButtonBuilder()
-        .setCustomId(`open-assistant_skip_${task.id}_${interaction.user.id}`)
+        .setCustomId(`oa_skip_${task.id}_${interaction.user.id}`)
         .setLabel(`${translation.skip} task`)
         .setStyle(ButtonStyle.Danger)
     );
@@ -230,7 +226,7 @@ export async function labelInteraction(
       row.addComponents(
         new ButtonBuilder()
           .setCustomId(
-            `open-assistant_label_${task.id}_${
+            `oa_label_${task.id}_${
               interaction.user.id
             }_flags_${flag.name.replaceAll("_", "-")}_${nextValue}`
           )
@@ -244,15 +240,11 @@ export async function labelInteraction(
     }
     row2.addComponents(
       new ButtonBuilder()
-        .setCustomId(
-          `open-assistant_label_${task.id}_${interaction.user.id}_flags_submit`
-        )
+        .setCustomId(`oa_label_${task.id}_${interaction.user.id}_flags_submit`)
         .setLabel(`Submit flags`)
         .setStyle(ButtonStyle.Success),
       new ButtonBuilder()
-        .setCustomId(
-          `open-assistant_label_${task.id}_${interaction.user.id}_flags_skip`
-        )
+        .setCustomId(`oa_label_${task.id}_${interaction.user.id}_flags_skip`)
         .setLabel(`${translation.skip} label`)
         .setStyle(ButtonStyle.Danger)
     );
@@ -278,17 +270,19 @@ export async function labelInteraction(
       row2.addComponents(
         new ButtonBuilder()
           .setCustomId(
-            `open-assistant_label_${taskId}_${
-              interaction.user.id
-            }_${lbl.name.replaceAll("_", "-")}_yes`
+            `oa_label_${taskId}_${interaction.user.id}_${lbl.name.replaceAll(
+              "_",
+              "-"
+            )}_yes`
           )
           .setLabel(`✔`)
           .setStyle(ButtonStyle.Secondary),
         new ButtonBuilder()
           .setCustomId(
-            `open-assistant_label_${taskId}_${
-              interaction.user.id
-            }_${lbl.name.replaceAll("_", "-")}_no`
+            `oa_label_${taskId}_${interaction.user.id}_${lbl.name.replaceAll(
+              "_",
+              "-"
+            )}_no`
           )
           .setLabel(`❌`)
           .setStyle(ButtonStyle.Secondary)
@@ -306,41 +300,46 @@ export async function labelInteraction(
       row.addComponents(
         new ButtonBuilder()
           .setCustomId(
-            `open-assistant_label_${taskId}_${
-              interaction.user.id
-            }_${lbl.name.replaceAll("_", "-")}_1`
+            `oa_label_${taskId}_${interaction.user.id}_${lbl.name.replaceAll(
+              "_",
+              "-"
+            )}_1`
           )
           .setLabel(`1(${lbl.min})`)
           .setStyle(ButtonStyle.Secondary),
         new ButtonBuilder()
           .setCustomId(
-            `open-assistant_label_${taskId}_${
-              interaction.user.id
-            }_${lbl.name.replaceAll("_", "-")}_2`
+            `oa_label_${taskId}_${interaction.user.id}_${lbl.name.replaceAll(
+              "_",
+              "-"
+            )}_2`
           )
           .setLabel(`2`)
           .setStyle(ButtonStyle.Secondary),
         new ButtonBuilder()
           .setCustomId(
-            `open-assistant_label_${taskId}_${
-              interaction.user.id
-            }_${lbl.name.replaceAll("_", "-")}_3`
+            `oa_label_${taskId}_${interaction.user.id}_${lbl.name.replaceAll(
+              "_",
+              "-"
+            )}_3`
           )
           .setLabel(`3`)
           .setStyle(ButtonStyle.Secondary),
         new ButtonBuilder()
           .setCustomId(
-            `open-assistant_label_${taskId}_${
-              interaction.user.id
-            }_${lbl.name.replaceAll("_", "-")}_4`
+            `oa_label_${taskId}_${interaction.user.id}_${lbl.name.replaceAll(
+              "_",
+              "-"
+            )}_4`
           )
           .setLabel(`4`)
           .setStyle(ButtonStyle.Secondary),
         new ButtonBuilder()
           .setCustomId(
-            `open-assistant_label_${taskId}_${
-              interaction.user.id
-            }_${lbl.name.replaceAll("_", "-")}_5`
+            `oa_label_${taskId}_${interaction.user.id}_${lbl.name.replaceAll(
+              "_",
+              "-"
+            )}_5`
           )
           .setLabel(`5(${lbl.max})`)
           .setStyle(ButtonStyle.Secondary)
@@ -351,9 +350,10 @@ export async function labelInteraction(
       row2.addComponents(
         new ButtonBuilder()
           .setCustomId(
-            `open-assistant_label_${task.id}_${
-              interaction.user.id
-            }_${lbl.name.replaceAll("_", "-")}_skip`
+            `oa_label_${task.id}_${interaction.user.id}_${lbl.name.replaceAll(
+              "_",
+              "-"
+            )}_skip`
           )
           .setLabel(`${translation.skip} label`)
           .setStyle(ButtonStyle.Danger)
@@ -363,12 +363,12 @@ export async function labelInteraction(
 
   row2.addComponents(
     new ButtonBuilder()
-      .setCustomId(`open-assistant_skip_${task.id}_${interaction.user.id}`)
+      .setCustomId(`oa_skip_${task.id}_${interaction.user.id}`)
       .setLabel(`${translation.skip} task`)
       .setStyle(ButtonStyle.Danger),
     new ButtonBuilder()
       .setLabel("Change language")
-      .setCustomId(`open-assistant_lang-btn_n_${interaction.user.id}`)
+      .setCustomId(`oa_lang-btn_n_${interaction.user.id}`)
       .setStyle(ButtonStyle.Secondary)
       .setDisabled(false)
   );

@@ -6,11 +6,11 @@ import { isPremium } from "../modules/premium.js";
 
 const interactionType = {
   type: "interaction",
-  load: async (interaction) => {
+  load: async (interaction, ephemeral = false) => {
     if (interaction) {
       try {
         await interaction.deferReply({
-          ephemeral: true,
+          ephemeral: ephemeral,
         });
       } catch (err) {}
     }

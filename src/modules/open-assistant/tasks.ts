@@ -7,6 +7,7 @@ var oa: OpenAssistant = new OpenAssistant(
 );
 import { getLocaleDisplayName, getTranlation } from "./langs.js";
 import { taskInteraction } from "./interactions.js";
+import message from "src/events/message.js";
 
 export async function saveTask(task, lang, user, answer) {
   var taskData = {
@@ -42,10 +43,9 @@ export async function submitTask(
   client,
   messageId?
 ) {
-  var res = await oa.acceptTask(taskId, user);
+  var res = await oa.acceptTask(taskId, user, messageId);
   if (!messageId) messageId = res;
   var solveTask = await oa.solveTask(task, user, lang, solution, messageId);
-  console.log(solveTask);
   await saveTask(task, lang, user, { messageId: messageId, ...solution });
   var index = client.tasks.findIndex((x) => x.id == taskId);
   if (index > -1) {

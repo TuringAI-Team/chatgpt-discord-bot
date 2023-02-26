@@ -47,12 +47,12 @@ export async function infoInteraction(translation, interaction, lang) {
   const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setLabel(translation.grab_a_task)
-      .setCustomId(`open-assistant_tasks_n_${interaction.user.id}`)
+      .setCustomId(`oa_tasks_n_${interaction.user.id}`)
       .setStyle(ButtonStyle.Primary)
       .setDisabled(false),
     new ButtonBuilder()
       .setLabel("Change language")
-      .setCustomId(`open-assistant_lang-btn_n_${interaction.user.id}`)
+      .setCustomId(`oa_lang-btn_n_${interaction.user.id}`)
       .setStyle(ButtonStyle.Secondary)
       .setDisabled(false)
   );
