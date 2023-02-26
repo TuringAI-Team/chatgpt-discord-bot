@@ -95,7 +95,9 @@ var data = new SlashCommandBuilder()
 
     try {
       var generation;
-      generation = await generateImg(prompt, steps, nsfw);
+      var number = 2;
+      if (ispremium) number = 4;
+      generation = await generateImg(prompt, steps, nsfw, number);
 
       if (generation.message) {
         if (

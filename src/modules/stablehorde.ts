@@ -28,7 +28,8 @@ export async function getModels() {
 export async function generateImg(
   prompt: string,
   steps: number,
-  nsfw: boolean
+  nsfw: boolean,
+  n
 ) {
   var passFilter = await filter(prompt, "Open Journey Beta");
   if (!passFilter) {
@@ -47,7 +48,7 @@ export async function generateImg(
     shared: true,
     models: ["Midjourney Diffusion"],
     params: {
-      n: 2,
+      n: n,
       steps: steps,
     },
   });
