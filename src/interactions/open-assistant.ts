@@ -27,6 +27,7 @@ import {
   langInteraction,
   taskInteraction,
   initInteraction,
+  infoInteraction,
   labelInteraction,
 } from "../modules/open-assistant/interactions.js";
 import {
@@ -71,33 +72,7 @@ export default {
         await langInteraction(interaction);
       } else {
         var translation = await getTranlation(lang);
-        var embed = new EmbedBuilder()
-          .setColor("#3a82f7")
-          .setTimestamp()
-          .setTitle("Open assistant Info")
-          .setDescription(
-            `Open Assistant is a project organized by LAION and is aimed to be the next ChatGPT but open source making it public of everyone. Now is creating the dataset that you can help to create with this bot. \n\n
-          **How it works?**\nClick the button "Grab a task" the first time you click it would ask you to know the language you want to use after that it would show a task you can solve in order to contribute to the dataset. If you don't know what you have to do in that task it would be explained in a short way in the top and you can click the button "what i have to do" to get more information, once you have completed the task you submit it.`
-          )
-          .setURL("https://open-assistant.io/?ref=turing")
-          .setFooter({ text: `${getLocaleDisplayName(lang)}` })
-          .setThumbnail("https://open-assistant.io/images/logos/logo.png");
-        const row = new ActionRowBuilder().addComponents(
-          new ButtonBuilder()
-            .setLabel(translation.grab_a_task)
-            .setCustomId(`open-assistant_tasks_n_${interaction.user.id}`)
-            .setStyle(ButtonStyle.Primary)
-            .setDisabled(false),
-          new ButtonBuilder()
-            .setLabel("Change language")
-            .setCustomId(`open-assistant_lang-btn_n_${interaction.user.id}`)
-            .setStyle(ButtonStyle.Secondary)
-            .setDisabled(false)
-        );
-        await interaction.editReply({
-          embeds: [embed],
-          components: [row],
-        });
+        await infoInteraction(translation, interaction, lang);
       }
     }
     if (action == "tasks") {
