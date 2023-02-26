@@ -29,7 +29,8 @@ export async function generateImg(
   prompt: string,
   steps: number,
   nsfw: boolean,
-  n
+  n,
+  model
 ) {
   var passFilter = await filter(prompt, "Open Journey Beta");
   if (!passFilter) {
@@ -41,12 +42,12 @@ export async function generateImg(
   }
 
   const generation = await stable_horde.postAsyncGenerate({
-    prompt: `${prompt}, mdjrny-v4 style`,
+    prompt: `${prompt}`,
     nsfw: nsfw,
     censor_nsfw: nsfw == true ? false : true,
     r2: false,
     shared: true,
-    models: ["Midjourney Diffusion"],
+    models: [model],
     params: {
       n: n,
       steps: steps,

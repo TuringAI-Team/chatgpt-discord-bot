@@ -19,7 +19,7 @@ import { isPremium } from "../modules/premium.js";
 import { createCanvas, loadImage, Image } from "canvas";
 import sharp from "sharp";
 import { generateRateRow, generateUpscaleRow } from "../modules/stablehorde.js";
-var maintenance = true;
+var maintenance = false;
 
 var data = new SlashCommandBuilder()
   .setName("imagine")
@@ -29,16 +29,24 @@ var data = new SlashCommandBuilder()
       .setName("prompt")
       .setDescription("The prompt for generating an image")
       .setRequired(true)
-  );
-/* .addStringOption((option) =>
+  )
+  .addStringOption((option) =>
     option
       .setName("style")
       .setDescription("The style of the image")
       .setRequired(true)
-      .addChoices
-      // waifu, hentai, robots, microworlds, synthwave, paintart, funko,
-      ()
-  )*/ export default {
+      .addChoices(
+        // anime, realistic, paintart,
+        { name: "Anime", value: "anime" },
+        { name: "Realistic", value: "realistic" },
+        { name: "Paintart", value: "paintart" },
+        { name: "Pixel Art", value: "pixelart" },
+        { name: "Logo", value: "logo" },
+        { name: "GTA 5 Art", value: "gta5" },
+        { name: "Other", value: "other" }
+      )
+  );
+export default {
   cooldown: "4m",
   data,
   async execute(interaction, client) {
@@ -97,7 +105,34 @@ var data = new SlashCommandBuilder()
       var generation;
       var number = 2;
       if (ispremium) number = 4;
-      generation = await generateImg(prompt, steps, nsfw, number);
+      var model;
+      var style = interaction.options.getString("style");
+      if (style == "anime") {
+        model = "Anything Diffusion";
+        prompt = `${prompt}, ((anime)), ((anime style))`;
+      } else if (style == "realistic") {
+        model = "Dreamlike Diffusion";
+        prompt = `${prompt}, ((realistic)), ((RTX)), highres, ((photorealistic)), dreamlikeart`;
+      } else if (style == "paintart") {
+        model = "Midjourney PaintArt";
+        prompt = `${prompt}, mdjrny-pntrt`;
+      } else if (style == "logo") {
+        model = "App Icon Diffusion";
+        prompt = `${prompt}, ((logo)), ((app icon)), ((app icon style)), IconsMi`;
+      } else if (style == "comic") {
+        model = "Comic-Diffusion";
+        prompt = `${prompt}, ((comic)), ((comic style))`;
+      } else if (style == "gta5") {
+        model = "GTA5 Artwork Diffusion";
+        prompt = `${prompt}, gtav style`;
+      } else if (style == "pixelart") {
+        model = "AIO Pixel Art";
+        prompt = `${prompt}`;
+      } else {
+        model = "Midjourney Diffusion";
+        prompt = `${prompt}, mdjrny-v4 style`;
+      }
+      generation = await generateImg(prompt, steps, nsfw, number, model);
 
       if (generation.message) {
         if (
