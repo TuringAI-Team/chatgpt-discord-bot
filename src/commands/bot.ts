@@ -16,6 +16,7 @@ export default {
     .setName("bot")
     .setDescription("Get the info of the bot"),
   async execute(interaction, client, commands, commandType) {
+    var latency = Date.now() - interaction.createdTimestamp;
     const timeString = time(client.user.createdAt, "R");
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
@@ -45,9 +46,9 @@ export default {
       .addFields([
         {
           name: "Ping",
-          value: `🏓Latency is ${
-            Date.now() - interaction.createdTimestamp
-          }ms. API Latency is ${Math.round(client.ws.ping)}ms.`,
+          value: `🏓Latency is ${latency}ms. API Latency is ${Math.round(
+            client.ws.ping
+          )}ms.`,
           inline: true,
         },
         {
