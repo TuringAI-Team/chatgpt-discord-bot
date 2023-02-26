@@ -42,6 +42,7 @@ export async function submitTask(
   client
 ) {
   var messageId = await oa.acceptTask(taskId, user);
+  console.log(messageId, taskId);
   var solveTask = await oa.solveTask(task, user, lang, solution, messageId);
   console.log(solveTask);
   await saveTask(task, lang, user, { messageId: messageId, ...solution });
