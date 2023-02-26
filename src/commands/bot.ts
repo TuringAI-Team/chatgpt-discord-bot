@@ -73,7 +73,7 @@ export default {
         },
         {
           name: "Shard",
-          value: `${shard}`,
+          value: `${shard}/${client.shard.count}`,
           inline: true,
         },
         {
@@ -82,6 +82,10 @@ export default {
             2
           )} MB`,
           inline: true,
+        },
+        {
+          name: "CPU Usage",
+          value: `${(process.cpuUsage().user / 1024 / 1024).toFixed(2)} MB`,
         },
         {
           name: "Version",
@@ -111,6 +115,7 @@ export default {
     await commandType.reply(interaction, {
       embeds: [embed],
       components: [row],
+      ephemeral: true,
     });
     return;
   },
