@@ -106,7 +106,7 @@ var data = new SlashCommandBuilder()
           channel.send(
             `**Wrong prompt from __${interaction.user.tag}__** (${
               interaction.user.id
-            })\n**Prompt:** ${prompt}\n**Model:** Open Journey Beta\n**NSFW:** ${nsfw}\n**ChatGPT filter:** ${
+            })\n**Prompt:** ${prompt}\n**Model:** Midjourney Diffusion\n**NSFW:** ${nsfw}\n**ChatGPT filter:** ${
               generation.filter ? "yes" : "no"
             }`
           );
