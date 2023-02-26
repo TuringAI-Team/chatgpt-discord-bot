@@ -40,12 +40,12 @@ export async function generateImg(
   }
 
   const generation = await stable_horde.postAsyncGenerate({
-    prompt: prompt,
+    prompt: `${prompt}, mdjrny-v4 style`,
     nsfw: nsfw,
     censor_nsfw: nsfw == true ? false : true,
     r2: false,
     shared: true,
-    models: ["Open Journey Beta"],
+    models: ["Midjourney Diffusion"],
     params: {
       n: 2,
       steps: steps,
