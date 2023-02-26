@@ -243,6 +243,7 @@ async function responseWithText(
   type,
   commandType
 ) {
+prompt=  prompt.replaceAll('@everyone', 'everyone').replaceAll('@here', 'here').replaceAll('<@', '@');
   var completeResponse = `**${interaction.user.tag}:** ${prompt}\n**AI(${type}):** ${result}`;
   var charsCount = completeResponse.split("").length;
   const row = new ActionRowBuilder().addComponents(

@@ -30,11 +30,11 @@ export default {
         .setRequired(true)
     ),
   async execute(interaction, client, commands, commandType, options) {
-    /*  await interaction.reply({
+    await interaction.reply({
       content: `Under development`,
       ephemeral: true,
     });
-    return;*/
+    return;
     var ispremium = await isPremium(interaction.user.id, guildId);
     if (!ispremium) {
       await commandType.reply(interaction, {
@@ -143,6 +143,11 @@ async function responseWithText(
   commandType,
   image?
 ) {
+  prompt = prompt
+    .replaceAll("@everyone", "everyone")
+    .replaceAll("@here", "here")
+    .replaceAll("<@", "@");
+
   var completeResponse = `**${interaction.user.tag}:** ${prompt}\n**AI(${type}):** ${result}`;
   var charsCount = completeResponse.split("").length;
   const row = new ActionRowBuilder().addComponents(
