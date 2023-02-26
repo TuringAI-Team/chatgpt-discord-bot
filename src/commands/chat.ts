@@ -33,26 +33,15 @@ export default {
           { name: "GPT-3", value: "gpt-3" },
           { name: "ChatGPT(gpt-3.5)", value: "chatgpt" },
           { name: "DAN(gpt-3.5)", value: "dan" }
-
-          //      { name: "ChatSonic(premium only)", value: "chatsonic" }
         )
-    ),
-  /*
-    .addStringOption((option) =>
+    )
+    .addAttachmentOption((option) =>
       option
-        .setName("cache")
-        .setDescription(
-          "Select if you want to generate a totally new response or not.(premium only)"
-        )
+        .setName("image")
+        .setDescription("The image option for chat with the bot")
         .setRequired(false)
-        .addChoices(
-          { name: "enabled", value: "true" },
-          {
-            name: "disabled",
-            value: "false",
-          }
-        )
-    )*/ async execute(interaction, client, commands, commandType, options) {
+    ),
+  async execute(interaction, client, commands, commandType, options) {
     await commandType.load(interaction);
     if (maintenance == true && interaction.user.id != "530102778408861706") {
       await commandType.reply(
@@ -63,11 +52,14 @@ export default {
     }
     var message;
     var model;
+    var attachment;
+
     if (!interaction.options) {
       message = options.message;
       model = options.model;
     } else {
       message = interaction.options.getString("message");
+      attachment = interaction.options.getAttachment("image");
       if (
         message.includes("@everyone") ||
         message.includes("<@") ||
@@ -83,7 +75,21 @@ export default {
     var guildId;
     if (interaction.guild) guildId = interaction.guild.id;
     var ispremium = await isPremium(interaction.user.id, guildId);
-
+    if (attachment && !ispremium) {
+      await commandType.reply(interaction, {
+        content:
+          "This feature(image) is premium only, to get premium use the command `/premium buy`",
+        ephemeral: true,
+      });
+      return;
+    }
+    if (attachment && model == "gpt-3") {
+      await commandType.reply(interaction, {
+        content: "This feature(image) is not available for this model",
+        ephemeral: true,
+      });
+      return;
+    }
     if (model == "gpt-3") {
       let { data: results, error } = await supabase
         .from("results")
@@ -101,11 +107,12 @@ export default {
           errr,
           channel,
           "error",
-          commandType
+          commandType,
+          null
         );
         return;
       }
-      if (results[0] && results[0].result.text) {
+      if (results[0] && results[0].result.text && !ispremium) {
         result = { text: results[0].result.text, type: "gpt-3" };
         const { data, error } = await supabase
           .from("results")
@@ -119,7 +126,8 @@ export default {
           ispremium,
           "gpt-3",
           `gpt-3-${interaction.user.id}`,
-          0
+          0,
+          null
         );
       }
     }
@@ -131,7 +139,8 @@ export default {
         ispremium,
         "chatgpt",
         `chatgpt-${interaction.user.id}`,
-        0
+        0,
+        attachment
       );
       // }
     }
@@ -142,7 +151,8 @@ export default {
         ispremium,
         "dan",
         `dan-${interaction.user.id}`,
-        0
+        0,
+        attachment
       );
     }
     if (model == "chatsonic") {
@@ -171,7 +181,8 @@ export default {
           errr,
           channel,
           "error",
-          commandType
+          commandType,
+          attachment
         );
         return;
       }
@@ -193,7 +204,8 @@ export default {
         `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)`,
         channel,
         "error",
-        commandType
+        commandType,
+        null
       );
       return;
     }
@@ -219,7 +231,8 @@ export default {
         response,
         channel,
         result.type,
-        commandType
+        commandType,
+        attachment
       );
     } else {
       await responseWithText(
@@ -228,7 +241,8 @@ export default {
         result.error,
         channel,
         "error",
-        commandType
+        commandType,
+        null
       );
     }
     return;
@@ -241,9 +255,13 @@ async function responseWithText(
   result,
   channel,
   type,
-  commandType
+  commandType,
+  image
 ) {
-prompt=  prompt.replaceAll('@everyone', 'everyone').replaceAll('@here', 'here').replaceAll('<@', '@');
+  prompt = prompt
+    .replaceAll("@everyone", "everyone")
+    .replaceAll("@here", "here")
+    .replaceAll("<@", "@");
   var completeResponse = `**${interaction.user.tag}:** ${prompt}\n**AI(${type}):** ${result}`;
   var charsCount = completeResponse.split("").length;
   const row = new ActionRowBuilder().addComponents(
@@ -256,6 +274,14 @@ prompt=  prompt.replaceAll('@everyone', 'everyone').replaceAll('@here', 'here').
   if (type != "error") {
     rows.push(row);
   }
+  if (image) {
+    var files = [
+      {
+        attachment: image.url,
+        name: "image.png",
+      },
+    ];
+  }
   if (charsCount / 2000 >= 1) {
     var lastMsg;
     var loops = Math.ceil(charsCount / 2000);
@@ -265,6 +291,7 @@ prompt=  prompt.replaceAll('@everyone', 'everyone').replaceAll('@here', 'here').
           lastMsg = await commandType.reply(interaction, {
             content: completeResponse.split("").slice(0, 2000).join(""),
             components: rows,
+            files: files,
           });
         } catch (err) {
           console.log(err);
@@ -286,6 +313,7 @@ prompt=  prompt.replaceAll('@everyone', 'everyone').replaceAll('@here', 'here').
     commandType.reply(interaction, {
       content: completeResponse,
       components: rows,
+      files: files,
     });
   }
 }

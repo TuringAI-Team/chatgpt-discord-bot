@@ -272,7 +272,8 @@ export async function createListeningStream(
         ispremium,
         model,
         `${model}-${interaction.user.id}`,
-        0
+        0,
+        null
       );
       if (!result.error) {
         responseWithVoice(interaction, result.text, commandType, audioPlayer);

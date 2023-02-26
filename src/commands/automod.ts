@@ -56,6 +56,23 @@ export default {
       subcommand
         .setName("config")
         .setDescription("Configure the automod")
+        // feature to config
+        .addStringOption((option) =>
+          option
+            .setName("feature")
+            .setDescription("The feature to configure")
+            .setRequired(true)
+            .addChoices(
+              {
+                name: "Anti toxicity",
+                value: "anti-toxicity",
+              },
+              {
+                name: "Anti invite links",
+                value: "anti-invite-links",
+              }
+            )
+        )
         // exclude channels:
         .addChannelOption((option) =>
           option
