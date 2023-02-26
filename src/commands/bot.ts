@@ -14,13 +14,23 @@ import { fileURLToPath } from "url";
 export default {
   data: new SlashCommandBuilder()
     .setName("bot")
-    .setDescription("Get the info of the bot"),
+    .setDescription("Get the info of the bot")
+    // hide or not hide message
+    .addBooleanOption((option) =>
+      option
+        .setName("hide")
+        .setDescription("Hide the message")
+        .setRequired(false)
+    ),
   async execute(interaction, client, commands, commandType) {
     var latency = Date.now() - interaction.createdTimestamp;
     const timeString = time(client.user.createdAt, "R");
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
-
+    var hide = interaction.options.getBoolean("hide");
+    if (!hide) {
+      hide = true;
+    }
     var shard = client.shard.client.options.shards[0] + 1;
 
     await commandType.load(interaction);
@@ -115,7 +125,7 @@ export default {
     await commandType.reply(interaction, {
       embeds: [embed],
       components: [row],
-      ephemeral: true,
+      ephemeral: hide,
     });
     return;
   },
