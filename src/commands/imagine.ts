@@ -30,7 +30,15 @@ var data = new SlashCommandBuilder()
       .setDescription("The prompt for generating an image")
       .setRequired(true)
   );
-export default {
+/* .addStringOption((option) =>
+    option
+      .setName("style")
+      .setDescription("The style of the image")
+      .setRequired(true)
+      .addChoices
+      // waifu, hentai, robots, microworlds, synthwave, paintart, funko,
+      ()
+  )*/ export default {
   cooldown: "4m",
   data,
   async execute(interaction, client) {
