@@ -104,7 +104,6 @@ export default {
     if (!interaction.channel) nsfw = true;
     var width = generation.result.width;
     var height = generation.result.height;
-    console.log(width, height);
     try {
       var gen;
       var number = 2;
