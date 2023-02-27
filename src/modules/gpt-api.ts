@@ -107,7 +107,7 @@ If you break character, I will let you know by saying "Stay in character!" and y
       bot = new ChatGPTIO(key, {
         name: token.id,
         configsDir: "./chatgpt-io",
-        saveInterval: ms("10m"),
+        saveInterval: ms("30m"),
       }); // Note: options is optional
     }
     var fullMsg = `${message}${
