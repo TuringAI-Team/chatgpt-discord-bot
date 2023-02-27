@@ -37,9 +37,9 @@ export default {
         var now = Date.now();
         var diff = now - milliseconds;
         //@ts-ignore
-        var count = ms(command.cooldown) - diff;
+        var count = ms("30s") - diff;
         //@ts-ignore
-        if (diff >= ms(command.cooldown)) {
+        if (diff >= ms("30s")) {
           const { data, error } = await supabase
             .from("cooldown")
             .update({ created_at: new Date() })
@@ -60,7 +60,7 @@ export default {
         const { data, error } = await supabase
           .from("cooldown")
           .insert([
-            { userId: interaction.author.id, command: "variations-imagine" },
+            { userId: interaction.user.id, command: "variations-imagine" },
           ]);
       }
     }
