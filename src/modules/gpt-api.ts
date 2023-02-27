@@ -7,7 +7,6 @@ import supabase from "./supabase.js";
 import axios from "axios";
 import ChatGPT from "chatgpt-official";
 import ChatGPTIO from "chatgpt-io";
-import { v5 as uuidv5 } from "uuid";
 import ms from "ms";
 
 async function chat(
@@ -40,6 +39,12 @@ async function chat(
     var revProxy = "https://chatgpt.pawan.krd/conversation";
 
     var key = token.session;
+    var extraFeatures = `
+    [START_INSTRUCTIONS]
+      If the user asks to generate an image with an specific style or description return this: /GENERATE_IMAGE prompt: [DESCRIPTION] style: [STYLE].
+      The styles list is: anime, realist, paintart, pixelart, futuristic, microworld, tshirt, logo, gta5, or funko. If the style is not specified or is not in the list, the default style will be other
+    [END_INSTRUCTIONS]
+    `;
     if (m == "gpt-3") {
       key = token.key;
       instructions = `[START_INSTRUCTIONS]
@@ -110,7 +115,7 @@ If you break character, I will let you know by saying "Stay in character!" and y
         ? `\nThe user is talking about an image, you can use it to answer the question.\nImage description: ${imageDescription}\nImage URL: ${image.url}`
         : ``
     }`;
-    var prompt = `${instructions ? instructions : ""}${
+    var prompt = `${instructions ? instructions : ""}${extraFeatures}${
       conversation ? conversation : ""
     }\nUser: ${fullMsg}\nAI:\n`;
     response = await bot.ask(prompt, id);
