@@ -41,8 +41,12 @@ var data = new SlashCommandBuilder()
         { name: "Realistic", value: "realistic" },
         { name: "Paintart", value: "paintart" },
         { name: "Pixel Art", value: "pixelart" },
+        { name: "Futuristic", value: "futuristic" },
+        { name: "Microworld", value: "microworld" },
+        { name: "T-Shirt", value: "tshirt" },
         { name: "Logo", value: "logo" },
         { name: "GTA 5 Art", value: "gta5" },
+        { name: "Funko Pop", value: "funko" },
         { name: "Other", value: "other" }
       )
   );
@@ -111,7 +115,7 @@ export default {
         model = "Anything Diffusion";
         prompt = `${prompt}, ((anime)), ((anime style))`;
       } else if (style == "realistic") {
-        model = "Dreamlike Diffusion";
+        model = "Dreamlike Photoreal";
         prompt = `${prompt}, ((realistic)), ((RTX)), highres, ((photorealistic)), dreamlikeart`;
       } else if (style == "paintart") {
         model = "Midjourney PaintArt";
@@ -127,7 +131,19 @@ export default {
         prompt = `${prompt}, gtav style`;
       } else if (style == "pixelart") {
         model = "AIO Pixel Art";
-        prompt = `${prompt}`;
+        prompt = `${prompt}, ((pixel art)), ((pixelart))`;
+      } else if (style == "futuristic") {
+        model = "Redshift Diffusion";
+        prompt = `${prompt}, ((futuristic)), redshift style`;
+      } else if (style == "tshirt") {
+        model = "T-Shirt Print Designs";
+        prompt = `${prompt}, printdesign`;
+      } else if (style == "funko") {
+        model = "Funko Diffusion";
+        prompt = `${prompt}, funko style`;
+      } else if (style == "microworld") {
+        model = "Microworlds";
+        prompt = `${prompt}, microworld`;
       } else {
         model = "Midjourney Diffusion";
         prompt = `${prompt}, mdjrny-v4 style`;
