@@ -537,7 +537,7 @@ async function sendResults(
   var row = await generateRateRow(id, userId, images[0].id);
   if (imagesArr.length > 1) {
     row = [await generateUpscaleRow(id, images)];
-    row.push(await generateVariationRow(id, images));
+    //row.push(await generateVariationRow(id, images));
   }
   var imgs = images.map((g, i) => {
     const sfbuff = Buffer.from(g.img, "base64");

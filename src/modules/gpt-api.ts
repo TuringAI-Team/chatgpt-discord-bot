@@ -41,7 +41,7 @@ async function chat(
     var key = token.session;
     var extraFeatures = `
     [START_INSTRUCTIONS]
-      If the user asks to generate an image with an specific style or description return this: /GENERATE_IMAGE prompt: [DESCRIPTION] style: [STYLE].
+      If the user asks to generate an image, the user need to explicit say that he wants an image or draw, with an specific style or description return this: /GENERATE_IMAGE prompt: [DESCRIPTION] style: [STYLE].
       The styles list is: anime, realist, paintart, pixelart, futuristic, microworld, tshirt, logo, gta5, or funko. If the style is not specified or is not in the list, the default style will be other
     [END_INSTRUCTIONS]
     `;
