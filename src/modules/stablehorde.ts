@@ -13,7 +13,7 @@ const stable_horde = new StableHorde({
   client_agent: "ChatGPT-Discord-bot:3.0:(discord)Mrlol#0333",
   default_token: process.env.STABLE_HORDE,
 });
-
+import { createCanvas, loadImage, Image } from "canvas";
 import sharp from "sharp";
 import { Configuration, OpenAIApi } from "openai";
 import supabase from "./supabase.js";
@@ -569,7 +569,7 @@ async function mergeBase64(imgs: string[], width, height) {
   if (imgs.length == 2) {
     totalH = totalH / 2;
   }
-  var canvas; // = createCanvas(totalW, totalH);
+  var canvas = createCanvas(totalW, totalH);
   const ctx = canvas.getContext("2d");
   ctx.fillStyle = "white";
   ctx.fillRect(0, 0, canvas.width, canvas.height);

@@ -18,7 +18,7 @@ import {
   ImagineInteraction,
 } from "../modules/stablehorde.js";
 import { isPremium } from "../modules/premium.js";
-//import { createCanvas, loadImage, Image } from "canvas";
+
 import sharp from "sharp";
 import { generateRateRow, generateUpscaleRow } from "../modules/stablehorde.js";
 var maintenance = false;
