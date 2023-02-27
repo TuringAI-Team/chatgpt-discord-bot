@@ -80,7 +80,7 @@ export async function activateKey(key: string, id: string, type: string) {
     };
   } else {
     return {
-      error: "Invalid key",
+      error: "Invalid key/Already claimed",
     };
   }
 }

@@ -115,7 +115,7 @@ If you break character, I will let you know by saying "Stay in character!" and y
         ? `\nThe user is talking about an image, you can use it to answer the question.\nImage description: ${imageDescription}\nImage URL: ${image.url}`
         : ``
     }`;
-    var prompt = `${instructions ? instructions : ""}${extraFeatures}${
+    var prompt = `${instructions ? instructions : ""}${
       conversation ? conversation : ""
     }\nUser: ${fullMsg}\nAI:\n`;
     response = await bot.ask(prompt, id);
