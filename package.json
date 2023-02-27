@@ -19,7 +19,7 @@
     "@gladiaio/sdk": "^0.10.45",
     "@ladjs/country-language": "^1.0.3",
     "@supabase/supabase-js": "^2.1.1",
-    "@zeldafan0225/stable_horde": "^2.3.5",
+    "@zeldafan0225/stable_horde": "^2.4.0",
     "api": "^5.0.7",
     "canvas": "^2.11.0",
     "chalk": "^5.2.0",

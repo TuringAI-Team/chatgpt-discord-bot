@@ -8,6 +8,7 @@ const stable_horde = new StableHorde({
   client_agent: "ChatGPT-Discord-bot:3.0:(discord)Mrlol#0333",
   default_token: process.env.STABLE_HORDE,
 });
+
 import sharp from "sharp";
 import { Configuration, OpenAIApi } from "openai";
 import "dotenv/config";
@@ -51,6 +52,8 @@ export async function generateImg(
     params: {
       n: n,
       steps: steps,
+      // @ts-ignore
+      sampler_name: "k_dpmpp_sde",
     },
   });
   return generation;

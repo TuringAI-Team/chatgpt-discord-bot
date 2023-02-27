@@ -90,8 +90,8 @@ export default {
       return;
     }
 
-    var steps = 50;
-    if (ispremium) steps = 100;
+    var steps = 30;
+    //    if (ispremium) steps = 100;
 
     var prompt = interaction.options.getString("prompt");
 

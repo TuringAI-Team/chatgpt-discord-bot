@@ -399,10 +399,10 @@
   dependencies:
     "@types/node" "*"
 
-"@zeldafan0225/stable_horde@^2.3.5":
-  version "2.3.5"
-  resolved "https://registry.npmjs.org/@zeldafan0225/stable_horde/-/stable_horde-2.3.5.tgz"
-  integrity sha512-1cdZ6d8+LjccF7Gg9e8SdWzyQT2oKvCf08PrsQ+eYzd2PXDP8XswhxLic5JitHXvhR/QCAtda++CYuUZyMbAtw==
+"@zeldafan0225/stable_horde@^2.4.0":
+  version "2.4.0"
+  resolved "https://registry.npmjs.org/@zeldafan0225/stable_horde/-/stable_horde-2.4.0.tgz"
+  integrity sha512-4wA4YoUvgyJMI6oPxo7cfOIsTsU7EYvytlLKAFKtiWxcW41yp1mSPHaoaXAf8pWS4RBT7BK9f2yn34AM6e8d9Q==
   dependencies:
     "@thunder04/supermap" "^3.0.2"
     centra "^2.5.0"
