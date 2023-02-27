@@ -50,38 +50,36 @@ export async function generateImg(
       filter: true,
     };
   }
-
-  const generation = await stable_horde.postAsyncGenerate({
-    prompt: `${prompt}`,
-    nsfw: nsfw,
-    censor_nsfw: nsfw == true ? false : true,
-    r2: false,
-    shared: true,
-    models: [model],
-    params: {
-      n: n,
-      steps: steps,
-      // @ts-ignore
-      sampler_name: "k_dpmpp_sde",
-      width: width,
-      height: height,
-    },
-  });
-  return generation;
+  try {
+    const generation = await stable_horde.postAsyncGenerate({
+      prompt: `${prompt}`,
+      nsfw: nsfw,
+      censor_nsfw: nsfw == true ? false : true,
+      r2: false,
+      shared: true,
+      models: [model],
+      params: {
+        n: n,
+        steps: steps,
+        // @ts-ignore
+        sampler_name: "k_dpmpp_sde",
+        width: width,
+        height: height,
+      },
+    });
+    return generation;
+  } catch (e) {
+    return { message: e };
+  }
 }
 export async function generateImg2img(
   prompt: string,
   model: string,
-  steps: number,
   amount: number,
   nsfw: boolean,
   source_image: string,
-  source_processing: (typeof StableHorde.SourceImageProcessingTypes)[keyof typeof StableHorde.SourceImageProcessingTypes],
-  cfg_scale,
-  sampler,
   width,
-  height,
-  strength
+  height
 ) {
   var passFilter = await filter(prompt, model);
   if (!passFilter) {
@@ -90,27 +88,30 @@ export async function generateImg2img(
         "To prevent generation of unethical images, we cannot allow this prompt with NSFW models/tags.",
     };
   }
-
-  const generation = await stable_horde.postAsyncGenerate({
-    prompt: prompt,
-    nsfw: nsfw,
-    censor_nsfw: nsfw == true ? false : true,
-    r2: false,
-    shared: true,
-    models: [model],
-    source_image,
-    source_processing,
-    params: {
-      n: amount,
-      steps: steps,
-      cfg_scale,
-      sampler_name: sampler,
-      width,
-      height,
-      denoising_strength: strength,
-    },
-  });
-  return generation;
+  try {
+    const generation = await stable_horde.postAsyncGenerate({
+      prompt: prompt,
+      nsfw: nsfw,
+      censor_nsfw: nsfw == true ? false : true,
+      r2: false,
+      shared: true,
+      models: [model],
+      source_image,
+      source_processing: StableHorde.SourceImageProcessingTypes.img2img,
+      params: {
+        n: amount,
+        steps: 40,
+        // @ts-ignore
+        sampler_name: "k_dpmpp_sde",
+        width,
+        height,
+        denoising_strength: 0.75,
+      },
+    });
+    return generation;
+  } catch (e) {
+    return { message: e };
+  }
 }
 
 export async function png2webp(pngUrl) {
@@ -354,14 +355,16 @@ export async function ImagineInteraction(interaction, client, style, prompt) {
 
     if (generation.message) {
       if (
-        generation.message.toLowerCase().includes("nsfw") ||
-        generation.message.includes("unethical image")
+        generation.message ==
+          `This prompt appears to violate our terms of service and will be reported. Please contact us if you think this is an error.` ||
+        generation.message.includes("unethical image") ||
+        generation.message.includes("nsfw")
       ) {
         const channel = client.channels.cache.get("1055943633716641853");
         channel.send(
           `**Wrong prompt from __${interaction.user.tag}__** (${
             interaction.user.id
-          })\n**Prompt:** ${prompt}\n**Model:** Midjourney Diffusion\n**NSFW:** ${nsfw}\n**ChatGPT filter:** ${
+          })\n**Prompt:** ${prompt}\n**Model:** ${model}\n**NSFW:** ${nsfw}\n**ChatGPT filter:** ${
             generation.filter ? "yes" : "no"
           }`
         );
@@ -392,7 +395,8 @@ export async function ImagineInteraction(interaction, client, style, prompt) {
                   ...userBans.data[0].prompts,
                   {
                     prompt: prompt,
-                    model: "imagine",
+                    imagine: true,
+                    model: model,
                     nsfw: nsfw,
                     date: new Date(),
                   },
@@ -408,7 +412,8 @@ export async function ImagineInteraction(interaction, client, style, prompt) {
                   ...userBans.data[0].prompts,
                   {
                     prompt: prompt,
-                    model: "imagine",
+                    imagine: true,
+                    model: model,
                     nsfw: nsfw,
                     date: new Date(),
                   },
@@ -442,9 +447,13 @@ export async function ImagineInteraction(interaction, client, style, prompt) {
         const { data, error } = await supabase.from("results").insert([
           {
             id: generation.id,
-            prompt: prompt,
-            provider: "imagine",
-            result: status.generations,
+            prompt: fullPrompt,
+            provider: `imagine-${model}`,
+            result: {
+              ...status.generations,
+              width: width,
+              height: height,
+            },
             uses: 1,
           },
         ]);
@@ -493,14 +502,15 @@ export async function ImagineInteraction(interaction, client, style, prompt) {
   }, 15000);
 }
 
-async function sendResults(
+export async function sendResults(
   images,
   interaction,
   prompt,
   id: string,
   userId,
   negPrompt,
-  style
+  style,
+  variations: boolean = true
 ) {
   var imagesArr = images.map(async (g, i) => {
     const sfbuff = Buffer.from(g.img, "base64");
@@ -537,7 +547,9 @@ async function sendResults(
   var row = await generateRateRow(id, userId, images[0].id);
   if (imagesArr.length > 1) {
     row = [await generateUpscaleRow(id, images)];
-    //row.push(await generateVariationRow(id, images));
+    if (variations) {
+      row.push(await generateVariationRow(id, images));
+    }
   }
   var imgs = images.map((g, i) => {
     const sfbuff = Buffer.from(g.img, "base64");
@@ -558,7 +570,7 @@ async function sendResults(
   });
 }
 
-async function mergeBase64(imgs: string[], width, height) {
+export async function mergeBase64(imgs: string[], width, height) {
   var totalW = width * 2;
   var totalH = height * 2;
 
