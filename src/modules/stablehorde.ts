@@ -105,7 +105,7 @@ export async function generateImg2img(
         sampler_name: "k_dpmpp_sde",
         width,
         height,
-        denoising_strength: 0.75,
+        denoising_strength: 0.8,
       },
     });
     return generation;

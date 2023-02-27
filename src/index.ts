@@ -1,5 +1,6 @@
 import { ShardingManager } from "discord.js";
 import "dotenv/config";
+//import "./whatsapp.js";
 
 const manager = new ShardingManager("./dist/bot.js", {
   token: process.env.TOKEN,

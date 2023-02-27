@@ -277,8 +277,10 @@ async function responseWithText(
     p = p.split("style:")[0];
     // remove style from prompt
     console.log(style, p);
-    await ImagineInteraction(interaction, client, style, p);
-    return;
+    if (client) {
+      await ImagineInteraction(interaction, client, style, p);
+      return;
+    }
   } else {
     var completeResponse = `**${interaction.user.tag}:** ${prompt}\n**AI(${type}):** ${result}`;
     var charsCount = completeResponse.split("").length;
