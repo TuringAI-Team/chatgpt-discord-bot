@@ -6,6 +6,9 @@ import commandHandler from "./handlers/commands.js";
 
 const client: any = new Client({
   authStrategy: new LocalAuth(),
+  puppeteer: {
+    args: ["--no-sandbox"],
+  },
 });
 client.webhook = new WebhookClient({
   url: process.env.DISCORD_WEBHOOK_URL,
