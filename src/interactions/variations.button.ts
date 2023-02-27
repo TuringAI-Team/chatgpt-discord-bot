@@ -77,7 +77,7 @@ export default {
     }
     var generation = data[0];
     var result = generation.result;
-    var image = result.find((x) => x.id == imageId);
+    var image = result.generations.find((x) => x.id == imageId);
     if (!image) {
       await interaction.editReply({
         content: `Image not found`,
@@ -216,7 +216,7 @@ export default {
               prompt: generation.prompt,
               provider: generation.provider,
               result: {
-                ...status.generations,
+                generations: status.generations,
                 nsfw: nsfw,
                 width: generation.result.width,
                 height: generation.result.height,

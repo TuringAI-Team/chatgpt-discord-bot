@@ -450,7 +450,7 @@ export async function ImagineInteraction(interaction, client, style, prompt) {
             prompt: fullPrompt,
             provider: `imagine-${model}`,
             result: {
-              ...status.generations,
+              generations: status.generations,
               width: width,
               height: height,
             },
