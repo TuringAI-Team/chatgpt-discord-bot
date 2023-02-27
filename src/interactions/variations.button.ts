@@ -76,7 +76,6 @@ export default {
       return;
     }
     var generation = data[0];
-    console.log(generation);
     var result = generation.result;
     var image = result.generations.find((x) => x.id == imageId);
     if (!image) {
@@ -103,27 +102,31 @@ export default {
 
     if (interaction.channel && interaction.channel.nsfw) nsfw = true;
     if (!interaction.channel) nsfw = true;
+    var width = generation.result.width;
+    var height = generation.result.height;
+    console.log(width, height);
     try {
-      var generation;
+      var gen;
       var number = 2;
+
       if (ispremium) number = 4;
 
-      generation = await generateImg2img(
+      gen = await generateImg2img(
         generation.prompt,
         generation.provider.split("imagine-")[1],
         number,
         nsfw,
         image.img,
-        generation.result.width,
-        generation.result.height
+        width,
+        height
       );
 
-      if (generation.message) {
+      if (gen.message) {
         if (
-          generation.message ==
+          gen.message ==
             `This prompt appears to violate our terms of service and will be reported. Please contact us if you think this is an error.` ||
-          generation.message.includes("unethical image") ||
-          generation.message.includes("nsfw")
+          gen.message.includes("unethical image") ||
+          gen.message.includes("nsfw")
         ) {
           const channel = client.channels.cache.get("1055943633716641853");
           channel.send(
@@ -132,7 +135,7 @@ export default {
             })\n**Prompt:** ${prompt}\n**Model:** ${
               generation.provider.split("imagine-")[1]
             }\n**NSFW:** ${nsfw}\n**ChatGPT filter:** ${
-              generation.filter ? "yes" : "no"
+              gen.filter ? "yes" : "no"
             }`
           );
           if (!userBans.data[0]) {
@@ -192,7 +195,7 @@ export default {
         }
 
         await interaction.editReply({
-          content: `Something wrong happen:\n${generation.message}`,
+          content: `Something wrong happen:\n${gen.message}`,
           ephemeral: true,
         });
         return;
@@ -208,19 +211,19 @@ export default {
 
     var interval = setInterval(async () => {
       try {
-        var status = await checkGeneration(generation);
+        var status = await checkGeneration(gen);
         if (status.done) {
           clearInterval(interval);
           const { data, error } = await supabase.from("results").insert([
             {
-              id: generation.id,
+              id: gen.id,
               prompt: generation.prompt,
               provider: generation.provider,
               result: {
                 generations: status.generations,
                 nsfw: nsfw,
-                width: generation.result.width,
-                height: generation.result.height,
+                width: width,
+                height: height,
               },
               uses: 1,
             },
@@ -230,7 +233,7 @@ export default {
             status.generations,
             interaction,
             generation.prompt.split("###")[0],
-            generation.id,
+            gen.id,
             interaction.user.id,
             generation.prompt.split("###")[1],
             generation.provider.split("imagine-")[1],
