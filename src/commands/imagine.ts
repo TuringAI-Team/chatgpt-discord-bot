@@ -90,15 +90,13 @@ export default {
       return;
     }
 
-    var steps = 30;
+    var steps = 40;
     //    if (ispremium) steps = 100;
 
     var prompt = interaction.options.getString("prompt");
 
-    prompt = `${prompt}, ${tags.join(", ")}`;
     var defaultNegPrompt = `lowres, bad anatomy, ((bad hands)), (error), ((missing fingers)), extra digit, fewer digits, awkward fingers, cropped, jpeg artifacts, worst quality, low quality, signature, blurry, extra ears, (deformed, disfigured, mutation, extra limbs:1.5),`;
     var nsfw = false;
-    var FullnegPrompt = defaultNegPrompt;
 
     if (interaction.channel && interaction.channel.nsfw) nsfw = true;
     if (!interaction.channel) nsfw = true;
@@ -148,6 +146,7 @@ export default {
         model = "Midjourney Diffusion";
         prompt = `${prompt}, mdjrny-v4 style`;
       }
+      prompt = `${prompt} ### ${defaultNegPrompt}`;
       generation = await generateImg(prompt, steps, nsfw, number, model);
 
       if (generation.message) {

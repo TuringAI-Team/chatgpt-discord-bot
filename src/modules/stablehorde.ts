@@ -33,7 +33,7 @@ export async function generateImg(
   n,
   model
 ) {
-  var passFilter = await filter(prompt, "Open Journey Beta");
+  var passFilter = await filter(prompt, model);
   if (!passFilter) {
     return {
       message:
