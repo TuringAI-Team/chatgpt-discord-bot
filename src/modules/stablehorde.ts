@@ -525,8 +525,9 @@ export async function sendResults(
     .setImage(`attachment://output.png`)
     .setFooter({
       text: `Thanks to https://stablehorde.net/`,
-    })
-    .setFields(
+    });
+  if (variations) {
+    embed.setFields(
       {
         name: "Prompt",
         value: prompt,
@@ -543,6 +544,9 @@ export async function sendResults(
         inline: false,
       }
     );
+  } else {
+    embed.setTitle("Variations");
+  }
 
   var row = await generateRateRow(id, userId, images[0].id);
   if (imagesArr.length > 1) {

@@ -76,6 +76,7 @@ export default {
       return;
     }
     var generation = data[0];
+    console.log(generation);
     var result = generation.result;
     var image = result.generations.find((x) => x.id == imageId);
     if (!image) {
