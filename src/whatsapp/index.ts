@@ -4,10 +4,15 @@ import { WebhookClient, AttachmentBuilder } from "discord.js";
 import eventHandler from "./handlers/events.js";
 import commandHandler from "./handlers/commands.js";
 
+var args = [];
+if (process.env.NODE_ENV != "development") {
+  args.push("--no-sandbox");
+}
+
 const client: any = new Client({
   authStrategy: new LocalAuth(),
   puppeteer: {
-    args: ["--no-sandbox"],
+    args,
   },
 });
 client.webhook = new WebhookClient({

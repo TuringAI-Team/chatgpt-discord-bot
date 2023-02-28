@@ -4,6 +4,11 @@ export default {
   description: "chat with bot",
   cooldown: "2m",
   async execute(message, client) {
+    if (message.hasMedia) {
+      const media = await message.downloadMedia();
+      console.log(media);
+    }
+
     await message.load();
 
     var resoponse = await chat(

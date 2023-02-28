@@ -5,6 +5,7 @@ import chalk from "chalk";
 import { useToken, removeMessage, disableAcc } from "./loadbalancer.js";
 import supabase from "./supabase.js";
 import axios from "axios";
+import { randomUUID } from "crypto";
 import ChatGPT from "chatgpt-official";
 import ChatGPTIO from "chatgpt-io";
 import ms from "ms";
@@ -118,7 +119,7 @@ If you break character, I will let you know by saying "Stay in character!" and y
     var prompt = `${instructions ? instructions : ""}${
       conversation ? conversation : ""
     }\nUser: ${fullMsg}\nAI:\n`;
-    response = await bot.ask(prompt, id);
+    response = await bot.ask(prompt, randomUUID());
     if (response) {
       response = response.replaceAll("<@", "pingSecurity");
       response = response.replaceAll("@everyone", "pingSecurity");
