@@ -122,6 +122,7 @@ If you break character, I will let you know by saying "Stay in character!" and y
         },
         data: {
           model: "gpt-3.5-turbo",
+          maxtokens: maxtokens,
           messages: [
             {
               role: "user",

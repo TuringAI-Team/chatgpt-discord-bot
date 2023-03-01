@@ -2,7 +2,7 @@ import { chat } from "../../modules/gpt-api.js";
 export default {
   name: "chat",
   description: "chat with bot",
-  cooldown: "2m",
+  cooldown: "30s",
   async execute(message, client) {
     if (message.hasMedia) {
       const media = await message.downloadMedia();
