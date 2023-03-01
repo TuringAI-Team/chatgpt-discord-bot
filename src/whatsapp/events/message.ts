@@ -71,13 +71,12 @@ export default {
               .eq("command", `whatsapp-${command.name}`);
             await command.execute(message, client, args);
           } else {
-            await message.reply(
+            var msg = await message.reply(
               `Use this command again *${ms(
                 count
               )}*.\nIf you want to *avoid this cooldown* you can *donate to get premium*. If you want to donate use the command buy a key in our shop and send it here.`
             );
-            await client.sendMessage(
-              message.from,
+            await msg.reply(
               `Our shop: https://turingai.mysellix.io/product/63d6802c1fc36`
             );
           }
