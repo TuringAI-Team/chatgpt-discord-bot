@@ -130,7 +130,7 @@ If you break character, I will let you know by saying "Stay in character!" and y
           ],
         },
       });
-      response = req.data.choices[0].messages[0].content;
+      response = req.data.choices[0].message.content;
     }
 
     if (response) {
