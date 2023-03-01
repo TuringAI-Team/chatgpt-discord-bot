@@ -63,7 +63,6 @@ async function chat(
       \nCurrent date: ${getToday()}
       \nName of the user talking to: ${userName}
       [END_INSTRUCTIONS]\n`;
-      model = "text-davinci-002-render";
     } else if (m == "dan") {
       instructions = `
       [START_INSTRUCTIONS]
@@ -121,9 +120,13 @@ If you break character, I will let you know by saying "Stay in character!" and y
           Authorization: `Bearer ${key}`,
         },
         data: {
-          model: "gpt-3.5-turbo",
+          model: "gpt-3.5-turbo-0301",
           maxtokens: maxtokens,
           messages: [
+            {
+              role: "system",
+              content: instructions,
+            },
             {
               role: "user",
               content: fullMsg,
