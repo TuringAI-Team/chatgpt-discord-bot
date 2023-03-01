@@ -41,23 +41,13 @@ async function useToken(model): Promise<null | {
   var token = t[i];
   if (token) {
     await addMessage(token.id);
-    try {
-      const chatGptAuthTokenService = new ChatGPTAuthTokenService(
-        token.email,
-        token.password
-      );
-      let acc = await chatGptAuthTokenService.getToken();
-      var client = {
-        id: token.id,
-        type: "official",
-        key: token.key,
-        session: acc,
-      };
-      return client;
-    } catch (e) {
-      await disableAcc(token.id, false);
-      return useToken(model);
-    }
+    var client = {
+      id: token.id,
+      type: "official",
+      key: token.key,
+      session: token.access,
+    };
+    return client;
   } else {
     return;
   }

@@ -7,7 +7,7 @@ import supabase from "./supabase.js";
 import axios from "axios";
 import { randomUUID } from "crypto";
 import ChatGPT from "chatgpt-official";
-import { ChatGPTUnofficialProxyAPI } from "chatgpt";
+import ChatGPTIO from "chatgpt-io";
 import ms from "ms";
 
 async function chat(
@@ -105,16 +105,10 @@ If you break character, I will let you know by saying "Stay in character!" and y
         revProxy: revProxy,
       }); // Note: options is optional
     } else {
-      /*
       bot = new ChatGPTIO(key, {
+        saveInterval: ms("10m"),
         name: token.id,
         configsDir: "./chatgpt-io",
-        saveInterval: ms("30m"),
-      }); // Note: options is optional
-      */
-      bot = new ChatGPTUnofficialProxyAPI({
-        accessToken: key,
-        apiReverseProxyUrl: `https://chat.duti.tech/api/conversation`,
       });
     }
     var fullMsg = `${message}${
@@ -125,12 +119,7 @@ If you break character, I will let you know by saying "Stay in character!" and y
     var prompt = `${instructions ? instructions : ""}${
       conversation ? conversation : ""
     }\nUser: ${fullMsg}\nAI:\n`;
-    if (m == "gpt-3") {
-      response = await bot.ask(prompt, randomUUID());
-    } else {
-      response = await bot.sendMessage(prompt);
-      response = response.text;
-    }
+    response = await bot.ask(prompt, randomUUID());
     if (response) {
       response = response.replaceAll("<@", "pingSecurity");
       response = response.replaceAll("@everyone", "pingSecurity");
