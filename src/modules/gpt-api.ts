@@ -20,7 +20,7 @@ async function chat(
   image,
   imageDescp?
 ) {
-  var token = await useToken(m);
+  var token = await useToken("gpt-3");
   if (!token) {
     return {
       error: `We are reaching our capacity limits right now. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`,
@@ -39,7 +39,7 @@ async function chat(
       conversation = await getConversation(id, m);
     var revProxy = "https://chatgpt.pawan.krd/conversation";
 
-    var key = token.session;
+    var key = token.key;
     var extraFeatures; /*= `
     [START_INSTRUCTIONS]
       If the user asks to generate an image, the user need to explicit say that he wants an image or draw, with an specific style or description return this: /GENERATE_IMAGE prompt: [DESCRIPTION] style: [STYLE].
@@ -47,7 +47,6 @@ async function chat(
     [END_INSTRUCTIONS]
     `;*/
     if (m == "gpt-3") {
-      key = token.key;
       instructions = `[START_INSTRUCTIONS]
       You are TuringAI, a language model developed by OpenAI and TuringAI. You are designed to respond to user input in a conversational manner, Answer as concisely as possible. Your training data comes from a diverse range of internet text and You have been trained to generate human-like responses to various questions and prompts. You can provide information on a wide range of topics, but your knowledge is limited to what was present in your training data, which has a cutoff date of 2021. You strive to provide accurate and helpful information to the best of your ability.
       \nKnowledge cutoff: 2021-09
@@ -95,6 +94,11 @@ If you break character, I will let you know by saying "Stay in character!" and y
     var maxtokens = 300;
     if (ispremium) maxtokens = 600;
     var bot;
+    var fullMsg = `${message}${
+      imageDescription
+        ? `\nThe user is talking about an image, you can use it to answer the question.\nImage description: ${imageDescription}\nImage URL: ${image.url}`
+        : ``
+    }`;
     if (m == "gpt-3") {
       bot = new ChatGPT(key, {
         max_tokens: maxtokens, // OpenAI parameter [Max response size by tokens]
@@ -104,22 +108,31 @@ If you break character, I will let you know by saying "Stay in character!" and y
         model: model,
         revProxy: revProxy,
       }); // Note: options is optional
+      var prompt = `${instructions ? instructions : ""}${
+        conversation ? conversation : ""
+      }\nUser: ${fullMsg}\nAI:\n`;
+      response = await bot.ask(prompt, randomUUID());
     } else {
-      bot = new ChatGPTIO(key, {
-        saveInterval: ms("10m"),
-        name: token.id,
-        configsDir: "./chatgpt-io",
+      var req = await axios({
+        url: "https://api.openai.com/v1/chat/completions",
+        method: "post",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${key}`,
+        },
+        data: {
+          model: "gpt-3.5-turbo",
+          messages: [
+            {
+              role: "user",
+              content: fullMsg,
+            },
+          ],
+        },
       });
+      response = req.data.choices[0].messages[0].content;
     }
-    var fullMsg = `${message}${
-      imageDescription
-        ? `\nThe user is talking about an image, you can use it to answer the question.\nImage description: ${imageDescription}\nImage URL: ${image.url}`
-        : ``
-    }`;
-    var prompt = `${instructions ? instructions : ""}${
-      conversation ? conversation : ""
-    }\nUser: ${fullMsg}\nAI:\n`;
-    response = await bot.ask(prompt, randomUUID());
+
     if (response) {
       response = response.replaceAll("<@", "pingSecurity");
       response = response.replaceAll("@everyone", "pingSecurity");
