@@ -5,6 +5,7 @@ var clients = [];
 import { Configuration, OpenAIApi } from "openai";
 // @ts-ignore
 import chatGPT from "chatgpt-io";
+import { ChatGPTAuthTokenService } from "chat-gpt-authenticator";
 
 async function getTokens() {
   let { data: accounts, error } = await supabase.from("accounts").select("*");
@@ -40,13 +41,23 @@ async function useToken(model): Promise<null | {
   var token = t[i];
   if (token) {
     await addMessage(token.id);
-    var client = {
-      id: token.id,
-      type: "official",
-      key: token.key,
-      session: token.access,
-    };
-    return client;
+    try {
+      const chatGptAuthTokenService = new ChatGPTAuthTokenService(
+        token.email,
+        token.password
+      );
+      let acc = await chatGptAuthTokenService.getToken();
+      var client = {
+        id: token.id,
+        type: "official",
+        key: token.key,
+        session: acc,
+      };
+      return client;
+    } catch (e) {
+      await disableAcc(token.id, false);
+      return useToken(model);
+    }
   } else {
     return;
   }
