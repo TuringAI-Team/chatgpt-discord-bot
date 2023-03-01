@@ -105,13 +105,11 @@ If you break character, I will let you know by saying "Stay in character!" and y
         revProxy: revProxy,
       }); // Note: options is optional
     } else {
-      /*
       bot = new ChatGPTIO(key, {
         name: token.id,
         configsDir: "./chatgpt-io",
         saveInterval: ms("30m"),
       }); // Note: options is optional
-    */
     }
     var fullMsg = `${message}${
       imageDescription
@@ -121,30 +119,7 @@ If you break character, I will let you know by saying "Stay in character!" and y
     var prompt = `${instructions ? instructions : ""}${
       conversation ? conversation : ""
     }\nUser: ${fullMsg}\nAI:\n`;
-    if (m == "gpt-3") {
-      response = await bot.ask(prompt, randomUUID());
-    } else if (m == "chatgpt") {
-      try {
-        var req = await fetch(`${process.env.CHATGPT_URL}/chat`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            message: prompt,
-            id: token.id,
-          }),
-        });
-        var res = await req.json();
-        if (res.response) {
-          response = res.response;
-        } else {
-          throw new Error("Error: ChatGPT is down, please try again later.");
-        }
-      } catch (err) {
-        throw new Error("Error: ChatGPT is down, please try again later.");
-      }
-    }
+    response = await bot.ask(prompt, randomUUID());
     if (response) {
       response = response.replaceAll("<@", "pingSecurity");
       response = response.replaceAll("@everyone", "pingSecurity");
