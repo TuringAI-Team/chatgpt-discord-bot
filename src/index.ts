@@ -1,6 +1,5 @@
 import { ShardingManager } from "discord.js";
 import "dotenv/config";
-import "./whatsapp/index.js";
 //import "./telegram/index.js";
 
 const manager = new ShardingManager("./dist/bot.js", {
@@ -9,3 +8,4 @@ const manager = new ShardingManager("./dist/bot.js", {
 
 manager.on("shardCreate", (shard) => console.log(`Launched shard ${shard.id}`));
 manager.spawn();
+import "./whatsapp/index.js";
