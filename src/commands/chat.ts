@@ -76,14 +76,14 @@ export default {
     var guildId;
     if (interaction.guild) guildId = interaction.guild.id;
     var ispremium = await isPremium(interaction.user.id, guildId);
-    if (attachment && !ispremium) {
+    /*if (attachment && !ispremium) {
       await commandType.reply(interaction, {
         content:
           "This feature(image) is premium only, to get premium use the command `/premium buy`",
         ephemeral: true,
       });
       return;
-    }
+    }*/
     if (attachment && model == "gpt-3") {
       await commandType.reply(interaction, {
         content: "This feature(image) is not available for this model",

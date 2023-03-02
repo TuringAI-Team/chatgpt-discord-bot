@@ -103,6 +103,12 @@ export default {
         .setURL("https://dsc.gg/turing")
         .setStyle(ButtonStyle.Link),
       new ButtonBuilder()
+        .setLabel("Whatsapp Bot")
+        .setURL("https://bit.ly/chatgpt-whatsapp")
+        .setEmoji("1079831241601323078")
+        .setStyle(ButtonStyle.Link),
+
+      new ButtonBuilder()
         .setLabel("Github Repo")
         .setURL("https://github.com/MrlolDev/chatgpt-discord-bot")
         .setStyle(ButtonStyle.Link)
