@@ -129,9 +129,7 @@ If you break character, I will let you know by saying "Stay in character!" and y
         role: "user",
         content: fullMsg,
       });
-      if (m == "dan") {
-        console.log(messages);
-      }
+
       const openai = new OpenAIApi(configuration);
       const completion = await openai.createChatCompletion({
         model: "gpt-3.5-turbo",
