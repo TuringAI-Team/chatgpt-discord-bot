@@ -148,7 +148,6 @@ If you break character, I will let you know by saying "Stay in character!" and y
       });
 
       response = completion.data.choices[0].message.content;
-      console.log(response);
     }
 
     if (response) {
