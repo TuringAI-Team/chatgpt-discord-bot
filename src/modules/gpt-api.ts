@@ -8,6 +8,7 @@ import axios from "axios";
 import { randomUUID } from "crypto";
 import ChatGPT from "chatgpt-official";
 import ChatGPTIO from "chatgpt-io";
+import { Configuration, OpenAIApi } from "openai";
 import ms from "ms";
 
 async function chat(
@@ -57,12 +58,12 @@ async function chat(
       stop = " Human:";
       revProxy = null;
     } else if (m == "chatgpt") {
-      instructions = `[START_INSTRUCTIONS]
+      /*      instructions = `[START_INSTRUCTIONS]
       You are ChatGPT, a language model developed by OpenAI and TuringAI. You are designed to respond to user input in a conversational manner, Answer as concisely as possible. Your training data comes from a diverse range of internet text and You have been trained to generate human-like responses to various questions and prompts. You can provide information on a wide range of topics, but your knowledge is limited to what was present in your training data, which has a cutoff date of 2021. You strive to provide accurate and helpful information to the best of your ability.
       \nKnowledge cutoff: 2021-09
       \nCurrent date: ${getToday()}
       \nName of the user talking to: ${userName}
-      [END_INSTRUCTIONS]\n`;
+      [END_INSTRUCTIONS]\n`; */
     } else if (m == "dan") {
       instructions = `
       [START_INSTRUCTIONS]
@@ -112,29 +113,42 @@ If you break character, I will let you know by saying "Stay in character!" and y
       }\nUser: ${fullMsg}\nAI:\n`;
       response = await bot.ask(prompt, randomUUID());
     } else {
-      var req = await axios({
-        url: "https://api.openai.com/v1/chat/completions",
-        method: "post",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${key}`,
-        },
-        data: {
-          model: "gpt-3.5-turbo",
-          maxtokens: maxtokens,
-          messages: [
-            {
-              role: "system",
-              content: instructions,
-            },
-            {
-              role: "user",
-              content: fullMsg,
-            },
-          ],
-        },
+      const configuration = new Configuration({
+        apiKey: key,
       });
-      response = req.data.choices[0].message.content;
+      var messages = [];
+      if (instructions) {
+        messages.push({
+          role: "system",
+          content: instructions,
+        });
+      }
+      if (conversation) {
+        conversation.split("<split>").forEach((msg) => {
+          // role: content
+          var role = msg.split(":")[0];
+          var content = msg.split(":")[1];
+          if (role == "user" || role == "system" || role == "assistant") {
+            messages.push({
+              role: role,
+              content: content,
+            });
+          }
+        });
+      }
+      messages.push({
+        role: "user",
+        content: fullMsg,
+      });
+      const openai = new OpenAIApi(configuration);
+      const completion = await openai.createChatCompletion({
+        model: "gpt-3.5-turbo",
+        max_tokens: maxtokens,
+        messages: messages,
+      });
+
+      response = completion.data.choices[0].message.content;
+      console.log(response);
     }
 
     if (response) {
@@ -196,7 +210,7 @@ If you break character, I will let you know by saying "Stay in character!" and y
   }
 }
 
-async function getConversation(id, model) {
+async function getConversation(id, model): Promise<any> {
   var { data } = await supabase
     .from("conversations")
     .select("*")
@@ -204,7 +218,7 @@ async function getConversation(id, model) {
     .eq("model", model);
   if (data && data[0]) {
     if (!data[0].conversation) return;
-    return data[0].conversation.replaceAll("<split>", "");
+    return data[0].conversation;
   }
   return;
 }
@@ -212,10 +226,10 @@ async function getConversation(id, model) {
 async function saveMsg(model, userMsg, aiMsg, id, ispremium, userName) {
   var conversation;
   if (model == "gpt-3") {
-    conversation = `\n<split>Human: ${userMsg}\nAI: ${aiMsg}`;
+    conversation = `\n<split>User: ${userMsg}\nAI: ${aiMsg}`;
   }
   if (model == "chatgpt") {
-    conversation = `\n<split>User: ${userMsg}\nAI: ${aiMsg}`;
+    conversation = `user: ${userMsg}<split>assistant: ${aiMsg}<split>`;
   }
   var { data } = await supabase
     .from("conversations")
