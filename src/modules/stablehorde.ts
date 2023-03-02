@@ -23,7 +23,7 @@ import { AttachmentBuilder, StringSelectMenuBuilder } from "discord.js";
 import { isPremium } from "./premium.js";
 
 import underagedCebs from "./all_name_regex.js";
-import { useToken } from "./loadbalancer.js";
+import { useToken, removeMessage } from "./loadbalancer.js";
 
 export default stable_horde;
 export async function getModels() {
@@ -169,7 +169,7 @@ async function filter(prompt, model?) {
   if (underagedCebs.some((v) => prompt.toLowerCase().includes(v.toLowerCase())))
     isYoung = true;
   if (!isYoung) {
-    var key = await useToken("chatgpt");
+    var key = await useToken("gpt-3");
     const configuration = new Configuration({
       apiKey: key.key,
     });
@@ -177,6 +177,7 @@ async function filter(prompt, model?) {
     var result = await openai.createModeration({
       input: prompt,
     });
+    await removeMessage(key.id);
     isYoung = result.data.results[0].categories["sexual/minors"];
   }
   if (isYoung && isNsfw) return false;
