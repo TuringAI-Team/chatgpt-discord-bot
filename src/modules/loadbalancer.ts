@@ -65,7 +65,7 @@ async function addMessage(id) {
     const { data, error } = await supabase
       .from("accounts")
       .update({
-        messages: 1,
+        messages: tokenObj.messages + 1,
         totalMessages: tokenObj.totalMessages + 1,
       })
       .eq("id", id);
@@ -126,7 +126,7 @@ async function removeMessage(id) {
   if (tokenObj) {
     const { data, error } = await supabase
       .from("accounts")
-      .update({ messages: 0 })
+      .update({ messages: tokenObj.messages - 1 })
       .eq("id", id);
   }
 }

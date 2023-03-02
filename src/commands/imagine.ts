@@ -70,6 +70,7 @@ export default {
       interaction.channel &&
       interaction.channel.id != "1049275551568896000" &&
       interaction.channel.id != "1047053103414911026" &&
+      interaction.guild.id &&
       interaction.guild.id == "899761438996963349"
     ) {
       interaction.reply({

@@ -148,9 +148,7 @@ If you break character, I will let you know by saying "Stay in character!" and y
 
     if (ispremium || m == "chatgpt" || m == "dan")
       await saveMsg(m, fullMsg, response, id, ispremium, userName);
-    setTimeout(async () => {
-      await removeMessage(token.id);
-    }, 19000);
+    await removeMessage(token.id);
     return { text: response, type: m };
   } catch (err) {
     console.log(`${token.id}: ${err} -- ${m}`);

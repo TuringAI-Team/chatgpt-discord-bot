@@ -104,8 +104,13 @@ export default {
         .setStyle(ButtonStyle.Link),
       new ButtonBuilder()
         .setLabel("Whatsapp Bot")
-        .setURL("https://bit.ly/chatgpt-whatsapp")
+        .setURL("https://bit.ly/cgpt-whatsapp")
         .setEmoji("1079831241601323078")
+        .setStyle(ButtonStyle.Link),
+      new ButtonBuilder()
+        .setLabel("Telegram Bot")
+        .setURL("https://t.me/Turing_AI_bot")
+        .setEmoji("1079831846440943717")
         .setStyle(ButtonStyle.Link),
 
       new ButtonBuilder()

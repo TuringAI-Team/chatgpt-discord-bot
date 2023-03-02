@@ -3,7 +3,6 @@ import chalk from "chalk";
 import { resetto0, checkLimited } from "../modules/loadbalancer.js";
 import ms from "ms";
 import supabase from "../modules/supabase.js";
-import chatGPT from "chatgpt-io";
 
 export default {
   name: Events.ClientReady,
