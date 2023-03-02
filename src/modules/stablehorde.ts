@@ -21,11 +21,9 @@ import "dotenv/config";
 import axios from "axios";
 import { AttachmentBuilder, StringSelectMenuBuilder } from "discord.js";
 import { isPremium } from "./premium.js";
-const configuration = new Configuration({
-  apiKey: process.env.OPENAI_KEY,
-});
-const openai = new OpenAIApi(configuration);
+
 import underagedCebs from "./all_name_regex.js";
+import { useToken } from "./loadbalancer.js";
 
 export default stable_horde;
 export async function getModels() {
@@ -171,6 +169,11 @@ async function filter(prompt, model?) {
   if (underagedCebs.some((v) => prompt.toLowerCase().includes(v.toLowerCase())))
     isYoung = true;
   if (!isYoung) {
+    var key = await useToken("chatgpt");
+    const configuration = new Configuration({
+      apiKey: key.key,
+    });
+    const openai = new OpenAIApi(configuration);
     var result = await openai.createModeration({
       input: prompt,
     });
