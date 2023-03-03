@@ -239,6 +239,9 @@ async function saveMsg(model, userMsg, aiMsg, id, ispremium, userName) {
   if (model == "chatgpt") {
     conversation = `user: ${userMsg}<split>assistant: ${aiMsg}<split>`;
   }
+  if (model == "dan") {
+    conversation = `user: ${userMsg}<split>assistant: ${aiMsg}<split>`;
+  }
   var { data } = await supabase
     .from("conversations")
     .select("*")
@@ -256,7 +259,7 @@ async function saveMsg(model, userMsg, aiMsg, id, ispremium, userName) {
     if (previous) {
       if (model == "chatgpt" || model == "dan") {
         var messages = [];
-        conversation.split("<split>").forEach((msg) => {
+        previous.split("<split>").forEach((msg) => {
           // role: content
           var role = msg.split(":")[0];
           var content = msg.split(":")[1];
