@@ -166,7 +166,10 @@ If you break character, I will let you know by saying "Stay in character!" and y
           "`/premium buy` .",
       };
     }
-    if (err.includes("429")) {
+    if (
+      err.message.includes("429") ||
+      err == "Error: Request failed with status code 429"
+    ) {
       await disableAcc(token.id, true);
       return {
         error:
