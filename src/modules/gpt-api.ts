@@ -236,10 +236,7 @@ async function saveMsg(model, userMsg, aiMsg, id, ispremium, userName) {
   if (model == "gpt-3") {
     conversation = `\n<split>User: ${userMsg}\nAI: ${aiMsg}`;
   }
-  if (model == "chatgpt") {
-    conversation = `user: ${userMsg}<split>assistant: ${aiMsg}<split>`;
-  }
-  if (model == "dan") {
+  if (model == "chatgpt" || model == "dan") {
     conversation = `user: ${userMsg}<split>assistant: ${aiMsg}<split>`;
   }
   var { data } = await supabase
