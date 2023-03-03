@@ -101,13 +101,15 @@ If you break character, I will let you know by saying "Stay in character!" and y
   if (conversation) {
     conversation.split("<split>").forEach((msg) => {
       // role: content
-      var role = msg.split(":")[0];
-      var content = msg.split(":")[1];
-      if (role == "user" || role == "system" || role == "assistant") {
-        messages.push({
-          role: role,
-          content: content,
-        });
+      if (msg) {
+        var role = msg.split(":")[0];
+        var content = msg.split(":")[1];
+        if (role == "user" || role == "system" || role == "assistant") {
+          messages.push({
+            role: role,
+            content: content,
+          });
+        }
       }
     });
   }
