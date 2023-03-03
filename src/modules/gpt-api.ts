@@ -150,7 +150,10 @@ If you break character, I will let you know by saying "Stay in character!" and y
 
     if (ispremium || m == "chatgpt" || m == "dan")
       await saveMsg(m, fullMsg, response, id, ispremium, userName);
-    await removeMessage(token.id);
+    setTimeout(async () => {
+      await removeMessage(token.id);
+    }, 6000);
+
     return { text: response, type: m };
   } catch (err: any) {
     console.log(`${token.id}: ${err} -- ${m}`);
@@ -170,14 +173,14 @@ If you break character, I will let you know by saying "Stay in character!" and y
       err.message.includes("429")
     ) {
       await disableAcc(token.id, false);
-      setTimeout(() => {
-        removeMessage(token.id);
+      setTimeout(async () => {
+        await removeMessage(token.id);
       }, 16000);
     } else {
       console.log(messages);
       await disableAcc(token.id, false);
-      setTimeout(() => {
-        removeMessage(token.id);
+      setTimeout(async () => {
+        await removeMessage(token.id);
       }, 6000);
     }
 
