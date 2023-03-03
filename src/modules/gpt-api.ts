@@ -163,7 +163,9 @@ If you break character, I will let you know by saying "Stay in character!" and y
           "`/premium buy` .",
       };
     }
-    await removeMessage(token.id);
+    setTimeout(() => {
+      removeMessage(token.id);
+    }, 6000);
     await disableAcc(token.id, false);
     if (ispremium && retries < 3) {
       retries += 1;
@@ -192,7 +194,7 @@ If you break character, I will let you know by saying "Stay in character!" and y
       );
     }
     return {
-      error: `Something wrong happened, please retry again [dsc.gg/turing](https://dsc.gg/turing) .`,
+      error: `Something wrong happened, please retry again. If this issue persist please report it in our support server [dsc.gg/turing](https://dsc.gg/turing)`,
     };
   }
 }
