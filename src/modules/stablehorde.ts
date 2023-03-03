@@ -530,6 +530,10 @@ export async function sendResults(
     .setFooter({
       text: `Thanks to https://stablehorde.net/`,
     });
+  // if prompt has more than 1024 characters limit it and add ... to the end
+  if (prompt.split("").length > 1024) {
+    prompt = prompt.split("").slice(0, 1021).join("") + "...";
+  }
   if (variations) {
     embed.setFields(
       {
