@@ -15,7 +15,7 @@ var maintenance = false;
 import { ImagineInteraction } from "../modules/stablehorde.js";
 
 export default {
-  cooldown: "2m",
+  cooldown: "90s",
   data: new SlashCommandBuilder()
     .setName("chat")
     .setDescription("Chat with an AI")
@@ -134,28 +134,17 @@ export default {
       }
     }
 
-    if (model == "chatgpt") {
+    if (model == "chatgpt" || model == "dan") {
       result = await chat(
         message,
         interaction.user.username,
         ispremium,
-        "chatgpt",
-        `chatgpt-${interaction.user.id}`,
+        model,
+        `${model}-${interaction.user.id}`,
         0,
         attachment
       );
       // }
-    }
-    if (model == "dan") {
-      result = await chat(
-        message,
-        interaction.user.username,
-        ispremium,
-        "dan",
-        `dan-${interaction.user.id}`,
-        0,
-        attachment
-      );
     }
     if (model == "chatsonic") {
       if (!ispremium) {

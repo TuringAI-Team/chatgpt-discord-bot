@@ -39,12 +39,6 @@ async function chat(
   var revProxy = "https://chatgpt.pawan.krd/conversation";
 
   var key = token.key;
-  var extraFeatures; /*= `
-  [START_INSTRUCTIONS]
-    If the user asks to generate an image, the user need to explicit say that he wants an image or draw, with an specific style or description return this: /GENERATE_IMAGE prompt: [DESCRIPTION] style: [STYLE].
-    The styles list is: anime, realist, paintart, pixelart, futuristic, microworld, tshirt, logo, gta5, or funko. If the style is not specified or is not in the list, the default style will be other
-  [END_INSTRUCTIONS]
-  `;*/
   if (m == "gpt-3") {
     instructions = `[START_INSTRUCTIONS]
     You are GPT-3, a language model developed by OpenAI and TuringAI. You are designed to respond to user input in a conversational manner, Answer as concisely as possible. Your training data comes from a diverse range of internet text and You have been trained to generate human-like responses to various questions and prompts. You can provide information on a wide range of topics, but your knowledge is limited to what was present in your training data, which has a cutoff date of 2021. You strive to provide accurate and helpful information to the best of your ability.
@@ -84,7 +78,7 @@ If you break character, I will let you know by saying "Stay in character!" and y
   var bot;
   var fullMsg = `${message}${
     imageDescription
-      ? `\nThe user is talking about an image, you can use it to answer the question.\nImage description: ${imageDescription}\nImage URL: ${image.url}`
+      ? `\nIn this user's message are image descriptions of image attachments by the user. Do not refer to them as \"description\", instead as \"image\". Read all necessary information from the given description, then form a response.\nImage description: ${imageDescription}\nImage URL: ${image.url}`
       : ``
   }`;
 
@@ -326,5 +320,4 @@ export async function getImageDescription(image) {
   if (prediction.error) return prediction.error;
   return prediction.output;
 }
-
 export { chat };

@@ -9,6 +9,7 @@ const msgType = {
   type: "message",
   load: async (msg) => {
     await msg.react("<a:loading:1051419341914132554>");
+    await msg.channel.sendTyping()
   },
   reply: async (msg, content) => {
     try {

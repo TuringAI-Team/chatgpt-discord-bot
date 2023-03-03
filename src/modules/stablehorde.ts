@@ -265,7 +265,7 @@ export async function ImagineInteraction(interaction, client, style, prompt) {
   var width = 512;
   var height = 512;
 
-  var defaultNegPrompt = `lowres, bad anatomy, ((bad hands)), (error), ((missing fingers)), extra digit, fewer digits, awkward fingers, cropped, jpeg artifacts, worst quality, low quality, signature, blurry, extra ears, (deformed, disfigured, mutation, extra limbs:1.5),`;
+  var defaultNegPrompt = `lowres, bad anatomy, ((bad hands)), (error), ((missing fingers)), extra digit, fewer digits, awkward fingers, cropped, jpeg artifacts, worst quality, low quality, signature, blurry, extra ears, (deformed, disfigured, mutation, extra limbs)`;
   var negPrompt = defaultNegPrompt;
   // get parameters in prompt string like "prompt --no negative prompt --ar aspect ratio"
   var promptParams = prompt.split("--");
