@@ -154,7 +154,6 @@ If you break character, I will let you know by saying "Stay in character!" and y
     return { text: response, type: m };
   } catch (err: any) {
     console.log(`${token.id}: ${err} -- ${m}`);
-    console.log(messages);
     if (
       err ==
       "Error: You exceeded your current quota, please check your plan and billing details."
@@ -170,18 +169,18 @@ If you break character, I will let you know by saying "Stay in character!" and y
       err == "Error: Request failed with status code 429" ||
       err.message.includes("429")
     ) {
-      await disableAcc(token.id, true);
-      return {
-        error:
-          `We are running out of credits, please retry again credits would be auto added. If you want to donate use the command ` +
-          "`/premium buy` .",
-      };
-    } else {
       await disableAcc(token.id, false);
+      setTimeout(() => {
+        removeMessage(token.id);
+      }, 16000);
+    } else {
+      console.log(messages);
+      await disableAcc(token.id, false);
+      setTimeout(() => {
+        removeMessage(token.id);
+      }, 6000);
     }
-    setTimeout(() => {
-      removeMessage(token.id);
-    }, 6000);
+
     if (ispremium && retries < 3) {
       retries += 1;
       return await chat(
@@ -250,15 +249,39 @@ async function saveMsg(model, userMsg, aiMsg, id, ispremium, userName) {
   } else {
     var previous = data[0].conversation;
     if (previous) {
-      previous = previous.split("\n<split>");
-      previous = previous.filter((x) => x != "");
-      var length = previous.length;
-      var max = 3;
-      if (ispremium == true) max = 6;
-      if (length > max) {
-        previous.shift();
+      if (model == "chatgpt" || model == "dan") {
+        var messages = [];
+        conversation.split("<split>").forEach((msg) => {
+          // role: content
+          var role = msg.split(":")[0];
+          var content = msg.split(":")[1];
+          if (role == "user" || role == "system" || role == "assistant") {
+            messages.push({
+              role: role,
+              content: content,
+            });
+          }
+        });
+        var max = 6;
+        if (ispremium == true) max = 12;
+        if (messages.length > max) {
+          messages.shift();
+          messages.shift();
+        }
+        previous = messages
+          .map((x) => `${x.role}: ${x.content}`)
+          .join("<split>");
+      } else {
+        previous = previous.split("\n<split>");
+        previous = previous.filter((x) => x != "");
+        var length = previous.length;
+        var max = 3;
+        if (ispremium == true) max = 6;
+        if (length > max) {
+          previous.shift();
+        }
+        previous = previous.join("\n<split>");
       }
-      previous = previous.join("\n<split>");
     }
 
     conversation = `${previous ? previous : ""}${conversation}`;
