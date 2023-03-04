@@ -46,7 +46,7 @@ export default {
 
     var ispremium = message.user.ispremium;
     try {
-      if (ispremium == false) {
+      if (ispremium == false && command.cooldown) {
         let { data: cooldowns, error } = await supabase
           .from("cooldown")
           .select("*")

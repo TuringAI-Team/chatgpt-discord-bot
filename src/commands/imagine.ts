@@ -39,6 +39,7 @@ var data = new SlashCommandBuilder()
       .setRequired(true)
       .addChoices(
         // anime, realistic, paintart,
+        { name: "Auto select using AI(premium only)", value: "auto" },
         { name: "Anime", value: "anime" },
         { name: "Realistic", value: "realistic" },
         { name: "Paintart", value: "paintart" },
@@ -66,21 +67,20 @@ export default {
     }
     var tags = [];
 
+    var style = interaction.options.getString("style");
+    var prompt = interaction.options.getString("prompt");
+    // if style is auto say is premium because of testing
     if (
-      interaction.channel &&
-      interaction.channel.id != "1049275551568896000" &&
-      interaction.channel.id != "1047053103414911026" &&
-      interaction.guild &&
-      interaction.guild.id == "899761438996963349"
+      style == "auto" &&
+      !(await isPremium(interaction.user.id, interaction.guild.id))
     ) {
       interaction.reply({
-        content: `For use this utility go to <#1049275551568896000>`,
+        content:
+          "This feature is only available for premium users for testing reasons, to get premium use the command `/premium buy`",
         ephemeral: true,
       });
       return;
     }
-    var style = interaction.options.getString("style");
-    var prompt = interaction.options.getString("prompt");
 
     await ImagineInteraction(interaction, client, style, prompt);
   },

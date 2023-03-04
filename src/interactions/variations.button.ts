@@ -236,6 +236,7 @@ export default {
             interaction.user.id,
             generation.prompt.split("###")[1],
             generation.provider.split("imagine-")[1],
+            generation.provider.split("imagine-")[1],
             false
           );
         } else {

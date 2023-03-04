@@ -15,7 +15,11 @@ const stable_horde = new StableHorde({
 });
 import { createCanvas, loadImage, Image } from "canvas";
 import sharp from "sharp";
-import { Configuration, OpenAIApi } from "openai";
+import {
+  Configuration,
+  OpenAIApi,
+  ChatCompletionRequestMessageRoleEnum,
+} from "openai";
 import supabase from "./supabase.js";
 import "dotenv/config";
 import axios from "axios";
@@ -24,6 +28,7 @@ import { isPremium } from "./premium.js";
 
 import underagedCebs from "./all_name_regex.js";
 import { useToken, removeMessage } from "./loadbalancer.js";
+import models from "./models.js";
 
 export default stable_horde;
 export async function getModels() {
@@ -342,6 +347,40 @@ export async function ImagineInteraction(interaction, client, style, prompt) {
     } else if (style == "microworld") {
       model = "Microworlds";
       fullPrompt = `${prompt}, microworld`;
+    } else if (style == "auto") {
+      var token = await useToken("gpt-3");
+      if (!token) {
+        model = "Midjourney Diffusion";
+        fullPrompt = `${prompt}, mdjrny-v4 style`;
+      } else {
+        const configuration = new Configuration({
+          apiKey: token.key,
+        });
+
+        const openai = new OpenAIApi(configuration);
+        var messages = [
+          {
+            role: ChatCompletionRequestMessageRoleEnum.System,
+            content: `Here you have a list of models for generate images with ai, the models includes their descriptiopn and styles: ${models
+              .map((m) => JSON.stringify(m))
+              .join(
+                ",\n"
+              )}\nBased on this list answer with the best model for the user prompt, do not include explanations only the model name. Do not use the list order to select a model. If you can't provide a model recommendation answer only with no-model`,
+          },
+          {
+            role: ChatCompletionRequestMessageRoleEnum.User,
+            content: `prompt: ${prompt}`,
+          },
+        ];
+        const completion = await openai.createChatCompletion({
+          model: "gpt-3.5-turbo",
+          messages: messages,
+          temperature: 0.25,
+        });
+        var response = completion.data.choices[0].message.content;
+        model = response;
+        fullPrompt = `${prompt.replaceAll(" ", "")}`;
+      }
     } else {
       model = "Midjourney Diffusion";
       fullPrompt = `${prompt}, mdjrny-v4 style`;
@@ -364,14 +403,6 @@ export async function ImagineInteraction(interaction, client, style, prompt) {
         generation.message.includes("unethical image") ||
         generation.message.includes("nsfw")
       ) {
-        const channel = client.channels.cache.get("1055943633716641853");
-        channel.send(
-          `**Wrong prompt from __${interaction.user.tag}__** (${
-            interaction.user.id
-          })\n**Prompt:** ${prompt}\n**Model:** ${model}\n**NSFW:** ${nsfw}\n**ChatGPT filter:** ${
-            generation.filter ? "yes" : "no"
-          }`
-        );
         if (!userBans.data[0]) {
           await supabase.from("bans").insert([
             {
@@ -426,6 +457,14 @@ export async function ImagineInteraction(interaction, client, style, prompt) {
               .eq("id", interaction.user.id);
           }
         }
+        const channel = client.channels.cache.get("1055943633716641853");
+        channel.send(
+          `**Wrong prompt from __${interaction.user.tag}__** (${
+            interaction.user.id
+          })\n**Prompt:** ${prompt}\n**Model:** ${model}\n**NSFW:** ${nsfw}\n**ChatGPT filter:** ${
+            generation.filter ? "yes" : "no"
+          }`
+        );
       }
 
       await interaction.editReply({
@@ -469,7 +508,8 @@ export async function ImagineInteraction(interaction, client, style, prompt) {
           generation.id,
           interaction.user.id,
           negPrompt,
-          style
+          style,
+          model
         );
       } else {
         if (status.wait_time == undefined) {
@@ -514,6 +554,7 @@ export async function sendResults(
   userId,
   negPrompt,
   style,
+  model,
   variations: boolean = true
 ) {
   var imagesArr = images.map(async (g, i) => {
@@ -549,7 +590,12 @@ export async function sendResults(
       {
         name: "Style",
         value: style,
-        inline: false,
+        inline: true,
+      },
+      {
+        name: "Model",
+        value: model,
+        inline: true,
       }
     );
   } else {
