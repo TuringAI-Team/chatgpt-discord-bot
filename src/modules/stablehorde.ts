@@ -27,7 +27,7 @@ import { AttachmentBuilder, StringSelectMenuBuilder } from "discord.js";
 import { isPremium } from "./premium.js";
 
 import underagedCebs from "./all_name_regex.js";
-import { useToken, removeMessage } from "./loadbalancer.js";
+import { useToken, removeMessage, disableAcc } from "./loadbalancer.js";
 import models from "./models.js";
 
 export default stable_horde;
@@ -356,30 +356,41 @@ export async function ImagineInteraction(interaction, client, style, prompt) {
         const configuration = new Configuration({
           apiKey: token.key,
         });
-
-        const openai = new OpenAIApi(configuration);
-        var messages = [
-          {
-            role: ChatCompletionRequestMessageRoleEnum.System,
-            content: `Here you have a list of models for generate images with ai, the models includes their descriptiopn and styles: ${models
-              .map((m) => JSON.stringify(m))
-              .join(
-                ",\n"
-              )}\nBased on this list answer with the best model for the user prompt, do not include explanations only the model name. Do not use the list order to select a model. If you can't provide a model recommendation answer only with no-model`,
-          },
-          {
-            role: ChatCompletionRequestMessageRoleEnum.User,
-            content: `prompt: ${prompt}`,
-          },
-        ];
-        const completion = await openai.createChatCompletion({
-          model: "gpt-3.5-turbo",
-          messages: messages,
-          temperature: 0.25,
-        });
-        var response = completion.data.choices[0].message.content;
-        model = response;
-        fullPrompt = `${prompt.replaceAll(" ", "")}`;
+        try {
+          const openai = new OpenAIApi(configuration);
+          var messages = [
+            {
+              role: ChatCompletionRequestMessageRoleEnum.System,
+              content: `Here you have a list of models for generate images with ai, the models includes their descriptiopn and styles: ${models
+                .map((m) => JSON.stringify(m))
+                .join(
+                  ",\n"
+                )}\nBased on this list answer with the best model for the user prompt, do not include explanations only the model name. Do not use the list order to select a model. If you can't provide a model recommendation answer only with no-model`,
+            },
+            {
+              role: ChatCompletionRequestMessageRoleEnum.User,
+              content: `prompt: ${prompt}`,
+            },
+          ];
+          const completion = await openai.createChatCompletion({
+            model: "gpt-3.5-turbo",
+            messages: messages,
+            temperature: 0.25,
+          });
+          var response = completion.data.choices[0].message.content;
+          model = response;
+          fullPrompt = `${prompt.replaceAll(" ", "")}`;
+          setTimeout(async () => {
+            await removeMessage(token.id);
+          }, 6000);
+        } catch (error) {
+          model = "Midjourney Diffusion";
+          fullPrompt = `${prompt}, mdjrny-v4 style`;
+          await disableAcc(token.id, false);
+          setTimeout(async () => {
+            await removeMessage(token.id);
+          }, 16000);
+        }
       }
     } else {
       model = "Midjourney Diffusion";
