@@ -39,7 +39,7 @@ export async function voiceAudio(
   listen
 ) {
   await commandType.load(interaction);
-  if (client.guildsVoice.find((x) => x == interaction.guildId)) {
+  if (getVoiceConnection(interaction.guildId)) {
     await commandType.reply(interaction, {
       ephemeral: true,
       content: `The bot is already processing a request in this server, please wait until the bot finish this request.`,
@@ -53,7 +53,6 @@ export async function voiceAudio(
     });
     return;
   }
-  client.guildsVoice.push(interaction.guildId);
   let audioPlayer = new AudioPlayer();
 
   let voiceConnection = await startVoiceConnection(interaction, client);
