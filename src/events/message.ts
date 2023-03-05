@@ -59,11 +59,16 @@ export default {
       if (message.guild) guildId = message.guild.id;
       var terms = await checkTerms(message.author.id, "discord");
       if (terms) {
-        await message.reply({
-          content: terms,
-          ephemeral: true,
-        });
-        return;
+        try {
+          await message.reply({
+            content: terms,
+            ephemeral: true,
+          });
+          return;
+        } catch (err: any) {
+          // if missing permissions contact server owner
+          console.log(message.guild.id, message.guild.ownerId);
+        }
       }
       var ispremium = await isPremium(message.author.id, guildId);
       try {
@@ -123,7 +128,9 @@ export default {
             content: "There was an error while executing this command!",
             ephemeral: true,
           });
-        } catch (err) {}
+        } catch (err) {
+          console.log(message.guild.id, message.guild.ownerId);
+        }
       }
     }
   },
