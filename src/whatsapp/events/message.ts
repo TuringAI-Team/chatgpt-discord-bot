@@ -46,10 +46,7 @@ export default {
     if (!command) return await message.reply("Command not found");
     var terms = await checkTerms(message.user.id, "whatsapp");
     if (terms) {
-      await message.reply({
-        content: terms,
-        ephemeral: true,
-      });
+      await message.reply(terms);
       return;
     }
     var ispremium = message.user.ispremium;
