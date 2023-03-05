@@ -28,7 +28,7 @@ import { isPremium } from "./premium.js";
 
 import underagedCebs from "./all_name_regex.js";
 import { useToken, removeMessage, disableAcc } from "./loadbalancer.js";
-import models from "./models.js";
+import { chat } from "./gpt-api.js";
 
 export default stable_horde;
 export async function getModels() {
@@ -357,28 +357,17 @@ export async function ImagineInteraction(interaction, client, style, prompt) {
           apiKey: token.key,
         });
         try {
-          const openai = new OpenAIApi(configuration);
-          var messages = [
-            {
-              role: ChatCompletionRequestMessageRoleEnum.System,
-              content: `Here you have a list of models for generate images with ai, the models includes their descriptiopn and styles: ${models
-                .map((m) => JSON.stringify(m))
-                .join(
-                  ",\n"
-                )}\nBased on this list answer with the best model for the user prompt, do not include explanations only the model name. Do not use the list order to select a model. If you can't provide a model recommendation answer only with no-model`,
-            },
-            {
-              role: ChatCompletionRequestMessageRoleEnum.User,
-              content: `prompt: ${prompt}`,
-            },
-          ];
-          const completion = await openai.createChatCompletion({
-            model: "gpt-3.5-turbo",
-            messages: messages,
-            temperature: 0.25,
-          });
-          var response = completion.data.choices[0].message.content;
-          model = response;
+          var response = await chat(
+            `prompt: ${prompt}`,
+            interaction.user.name,
+            ispremium,
+            "sd",
+            `sd-${interaction.user.id}`,
+            0,
+            null
+          );
+
+          model = response.text;
           fullPrompt = `${prompt.replaceAll(" ", "")}`;
           setTimeout(async () => {
             await removeMessage(token.id);

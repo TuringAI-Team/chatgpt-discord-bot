@@ -3,6 +3,7 @@ import chalk from "chalk";
 import ms from "ms";
 import supabase from "../modules/supabase.js";
 import { isPremium } from "../modules/premium.js";
+import { checkTerms } from "../modules/terms.js";
 
 const interactionType = {
   type: "interaction",
@@ -44,6 +45,14 @@ export default {
     }
     var guildId;
     if (interaction.guild) guildId = interaction.guild.id;
+    var terms = await checkTerms(interaction.user.id, "discord");
+    if (terms) {
+      await interaction.reply({
+        content: terms,
+        ephemeral: true,
+      });
+      return;
+    }
     var ispremium = await isPremium(interaction.user.id, guildId);
 
     try {

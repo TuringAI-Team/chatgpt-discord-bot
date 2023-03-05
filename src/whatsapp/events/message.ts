@@ -2,6 +2,7 @@ import { isPremium } from "../../modules/premium.js";
 import supabase from "../../modules/supabase.js";
 import ms from "ms";
 import { validate } from "uuid";
+import { checkTerms } from "../../modules/terms.js";
 
 export default {
   name: "message",
@@ -43,7 +44,14 @@ export default {
     }
     var command = client.commands.find((x) => x.name == message.commandName);
     if (!command) return await message.reply("Command not found");
-
+    var terms = await checkTerms(message.user.id, "whatsapp");
+    if (terms) {
+      await message.reply({
+        content: terms,
+        ephemeral: true,
+      });
+      return;
+    }
     var ispremium = message.user.ispremium;
     try {
       if (ispremium == false && command.cooldown) {

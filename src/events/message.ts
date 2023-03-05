@@ -4,12 +4,13 @@ import ms from "ms";
 import supabase from "../modules/supabase.js";
 import { isPremium } from "../modules/premium.js";
 import { SlashCommandBuilder, EmbedBuilder, time } from "discord.js";
+import { checkTerms } from "../modules/terms.js";
 
 const msgType = {
   type: "message",
   load: async (msg) => {
     await msg.react("<a:loading:1051419341914132554>");
-    await msg.channel.sendTyping()
+    await msg.channel.sendTyping();
   },
   reply: async (msg, content) => {
     try {
@@ -29,7 +30,12 @@ export default {
     if (message.mentions.has(client.user) && !message.author.bot) {
       var content = message.content;
       if (message.content.includes(`<@${client.user.id}>`)) {
-        if (!message.content.startsWith(`<@${client.user.id}>`)) return;
+        if (
+          !message.content.startsWith(`<@${client.user.id}>`) ||
+          message.content.startsWith("@everyone") ||
+          message.content.startsWith("@here")
+        )
+          return;
         content = message.content.split(`<@${client.user.id}> `)[1];
       }
 
@@ -51,6 +57,14 @@ export default {
       }
       var guildId;
       if (message.guild) guildId = message.guild.id;
+      var terms = await checkTerms(message.author.id, "discord");
+      if (terms) {
+        await message.reply({
+          content: terms,
+          ephemeral: true,
+        });
+        return;
+      }
       var ispremium = await isPremium(message.author.id, guildId);
       try {
         if (command.cooldown && ispremium == false) {

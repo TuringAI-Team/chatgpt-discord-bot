@@ -1,5 +1,6 @@
 import { Events } from "discord.js";
 import chalk from "chalk";
+import { checkTerms } from "../modules/terms.js";
 
 export default {
   name: Events.InteractionCreate,
@@ -11,6 +12,14 @@ export default {
       !interaction.isModalSubmit()
     )
       return;
+    var terms = await checkTerms(interaction.user.id, "discord");
+    if (terms) {
+      await interaction.reply({
+        content: terms,
+        ephemeral: true,
+      });
+      return;
+    }
     var id = interaction.customId;
     var arg;
     var arg2;
