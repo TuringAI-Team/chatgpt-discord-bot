@@ -397,6 +397,7 @@ export async function ImagineInteraction(interaction, client, style, prompt) {
     );
 
     if (generation.message) {
+      console.log(generation.message);
       if (
         generation.message ==
           `This prompt appears to violate our terms of service and will be reported. Please contact us if you think this is an error.` ||
