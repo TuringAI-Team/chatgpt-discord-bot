@@ -39,11 +39,6 @@ var models = [
     style: "boudoir photography",
   },
   {
-    name: "Zeipher Female Model",
-    description: "For creating images of nude solo women. Also known as f222",
-    style: "f222, boudoir photography",
-  },
-  {
     name: "Abyss OrangeMix",
     description: "A model trained to create CG anime characters",
     style: "anime",

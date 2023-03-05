@@ -458,13 +458,15 @@ export async function ImagineInteraction(interaction, client, style, prompt) {
           }
         }
         const channel = client.channels.cache.get("1055943633716641853");
-        channel.send(
-          `**Wrong prompt from __${interaction.user.tag}__** (${
-            interaction.user.id
-          })\n**Prompt:** ${prompt}\n**Model:** ${model}\n**NSFW:** ${nsfw}\n**ChatGPT filter:** ${
-            generation.filter ? "yes" : "no"
-          }`
-        );
+        try {
+          channel.send(
+            `**Wrong prompt from __${interaction.user.tag}__** (${
+              interaction.user.id
+            })\n**Prompt:** ${prompt}\n**Model:** ${model}\n**NSFW:** ${nsfw}\n**ChatGPT filter:** ${
+              generation.filter ? "yes" : "no"
+            }`
+          );
+        } catch (err) {}
       }
 
       await interaction.editReply({

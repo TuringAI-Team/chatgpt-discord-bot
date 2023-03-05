@@ -186,7 +186,6 @@ If you break character, I will let you know by saying "Stay in character!" and y
         await removeMessage(token.id);
       }, 16000);
     } else {
-      console.log(messages);
       await disableAcc(token.id, false);
       setTimeout(async () => {
         await removeMessage(token.id);
