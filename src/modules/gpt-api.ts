@@ -88,7 +88,9 @@ If you break character, I will let you know by saying "Stay in character!" and y
   var bot;
   var fullMsg = `${message}${
     imageDescription
-      ? `\nIn this user's message are image descriptions of image attachments by the user. Do not refer to them as \"description\", instead as \"image\". Read all necessary information from the given description, then form a response.\nImage description: ${imageDescription}\nImage URL: ${image.url}`
+      ? `\nIn this user's message are image descriptions of image attachments by the user. Do not refer to them as \"description\", instead as \"image\". Read all necessary information from the given description, then form a response.\nImage description: ${imageDescription}\nImage URL: ${
+          image.url.includes("base64") ? "base64 file" : image.url
+        }`
       : ``
   }`;
 
