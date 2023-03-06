@@ -56,6 +56,7 @@ var data = new SlashCommandBuilder()
 export default {
   cooldown: "3m",
   data,
+  disablePing: true,
   async execute(interaction, client) {
     if (!interaction.deferred && !interaction.replied)
       await interaction.deferReply();
