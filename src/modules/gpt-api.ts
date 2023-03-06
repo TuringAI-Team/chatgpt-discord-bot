@@ -165,6 +165,9 @@ If you break character, I will let you know by saying "Stay in character!" and y
     return { text: response, type: m };
   } catch (err: any) {
     console.log(`${token.id}: ${err} -- ${m}`);
+    if (err == "Error: Request failed with status code 400") {
+      console.log(messages);
+    }
     if (
       err ==
       "Error: You exceeded your current quota, please check your plan and billing details."
