@@ -267,7 +267,7 @@ export async function ImagineInteraction(interaction, client, style, prompt) {
 
   if (interaction.channel && interaction.channel.nsfw) nsfw = true;
   if (!interaction.channel || !interaction.guild) nsfw = true;
-  if (!interaction.deferred) {
+  if (!interaction.deferred && !interaction.replied) {
     await interaction.deferReply();
   }
 

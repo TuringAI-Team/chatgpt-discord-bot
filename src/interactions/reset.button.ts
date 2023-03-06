@@ -12,9 +12,13 @@ export default {
     description: "Reset your conversation",
   },
   async execute(interaction, client, conversationId) {
+    if (!interaction.deferred && !interaction.replied) {
+      await interaction.deferReply();
+    }
+
     var conversationOwner = conversationId.split("-")[1];
     if (interaction.user.id != conversationOwner) {
-      await interaction.reply({
+      await interaction.editReply({
         content: "You can't reset this conversation",
         ephemeral: true,
       });
@@ -26,14 +30,14 @@ export default {
       .eq("id", conversationId)
       .single();
     if (error) {
-      await interaction.reply({
+      await interaction.editReply({
         content: "Error connecting with db",
         ephemeral: true,
       });
       return;
     }
     if (!conversation) {
-      await interaction.reply({
+      await interaction.editReply({
         content: "Conversation not found",
         ephemeral: true,
       });
@@ -41,12 +45,12 @@ export default {
     }
     try {
       await supabase.from("conversations").delete().eq("id", conversationId);
-      await interaction.reply({
+      await interaction.editReply({
         content: "Conversation has been reset",
         ephemeral: true,
       });
     } catch (err) {
-      await interaction.reply({
+      await interaction.editReply({
         content: "Error connecting with db",
         ephemeral: true,
       });

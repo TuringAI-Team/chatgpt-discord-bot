@@ -57,6 +57,8 @@ export default {
   cooldown: "3m",
   data,
   async execute(interaction, client) {
+    if (!interaction.deferred && !interaction.replied)
+      await interaction.deferReply();
     if (maintenance == true && interaction.user.id != "530102778408861706") {
       await interaction.reply({
         content:
@@ -74,7 +76,7 @@ export default {
       style == "auto" &&
       !(await isPremium(interaction.user.id, interaction.guild.id))
     ) {
-      interaction.reply({
+      interaction.editReply({
         content:
           "This feature is only available for premium users for testing reasons, to get premium use the command `/premium buy`",
         ephemeral: true,
