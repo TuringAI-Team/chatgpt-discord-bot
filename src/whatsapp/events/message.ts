@@ -8,7 +8,8 @@ import delay from "delay";
 export default {
   name: "message",
   async execute(message, client) {
-    if (!(message.from || message.body.length)) return;
+    if (!(message.from || message.body.length || message.fromMe)) return;
+    if (message.isGroupMsg) return;
 
     message.user = {
       id: message.from,

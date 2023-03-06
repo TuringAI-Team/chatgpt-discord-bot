@@ -13,7 +13,9 @@ export default {
     description: "Upscale an image",
   },
   async execute(interaction, client, generationId, imageId) {
-    await interaction.deferReply();
+    if (!interaction.deferred && !interaction.replied)
+      await interaction.deferReply();
+
     var { data, error } = await supabase
       .from("results")
       .select("*")

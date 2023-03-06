@@ -19,7 +19,8 @@ export default {
     description: "Make variations of an image",
   },
   async execute(interaction, client, generationId, imageId) {
-    await interaction.deferReply();
+    if (!interaction.deferred && !interaction.replied)
+      await interaction.deferReply();
     // cooldown system for not premium users
     var ispremium = await isPremium(interaction.user.id, interaction.guildId);
     if (!ispremium) {
