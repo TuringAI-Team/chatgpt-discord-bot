@@ -130,11 +130,13 @@ export async function png2webp(pngUrl) {
 }
 
 async function filter(prompt, model?) {
+  var key = await useToken("gpt-3");
   var req = await axios.post(
     "https://api.turingai.tech/filter",
     {
       prompt: prompt,
       model: model,
+      openAIKEY: key.key,
     },
     {
       headers: {
@@ -143,6 +145,7 @@ async function filter(prompt, model?) {
     }
   );
   var res = req.data;
+  await removeMessage(key.id);
   if (res.isCP) {
     return false;
   }
