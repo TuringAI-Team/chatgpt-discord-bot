@@ -54,7 +54,7 @@ var data = new SlashCommandBuilder()
       )
   );
 export default {
-  cooldown: "2m",
+  cooldown: "3m",
   data,
   async execute(interaction, client) {
     if (maintenance == true && interaction.user.id != "530102778408861706") {
