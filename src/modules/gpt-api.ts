@@ -89,9 +89,7 @@ If you break character, I will let you know by saying "Stay in character!" and y
   var fullMsg = `${message}${
     imageDescription
       ? `\nIn this user's message are image descriptions of image attachments by the user. Do not refer to them as \"description\", instead as \"image\". Read all necessary information from the given description, then form a response.\nImage description: ${imageDescription} ${
-          image.url.includes("base64")
-            ? "base64 file"
-            : `\nImage URL:  ${image.url}`
+          image.url.includes("base64") ? "" : `\nImage URL:  ${image.url}`
         }`
       : ``
   }`;
