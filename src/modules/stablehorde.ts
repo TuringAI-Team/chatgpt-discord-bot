@@ -4,6 +4,7 @@ import {
   ButtonBuilder,
   ButtonStyle,
   EmbedBuilder,
+  WebhookClient,
 } from "discord.js";
 const stable_horde = new StableHorde({
   cache_interval: 1000 * 10,
@@ -129,63 +130,22 @@ export async function png2webp(pngUrl) {
 }
 
 async function filter(prompt, model?) {
-  var youngWords = [
-    "kid",
-    "kids",
-    "lolis",
-    "children",
-    "child",
-    "boy",
-    "baby",
-    "young",
-    "teen",
-    "teenager",
-    "niñita",
-    "years",
-    "16yo",
-    "year old",
-    "underage",
-    "underaged",
-    "under-age",
-    "under-aged",
-    "juvenile",
-    "minor",
-    "underaged-minor",
-    "youngster",
-    "young teen",
-    "preteen",
-    "pre-teen",
-    "infant",
-    "toddler",
-    "baby",
-    "prepubescent",
-    "short,",
-    "minor-aged",
-  ];
-  var nsfwModels = ["Hentai Diffusion"];
-  var nsfwWords = ["naked", "nude", "uncensored"];
-  var isNsfw = false;
-  var isYoung = false;
-  if (nsfwModels.find((x) => x == model)) isNsfw = true;
-  if (nsfwWords.some((v) => prompt.toLowerCase().includes(v.toLowerCase())))
-    isNsfw = true;
-  if (youngWords.some((v) => prompt.toLowerCase().includes(v.toLowerCase())))
-    isYoung = true;
-  if (underagedCebs.some((v) => prompt.toLowerCase().includes(v.toLowerCase())))
-    isYoung = true;
-  if (!isYoung) {
-    var key = await useToken("gpt-3");
-    const configuration = new Configuration({
-      apiKey: key.key,
-    });
-    const openai = new OpenAIApi(configuration);
-    var result = await openai.createModeration({
-      input: prompt,
-    });
-    await removeMessage(key.id);
-    isYoung = result.data.results[0].categories["sexual/minors"];
+  var req = await axios.post(
+    "https://api.turingai.tech/filter",
+    {
+      prompt: prompt,
+      model: model,
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${process.env.TURING_API}`,
+      },
+    }
+  );
+  var res = req.data;
+  if (res.isCP) {
+    return false;
   }
-  if (isYoung && isNsfw) return false;
   return true;
 }
 
@@ -259,7 +219,7 @@ export async function ImagineInteraction(interaction, client, style, prompt) {
     .eq("id", interaction.user.id);
   if (userBans.data[0] && userBans.data[0].banned) {
     interaction.reply({
-      content: `You are banned from using this utility, If you think this is an error please contact [the support server](https://dsc.gg/tureing) .`,
+      content: `You are banned from using this utility, If you think this is an error please contact us in [our support server](https://dsc.gg/turing) .`,
       ephemeral: true,
     });
     return;
@@ -458,16 +418,24 @@ export async function ImagineInteraction(interaction, client, style, prompt) {
               .eq("id", interaction.user.id);
           }
         }
+        var webhook = new WebhookClient({
+          url: process.env.DISCORD_WEBHOOK_URL_MODS,
+        });
+        webhook.send({
+          content: `**Wrong prompt from __${interaction.user.tag}__** (${
+            interaction.user.id
+          })\n**Prompt:** ${prompt}\n**Model:** ${model}\n**NSFW:** ${nsfw}\n**ChatGPT filter:** ${
+            generation.filter ? "yes" : "no"
+          }`,
+          username: "ChatGPT",
+          avatarURL: client.user.displayAvatarURL(),
+        });
         const channel = client.channels.cache.get("1055943633716641853");
-        try {
-          channel.send(
-            `**Wrong prompt from __${interaction.user.tag}__** (${
-              interaction.user.id
-            })\n**Prompt:** ${prompt}\n**Model:** ${model}\n**NSFW:** ${nsfw}\n**ChatGPT filter:** ${
-              generation.filter ? "yes" : "no"
-            }`
-          );
-        } catch (err) {}
+        await interaction.editReply({
+          content: `To prevent generation of unethical images, we cannot allow this prompt with NSFW models/tags. You have received a strike. If you receive 3 strikes, you will be banned from using the bot(/imagine).`,
+          ephemeral: true,
+        });
+        return;
       }
 
       await interaction.editReply({

@@ -258,19 +258,7 @@ async function responseWithText(
     .replaceAll("@everyone", "everyone")
     .replaceAll("@here", "here")
     .replaceAll("<@", "@");
-  /* if (result.includes("/GENERATE_IMAGE")) {
-    var fullprompt = result.split("/GENERATE_IMAGE")[1];
-    console.log(fullprompt);
-    var p = fullprompt.split("prompt:")[1];
-    var style = fullprompt.split("style:")[1];
-    p = p.split("style:")[0];
-    // remove style from prompt
-    console.log(style, p);
-    if (client) {
-      await ImagineInteraction(interaction, client, style, p);
-      return;
-    }
-  } else {*/
+
   var completeResponse = `**${interaction.user.tag}:** ${prompt}\n**AI(${type}):** ${result}`;
   var charsCount = completeResponse.split("").length;
   const row = new ActionRowBuilder().addComponents(
@@ -294,6 +282,8 @@ async function responseWithText(
   if (charsCount / 2000 >= 1) {
     var lastMsg;
     var loops = Math.ceil(charsCount / 2000);
+    console.log(loops);
+
     for (var i = 0; i < loops; i++) {
       if (i == 0) {
         try {
@@ -325,5 +315,4 @@ async function responseWithText(
       files: files,
     });
   }
-  //  }
 }

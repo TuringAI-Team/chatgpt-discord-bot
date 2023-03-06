@@ -3,6 +3,7 @@ import supabase from "../../modules/supabase.js";
 import ms from "ms";
 import { validate } from "uuid";
 import { checkTerms } from "../../modules/terms.js";
+import delay from "delay";
 
 export default {
   name: "message",
@@ -47,7 +48,7 @@ export default {
     var terms = await checkTerms(message.user.id, "whatsapp");
     if (terms) {
       await message.reply(terms);
-      return;
+      await delay(8000);
     }
     var ispremium = message.user.ispremium;
     try {

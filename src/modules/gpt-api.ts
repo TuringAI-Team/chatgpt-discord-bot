@@ -162,7 +162,6 @@ If you break character, I will let you know by saying "Stay in character!" and y
     setTimeout(async () => {
       await removeMessage(token.id);
     }, 6000);
-
     return { text: response, type: m };
   } catch (err: any) {
     console.log(`${token.id}: ${err} -- ${m}`);

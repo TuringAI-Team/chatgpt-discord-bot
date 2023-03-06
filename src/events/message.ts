@@ -5,16 +5,19 @@ import supabase from "../modules/supabase.js";
 import { isPremium } from "../modules/premium.js";
 import { SlashCommandBuilder, EmbedBuilder, time } from "discord.js";
 import { checkTerms } from "../modules/terms.js";
+import delay from "delay";
 
 const msgType = {
   type: "message",
   load: async (msg) => {
     await msg.react("<a:loading:1051419341914132554>");
-    await msg.channel.sendTyping();
+    try {
+      await msg.channel.sendTyping();
+    } catch (err) {}
   },
   reply: async (msg, content) => {
     try {
-      await msg.reply(content);
+      return await msg.reply(content);
     } catch (err) {}
 
     try {
@@ -60,11 +63,12 @@ export default {
       var terms = await checkTerms(message.author.id, "discord");
       if (terms) {
         try {
-          await message.reply({
+          var msg = await message.reply({
             content: terms,
             ephemeral: true,
           });
-          return;
+          await delay(8000);
+          await msg.delete();
         } catch (err: any) {
           // if missing permissions contact server owner
           console.log(message.guild.id, message.guild.ownerId);

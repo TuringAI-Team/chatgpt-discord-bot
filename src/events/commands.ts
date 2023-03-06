@@ -4,11 +4,12 @@ import ms from "ms";
 import supabase from "../modules/supabase.js";
 import { isPremium } from "../modules/premium.js";
 import { checkTerms } from "../modules/terms.js";
+import delay from "delay";
 
 const interactionType = {
   type: "interaction",
   load: async (interaction, ephemeral = false) => {
-    if (interaction) {
+    if (interaction && !interaction.deferred && !interaction.replied) {
       try {
         await interaction.deferReply({
           ephemeral: ephemeral,
@@ -18,9 +19,9 @@ const interactionType = {
   },
   reply: async (interaction, content) => {
     if (interaction.deferred || interaction.replied) {
-      await interaction.editReply(content);
+      return await interaction.editReply(content);
     } else {
-      await interaction.reply(content);
+      return await interaction.reply(content);
     }
   },
 };
@@ -51,7 +52,7 @@ export default {
         content: terms,
         ephemeral: true,
       });
-      return;
+      await delay(8000);
     }
     var ispremium = await isPremium(interaction.user.id, guildId);
 

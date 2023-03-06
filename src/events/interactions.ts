@@ -1,6 +1,7 @@
 import { Events } from "discord.js";
 import chalk from "chalk";
 import { checkTerms } from "../modules/terms.js";
+import delay from "delay";
 
 export default {
   name: Events.InteractionCreate,
@@ -18,7 +19,7 @@ export default {
         content: terms,
         ephemeral: true,
       });
-      return;
+      await delay(8000);
     }
     var id = interaction.customId;
     var arg;

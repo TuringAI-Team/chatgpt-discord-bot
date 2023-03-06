@@ -19,7 +19,7 @@ export async function checkTerms(userId, platform) {
         defaultChatModel: "chatgpt",
       },
     ]);
-    return `By using this service you accept the following terms of service:\n\nhttps://turingai.tech/botterms`;
+    return `By using this service you accept the following terms of service:\n\nhttps://turingai.tech/botterms\n\nThis message is going to be deleted in 8s in order to continue with your request.`;
   } else {
     return null;
   }
