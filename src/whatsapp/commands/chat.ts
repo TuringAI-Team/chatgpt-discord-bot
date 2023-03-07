@@ -6,7 +6,7 @@ import { randomUUID } from "crypto";
 export default {
   name: "chat",
   description: "chat with bot",
-  cooldown: "30s",
+  cooldown: "1m",
   async execute(message, client) {
     var image;
     if (message.hasMedia) {
