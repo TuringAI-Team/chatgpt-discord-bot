@@ -274,7 +274,7 @@ export async function ImagineInteraction(interaction, client, style, prompt) {
   if (!nsfw) {
     // lock command to nsfw channels
     await interaction.editReply({
-      content: `This command can only be used in nsfw channels because top.gg :) . Would be able for normal channels soon`,
+      content: `This command can only be used in nsfw channels. Would be able for normal channels soon`,
       ephemeral: true,
     });
   }
