@@ -8,6 +8,13 @@ export default {
   	var messagee = message.message;
   	if (messagee.photo && messagee.photo.length > 0) {
   		var photo = messagee.photo[messagee.photo.length - 1];
+      const buffer = await ctx.telegram.getFile(photoSize.file_id).then((result) => {
+    return ctx.telegram.getFileLink(result.file_id);
+         const base64 = buffer.toString('base64');
+        
+        var url = `data:image/png;base64,${base64}`;
+        image = { url };
+    });
   	}
   	else if(message.audio){
   		var audio_data = await message.telegram.getFile(messagee.audio.file_id);
