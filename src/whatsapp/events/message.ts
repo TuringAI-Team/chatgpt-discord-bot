@@ -9,7 +9,7 @@ export default {
   name: "message",
   async execute(message, client) {
     if (!(message.from || message.body.length || message.fromMe)) return;
-    if (message.isGroupMsg) return;
+    if (message.isGroup) return;
 
     message.user = {
       id: message.from,
