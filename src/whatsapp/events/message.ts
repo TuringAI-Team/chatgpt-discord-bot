@@ -9,7 +9,6 @@ export default {
   name: "message",
   async execute(message, client) {
     if (!(message.from || message.body.length || message.fromMe)) return;
-    if (message.isGroup) return;
 
     message.user = {
       id: message.from,
@@ -37,6 +36,7 @@ export default {
       }
     }
     if (!message.commandName) {
+      if (message.isGroup) return;
       if (isUUIDv4(message.content)) {
         message.commandName = "claim";
         args = [message.content];
