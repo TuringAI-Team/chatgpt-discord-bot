@@ -8,8 +8,11 @@ export default {
     description: "Button for rating images",
   },
   async execute(interaction, client, generationId, imageId, userId, rate) {
+    if (!interaction.deferred && !interaction.replied)
+    await interaction.deferReply();
+
     if (userId != interaction.user.id) {
-      await interaction.reply({
+      await interaction.editReply({
         content: `You can't rate a image that you haven't generated.`,
         ephemeral: true,
       });
@@ -21,7 +24,7 @@ export default {
       .eq("id", generationId)
       .eq("rated", true);
     if (data && data[0]) {
-      await interaction.reply({
+      await interaction.editReply({
         content: `This image have already been rated`,
         ephemeral: true,
       });
@@ -33,7 +36,7 @@ export default {
       })
       .catch(async (error) => {
         if (error.message == "This generation appears already rated") {
-          await interaction.reply({
+          await interaction.editReply({
             content: `This image have already been rated`,
             ephemeral: true,
           });

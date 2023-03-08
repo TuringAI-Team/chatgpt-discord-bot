@@ -86,7 +86,7 @@ export async function generateImg2img(
   height
 ) {
   var passFilter = await filter(prompt, model);
-  if (!passFilter) {
+  if (!passFilter.filter) {
     return {
       message:
         "To prevent generation of unethical images, we cannot allow this prompt with NSFW models/tags.",
@@ -112,9 +112,9 @@ export async function generateImg2img(
         denoising_strength: 0.8,
       },
     });
-    return generation;
+    return { ...generation, isNsfw: passFilter.isNsfw };
   } catch (e) {
-    return { message: e };
+    return { message: e, isNsfw: passFilter.isNsfw };
   }
 }
 
@@ -147,9 +147,9 @@ async function filter(prompt, model?) {
   var res = req.data;
   await removeMessage(key.id);
   if (res.isCP) {
-    return false;
+    return { filter: false, ...res };
   }
-  return true;
+  return { filter: true, ...res };
 }
 
 export async function checkGeneration(generation: any) {
@@ -216,12 +216,16 @@ export async function ImagineInteraction(interaction, client, style, prompt) {
   var guildId;
   if (interaction.guild) guildId = interaction.guild.id;
   var ispremium = await isPremium(interaction.user.id, guildId);
+  if (!interaction.deferred && !interaction.replied) {
+    await interaction.deferReply();
+  }
+
   var userBans = await supabase
     .from("bans")
     .select("*")
     .eq("id", interaction.user.id);
   if (userBans.data[0] && userBans.data[0].banned) {
-    interaction.reply({
+    interaction.editReply({
       content: `You are banned from using this utility, If you think this is an error please contact us in [our support server](https://dsc.gg/turing) .`,
       ephemeral: true,
     });
@@ -267,9 +271,6 @@ export async function ImagineInteraction(interaction, client, style, prompt) {
 
   if (interaction.channel && interaction.channel.nsfw) nsfw = true;
   if (!interaction.channel || !interaction.guild) nsfw = true;
-  if (!interaction.deferred && !interaction.replied) {
-    await interaction.deferReply();
-  }
 
   try {
     var generation;
@@ -443,6 +444,13 @@ export async function ImagineInteraction(interaction, client, style, prompt) {
 
       await interaction.editReply({
         content: `Something wrong happen:\n${generation.message}`,
+        ephemeral: true,
+      });
+      return;
+    }
+    if (generation.isNsfw && nsfw == false) {
+      await interaction.editReply({
+        content: `This prompt is NSFW, please use it in a NSFW channel.`,
         ephemeral: true,
       });
       return;
