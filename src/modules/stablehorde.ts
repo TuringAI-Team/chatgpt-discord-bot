@@ -277,6 +277,7 @@ export async function ImagineInteraction(interaction, client, style, prompt) {
       content: `This command can only be used in nsfw channels. Would be able for normal channels soon`,
       ephemeral: true,
     });
+    return;
   }
   try {
     var generation;
