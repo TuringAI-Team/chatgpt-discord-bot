@@ -271,7 +271,13 @@ export async function ImagineInteraction(interaction, client, style, prompt) {
 
   if (interaction.channel && interaction.channel.nsfw) nsfw = true;
   if (!interaction.channel || !interaction.guild) nsfw = true;
-
+  if (!nsfw) {
+    // lock command to nsfw channels
+    await interaction.editReply({
+      content: `This command can only be used in nsfw channels because top.gg :) . Would be able for normal channels soon`,
+      ephemeral: true,
+    });
+  }
   try {
     var generation;
     var number = 2;
