@@ -455,7 +455,7 @@ export async function ImagineInteraction(interaction, client, style, prompt) {
       });
       return;
     }
-    if (generation.isNsfw && nsfw == false) {
+    if (generation.isNsfw) {
       await interaction.editReply({
         content: `This prompt is NSFW, please use it in a NSFW channel.`,
         ephemeral: true,
