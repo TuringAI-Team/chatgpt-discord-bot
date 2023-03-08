@@ -9,7 +9,7 @@ export default {
   },
   async execute(interaction, client, generationId, imageId, userId, rate) {
     if (!interaction.deferred && !interaction.replied)
-    await interaction.deferReply();
+      await interaction.reply("Loading...");
 
     if (userId != interaction.user.id) {
       await interaction.editReply({
