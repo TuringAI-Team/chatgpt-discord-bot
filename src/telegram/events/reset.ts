@@ -6,7 +6,7 @@ export default {
   cooldown: null,
   async execute(message, client) {
     try {
-      await supabase.from("conversations").delete().eq("id", message.message.user.id);
+      await supabase.from("conversations").delete().eq("id", message.user.id);
       await message.reply("Conversation has been reset");
     } catch (err) {
       await message.reply("Error connecting with db");
