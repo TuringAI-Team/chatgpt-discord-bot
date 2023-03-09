@@ -32,6 +32,10 @@ export default {
         var content = args.join(" ");
         message.content = content;
       }
+      else if (message.commandName == "start") {
+        var content = args.join(" ");
+        message.reply("Hello There, this is a test")
+      }
     }
     if (!message.commandName) {
       if (isUUIDv4(message.content)) {
