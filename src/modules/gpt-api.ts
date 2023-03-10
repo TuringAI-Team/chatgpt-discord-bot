@@ -184,6 +184,11 @@ If you break character, I will let you know by saying "Stay in character!" and y
           "`/premium buy` .",
       };
     }
+    if (err == "Your prompt contains content that is not allowed") {
+      return {
+        error: "Your prompt contains content that is not allowed",
+      };
+    }
     if (
       err == "Error: Request failed with status code 429" ||
       err.message.includes("429")
@@ -359,9 +364,7 @@ async function gpt3(prompt: string, maxtokens) {
     });
     return response.data.choices[0].text;
   } catch (e: any) {
-    console.log(e);
-    console.log(e.response);
-    throw e;
+    throw e.response.data.error;
   }
 }
 async function chatgpt(messages, maxtokens) {
@@ -382,9 +385,7 @@ async function chatgpt(messages, maxtokens) {
     });
     return response.data.choices[0].message.content;
   } catch (e: any) {
-    console.log(e);
-    console.log(e.response);
-    throw e;
+    throw e.response.data.error;
   }
 }
 
