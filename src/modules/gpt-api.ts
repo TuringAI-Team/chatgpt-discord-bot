@@ -21,35 +21,35 @@ async function chat(
   image,
   imageDescp?
 ) {
-  /*  var token = await useToken("gpt-3");
+  /*  let token = await useToken("gpt-3");
   if (!token) {
     return {
       error: `We are reaching our capacity limits right now. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`,
     };
   }*/
-  var token = {
+  let token = {
     key: "",
     id: "",
   };
-  var imageDescription = imageDescp;
+  let imageDescription = imageDescp;
   if (image && image.url && !imageDescp) {
     imageDescription = await getImageDescription(image.url);
   }
-  var model;
-  var stop: any;
-  var instructions;
-  var conversation;
+  let model;
+  let stop: any;
+  let instructions;
+  let conversation;
   if (ispremium || m == "chatgpt" || m == "dan") {
     if (m != "sd") {
       conversation = await getConversation(id, m);
     }
   }
-  var revProxy = "https://chatgpt.pawan.krd/conversation";
+  let revProxy = "https://chatgpt.pawan.krd/conversation";
 
-  var key = token.key;
+  let key = token.key;
   if (m == "gpt-3") {
     instructions = `[START_INSTRUCTIONS]
-    You are GPT-3, a language model developed by OpenAI and TuringAI. You are designed to respond to user input in a conversational manner, Answer as concisely as possible. Your training data comes from a diverse range of internet text and You have been trained to generate human-like responses to various questions and prompts. You can provide information on a wide range of topics, but your knowledge is limited to what was present in your training data, which has a cutoff date of 2021. You strive to provide accurate and helpful information to the best of your ability.
+    You are GPT-3, a language model developed by OpenAI and TuringAI. You are designed to respond to user input in a conversational manner, Answer as concisely as possible. Your training data comes from a diverse range of internet text and You have been trained to generate human-like responses to letious questions and prompts. You can provide information on a wide range of topics, but your knowledge is limited to what was present in your training data, which has a cutoff date of 2021. You strive to provide accurate and helpful information to the best of your ability.
     \nCurrent date: ${getToday()}
     \nName of the user talking to: ${userName}
     [END_INSTRUCTIONS]\n`;
@@ -86,11 +86,11 @@ If you break character, I will let you know by saying "Stay in character!" and y
         ",\n"
       )}\nBased on this list answer with the best model for the user prompt, do not include explanations only the model name. Do not use the list order to select a model. If you can't provide a model recommendation answer only with no-model`;
   }
-  var response;
-  var maxtokens = 300;
+  let response;
+  let maxtokens = 300;
   if (ispremium) maxtokens = 600;
-  var bot;
-  var fullMsg = `${message}${
+  let bot;
+  let fullMsg = `${message}${
     imageDescription
       ? `\nIn this user's message are image descriptions of image attachments by the user. Do not refer to them as \"description\", instead as \"image\". Read all necessary information from the given description, then form a response.\nImage description: ${imageDescription} ${
           image.url.includes("base64") ? "" : `\nImage URL:  ${image.url}`
@@ -98,10 +98,10 @@ If you break character, I will let you know by saying "Stay in character!" and y
       : ``
   }`;
 
-  var prompt = `${instructions ? instructions : ""}${
+  let prompt = `${instructions ? instructions : ""}${
     conversation ? conversation : ""
   }\nUser: ${fullMsg}\nAI:\n`;
-  var messages = [];
+  let messages = [];
   if (instructions) {
     messages.push({
       role: "system",
@@ -112,8 +112,8 @@ If you break character, I will let you know by saying "Stay in character!" and y
     conversation.split("<split>").forEach((msg) => {
       // role: content
       if (msg) {
-        var role = msg.split(":")[0];
-        var content = msg.split(":")[1];
+        let role = msg.split(":")[0];
+        let content = msg.split(":")[1];
         if (role == "user" || role == "system" || role == "assistant") {
           messages.push({
             role: role,
@@ -213,7 +213,7 @@ If you break character, I will let you know by saying "Stay in character!" and y
 }
 
 async function getConversation(id, model): Promise<any> {
-  var { data } = await supabase
+  let { data } = await supabase
     .from("conversations")
     .select("*")
     .eq("id", id)
@@ -226,14 +226,14 @@ async function getConversation(id, model): Promise<any> {
 }
 
 async function saveMsg(model, userMsg, aiMsg, id, ispremium, userName) {
-  var conversation;
+  let conversation;
   if (model == "gpt-3") {
     conversation = `\n<split>User: ${userMsg}\nAI: ${aiMsg}`;
   }
   if (model == "chatgpt" || model == "dan") {
     conversation = `user: ${userMsg}<split>assistant: ${aiMsg}<split>`;
   }
-  var { data } = await supabase
+  let { data } = await supabase
     .from("conversations")
     .select("*")
     .eq("id", id)
@@ -246,14 +246,14 @@ async function saveMsg(model, userMsg, aiMsg, id, ispremium, userName) {
       lastMessage: Date.now(),
     });
   } else {
-    var previous = data[0].conversation;
+    let previous = data[0].conversation;
     if (previous) {
       if (model == "chatgpt" || model == "dan") {
-        var messages = [];
+        let messages = [];
         previous.split("<split>").forEach((msg) => {
           // role: content
-          var role = msg.split(":")[0];
-          var content = msg.split(":")[1];
+          let role = msg.split(":")[0];
+          let content = msg.split(":")[1];
           if (role == "user" || role == "system" || role == "assistant") {
             messages.push({
               role: role,
@@ -261,7 +261,7 @@ async function saveMsg(model, userMsg, aiMsg, id, ispremium, userName) {
             });
           }
         });
-        var max = 6;
+        let max = 6;
         if (ispremium == true) max = 12;
         if (messages.length > max) {
           messages.shift();
@@ -273,8 +273,8 @@ async function saveMsg(model, userMsg, aiMsg, id, ispremium, userName) {
       } else {
         previous = previous.split("\n<split>");
         previous = previous.filter((x) => x != "");
-        var length = previous.length;
-        var max = 3;
+        let length = previous.length;
+        let max = 3;
         if (ispremium == true) max = 6;
         if (length > max) {
           previous.shift();

@@ -16,13 +16,13 @@ import ms from "ms";
 export default {
   data: {
     customId: "v",
-    description: "Make variations of an image",
+    description: "Make letiations of an image",
   },
   async execute(interaction, client, generationId, imageId) {
     if (!interaction.deferred && !interaction.replied)
       await interaction.deferReply();
     // cooldown system for not premium users
-    var ispremium = await isPremium(interaction.user.id, interaction.guildId);
+    let ispremium = await isPremium(interaction.user.id, interaction.guildId);
     if (!ispremium) {
       let { data: cooldowns, error } = await supabase
         .from("cooldown")
@@ -30,22 +30,22 @@ export default {
 
         // Filters
         .eq("userId", interaction.user.id)
-        .eq("command", "variations-imagine");
+        .eq("command", "letiations-imagine");
       if (cooldowns && cooldowns[0]) {
-        var cooldown = cooldowns[0];
-        var createdAt = new Date(cooldown.created_at);
-        var milliseconds = createdAt.getTime();
-        var now = Date.now();
-        var diff = now - milliseconds;
+        let cooldown = cooldowns[0];
+        let createdAt = new Date(cooldown.created_at);
+        let milliseconds = createdAt.getTime();
+        let now = Date.now();
+        let diff = now - milliseconds;
         //@ts-ignore
-        var count = ms("30s") - diff;
+        let count = ms("30s") - diff;
         //@ts-ignore
         if (diff >= ms("30s")) {
           const { data, error } = await supabase
             .from("cooldown")
             .update({ created_at: new Date() })
             .eq("userId", interaction.user.id)
-            .eq("command", "variations-imagine");
+            .eq("command", "letiations-imagine");
         } else {
           await interaction.editReply({
             content:
@@ -61,11 +61,11 @@ export default {
         const { data, error } = await supabase
           .from("cooldown")
           .insert([
-            { userId: interaction.user.id, command: "variations-imagine" },
+            { userId: interaction.user.id, command: "letiations-imagine" },
           ]);
       }
     }
-    var { data, error } = await supabase
+    let { data, error } = await supabase
       .from("results")
       .select("*")
       .eq("id", generationId);
@@ -76,9 +76,9 @@ export default {
       });
       return;
     }
-    var generation = data[0];
-    var result = generation.result;
-    var image = result.generations.find((x) => x.id == imageId);
+    let generation = data[0];
+    let result = generation.result;
+    let image = result.generations.find((x) => x.id == imageId);
     if (!image) {
       await interaction.editReply({
         content: `Image not found`,
@@ -88,8 +88,8 @@ export default {
     }
 
     const sfbuff = Buffer.from(image.img, "base64");
-    var nsfw = false;
-    var userBans = await supabase
+    let nsfw = false;
+    let userBans = await supabase
       .from("bans")
       .select("*")
       .eq("id", interaction.user.id);
@@ -103,11 +103,11 @@ export default {
 
     if (interaction.channel && interaction.channel.nsfw) nsfw = true;
     if (!interaction.channel) nsfw = true;
-    var width = generation.result.width;
-    var height = generation.result.height;
+    let width = generation.result.width;
+    let height = generation.result.height;
     try {
-      var gen;
-      var number = 2;
+      let gen;
+      let number = 2;
 
       if (ispremium) number = 4;
 
@@ -209,9 +209,9 @@ export default {
       return;
     }
 
-    var interval = setInterval(async () => {
+    let interval = setInterval(async () => {
       try {
-        var status = await checkGeneration(gen);
+        let status = await checkGeneration(gen);
         if (status.done) {
           clearInterval(interval);
           const { data, error } = await supabase.from("results").insert([
@@ -250,7 +250,7 @@ export default {
             });
           }
           try {
-            var waittime = status.wait_time;
+            let waittime = status.wait_time;
             if (waittime < 15) waittime = 15;
             await interaction.editReply({
               content: `Loading...(${waittime}s)`,

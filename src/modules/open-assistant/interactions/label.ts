@@ -27,8 +27,8 @@ export async function labelInteraction(
   user,
   labelFlagValue
 ) {
-  var translation = await getTranlation(lang);
-  var task = client.tasks.find((x) => x.id == taskId);
+  let translation = await getTranlation(lang);
+  let task = client.tasks.find((x) => x.id == taskId);
 
   if (!task) {
     await interaction.reply({
@@ -38,8 +38,8 @@ export async function labelInteraction(
     return;
   }
   await interaction.deferUpdate();
-  var embeds = [];
-  var infoEmbed = new EmbedBuilder()
+  let embeds = [];
+  let infoEmbed = new EmbedBuilder()
     .setColor("#3a82f7")
     .setTimestamp()
     .setThumbnail("https://open-assistant.io/images/logos/logo.png")
@@ -48,10 +48,10 @@ export async function labelInteraction(
     .setDescription(`${translation[formatTaskType(task.type)].overview}`);
   embeds.push(infoEmbed);
   task.conversation.messages.forEach((x, i) => {
-    var username = "User";
+    let username = "User";
     if (x.is_assistant) username = "AI";
 
-    var emb = new EmbedBuilder()
+    let emb = new EmbedBuilder()
       .setAuthor({
         iconURL: `${
           username == "User"
@@ -68,7 +68,7 @@ export async function labelInteraction(
     embeds.push(emb);
   });
   if (labelTag == "submit") {
-    var solutions: any = {
+    let solutions: any = {
       text: "",
       labels: {},
     };
@@ -78,7 +78,7 @@ export async function labelInteraction(
         solutions.labels[x.name] = parseFloat(x.value);
       }
     });
-    var messageId = task.message_id;
+    let messageId = task.message_id;
     await submitTask(
       taskId,
       user,
@@ -116,7 +116,7 @@ export async function labelInteraction(
       }
     }
   }
-  var label: any;
+  let label: any;
   if (labelTag == "flags") {
     label = {
       list: true,
@@ -127,12 +127,12 @@ export async function labelInteraction(
   }
   const row = new ActionRowBuilder();
   const row2 = new ActionRowBuilder();
-  var rows = [];
+  let rows = [];
 
   if (!label || labelValue == "skip" || labelValue == "submit") {
-    var labels = await getLabels(task);
+    let labels = await getLabels(task);
 
-    var readyEmbed = new EmbedBuilder()
+    let readyEmbed = new EmbedBuilder()
       .setColor("#3a82f7")
       .setTimestamp()
       .setFooter({ text: `${getLocaleDisplayName(lang)}` })
@@ -140,8 +140,8 @@ export async function labelInteraction(
       .addFields(
         labels.map((x) => {
           if (x) {
-            var label = task.labels.find((y) => y.name == x.name);
-            var value = label.value;
+            let label = task.labels.find((y) => y.name == x.name);
+            let value = label.value;
 
             if (label) {
               if (x.type == "yes/no" || x.type == "flags") {
@@ -150,8 +150,8 @@ export async function labelInteraction(
               } else {
                 value = `${value * 100}%`;
               }
-              var name = x.name.replaceAll("_", "");
-              var labelTxt = labelText(x, translation);
+              let name = x.name.replaceAll("_", "");
+              let labelTxt = labelText(x, translation);
               if (labelTxt.question) {
                 name = labelTxt.question.replaceAll(
                   "{{language}}",
@@ -192,8 +192,8 @@ export async function labelInteraction(
     return;
   }
   if (label.list) {
-    var flags = label.resultsTask.filter((x) => x.type == "flags");
-    var embed = new EmbedBuilder()
+    let flags = label.resultsTask.filter((x) => x.type == "flags");
+    let embed = new EmbedBuilder()
       .setColor("#3a82f7")
       .setTimestamp()
       .setFooter({ text: `${getLocaleDisplayName(lang)}` })
@@ -219,7 +219,7 @@ export async function labelInteraction(
       if (label) {
         flag.value = label.value;
       }
-      var nextValue = flag.value == 1 ? 0 : 1;
+      let nextValue = flag.value == 1 ? 0 : 1;
       if (!flag.value) {
         nextValue = 1;
       }
@@ -253,7 +253,7 @@ export async function labelInteraction(
   } else {
     let lbl = label.resultsTask[0];
     if (lbl.type == "yes/no") {
-      var embed = new EmbedBuilder()
+      let embed = new EmbedBuilder()
         .setColor("#3a82f7")
         .setTimestamp()
         .setFooter({ text: `${getLocaleDisplayName(lang)}` })
@@ -288,7 +288,7 @@ export async function labelInteraction(
           .setStyle(ButtonStyle.Secondary)
       );
     } else if (lbl.type == "number") {
-      var embed = new EmbedBuilder()
+      let embed = new EmbedBuilder()
         .setColor("#3a82f7")
         .setTimestamp()
         .setFooter({ text: `${getLocaleDisplayName(lang)}` })

@@ -58,9 +58,9 @@ export default {
             )
         )
     )*/ async execute(interaction, client, commands, commandType, options) {
-    var guildId;
+    let guildId;
     if (interaction.guild) guildId = interaction.guild.id;
-    /*var ispremium = await isPremium(interaction.user.id, guildId);
+    /*let ispremium = await isPremium(interaction.user.id, guildId);
     if (!ispremium) {
       await commandType.reply(interaction, {
         content:
@@ -69,11 +69,11 @@ export default {
       });
       return;
     }*/
-    var model = interaction.options.getString("model");
+    let model = interaction.options.getString("model");
     if (!model) model = "chatgpt";
-    var listen = false;
+    let listen = false;
     if (interaction.options.getSubcommand() == "auto") {
-      var ispremium = await isPremium(interaction.user.id, guildId);
+      let ispremium = await isPremium(interaction.user.id, guildId);
       if (!ispremium) {
         await commandType.reply(interaction, {
           content:

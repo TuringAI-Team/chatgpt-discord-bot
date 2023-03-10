@@ -16,28 +16,28 @@ export default {
     .setName("bot")
     .setDescription("Get the info of the bot"),
   async execute(interaction, client, commands, commandType) {
-    var latency = Date.now() - interaction.createdTimestamp;
+    let latency = Date.now() - interaction.createdTimestamp;
     const timeString = time(client.user.createdAt, "R");
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
-    var shard = client.shard.client.options.shards[0] + 1;
+    let shard = client.shard.client.options.shards[0] + 1;
 
     await commandType.load(interaction);
-    var totalGuildsR = await client.shard.fetchClientValues(
+    let totalGuildsR = await client.shard.fetchClientValues(
       "guilds.cache.size"
     );
     const totalGuilds = totalGuildsR.reduce(
       (acc, guildCount) => acc + guildCount,
       0
     );
-    var totalMembersR = await client.shard.broadcastEval((c) =>
+    let totalMembersR = await client.shard.broadcastEval((c) =>
       c.guilds.cache.reduce((acc, guild) => acc + guild.memberCount, 0)
     );
     const totalMembers = totalMembersR.reduce(
       (acc, memberCount) => acc + memberCount,
       0
     );
-    var embed = new EmbedBuilder()
+    let embed = new EmbedBuilder()
       .setColor("#5865F2")
       .setTimestamp()
       .setTitle("ChatGPT Bot")

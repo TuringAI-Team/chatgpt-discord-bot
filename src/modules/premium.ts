@@ -9,7 +9,7 @@ export async function isPremium(userId: string, serverId: string) {
     // Filters
     .eq("id", userId);
   if (premium && premium[0]) {
-    var now = Date.now();
+    let now = Date.now();
     if (now >= premium[0].expires_at) {
       const { data, error } = await supabase
         .from("premium")
@@ -28,7 +28,7 @@ export async function isPremium(userId: string, serverId: string) {
     // Filters
     .eq("id", serverId);
   if (premiumServer && premiumServer[0]) {
-    var now = Date.now();
+    let now = Date.now();
     if (now >= premiumServer[0].expires_at) {
       const { data, error } = await supabase
         .from("premium")
@@ -51,7 +51,7 @@ export async function activateKey(key: string, id: string, type: string) {
     .eq("key", key)
     .eq("claimed", false);
   if (keyD && keyD[0]) {
-    var duration = keyD[0].duration;
+    let duration = keyD[0].duration;
     if (duration == "1m") duration = "30d";
     if (type == "user" && keyD[0].type == "server") {
       return {
@@ -63,7 +63,7 @@ export async function activateKey(key: string, id: string, type: string) {
         error: `This key is for users not for servers.`,
       };
     }
-    var r = await makeItPremium(id, "key", duration, type);
+    let r = await makeItPremium(id, "key", duration, type);
     await supabase
       .from("keys")
       .update({

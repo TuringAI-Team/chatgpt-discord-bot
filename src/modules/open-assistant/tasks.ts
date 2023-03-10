@@ -1,7 +1,7 @@
 import { EmbedBuilder } from "discord.js";
 import supabase from "../supabase.js";
 import OpenAssistant from "open-assistant.js";
-var oa: OpenAssistant = new OpenAssistant(
+let oa: OpenAssistant = new OpenAssistant(
   process.env.OA_APIKEY,
   process.env.OA_APIURL
 );
@@ -10,12 +10,12 @@ import { taskInteraction } from "./interactions.js";
 import message from "src/events/message.js";
 
 export async function saveTask(task, lang, user, answer) {
-  var taskData = {
+  let taskData = {
     ...task,
     lang: lang,
     ...answer,
   };
-  var { data, error } = await supabase
+  let { data, error } = await supabase
     .from("open_assistant_tasks")
     .insert([{ id: task.id, completedBy: user.id, task: taskData }]);
   return true;
@@ -43,15 +43,15 @@ export async function submitTask(
   client,
   messageId?
 ) {
-  var res = await oa.acceptTask(taskId, user, messageId);
+  let res = await oa.acceptTask(taskId, user, messageId);
   if (!messageId) messageId = res;
-  var solveTask = await oa.solveTask(task, user, lang, solution, messageId);
+  let solveTask = await oa.solveTask(task, user, lang, solution, messageId);
   await saveTask(task, lang, user, { messageId: messageId, ...solution });
-  var index = client.tasks.findIndex((x) => x.id == taskId);
+  let index = client.tasks.findIndex((x) => x.id == taskId);
   if (index > -1) {
     client.tasks.splice(index, 1);
   }
-  var successEmbed = new EmbedBuilder()
+  let successEmbed = new EmbedBuilder()
     .setColor(
       `${
         solveTask.type == "task_done"
@@ -78,7 +78,7 @@ export async function submitTask(
     components: [],
   });
   setTimeout(async () => {
-    var translation = await getTranlation(lang);
+    let translation = await getTranlation(lang);
     await taskInteraction(interaction, lang, user, translation, client);
   }, 3000);
 }

@@ -2,7 +2,7 @@ import axios from "axios";
 import supabase from "../supabase.js";
 
 export async function getUserLang(userId: string) {
-  var { data: user } = await supabase
+  let { data: user } = await supabase
     .from("open_assistant_users")
     .select("*")
     .eq("id", userId);
@@ -14,7 +14,7 @@ export async function getUserLang(userId: string) {
 }
 
 export async function setUserLang(userId: string, lang: string) {
-  var { data: user } = await supabase
+  let { data: user } = await supabase
     .from("open_assistant_users")
     .select("*")
     .eq("id", userId);

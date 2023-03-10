@@ -1,33 +1,33 @@
 export async function getTranlation(lang: string) {
-  var res = await fetch(
+  let res = await fetch(
     `https://open-assistant.io/locales/${lang}/common.json`
   );
-  var json = await res.json();
-  var res2 = await fetch(
+  let json = await res.json();
+  let res2 = await fetch(
     `https://open-assistant.io/locales/${lang}/tasks.json`
   );
-  var json2 = await res2.json();
-  var res3 = await fetch(
+  let json2 = await res2.json();
+  let res3 = await fetch(
     `https://open-assistant.io/locales/${lang}/dashboard.json`
   );
-  var json3 = await res3.json();
-  var res4 = await fetch(
+  let json3 = await res3.json();
+  let res4 = await fetch(
     `https://open-assistant.io/locales/${lang}/leaderboard.json`
   );
-  var json4 = await res4.json();
-  var res5 = await fetch(
+  let json4 = await res4.json();
+  let res5 = await fetch(
     `https://open-assistant.io/locales/${lang}/labelling.json`
   );
-  var json5 = await res5.json();
-  var res6 = await fetch(
+  let json5 = await res5.json();
+  let res6 = await fetch(
     `https://open-assistant.io/locales/${lang}/message.json`
   );
-  var json6 = await res6.json();
-  var res7 = await fetch(
+  let json6 = await res6.json();
+  let res7 = await fetch(
     `https://open-assistant.io/locales/${lang}/index.json`
   );
-  var json7 = await res7.json();
-  var translationObject = {
+  let json7 = await res7.json();
+  let translationObject = {
     ...json,
     ...json2,
     ...json3,
@@ -37,13 +37,13 @@ export async function getTranlation(lang: string) {
     ...json7,
   };
   if (!translationObject["skip"]) {
-    var englishTranslation = await getTranlation("en");
+    let englishTranslation = await getTranlation("en");
     translationObject["skip"] = englishTranslation["skip"];
   }
   return translationObject;
 }
 
-var locales = [
+let locales = [
   "en",
   "ar",
   "bn",
