@@ -322,18 +322,24 @@ async function gpt3(prompt: string, maxtokens) {
     max_tokens: maxtokens,
     model: "text-davinci-003",
     stop: "<|im_end|>",
+    stream: false,
   });
-
-  let response = await axios({
-    method: "post",
-    url: "https://gpt.pawan.krd/api/completions",
-    headers: {
-      Authorization: `Bearer ${process.env.PAWAN_KEY}`,
-      "Content-Type": "application/json",
-    },
-    data: data,
-  });
-  return response.data.choices[0].text;
+  try {
+    let response = await axios({
+      method: "post",
+      url: "https://gpt.pawan.krd/api/completions",
+      headers: {
+        Authorization: `Bearer ${process.env.PAWAN_KEY}`,
+        "Content-Type": "application/json",
+      },
+      data: data,
+    });
+    return response.data.choices[0].text;
+  } catch (e: any) {
+    console.log(e);
+    console.log(e.response);
+    throw e;
+  }
 }
 async function chatgpt(messages, maxtokens) {
   const data = JSON.stringify({
