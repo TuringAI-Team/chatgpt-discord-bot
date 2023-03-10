@@ -22,7 +22,7 @@ export default {
 
     message.content = message.body;
     // command that start with ! or / or .
-    var args;
+    let args;
     if (
       message.content.startsWith("!") ||
       message.content.startsWith("/") ||
@@ -31,7 +31,7 @@ export default {
       args = message.content.slice(1).trim().split(/ +/g);
       message.commandName = args.shift().toLowerCase();
       if (message.commandName == "chat") {
-        var content = args.join(" ");
+        let content = args.join(" ");
         message.content = content;
       }
     }
@@ -44,14 +44,14 @@ export default {
         message.commandName = "chat";
       }
     }
-    var command = client.commands.find((x) => x.name == message.commandName);
+    let command = client.commands.find((x) => x.name == message.commandName);
     if (!command) return await message.reply("Command not found");
-    var terms = await checkTerms(message.user.id, "whatsapp");
+    let terms = await checkTerms(message.user.id, "whatsapp");
     if (terms) {
       await message.reply(terms);
       await delay(8000);
     }
-    var ispremium = message.user.ispremium;
+    let ispremium = message.user.ispremium;
     try {
       if (ispremium == false && command.cooldown) {
         let { data: cooldowns, error } = await supabase
@@ -62,13 +62,13 @@ export default {
           .eq("userId", message.user.id)
           .eq("command", `whatsapp-${command.name}`);
         if (cooldowns && cooldowns[0]) {
-          var cooldown = cooldowns[0];
-          var createdAt = new Date(cooldown.created_at);
-          var milliseconds = createdAt.getTime();
-          var now = Date.now();
-          var diff = now - milliseconds;
+          let cooldown = cooldowns[0];
+          let createdAt = new Date(cooldown.created_at);
+          let milliseconds = createdAt.getTime();
+          let now = Date.now();
+          let diff = now - milliseconds;
           // @ts-ignore
-          var count = ms(command.cooldown) - diff;
+          let count = ms(command.cooldown) - diff;
           // @ts-ignore
           if (diff >= ms(command.cooldown)) {
             const { data, error } = await supabase
@@ -78,7 +78,7 @@ export default {
               .eq("command", `whatsapp-${command.name}`);
             await command.execute(message, client, args);
           } else {
-            var msg = await message.reply(
+            let msg = await message.reply(
               `Use this command again *${ms(
                 count
               )}*.\nIf you want to *avoid this cooldown* you can *donate to get premium*. If you want to donate use the command buy a key in our shop and send it here.`

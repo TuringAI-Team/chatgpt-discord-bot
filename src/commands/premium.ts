@@ -11,7 +11,7 @@ import {
 import "dotenv/config";
 import { activateKey } from "../modules/premium.js";
 
-var data = new SlashCommandBuilder()
+let data = new SlashCommandBuilder()
   .setName("premium")
   .setDescription(
     "Get your Turing AI premium subscription and use the bot without restrictions."
@@ -51,8 +51,8 @@ export default {
   data,
   disablePing: true,
   async execute(interaction, client) {
-    var key = interaction.options.getString("key");
-    var type = interaction.options.getString("type");
+    let key = interaction.options.getString("key");
+    let type = interaction.options.getString("type");
     if (interaction.options.getSubcommand() === "buy") {
       await interaction.reply({
         content:
@@ -67,7 +67,7 @@ export default {
           ephemeral: true,
         });
       }
-      var r;
+      let r;
       if (type == "server") {
         if (
           !interaction.member.permissions.has(

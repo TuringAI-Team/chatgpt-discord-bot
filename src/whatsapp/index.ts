@@ -4,7 +4,7 @@ import { WebhookClient, AttachmentBuilder } from "discord.js";
 import eventHandler from "./handlers/events.js";
 import commandHandler from "./handlers/commands.js";
 
-var args = [];
+let args = [];
 if (process.env.NODE_ENV != "development") {
   args.push("--no-sandbox");
 }

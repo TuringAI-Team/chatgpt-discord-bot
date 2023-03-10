@@ -11,7 +11,7 @@ import supabase from "../modules/supabase.js";
 import { useToken } from "../modules/loadbalancer.js";
 import chatSonic from "../modules/sonic.js";
 import { isPremium } from "../modules/premium.js";
-var maintenance = false;
+let maintenance = false;
 import { ImagineInteraction } from "../modules/stablehorde.js";
 
 export default {
@@ -51,9 +51,9 @@ export default {
       );
       return;
     }
-    var message;
-    var model;
-    var attachment;
+    let message;
+    let model;
+    let attachment;
 
     if (!interaction.options) {
       message = options.message;
@@ -71,11 +71,11 @@ export default {
       model = interaction.options.getString("model");
     }
 
-    var result;
-    var cached = false;
-    var guildId;
+    let result;
+    let cached = false;
+    let guildId;
     if (interaction.guild) guildId = interaction.guild.id;
-    var ispremium = await isPremium(interaction.user.id, guildId);
+    let ispremium = await isPremium(interaction.user.id, guildId);
     /*if (attachment && !ispremium) {
       await commandType.reply(interaction, {
         content:
@@ -100,7 +100,7 @@ export default {
         .eq("prompt", message.toLowerCase())
         .eq("provider", "gpt-3");
       if (!results || error) {
-        var errr = "Error connecting with db";
+        let errr = "Error connecting with db";
 
         await responseWithText(
           interaction,
@@ -164,7 +164,7 @@ export default {
         .eq("prompt", message.toLowerCase())
         .eq("provider", "chatsonic");
       if (!results || error) {
-        var errr = "Error connecting with db";
+        let errr = "Error connecting with db";
 
         await responseWithText(
           interaction,
@@ -203,7 +203,7 @@ export default {
       return;
     }
     if (!result.error) {
-      var response = result.text;
+      let response = result.text;
       if (cached == false) {
         const { data, error } = await supabase.from("results").insert([
           {
@@ -215,7 +215,7 @@ export default {
         ]);
         // console.log(error);
       }
-      var channel = interaction.channel;
+      let channel = interaction.channel;
       if (!interaction.channel) channel = interaction.user;
 
       await responseWithText(
@@ -259,20 +259,20 @@ async function responseWithText(
     .replaceAll("@here", "here")
     .replaceAll("<@", "@");
 
-  var completeResponse = `**${interaction.user.tag}:** ${prompt}\n**AI(${type}):** ${result}`;
-  var charsCount = completeResponse.split("").length;
+  let completeResponse = `**${interaction.user.tag}:** ${prompt}\n**AI(${type}):** ${result}`;
+  let charsCount = completeResponse.split("").length;
   const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setStyle(ButtonStyle.Danger)
       .setLabel(`Reset conversation with ${type}`)
       .setCustomId(`reset_${type}-${interaction.user.id}`)
   );
-  var rows = [];
+  let rows = [];
   if (type != "error") {
     rows.push(row);
   }
   if (image) {
-    var files = [
+    let files = [
       {
         attachment: image.url,
         name: "image.png",
@@ -280,11 +280,11 @@ async function responseWithText(
     ];
   }
   if (charsCount / 2000 >= 1) {
-    var lastMsg;
-    var loops = Math.ceil(charsCount / 2000);
+    let lastMsg;
+    let loops = Math.ceil(charsCount / 2000);
     console.log(loops);
 
-    for (var i = 0; i < loops; i++) {
+    for (let i = 0; i < loops; i++) {
       if (i == 0) {
         try {
           lastMsg = await commandType.reply(interaction, {

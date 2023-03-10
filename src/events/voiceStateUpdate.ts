@@ -10,8 +10,8 @@ export default {
   once: false,
   async execute(oldState, newState, client) {
     if (getVoiceConnection(oldState.guild.id)) {
-      var voiceConnection = getVoiceConnection(oldState.guild.id);
-      var channel = client.channels.cache.get(
+      let voiceConnection = getVoiceConnection(oldState.guild.id);
+      let channel = client.channels.cache.get(
         voiceConnection.joinConfig.channelId
       );
       if (channel) {

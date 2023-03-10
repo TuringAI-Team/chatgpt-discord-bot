@@ -35,7 +35,7 @@ export default {
       !interaction.isContextMenuCommand()
     )
       return;
-    var commands = await client.commands.toJSON();
+    let commands = await client.commands.toJSON();
     const command = interaction.client.commands.get(interaction.commandName);
 
     if (!command) {
@@ -44,9 +44,9 @@ export default {
       );
       return;
     }
-    var guildId;
+    let guildId;
     if (interaction.guild) guildId = interaction.guild.id;
-    var terms = await checkTerms(interaction.user.id, "discord");
+    let terms = await checkTerms(interaction.user.id, "discord");
     if (terms) {
       await interaction.reply({
         content: terms,
@@ -54,7 +54,7 @@ export default {
       });
       await delay(8000);
     }
-    var ispremium = await isPremium(interaction.user.id, guildId);
+    let ispremium = await isPremium(interaction.user.id, guildId);
 
     try {
       if (command.cooldown && ispremium == false) {
@@ -66,13 +66,13 @@ export default {
           .eq("userId", interaction.user.id)
           .eq("command", interaction.commandName);
         if (cooldowns && cooldowns[0]) {
-          var cooldown = cooldowns[0];
-          var createdAt = new Date(cooldown.created_at);
-          var milliseconds = createdAt.getTime();
-          var now = Date.now();
-          var diff = now - milliseconds;
+          let cooldown = cooldowns[0];
+          let createdAt = new Date(cooldown.created_at);
+          let milliseconds = createdAt.getTime();
+          let now = Date.now();
+          let diff = now - milliseconds;
           // @ts-ignore
-          var count = ms(command.cooldown) - diff;
+          let count = ms(command.cooldown) - diff;
           // @ts-ignore
           if (diff >= ms(command.cooldown)) {
             const { data, error } = await supabase

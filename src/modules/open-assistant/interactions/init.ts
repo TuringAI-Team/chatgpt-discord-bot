@@ -10,7 +10,7 @@ import { getLocaleDisplayName, locales } from "../langs.js";
 import { formatTaskType } from "../tasks.js";
 
 export async function initInteraction(interaction, translation, lang) {
-  var embed = new EmbedBuilder()
+  let embed = new EmbedBuilder()
     .setColor("#3a82f7")
     .setTimestamp()
     .setFooter({ text: `${getLocaleDisplayName(lang)}` })

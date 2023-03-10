@@ -27,13 +27,13 @@ export default {
       ephemeral: true,
     });
     return;*/
-    var lang = await getUserLang(interaction.user.id);
+    let lang = await getUserLang(interaction.user.id);
     await interaction.deferReply();
 
     if (!lang) {
       await langInteraction(interaction);
     } else {
-      var translation = await getTranlation(lang);
+      let translation = await getTranlation(lang);
       await initInteraction(interaction, translation, lang);
       return;
     }

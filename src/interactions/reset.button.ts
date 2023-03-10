@@ -16,7 +16,7 @@ export default {
       await interaction.deferReply();
     }
 
-    var conversationOwner = conversationId.split("-")[1];
+    let conversationOwner = conversationId.split("-")[1];
     if (interaction.user.id != conversationOwner) {
       await interaction.editReply({
         content: "You can't reset this conversation",
@@ -24,7 +24,7 @@ export default {
       });
       return;
     }
-    var { data: conversation, error } = await supabase
+    let { data: conversation, error } = await supabase
       .from("conversations")
       .select("*")
       .eq("id", conversationId)

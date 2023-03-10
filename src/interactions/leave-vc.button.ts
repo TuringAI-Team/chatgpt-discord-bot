@@ -13,9 +13,9 @@ export default {
   },
   async execute(interaction, client) {
     if (getVoiceConnection(interaction.guildId)) {
-      var voiceConnection = getVoiceConnection(interaction.guildId);
+      let voiceConnection = getVoiceConnection(interaction.guildId);
 
-      var channel = client.channels.cache.get(
+      let channel = client.channels.cache.get(
         voiceConnection.joinConfig.channelId
       );
       if (!channel) {

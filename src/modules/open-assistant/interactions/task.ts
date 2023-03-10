@@ -8,7 +8,7 @@ import {
 import OpenAssistant from "open-assistant.js";
 import { getLocaleDisplayName } from "../langs.js";
 import { formatTaskType } from "../tasks.js";
-var oa: OpenAssistant = new OpenAssistant(
+let oa: OpenAssistant = new OpenAssistant(
   process.env.OA_APIKEY,
   process.env.OA_APIURL
 );
@@ -19,7 +19,7 @@ export async function taskInteraction(
   translation,
   client
 ) {
-  /*var ispremium = await isPremium(interaction.user.id, interaction.guildId);
+  /*let ispremium = await isPremium(interaction.user.id, interaction.guildId);
       if (!ispremium) {
         await interaction.editReply({
           ephemeral: true,
@@ -28,7 +28,7 @@ export async function taskInteraction(
         return;
       }*/
 
-  var task = await oa.getTask({
+  let task = await oa.getTask({
     type: "random",
     user: user,
     collective: false,
@@ -36,22 +36,22 @@ export async function taskInteraction(
   });
   client.tasks.push(task);
   if (task.message) {
-    var embd = await sendErr(task.message);
+    let embd = await sendErr(task.message);
     await interaction.editReply({
       embeds: [embd],
       components: [],
     });
     return;
   }
-  var embeds = [];
-  var embed = new EmbedBuilder()
+  let embeds = [];
+  let embed = new EmbedBuilder()
     .setColor("#3a82f7")
     .setTimestamp()
     .setThumbnail("https://open-assistant.io/images/logos/logo.png")
     .setFooter({ text: `${getLocaleDisplayName(lang)}` })
     .setTitle(`${translation[formatTaskType(task.type)].label}`)
     .setDescription(`${translation[formatTaskType(task.type)].overview}`);
-  var rows = [];
+  let rows = [];
   const row = new ActionRowBuilder();
 
   if (
@@ -68,10 +68,10 @@ export async function taskInteraction(
     embeds.push(embed);
     if (task.type == "assistant_reply" || task.type == "prompter_reply") {
       task.conversation.messages.forEach((x, i) => {
-        var username = "User";
+        let username = "User";
         if (x.is_assistant) username = "AI";
 
-        var emb = new EmbedBuilder()
+        let emb = new EmbedBuilder()
           .setAuthor({
             iconURL: `${
               username == "User"
@@ -97,10 +97,10 @@ export async function taskInteraction(
     );
     embeds.push(embed);
     task.conversation.messages.forEach((x, i) => {
-      var username = "User";
+      let username = "User";
       if (x.is_assistant) username = "AI";
 
-      var emb = new EmbedBuilder()
+      let emb = new EmbedBuilder()
         .setAuthor({
           iconURL: `${
             username == "User"
@@ -135,7 +135,7 @@ export async function taskInteraction(
   });
 }
 async function sendErr(err: string) {
-  var embed = new EmbedBuilder()
+  let embed = new EmbedBuilder()
     .setColor("#F73A3A")
     .setDescription(err)
     .setTimestamp();

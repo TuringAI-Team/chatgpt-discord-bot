@@ -5,21 +5,21 @@ export default {
     .setName("help")
     .setDescription("Get the command list of the bot"),
   async execute(interaction, client, commands, commandType) {
-    var fields = [];
-    for (var i = 0; i < commands.length; i++) {
-      var command = commands[i].data;
+    let fields = [];
+    for (let i = 0; i < commands.length; i++) {
+      let command = commands[i].data;
       if (command.description) {
-        var optionMsg = "";
+        let optionMsg = "";
         if (command.options) {
-          var maxLength = command.options.length;
+          let maxLength = command.options.length;
           if (maxLength > 3) maxLength = 3;
-          for (var j = 0; j < maxLength; j++) {
-            var option = command.options[j];
+          for (let j = 0; j < maxLength; j++) {
+            let option = command.options[j];
             optionMsg += " `" + `${option.name}: ${option.description}` + "`";
           }
         }
 
-        var newField = {
+        let newField = {
           name: `/${command.name} ${optionMsg}`,
           value: command.description,
           inline: false,
@@ -27,7 +27,7 @@ export default {
         fields.push(newField);
       }
     }
-    var embed = new EmbedBuilder()
+    let embed = new EmbedBuilder()
       .setColor("#5865F2")
       .setTimestamp()
       .setTitle("ChatGPT Help")
