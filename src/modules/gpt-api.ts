@@ -341,16 +341,22 @@ async function chatgpt(messages, maxtokens) {
     model: "gpt-3.5-turbo",
     messages,
   });
-  let response = await axios({
-    method: "post",
-    url: "https://gpt.pawan.krd/api/chat/completions",
-    headers: {
-      Authorization: `Bearer ${process.env.PAWAN_KEY}`,
-      "Content-Type": "application/json",
-    },
-    data: data,
-  });
-  return response.data.choices[0].message.content;
+  try {
+    let response = await axios({
+      method: "post",
+      url: "https://gpt.pawan.krd/api/chat/completions",
+      headers: {
+        Authorization: `Bearer ${process.env.PAWAN_KEY}`,
+        "Content-Type": "application/json",
+      },
+      data: data,
+    });
+    return response.data.choices[0].message.content;
+  } catch (e: any) {
+    console.log(e);
+    console.log(e.response);
+    throw e;
+  }
 }
 
 export { chat };
