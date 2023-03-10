@@ -32,13 +32,13 @@ export default {
   async execute(message, client) {
     if (message.mentions.has(client.user) && !message.author.bot) {
       var content = message.content;
-      if (message.content.includes(`<@${client.user.id}>`)) {
-        if (
-          !message.content.startsWith(`<@${client.user.id}>`) ||
-          message.content.startsWith("@everyone") ||
-          message.content.startsWith("@here")
-        )
-          return;
+      if (
+        !message.content.startsWith(`<@${client.user.id}>`) ||
+        message.content.startsWith("@everyone") ||
+        message.content.startsWith("@here")
+      )
+        return;
+      if (message.content.startsWith(`<@${client.user.id}>`)) {
         content = message.content.split(`<@${client.user.id}> `)[1];
       }
 
