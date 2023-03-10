@@ -28,9 +28,9 @@ async function chat(
     };
   }*/
   var token = {
-    key:'',
-    id: ''
-  }
+    key: "",
+    id: "",
+  };
   var imageDescription = imageDescp;
   if (image && image.url && !imageDescp) {
     imageDescription = await getImageDescription(image.url);
@@ -145,9 +145,9 @@ If you break character, I will let you know by saying "Stay in character!" and y
         await saveMsg(m, fullMsg, response, id, ispremium, userName);
       }
     }
-    setTimeout(async () => {
+    /* setTimeout(async () => {
       await removeMessage(token.id);
-    }, 6000);
+    }, 6000);*/
     return { text: response, type: m };
   } catch (err: any) {
     console.log(`${token.id}: ${err} -- ${m}`);
@@ -170,14 +170,14 @@ If you break character, I will let you know by saying "Stay in character!" and y
       err.message.includes("429")
     ) {
       await disableAcc(token.id, false);
-      setTimeout(async () => {
+      /*   setTimeout(async () => {
         await removeMessage(token.id);
-      }, 16000);
+      }, 16000);*/
     } else {
       await disableAcc(token.id, false);
-      setTimeout(async () => {
+      /*   setTimeout(async () => {
         await removeMessage(token.id);
-      }, 6000);
+      }, 6000);*/
     }
 
     if (ispremium && retries < 3) {
