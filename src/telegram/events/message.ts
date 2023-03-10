@@ -8,20 +8,18 @@ import delay from "delay";
 export default {
   name: "message",
   async execute(message, client) {
-    if (!(message.from || message.body.length || message.fromMe)) return;
+  	//Check if message is from group;
+  	if (message.message.chat.type == 'group') return;
 
-    message.user = {
-      id: message.from,
-      name: message.from,
-      ispremium: await isPremium(message.from, null),
-      contact: await message.getContact(),
-    };
-    message.load = async () => {
-      client.sendSeen(message.from);
+  	 message.user = {
+      id: message.message.from.from.id,
+      name: message.message.from.id,
+      ispremium: await isPremium(message.message.from.id, null),
+      //contact: await message.getContact(),
     };
 
-    message.content = message.body;
-    // command that start with ! or / or .
+    message.content = message.message.text;
+
     var args;
     if (
       message.content.startsWith("!") ||
@@ -36,7 +34,6 @@ export default {
       }
     }
     if (!message.commandName) {
-      if (message.isGroup) return;
       if (isUUIDv4(message.content)) {
         message.commandName = "claim";
         args = [message.content];
@@ -46,7 +43,7 @@ export default {
     }
     var command = client.commands.find((x) => x.name == message.commandName);
     if (!command) return await message.reply("Command not found");
-    var terms = await checkTerms(message.user.id, "whatsapp");
+    var terms = await checkTerms(message.user.id, "telegram");
     if (terms) {
       await message.reply(terms);
       await delay(8000);
@@ -60,7 +57,7 @@ export default {
 
           // Filters
           .eq("userId", message.user.id)
-          .eq("command", `whatsapp-${command.name}`);
+          .eq("command", `telegram-${command.name}`);
         if (cooldowns && cooldowns[0]) {
           var cooldown = cooldowns[0];
           var createdAt = new Date(cooldown.created_at);
@@ -75,13 +72,13 @@ export default {
               .from("cooldown")
               .update({ created_at: new Date() })
               .eq("userId", message.user.id)
-              .eq("command", `whatsapp-${command.name}`);
+              .eq("command", `telegram-${command.name}`);
             await command.execute(message, client, args);
           } else {
-            var msg = await message.reply(
-              `Use this command again *${ms(
+            var msg = await message.replyWithHtml(
+              `Use this command again <b>${ms(
                 count
-              )}*.\nIf you want to *avoid this cooldown* you can *donate to get premium*. If you want to donate use the command buy a key in our shop and send it here.`
+              )}</b>.\nIf you want to <b>avoid this cooldown</b> you can <b>donate to get premium</b>. If you want to donate use the command buy a key in our shop and send it here.`
             );
             await msg.reply(
               `Our shop: https://turingai.mysellix.io/product/63d6802c1fc36`
@@ -91,7 +88,7 @@ export default {
           const { data, error } = await supabase
             .from("cooldown")
             .insert([
-              { userId: message.user.id, command: `whatsapp-${command.name}` },
+              { userId: message.user.id, command: `telegram-${command.name}` },
             ]);
           await command.execute(message, client, args);
         }
