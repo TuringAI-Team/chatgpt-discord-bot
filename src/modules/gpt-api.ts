@@ -125,29 +125,9 @@ If you break character, I will let you know by saying "Stay in character!" and y
   });
   try {
     if (m == "gpt-3") {
-      bot = new OpenAI(key, {
-        max_tokens: maxtokens, // OpenAI parameter [Max response size by tokens]
-        stop: stop, // OpenAI parameter
-        instructions: instructions,
-        aiName: "AI",
-        model: model,
-        revProxy: revProxy,
-      }); // Note: options is optional
-
-      response = await bot.ask(prompt, randomUUID());
+      response = await gpt3(prompt, maxtokens);
     } else {
-      const configuration = new Configuration({
-        apiKey: key,
-      });
-
-      const openai = new OpenAIApi(configuration);
-      const completion = await openai.createChatCompletion({
-        model: "gpt-3.5-turbo",
-        max_tokens: maxtokens,
-        messages: messages,
-      });
-
-      response = completion.data.choices[0].message.content;
+      response = await chatgpt(messages, maxtokens);
     }
 
     if (response) {
@@ -336,4 +316,41 @@ export async function getImageDescription(image) {
   if (prediction.error) return prediction.error;
   return prediction.output;
 }
+async function gpt3(prompt: string, maxtokens) {
+  const data = JSON.stringify({
+    prompt: prompt,
+    max_tokens: maxtokens,
+    model: "text-davinci-003",
+    stop: "<|im_end|>",
+  });
+
+  let response = await axios({
+    method: "post",
+    url: "https://gpt.pawan.krd/api/completions",
+    headers: {
+      Authorization: `Bearer ${process.env.PAWAN_KEY}`,
+      "Content-Type": "application/json",
+    },
+    data: data,
+  });
+  return response.data.choices[0].text;
+}
+async function chatgpt(messages, maxtokens) {
+  const data = JSON.stringify({
+    max_tokens: maxtokens,
+    model: "gpt-3.5-turbo",
+    messages,
+  });
+  let response = await axios({
+    method: "post",
+    url: "https://gpt.pawan.krd/api/chat/completions",
+    headers: {
+      Authorization: `Bearer ${process.env.PAWAN_KEY}`,
+      "Content-Type": "application/json",
+    },
+    data: data,
+  });
+  return response.data.choices[0].message.content;
+}
+
 export { chat };

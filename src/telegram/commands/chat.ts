@@ -1,25 +1,28 @@
 import { chat } from "../../modules/gpt-api.js";
+import FormData from "form-data";
+import { randomUUID } from "crypto";
+import axios from "axios";
+
 export default {
   name: "chat",
   description: "chat with bot",
   cooldown: "30s",
   async execute(message, client) {
-  	var image;
-  	var messagee = message.message;
-  	if (messagee.photo && messagee.photo.length > 0) {
-  		var photo = messagee.photo[messagee.photo.length - 1];
-  	}
-  	else if(message.audio){
-  		var audio_data = await message.telegram.getFile(messagee.audio.file_id);
-  		var transcription: any = await getTranscription(audio_data);
-        if (transcription.error) {
-          await message.reply("Error occured");
-          return;
-        } else {
-          message.content = transcription;
-        }
-  	}
-  	   await message.load();
+    var image;
+    var messagee = message.message;
+    if (messagee.photo && messagee.photo.length > 0) {
+      var photo = messagee.photo[messagee.photo.length - 1];
+    } else if (message.audio) {
+      var audio_data = await message.telegram.getFile(messagee.audio.file_id);
+      var transcription: any = await getTranscription(audio_data);
+      if (transcription.error) {
+        await message.reply("Error occured");
+        return;
+      } else {
+        message.content = transcription;
+      }
+    }
+    await message.load();
 
     var resoponse = await chat(
       message.content,
