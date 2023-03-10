@@ -36,6 +36,9 @@ async function useToken(model): Promise<null | {
         x.limited == null
     );
   }
+  if (model == "filter") {
+    t = tokens.filter((x) => x.messages <= 2);
+  }
   var i = getRndInteger(0, t.length - 1);
   if (t.length <= 0) return;
   var token = t[i];

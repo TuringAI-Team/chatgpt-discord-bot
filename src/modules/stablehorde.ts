@@ -130,7 +130,7 @@ export async function png2webp(pngUrl) {
 }
 
 async function filter(prompt, model?) {
-  var key = await useToken("chatgpt");
+  var key = await useToken("filter");
   var req = await axios.post(
     "https://api.turingai.tech/filter",
     {
