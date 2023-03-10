@@ -21,16 +21,12 @@ async function chat(
   image,
   imageDescp?
 ) {
-  /*  var token = await useToken("gpt-3");
+  var token = await useToken("gpt-3");
   if (!token) {
     return {
       error: `We are reaching our capacity limits right now. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`,
     };
-  }*/
-  var token = {
-    key: "",
-    id: "",
-  };
+  }
   var imageDescription = imageDescp;
   if (image && image.url && !imageDescp) {
     imageDescription = await getImageDescription(image.url);
@@ -129,9 +125,29 @@ If you break character, I will let you know by saying "Stay in character!" and y
   });
   try {
     if (m == "gpt-3") {
-      response = await gpt3(prompt, maxtokens);
+      bot = new OpenAI(key, {
+        max_tokens: maxtokens, // OpenAI parameter [Max response size by tokens]
+        stop: stop, // OpenAI parameter
+        instructions: instructions,
+        aiName: "AI",
+        model: model,
+        revProxy: revProxy,
+      }); // Note: options is optional
+
+      response = await bot.ask(prompt, randomUUID());
     } else {
-      response = await chatgpt(messages, maxtokens);
+      const configuration = new Configuration({
+        apiKey: key,
+      });
+
+      const openai = new OpenAIApi(configuration);
+      const completion = await openai.createChatCompletion({
+        model: "gpt-3.5-turbo",
+        max_tokens: maxtokens,
+        messages: messages,
+      });
+
+      response = completion.data.choices[0].message.content;
     }
 
     if (response) {
@@ -145,9 +161,9 @@ If you break character, I will let you know by saying "Stay in character!" and y
         await saveMsg(m, fullMsg, response, id, ispremium, userName);
       }
     }
-    /* setTimeout(async () => {
+    setTimeout(async () => {
       await removeMessage(token.id);
-    }, 6000);*/
+    }, 6000);
     return { text: response, type: m };
   } catch (err: any) {
     console.log(`${token.id}: ${err} -- ${m}`);
@@ -170,14 +186,14 @@ If you break character, I will let you know by saying "Stay in character!" and y
       err.message.includes("429")
     ) {
       await disableAcc(token.id, false);
-      /*   setTimeout(async () => {
+      setTimeout(async () => {
         await removeMessage(token.id);
-      }, 16000);*/
+      }, 16000);
     } else {
       await disableAcc(token.id, false);
-      /*   setTimeout(async () => {
+      setTimeout(async () => {
         await removeMessage(token.id);
-      }, 6000);*/
+      }, 6000);
     }
 
     if (ispremium && retries < 3) {
