@@ -8,7 +8,7 @@ import {
 import { getLocaleDisplayName, locales } from "../langs.js";
 
 export async function infoInteraction(translation, interaction, lang) {
-  var embed = new EmbedBuilder()
+  let embed = new EmbedBuilder()
     .setColor("#3a82f7")
     .setTimestamp()
     .setTitle("Open assistant Info")

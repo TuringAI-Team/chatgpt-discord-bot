@@ -8,15 +8,15 @@ export default {
   description: "chat with bot",
   cooldown: "1m",
   async execute(message, client) {
-    var image;
+    let image;
     if (message.hasMedia) {
       const media = await message.downloadMedia();
       if (media.mimetype.includes("image")) {
-        var base64 = media.data;
-        var url = `data:image/png;base64,${base64}`;
+        let base64 = media.data;
+        let url = `data:image/png;base64,${base64}`;
         image = { url };
       } else if (media.mimetype.includes("audio")) {
-        var transcription: any = await getTranscription(media.data);
+        let transcription: any = await getTranscription(media.data);
         if (transcription.error) {
           await message.reply("Error occured");
           return;
@@ -28,7 +28,7 @@ export default {
 
     await message.load();
 
-    var resoponse = await chat(
+    let resoponse = await chat(
       message.content,
       message.user.name,
       message.user.ispremium,
@@ -43,7 +43,7 @@ export default {
 
 async function getTranscription(base64) {
   try {
-    var file = Buffer.from(base64, "base64");
+    let file = Buffer.from(base64, "base64");
     const form = new FormData();
     form.append("audio", file, `${randomUUID()};audio/ogg`);
     form.append("language_behaviour", "automatic single language");
@@ -63,10 +63,10 @@ async function getTranscription(base64) {
         },
       }
     );
-    var res = response.data;
-    var transcription = "";
-    for (var i = 0; i < res.prediction.length; i++) {
-      var tr = res.prediction[i];
+    let res = response.data;
+    let transcription = "";
+    for (let i = 0; i < res.prediction.length; i++) {
+      let tr = res.prediction[i];
       transcription += `${tr.transcription} `;
     }
     return transcription;

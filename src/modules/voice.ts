@@ -88,14 +88,14 @@ export async function voiceAudio(
       client.guildsVoice.splice(index, 1); // 2nd parameter means remove one item only
     }
 
-    /*  var text = await getTranscription();
+    /*  let text = await getTranscription();
     console.log(text);*/
   }
 }
 
 async function getTranscription(filePath, fileName) {
   try {
-    var file = await fs.readFileSync(`${filePath}`);
+    let file = await fs.readFileSync(`${filePath}`);
     const form = new FormData();
     form.append("audio", file, `${fileName};audio/ogg`);
     form.append("language_behaviour", "automatic single language");
@@ -115,10 +115,10 @@ async function getTranscription(filePath, fileName) {
         },
       }
     );
-    var res = response.data;
-    var transcription = "";
-    for (var i = 0; i < res.prediction.length; i++) {
-      var tr = res.prediction[i];
+    let res = response.data;
+    let transcription = "";
+    for (let i = 0; i < res.prediction.length; i++) {
+      let tr = res.prediction[i];
       transcription += `${tr.transcription} `;
     }
     return transcription;
@@ -184,7 +184,7 @@ export async function createListeningStream(
         );
       }
 
-      var text = await getTranscription(filename, filename.split("/")[2]);
+      let text = await getTranscription(filename, filename.split("/")[2]);
       await fs.unlinkSync(filename);
       if (!text) {
         await commandType.reply(interaction, {
@@ -260,12 +260,12 @@ export async function createListeningStream(
         );
       }
 
-      var guildId;
+      let guildId;
       if (interaction.guild) guildId = interaction.guild.id;
-      var ispremium = await isPremium(interaction.user.id, guildId);
+      let ispremium = await isPremium(interaction.user.id, guildId);
       await infoEmbed(interaction, "processing", commandType, model, listen);
 
-      var result = await chat(
+      let result = await chat(
         text,
         interaction.user.username,
         ispremium,
@@ -290,7 +290,7 @@ export async function createListeningStream(
           );
         }
 
-        var channel = interaction.channel;
+        let channel = interaction.channel;
         if (!interaction.channel) channel = interaction.user;
         await responseWithText(
           interaction,
@@ -319,12 +319,12 @@ async function responseWithText(
   commandType,
   listen
 ) {
-  var completeResponse = `**${interaction.user.tag}:** ${prompt}\n**AI(${type}):** ${result}`;
-  var charsCount = completeResponse.split("").length;
-  var row = await buttons(listen ? false : true, type);
+  let completeResponse = `**${interaction.user.tag}:** ${prompt}\n**AI(${type}):** ${result}`;
+  let charsCount = completeResponse.split("").length;
+  let row = await buttons(listen ? false : true, type);
   if (charsCount / 2000 >= 1) {
-    var loops = Math.ceil(charsCount / 2000);
-    for (var i = 0; i < loops; i++) {
+    let loops = Math.ceil(charsCount / 2000);
+    for (let i = 0; i < loops; i++) {
       if (i == 0) {
         try {
           commandType.reply(interaction, {
@@ -360,11 +360,11 @@ async function responseWithVoice(
   audioPlayer
 ) {
   if (!result) result = "Something went wrong with your prompt.";
-  var charsCount = result.split("").length;
-  var audioResources = [];
-  var langCode = "en";
+  let charsCount = result.split("").length;
+  let audioResources = [];
+  let langCode = "en";
   try {
-    var langObj = await cld.detect(result);
+    let langObj = await cld.detect(result);
     if (langObj.reliable && langObj.languages[0].code != "en") {
       langCode = langObj.languages[0].code;
     }
@@ -375,8 +375,8 @@ async function responseWithVoice(
       commandType.reply(interaction, `Answer is too long to read it`);
       return;
     }
-    var loops = Math.ceil(charsCount / 200);
-    for (var i = 0; i < loops; i++) {
+    let loops = Math.ceil(charsCount / 200);
+    for (let i = 0; i < loops; i++) {
       if (i == 0) {
         let stream = discordTTS.getVoiceStream(
           `${result.split("").slice(0, 200).join("")}`,
@@ -406,10 +406,10 @@ async function responseWithVoice(
       }
     }
   } else {
-    var stream = discordTTS.getVoiceStream(`${result}`, {
+    let stream = discordTTS.getVoiceStream(`${result}`, {
       lang: langCode,
     });
-    var audioResource = createAudioResource(stream, {
+    let audioResource = createAudioResource(stream, {
       inputType: StreamType.Arbitrary,
       inlineVolume: true,
     });
@@ -417,7 +417,7 @@ async function responseWithVoice(
 
   if (audioResources.length >= 1) {
     for (let i = 0; i < audioResources.length; i++) {
-      var ar = audioResources[i].ar;
+      let ar = audioResources[i].ar;
       console.log(`playing ${i} with ${audioResources[i].chars} characters`);
       audioPlayer.play(ar);
       await delay(audioResources[i].chars * 80);
@@ -436,7 +436,7 @@ async function infoEmbed(
   model?,
   listen?
 ) {
-  var embed = new EmbedBuilder()
+  let embed = new EmbedBuilder()
     .setTitle(`ChatGPT Voice(${listen == true ? "Alpha" : "Beta"})`)
     .setColor("#5865F2")
     .setTimestamp();
@@ -449,7 +449,7 @@ async function infoEmbed(
   if (status == "result") {
     embed.setDescription("ChatGPT successfully.");
   }
-  var row = await buttons(false, model);
+  let row = await buttons(false, model);
   await commandType.reply(interaction, {
     embeds: [embed],
     components: row,
@@ -457,7 +457,7 @@ async function infoEmbed(
 }
 export async function Elevenlabs(string) {
   try {
-    var res = await axios({
+    let res = await axios({
       baseURL: "https://api.pawan.krd/tts",
       method: "POST",
       headers: {
@@ -469,8 +469,8 @@ export async function Elevenlabs(string) {
       }),
       responseType: "arraybuffer",
     });
-    var data = res.data;
-    var stream = await convertBufferToStream(data);
+    let data = res.data;
+    let stream = await convertBufferToStream(data);
     return stream;
   } catch (err) {
     console.log(err);
@@ -510,13 +510,13 @@ async function startVoiceConnection(interaction, client) {
 }
 async function buttons(bool, model) {
   const row = new ActionRowBuilder();
-  var btn1 = new ButtonBuilder() //1
+  let btn1 = new ButtonBuilder() //1
     .setCustomId(`leave-vc`)
     .setStyle(ButtonStyle.Secondary)
     .setLabel(`Stop voice system`);
   row.addComponents(btn1);
   if (bool) {
-    var btn2 = new ButtonBuilder() //1
+    let btn2 = new ButtonBuilder() //1
       .setCustomId(`chat-vc_${model}`)
       .setStyle(ButtonStyle.Secondary)
       .setLabel(`🎙️New command`);

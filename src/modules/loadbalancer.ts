@@ -1,7 +1,7 @@
 import ms from "ms";
 import supabase from "./supabase.js";
 import delay from "delay";
-var clients = [];
+let clients = [];
 import { Configuration, OpenAIApi } from "openai";
 // @ts-ignore
 import chatGPT from "chatgpt-io";
@@ -22,11 +22,11 @@ async function useToken(model): Promise<null | {
   key: string;
   session: string;
 }> {
-  var tokens = await getTokens();
+  let tokens = await getTokens();
   if (!tokens || tokens.length <= 0) {
     return;
   }
-  var t = tokens.filter((x) => x.messages <= 2 && x.abled != false);
+  let t = tokens.filter((x) => x.messages <= 2 && x.abled != false);
   if (model == "chatgpt" || model == "dan") {
     t = tokens.filter(
       (x) =>
@@ -36,12 +36,12 @@ async function useToken(model): Promise<null | {
         x.limited == null
     );
   }
-  var i = getRndInteger(0, t.length - 1);
+  let i = getRndInteger(0, t.length - 1);
   if (t.length <= 0) return;
-  var token = t[i];
+  let token = t[i];
   if (token) {
     await addMessage(token.id);
-    var client = {
+    let client = {
       id: token.id,
       type: "official",
       key: token.key,
@@ -60,7 +60,7 @@ async function addMessage(id) {
     .from("accounts")
     .select("*")
     .eq("id", id);
-  var tokenObj = accounts[0];
+  let tokenObj = accounts[0];
   if (tokenObj) {
     const { data, error } = await supabase
       .from("accounts")
@@ -73,7 +73,7 @@ async function addMessage(id) {
 }
 
 export async function disableAcc(id, bool) {
-  var update = {};
+  let update = {};
   if (bool) {
     update = {
       messages: 0,
@@ -92,17 +92,17 @@ export async function disableAcc(id, bool) {
 }
 
 export async function checkLimited() {
-  var tokens = await getTokens();
+  let tokens = await getTokens();
   if (!tokens || tokens.length <= 0) {
     return;
   }
-  var t = tokens.filter(
+  let t = tokens.filter(
     (x) => x.access != null && x.access.includes("ey") && x.limited !== null
   );
   console.log(`checking ${t.length} tokens`);
-  var enabled = 0;
-  for (var i = 0; i < t.length; i++) {
-    var diff = Date.now() - t[i].limited;
+  let enabled = 0;
+  for (let i = 0; i < t.length; i++) {
+    let diff = Date.now() - t[i].limited;
     if (diff >= ms("30m")) {
       enabled++;
       const { data, error } = await supabase
@@ -122,7 +122,7 @@ async function removeMessage(id) {
     .from("accounts")
     .select("*")
     .eq("id", id);
-  var tokenObj = accounts[0];
+  let tokenObj = accounts[0];
   if (tokenObj) {
     const { data, error } = await supabase
       .from("accounts")
@@ -137,8 +137,8 @@ export async function resetto0() {
     console.log(error);
     return;
   }
-  for (var i = 0; i < accounts.length; i++) {
-    var tokenObj = accounts[i];
+  for (let i = 0; i < accounts.length; i++) {
+    let tokenObj = accounts[i];
     const { data, error } = await supabase
       .from("accounts")
       .update({ messages: 0 })

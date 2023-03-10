@@ -1,17 +1,17 @@
 export async function getLabel(translation, previousTask: string, task) {
-  var labels = await getLabels(task);
+  let labels = await getLabels(task);
   if (previousTask) {
-    var previousTaskIndex = labels.findIndex(
+    let previousTaskIndex = labels.findIndex(
       (x) => x.name == previousTask.replaceAll("-", "_")
     );
   } else {
-    var previousTaskIndex = -1;
+    let previousTaskIndex = -1;
   }
 
-  var label = labels[previousTaskIndex + 1];
+  let label = labels[previousTaskIndex + 1];
   if (!label) return;
   if (label.type == "flags") {
-    var resultsTask: Array<{
+    let resultsTask: Array<{
       name: string;
       type: string;
       question?: string;
@@ -39,9 +39,9 @@ export async function getLabel(translation, previousTask: string, task) {
 }
 
 export async function getFlags(translation, task) {
-  var labels = await getLabels(task);
+  let labels = await getLabels(task);
   labels = labels.filter((x) => x.type == "flags");
-  var resultsTask: Array<{
+  let resultsTask: Array<{
     name: string;
     type: string;
     question?: string;
@@ -49,7 +49,7 @@ export async function getFlags(translation, task) {
     max?: string;
     min?: string;
   }> = [];
-  for (var i = 0; i < labels.length; i++) {
+  for (let i = 0; i < labels.length; i++) {
     let lbl = labels[i];
     let resultTask = {
       name: lbl.name,
@@ -64,7 +64,7 @@ export async function getFlags(translation, task) {
 }
 
 export function labelText(label, translation) {
-  var resultTask: {
+  let resultTask: {
     question?: string;
     description?: string;
     max?: string;
@@ -112,8 +112,8 @@ export function labelText(label, translation) {
 }
 
 export async function getLabels(task) {
-  var labels = [];
-  var workingLabels = [
+  let labels = [];
+  let workingLabels = [
     "spam",
     "quality",
     "lang_mismatch",
@@ -123,8 +123,8 @@ export async function getLabels(task) {
     "sexual_content",
     "political_content",
   ];
-  for (var i = 0; i < workingLabels.length; i++) {
-    var type = "flags";
+  for (let i = 0; i < workingLabels.length; i++) {
+    let type = "flags";
     if (
       workingLabels[i] == "quality" ||
       workingLabels[i] == "toxicity" ||

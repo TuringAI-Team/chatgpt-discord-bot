@@ -13,7 +13,7 @@ import {
   checkGeneration,
   generateImg,
   generateImg2img,
-  generateVariationRow,
+  generateletiationRow,
   png2webp,
   ImagineInteraction,
 } from "../modules/stablehorde.js";
@@ -21,9 +21,9 @@ import { isPremium } from "../modules/premium.js";
 
 import sharp from "sharp";
 import { generateRateRow, generateUpscaleRow } from "../modules/stablehorde.js";
-var maintenance = false;
+let maintenance = false;
 
-var data = new SlashCommandBuilder()
+let data = new SlashCommandBuilder()
   .setName("imagine")
   .setDescription("Generate an image using open joruney.")
   .addStringOption((option) =>
@@ -68,10 +68,10 @@ export default {
       });
       return;
     }
-    var tags = [];
+    let tags = [];
 
-    var style = interaction.options.getString("style");
-    var prompt = interaction.options.getString("prompt");
+    let style = interaction.options.getString("style");
+    let prompt = interaction.options.getString("prompt");
     // if style is auto say is premium because of testing
     if (
       style == "auto" &&

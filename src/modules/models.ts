@@ -1,4 +1,4 @@
-var models = [
+let models = [
   {
     name: "Deliberate",
     description:

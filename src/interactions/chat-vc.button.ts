@@ -14,9 +14,9 @@ export default {
     description: "Chat with the bot in a voice channel",
   },
   async execute(interaction, client, model) {
-    var guildId;
+    let guildId;
     if (interaction.guild) guildId = interaction.guild.id;
-    var ispremium = await isPremium(interaction.user.id, guildId);
+    let ispremium = await isPremium(interaction.user.id, guildId);
     /*  if (!ispremium) {
       await interaction.reply({
         content:
@@ -34,13 +34,13 @@ export default {
         .eq("userId", interaction.user.id)
         .eq("command", "chat-vc");
       if (cooldowns && cooldowns[0]) {
-        var cooldown = cooldowns[0];
-        var createdAt = new Date(cooldown.created_at);
-        var milliseconds = createdAt.getTime();
-        var now = Date.now();
-        var diff = now - milliseconds;
+        let cooldown = cooldowns[0];
+        let createdAt = new Date(cooldown.created_at);
+        let milliseconds = createdAt.getTime();
+        let now = Date.now();
+        let diff = now - milliseconds;
         // @ts-ignore
-        var count = ms("20s") - diff;
+        let count = ms("20s") - diff;
         // @ts-ignore
         if (diff >= ms("20s")) {
           const { data, error } = await supabase

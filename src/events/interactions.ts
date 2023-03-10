@@ -13,7 +13,7 @@ export default {
       !interaction.isModalSubmit()
     )
       return;
-    var terms = await checkTerms(interaction.user.id, "discord");
+    let terms = await checkTerms(interaction.user.id, "discord");
     if (terms) {
       await interaction.reply({
         content: terms,
@@ -21,13 +21,13 @@ export default {
       });
       await delay(8000);
     }
-    var id = interaction.customId;
-    var arg;
-    var arg2;
-    var arg3;
-    var arg4;
-    var arg5;
-    var arg6;
+    let id = interaction.customId;
+    let arg;
+    let arg2;
+    let arg3;
+    let arg4;
+    let arg5;
+    let arg6;
     if (interaction.customId.includes("_")) {
       id = interaction.customId.split("_")[0];
       arg = interaction.customId.split("_")[1];

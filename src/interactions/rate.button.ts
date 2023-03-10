@@ -18,7 +18,7 @@ export default {
       });
       return;
     }
-    var { data, error } = await supabase
+    let { data, error } = await supabase
       .from("results")
       .select("*")
       .eq("id", generationId)

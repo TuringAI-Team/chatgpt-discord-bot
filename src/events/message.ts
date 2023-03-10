@@ -31,7 +31,7 @@ export default {
   once: false,
   async execute(message, client) {
     if (message.mentions.has(client.user) && !message.author.bot) {
-      var content = message.content;
+      let content = message.content;
       if (message.content.includes(`<@${client.user.id}>`)) {
         if (
           !message.content.startsWith(`<@${client.user.id}>`) ||
@@ -42,11 +42,11 @@ export default {
         content = message.content.split(`<@${client.user.id}> `)[1];
       }
 
-      var commandName = content;
-      var commands = await client.commands.toJSON();
+      let commandName = content;
+      let commands = await client.commands.toJSON();
       if (!commandName) commandName = "help";
-      var command = client.commands.get(commandName);
-      var options: any = {};
+      let command = client.commands.get(commandName);
+      let options: any = {};
       message.user = message.author;
 
       if (!command) {
@@ -58,12 +58,12 @@ export default {
         options.message = content.replace("chat ", "");
         options.model = "chatgpt";
       }
-      var guildId;
+      let guildId;
       if (message.guild) guildId = message.guild.id;
-      var terms = await checkTerms(message.author.id, "discord");
+      let terms = await checkTerms(message.author.id, "discord");
       if (terms) {
         try {
-          var msg = await message.reply({
+          let msg = await message.reply({
             content: terms,
             ephemeral: true,
           });
@@ -74,7 +74,7 @@ export default {
           console.log(message.guild.id, message.guild.ownerId);
         }
       }
-      var ispremium = await isPremium(message.author.id, guildId);
+      let ispremium = await isPremium(message.author.id, guildId);
       try {
         if (command.cooldown && ispremium == false) {
           let { data: cooldowns, error } = await supabase
@@ -85,13 +85,13 @@ export default {
             .eq("userId", message.author.id)
             .eq("command", commandName);
           if (cooldowns && cooldowns[0]) {
-            var cooldown = cooldowns[0];
-            var createdAt = new Date(cooldown.created_at);
-            var milliseconds = createdAt.getTime();
-            var now = Date.now();
-            var diff = now - milliseconds;
+            let cooldown = cooldowns[0];
+            let createdAt = new Date(cooldown.created_at);
+            let milliseconds = createdAt.getTime();
+            let now = Date.now();
+            let diff = now - milliseconds;
             //@ts-ignore
-            var count = ms(command.cooldown) - diff;
+            let count = ms(command.cooldown) - diff;
             //@ts-ignore
             if (diff >= ms(command.cooldown)) {
               const { data, error } = await supabase

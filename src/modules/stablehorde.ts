@@ -33,7 +33,7 @@ import { chat } from "./gpt-api.js";
 
 export default stable_horde;
 export async function getModels() {
-  var models = await stable_horde.getModels();
+  let models = await stable_horde.getModels();
   return models;
 }
 
@@ -46,7 +46,7 @@ export async function generateImg(
   width,
   height
 ) {
-  var passFilter = await filter(prompt, model);
+  let passFilter = await filter(prompt, model);
   if (!passFilter) {
     return {
       message:
@@ -85,7 +85,7 @@ export async function generateImg2img(
   width,
   height
 ) {
-  var passFilter = await filter(prompt, model);
+  let passFilter = await filter(prompt, model);
   if (!passFilter.filter) {
     return {
       message:
@@ -130,8 +130,8 @@ export async function png2webp(pngUrl) {
 }
 
 async function filter(prompt, model?) {
-  var key = await useToken("chatgpt");
-  var req = await axios.post(
+  let key = await useToken("chatgpt");
+  let req = await axios.post(
     "https://api.turingai.tech/filter",
     {
       prompt: prompt,
@@ -144,7 +144,7 @@ async function filter(prompt, model?) {
       },
     }
   );
-  var res = req.data;
+  let res = req.data;
   await removeMessage(key.id);
   if (res.isCP) {
     return { filter: false, ...res };
@@ -159,8 +159,8 @@ export async function checkGeneration(generation: any) {
 }
 export async function generateUpscaleRow(generationId, images) {
   const row = new ActionRowBuilder();
-  for (var i = 0; i < images.length; i++) {
-    var btn1 = new ButtonBuilder() //1
+  for (let i = 0; i < images.length; i++) {
+    let btn1 = new ButtonBuilder() //1
       .setCustomId(`u_${generationId}_${images[i].id}`)
       .setStyle(ButtonStyle.Secondary)
       .setLabel(`U${i + 1}`);
@@ -169,10 +169,10 @@ export async function generateUpscaleRow(generationId, images) {
   return row;
 }
 
-export async function generateVariationRow(generationId, images) {
+export async function generateletiationRow(generationId, images) {
   const row = new ActionRowBuilder();
-  for (var i = 0; i < images.length; i++) {
-    var btn1 = new ButtonBuilder() //1
+  for (let i = 0; i < images.length; i++) {
+    let btn1 = new ButtonBuilder() //1
       .setCustomId(`v_${generationId}_${images[i].id}`)
       .setStyle(ButtonStyle.Secondary)
       .setLabel(`V${i + 1}`);
@@ -213,14 +213,14 @@ export async function generateRateRow(generationId, userId, imageId) {
 }
 
 export async function ImagineInteraction(interaction, client, style, prompt) {
-  var guildId;
+  let guildId;
   if (interaction.guild) guildId = interaction.guild.id;
-  var ispremium = await isPremium(interaction.user.id, guildId);
+  let ispremium = await isPremium(interaction.user.id, guildId);
   if (!interaction.deferred && !interaction.replied) {
     await interaction.deferReply();
   }
 
-  var userBans = await supabase
+  let userBans = await supabase
     .from("bans")
     .select("*")
     .eq("id", interaction.user.id);
@@ -232,26 +232,26 @@ export async function ImagineInteraction(interaction, client, style, prompt) {
     return;
   }
 
-  var steps = 40;
+  let steps = 40;
   //    if (ispremium) steps = 100;
-  var width = 512;
-  var height = 512;
+  let width = 512;
+  let height = 512;
 
-  var defaultNegPrompt = `lowres, bad anatomy, ((bad hands)), (error), ((missing fingers)), extra digit, fewer digits, awkward fingers, cropped, jpeg artifacts, worst quality, low quality, signature, blurry, extra ears, (deformed, disfigured, mutation, extra limbs)`;
-  var negPrompt = defaultNegPrompt;
+  let defaultNegPrompt = `lowres, bad anatomy, ((bad hands)), (error), ((missing fingers)), extra digit, fewer digits, awkward fingers, cropped, jpeg artifacts, worst quality, low quality, signature, blurry, extra ears, (deformed, disfigured, mutation, extra limbs)`;
+  let negPrompt = defaultNegPrompt;
   // get parameters in prompt string like "prompt --no negative prompt --ar aspect ratio"
-  var promptParams = prompt.split("--");
+  let promptParams = prompt.split("--");
   prompt = promptParams[0];
   if (promptParams.length > 1) {
-    for (var i = 1; i < promptParams.length; i++) {
-      var param = promptParams[i].split(" ");
+    for (let i = 1; i < promptParams.length; i++) {
+      let param = promptParams[i].split(" ");
       if (param[0] == "no") {
         // replace default negative prompt with user defined negative prompt
         negPrompt = param[1] + ", ";
       }
       if (param[0] == "ar") {
         // aspect ration can be 1:1, 1:2 or 2:1
-        var ar = param[1].split(":");
+        let ar = param[1].split(":");
         if (ar[0] == "1" && ar[1] == "1") {
           width = 512;
           height = 512;
@@ -267,7 +267,7 @@ export async function ImagineInteraction(interaction, client, style, prompt) {
       }
     }
   }
-  var nsfw = false;
+  let nsfw = false;
 
   if (interaction.channel && interaction.channel.nsfw) nsfw = true;
   if (!interaction.channel || !interaction.guild) nsfw = true;
@@ -280,11 +280,11 @@ export async function ImagineInteraction(interaction, client, style, prompt) {
     return;
   }
   try {
-    var generation;
-    var number = 2;
+    let generation;
+    let number = 2;
     if (ispremium) number = 4;
-    var model;
-    var fullPrompt;
+    let model;
+    let fullPrompt;
     if (style == "anime") {
       model = "Anything Diffusion";
       fullPrompt = `${prompt}, ((anime)), ((anime style))`;
@@ -319,7 +319,7 @@ export async function ImagineInteraction(interaction, client, style, prompt) {
       model = "Microworlds";
       fullPrompt = `${prompt}, microworld`;
     } else if (style == "auto") {
-      var token = await useToken("gpt-3");
+      let token = await useToken("gpt-3");
       if (!token) {
         model = "Midjourney Diffusion";
         fullPrompt = `${prompt}, mdjrny-v4 style`;
@@ -328,7 +328,7 @@ export async function ImagineInteraction(interaction, client, style, prompt) {
           apiKey: token.key,
         });
         try {
-          var response = await chat(
+          let response = await chat(
             `prompt: ${prompt}`,
             interaction.user.name,
             ispremium,
@@ -429,7 +429,7 @@ export async function ImagineInteraction(interaction, client, style, prompt) {
               .eq("id", interaction.user.id);
           }
         }
-        var webhook = new WebhookClient({
+        let webhook = new WebhookClient({
           url: process.env.DISCORD_WEBHOOK_URL_MODS,
         });
         webhook.send({
@@ -471,9 +471,9 @@ export async function ImagineInteraction(interaction, client, style, prompt) {
     return;
   }
 
-  var interval = setInterval(async () => {
+  let interval = setInterval(async () => {
     try {
-      var status = await checkGeneration(generation);
+      let status = await checkGeneration(generation);
       if (status.done) {
         clearInterval(interval);
         const { data, error } = await supabase.from("results").insert([
@@ -510,7 +510,7 @@ export async function ImagineInteraction(interaction, client, style, prompt) {
           });
         }
         try {
-          var waittime = status.wait_time;
+          let waittime = status.wait_time;
           if (waittime < 15) waittime = 15;
           await interaction.editReply({
             content: `Loading...(${waittime}s)`,
@@ -544,16 +544,16 @@ export async function sendResults(
   negPrompt,
   style,
   model,
-  variations: boolean = true
+  letiations: boolean = true
 ) {
-  var imagesArr = images.map(async (g, i) => {
+  let imagesArr = images.map(async (g, i) => {
     const sfbuff = Buffer.from(g.img, "base64");
-    var img = await sharp(sfbuff).toFormat("png").toBuffer();
+    let img = await sharp(sfbuff).toFormat("png").toBuffer();
 
     return new AttachmentBuilder(img, { name: "output.png" });
   });
 
-  var embed = new EmbedBuilder()
+  let embed = new EmbedBuilder()
     .setColor("#347d9c")
     .setTimestamp()
     .setImage(`attachment://output.png`)
@@ -564,7 +564,7 @@ export async function sendResults(
   if (prompt.split("").length > 1024) {
     prompt = prompt.split("").slice(0, 1021).join("") + "...";
   }
-  if (variations) {
+  if (letiations) {
     embed.setFields(
       {
         name: "Prompt",
@@ -588,28 +588,28 @@ export async function sendResults(
       }
     );
   } else {
-    embed.setTitle("Variations");
+    embed.setTitle("letiations");
   }
 
-  var row = await generateRateRow(id, userId, images[0].id);
+  let row = await generateRateRow(id, userId, images[0].id);
   if (imagesArr.length > 1) {
     row = [await generateUpscaleRow(id, images)];
-    if (variations) {
-      row.push(await generateVariationRow(id, images));
+    if (letiations) {
+      row.push(await generateletiationRow(id, images));
     }
   }
-  var imgs = images.map((g, i) => {
+  let imgs = images.map((g, i) => {
     const sfbuff = Buffer.from(g.img, "base64");
     return sfbuff;
   });
 
   let base64: any = await mergeBase64(imgs, 512 / 2, 512 / 2);
   base64 = base64.split("base64,")[1];
-  var sfbuff = Buffer.from(base64, "base64");
-  var resfile = new AttachmentBuilder(sfbuff, { name: "output.png" });
-  var resfiles = [resfile];
+  let sfbuff = Buffer.from(base64, "base64");
+  let resfile = new AttachmentBuilder(sfbuff, { name: "output.png" });
+  let resfiles = [resfile];
 
-  var reply = await interaction.editReply({
+  let reply = await interaction.editReply({
     files: resfiles,
     components: row,
     content: `${interaction.user}`,
@@ -618,8 +618,8 @@ export async function sendResults(
 }
 
 export async function mergeBase64(imgs: string[], width, height) {
-  var totalW = width * 2;
-  var totalH = height * 2;
+  let totalW = width * 2;
+  let totalH = height * 2;
 
   if (imgs.length == 1) {
     totalW = totalW / 2;
@@ -628,16 +628,16 @@ export async function mergeBase64(imgs: string[], width, height) {
   if (imgs.length == 2) {
     totalH = totalH / 2;
   }
-  var canvas = createCanvas(totalW, totalH);
+  let canvas = createCanvas(totalW, totalH);
   const ctx = canvas.getContext("2d");
   ctx.fillStyle = "white";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  for (var i = 0; i < imgs.length; i++) {
-    var im = await sharp(imgs[i]).toFormat("png").toBuffer();
-    var b64 = Buffer.from(im).toString("base64");
+  for (let i = 0; i < imgs.length; i++) {
+    let im = await sharp(imgs[i]).toFormat("png").toBuffer();
+    let b64 = Buffer.from(im).toString("base64");
     const img = new Image();
-    var x = 0;
-    var y = 0;
+    let x = 0;
+    let y = 0;
     if (i == 0) {
       x = 0;
       y = 0;

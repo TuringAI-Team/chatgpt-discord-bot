@@ -13,7 +13,7 @@ import ms from "ms";
 import { isPremium } from "../modules/premium.js";
 import { getUserLang, setUserLang } from "../modules/open-assistant/user.js";
 import OpenAssistant from "open-assistant.js";
-var oa: OpenAssistant = new OpenAssistant(
+let oa: OpenAssistant = new OpenAssistant(
   process.env.OA_APIKEY,
   process.env.OA_APIURL
 );
@@ -53,7 +53,7 @@ export default {
     labelFlag
   ) {
     if (!interaction) return;
-    var user = {
+    let user = {
       id: interaction.user.id,
       display_name: interaction.user.username,
       auth_method: "discord",
@@ -67,11 +67,11 @@ export default {
         return;
       }
       await interaction.deferUpdate();
-      var lang = await getUserLang(interaction.user.id);
+      let lang = await getUserLang(interaction.user.id);
       if (!lang) {
         await langInteraction(interaction);
       } else {
-        var translation = await getTranlation(lang);
+        let translation = await getTranlation(lang);
         await infoInteraction(translation, interaction, lang);
       }
     }
@@ -84,11 +84,11 @@ export default {
         return;
       }
       await interaction.deferUpdate();
-      var lang = await getUserLang(interaction.user.id);
+      let lang = await getUserLang(interaction.user.id);
       if (!lang) {
         await langInteraction(interaction);
       } else {
-        var translation = await getTranlation(lang);
+        let translation = await getTranlation(lang);
         await taskInteraction(interaction, lang, user, translation, client);
       }
     }
@@ -100,11 +100,11 @@ export default {
         });
         return;
       }
-      var selected = interaction.values[0];
+      let selected = interaction.values[0];
       await interaction.deferUpdate();
       await setUserLang(interaction.user.id, selected);
-      var translation = await getTranlation(selected);
-      var successEmbed = new EmbedBuilder()
+      let translation = await getTranlation(selected);
+      let successEmbed = new EmbedBuilder()
         .setColor(`#51F73A`)
         .setTimestamp()
         .setDescription(
@@ -143,13 +143,13 @@ export default {
       }
       await interaction.deferUpdate();
 
-      var lang = await getUserLang(interaction.user.id);
+      let lang = await getUserLang(interaction.user.id);
       if (!lang) {
         await langInteraction(interaction);
       } else {
-        var translation = await getTranlation(lang);
+        let translation = await getTranlation(lang);
         await oa.rejectTask(taskId, "", user);
-        var index = client.tasks.findIndex((x) => x.id == taskId);
+        let index = client.tasks.findIndex((x) => x.id == taskId);
         if (index > -1) {
           client.tasks.splice(index, 1);
         }
@@ -164,11 +164,11 @@ export default {
         });
         return;
       }
-      var lang = await getUserLang(interaction.user.id);
+      let lang = await getUserLang(interaction.user.id);
       if (!lang) {
         await langInteraction(interaction);
       } else {
-        var task = client.tasks.find((x) => x.id == taskId);
+        let task = client.tasks.find((x) => x.id == taskId);
 
         if (!task) {
           await interaction.reply({
@@ -177,7 +177,7 @@ export default {
           });
           return;
         }
-        var translation = await getTranlation(lang);
+        let translation = await getTranlation(lang);
         const promptInput = new TextInputBuilder()
           .setCustomId("modal-input")
           .setMinLength(10)
@@ -203,11 +203,11 @@ export default {
     }
     if (action == "modal-review") {
       await interaction.deferUpdate();
-      var lang = await getUserLang(interaction.user.id);
+      let lang = await getUserLang(interaction.user.id);
       if (!lang) {
         await langInteraction(interaction);
       } else {
-        var task = client.tasks.find((x) => x.id == taskId);
+        let task = client.tasks.find((x) => x.id == taskId);
 
         if (!task) {
           await interaction.reply({
@@ -216,10 +216,10 @@ export default {
           });
           return;
         }
-        var translation = await getTranlation(lang);
+        let translation = await getTranlation(lang);
         task.text = interaction.fields.getTextInputValue("modal-input");
-        var row = new ActionRowBuilder();
-        var readyEmbed = new EmbedBuilder()
+        let row = new ActionRowBuilder();
+        let readyEmbed = new EmbedBuilder()
           .setColor("#3a82f7")
           .setTimestamp()
           .setFooter({ text: `${getLocaleDisplayName(lang)}` })
@@ -243,7 +243,7 @@ export default {
           embeds: [readyEmbed],
           components: [row],
         });
-        /*  var text = interaction.fields.getTextInputValue("modal-input");
+        /*  let text = interaction.fields.getTextInputValue("modal-input");
         await submitTask(
           taskId,
           user,
@@ -257,11 +257,11 @@ export default {
     }
     if (action == "modal-submit") {
       await interaction.deferUpdate();
-      var lang = await getUserLang(interaction.user.id);
+      let lang = await getUserLang(interaction.user.id);
       if (!lang) {
         await langInteraction(interaction);
       } else {
-        var task = client.tasks.find((x) => x.id == taskId);
+        let task = client.tasks.find((x) => x.id == taskId);
 
         if (!task) {
           await interaction.reply({
@@ -289,7 +289,7 @@ export default {
         });
         return;
       }
-      var lang = await getUserLang(interaction.user.id);
+      let lang = await getUserLang(interaction.user.id);
       if (!lang) {
         await interaction.deferUpdate();
 
