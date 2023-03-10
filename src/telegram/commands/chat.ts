@@ -8,6 +8,7 @@ export default {
   description: "chat with bot",
   cooldown: "30s",
   async execute(message, client) {
+<<<<<<< HEAD
     var image;
     var messagee = message.message;
     if (messagee.photo && messagee.photo.length > 0) {
@@ -23,6 +24,31 @@ export default {
       }
     }
     await message.load();
+=======
+  	var image;
+  	var messagee = message.message;
+  	if (messagee.photo && messagee.photo.length > 0) {
+  		var photo = messagee.photo[messagee.photo.length - 1];
+      const buffer = await ctx.telegram.getFile(photoSize.file_id).then((result) => {
+    return ctx.telegram.getFileLink(result.file_id);
+         const base64 = buffer.toString('base64');
+        
+        var url = `data:image/png;base64,${base64}`;
+        image = { url };
+    });
+  	}
+  	else if(message.audio){
+  		var audio_data = await message.telegram.getFile(messagee.audio.file_id);
+  		var transcription: any = await getTranscription(audio_data);
+        if (transcription.error) {
+          await message.reply("Error occured");
+          return;
+        } else {
+          message.content = transcription;
+        }
+  	}
+  	   await message.load();
+>>>>>>> cdb120d979988df77f3b8eb0b3d634d155bdea01
 
     var resoponse = await chat(
       message.content,
