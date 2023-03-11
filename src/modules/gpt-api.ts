@@ -125,7 +125,6 @@ If you break character, I will let you know by saying "Stay in character!" and y
   });
   try {
     if (m == "gpt-3") {
-      /*
       bot = new OpenAI(key, {
         max_tokens: maxtokens, // OpenAI parameter [Max response size by tokens]
         stop: stop, // OpenAI parameter
@@ -135,10 +134,10 @@ If you break character, I will let you know by saying "Stay in character!" and y
         revProxy: revProxy,
       }); // Note: options is optional
 
-      response = await bot.ask(prompt, randomUUID());*/
-      response = await gpt3(prompt, maxtokens);
+      response = await bot.ask(prompt, randomUUID());
+      // response = await gpt3(prompt, maxtokens);
     } else {
-      /* const configuration = new Configuration({
+      const configuration = new Configuration({
         apiKey: key,
       });
 
@@ -149,8 +148,8 @@ If you break character, I will let you know by saying "Stay in character!" and y
         messages: messages,
       });
 
-      response = completion.data.choices[0].message.content;*/
-      response = await chatgpt(messages, maxtokens);
+      response = completion.data.choices[0].message.content;
+      // response = await chatgpt(messages, maxtokens);
     }
 
     if (response) {

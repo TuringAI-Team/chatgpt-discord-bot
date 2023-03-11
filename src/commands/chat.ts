@@ -32,8 +32,8 @@ export default {
         .setRequired(true)
         .addChoices(
           { name: "GPT-3", value: "gpt-3" },
-          { name: "ChatGPT(gpt-3.5)", value: "chatgpt" }
-          //     { name: "DAN(gpt-3.5)", value: "dan" }
+          { name: "ChatGPT(gpt-3.5)", value: "chatgpt" },
+          { name: "DAN(gpt-3.5)", value: "dan" }
         )
     )
     .addAttachmentOption((option) =>
