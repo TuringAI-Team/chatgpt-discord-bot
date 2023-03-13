@@ -125,6 +125,7 @@ async function removeMessage(id) {
     .from("accounts")
     .select("*")
     .eq("id", id);
+  if (!accounts || accounts.length <= 0) return;
   var tokenObj = accounts[0];
   if (tokenObj) {
     const { data, error } = await supabase
