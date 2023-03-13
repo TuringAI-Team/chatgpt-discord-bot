@@ -27,6 +27,10 @@ async function chat(
       error: `We are reaching our capacity limits right now. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`,
     };
   }*/
+  var token = {
+    id: "",
+    key: "",
+  };
   var imageDescription = imageDescp;
   if (image && image.url && !imageDescp) {
     imageDescription = await getImageDescription(image.url);
