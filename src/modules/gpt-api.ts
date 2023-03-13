@@ -83,8 +83,8 @@ If you break character, I will let you know by saying "Stay in character!" and y
       )}\nBased on this list answer with the best model for the user prompt, do not include explanations only the model name. Do not use the list order to select a model. If you can't provide a model recommendation answer only with no-model`;
   }
   var response;
-  var maxtokens = 300;
-  if (ispremium) maxtokens = 600;
+  var maxtokens = 200;
+  if (ispremium) maxtokens = 400;
   var bot;
   var fullMsg = `${message}${
     imageDescription
