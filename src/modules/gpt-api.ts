@@ -21,12 +21,12 @@ async function chat(
   image,
   imageDescp?
 ) {
-  var token = await useToken("gpt-3");
+  /*var token = await useToken("gpt-3");
   if (!token) {
     return {
       error: `We are reaching our capacity limits right now. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`,
     };
-  }
+  }*/
   var imageDescription = imageDescp;
   if (image && image.url && !imageDescp) {
     imageDescription = await getImageDescription(image.url);
@@ -125,7 +125,7 @@ If you break character, I will let you know by saying "Stay in character!" and y
   });
   try {
     if (m == "gpt-3") {
-      bot = new OpenAI(key, {
+      /* bot = new OpenAI(key, {
         max_tokens: maxtokens, // OpenAI parameter [Max response size by tokens]
         stop: stop, // OpenAI parameter
         instructions: instructions,
@@ -134,10 +134,10 @@ If you break character, I will let you know by saying "Stay in character!" and y
         revProxy: revProxy,
       }); // Note: options is optional
 
-      response = await bot.ask(prompt, randomUUID());
-      // response = await gpt3(prompt, maxtokens);
+      response = await bot.ask(prompt, randomUUID());*/
+      response = await gpt3(prompt, maxtokens);
     } else {
-      const configuration = new Configuration({
+      /*const configuration = new Configuration({
         apiKey: key,
       });
 
@@ -148,8 +148,8 @@ If you break character, I will let you know by saying "Stay in character!" and y
         messages: messages,
       });
 
-      response = completion.data.choices[0].message.content;
-      // response = await chatgpt(messages, maxtokens);
+      response = completion.data.choices[0].message.content;*/
+      response = await chatgpt(messages, maxtokens);
     }
 
     if (response) {
