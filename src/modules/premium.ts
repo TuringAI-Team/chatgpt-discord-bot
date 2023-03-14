@@ -50,6 +50,11 @@ export async function activateKey(key: string, id: string, type: string) {
     // Filters
     .eq("key", key)
     .eq("claimed", false);
+  if (error) {
+    return {
+      error: `Something went wrong. Please try again later.`,
+    };
+  }
   if (keyD && keyD[0]) {
     var duration = keyD[0].duration;
     if (duration == "1m") duration = "30d";
