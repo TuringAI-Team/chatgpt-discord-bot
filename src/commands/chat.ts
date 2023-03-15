@@ -32,7 +32,11 @@ export default {
         .setRequired(true)
         .addChoices(
           { name: "GPT-3", value: "gpt-3" },
-          { name: "ChatGPT(gpt-3.5)", value: "chatgpt" }
+          { name: "ChatGPT(gpt-3.5)", value: "chatgpt" },
+          {
+            name: "Open Assistant(oasst-sft-1-pythia-12b)",
+            value: "oasst-sft-1-pythia-12b",
+          }
           //  { name: "DAN(gpt-3.5)", value: "dan" }
         )
     )
@@ -133,7 +137,48 @@ export default {
         );
       }
     }
+    if (model == "oasst-sft-1-pythia-12b") {
+      let { data: results, error } = await supabase
+        .from("results")
+        .select("*")
 
+        // Filters
+        .eq("prompt", message.toLowerCase())
+        .eq("provider", "oasst-sft-1-pythia-12b");
+      if (!results || error) {
+        var errr = "Error connecting with db";
+
+        await responseWithText(
+          interaction,
+          message,
+          errr,
+          channel,
+          "error",
+          commandType,
+          null,
+          client
+        );
+        return;
+      }
+      if (results[0] && results[0].result.text && !ispremium) {
+        result = { text: results[0].result.text, type: "Open Assistant" };
+        const { data, error } = await supabase
+          .from("results")
+          .update({ uses: results[0].uses + 1 })
+          .eq("id", results[0].id);
+        cached = true;
+      } else {
+        result = await chat(
+          message,
+          interaction.user.username,
+          ispremium,
+          "OpenAssistant",
+          `oa-${interaction.user.id}`,
+          0,
+          null
+        );
+      }
+    }
     if (model == "chatgpt" || model == "dan") {
       result = await chat(
         message,

@@ -136,6 +136,20 @@ If you break character, I will let you know by saying "Stay in character!" and y
 
       response = await bot.ask(prompt, randomUUID());
       //response = await gpt3(prompt, maxtokens);
+    } else if (m == "OpenAssistant") {
+      let res = await axios({
+        url: "https://api-inference.huggingface.co/models/OpenAssistant/oasst-sft-1-pythia-12b",
+
+        headers: {
+          Authorization: `Bearer ${process.env.HF_KEY}`,
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+        data: JSON.stringify({
+          inputs: `<|prompter|>${prompt}<|endoftext|>\n<|assistant|>`,
+        }),
+      });
+      response = res.data[0].generated_text.split("<|assistant|>")[1];
     } else {
       const configuration = new Configuration({
         apiKey: key,
@@ -243,6 +257,7 @@ async function getConversation(id, model): Promise<any> {
     .eq("model", model);
   if (data && data[0]) {
     if (!data[0].conversation) return;
+    if (model == "oa") return;
     return data[0].conversation;
   }
   return;
