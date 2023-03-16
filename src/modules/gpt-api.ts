@@ -10,6 +10,7 @@ import OpenAI from "chatgpt-official";
 import { Configuration, OpenAIApi } from "openai";
 import ms from "ms";
 import models from "./models.js";
+//@ts-ignore
 import Poe from "quora-poe.js";
 
 async function chat(
