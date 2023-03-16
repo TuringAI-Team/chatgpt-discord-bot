@@ -89,6 +89,14 @@ export default {
       });
       return;
     }*/
+    if (!ispremium && model == "gpt-4") {
+      await commandType.reply(interaction, {
+        content:
+          "This feature is premium only(testing phase), to get premium use the command `/premium buy`",
+        ephemeral: true,
+      });
+      return;
+    }
     if (attachment && model == "gpt-3") {
       await commandType.reply(interaction, {
         content: "This feature(image) is not available for this model",
