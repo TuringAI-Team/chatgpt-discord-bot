@@ -1,6 +1,6 @@
 {
   "name": "chatgpt-bot",
-  "version": "0.2.9",
+  "version": "0.3.0",
   "description": "",
   "main": "dist/index.js",
   "type": "module",
@@ -40,6 +40,7 @@
     "openai": "^3.2.1",
     "prism-media": "^2.0.0-alpha.0",
     "qrcode": "^1.5.1",
+    "quora-poe.js": "^1.0.2",
     "replicate-api": "^0.3.1",
     "sharp": "^0.31.3",
     "telegraf": "^4.11.2",

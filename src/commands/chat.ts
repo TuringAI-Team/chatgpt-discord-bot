@@ -31,6 +31,7 @@ export default {
         .setDescription("The model you want to use for the AI.")
         .setRequired(true)
         .addChoices(
+          { name: "GPT-4", value: "gpt-4" },
           { name: "GPT-3", value: "gpt-3" },
           { name: "ChatGPT(gpt-3.5)", value: "chatgpt" },
           {
@@ -179,7 +180,7 @@ export default {
         );
       }
     }
-    if (model == "chatgpt" || model == "dan") {
+    if (model == "chatgpt" || model == "dan" || "gpt-4") {
       result = await chat(
         message,
         interaction.user.username,

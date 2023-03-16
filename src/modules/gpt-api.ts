@@ -10,6 +10,7 @@ import OpenAI from "chatgpt-official";
 import { Configuration, OpenAIApi } from "openai";
 import ms from "ms";
 import models from "./models.js";
+import Poe from "quora-poe.js";
 
 async function chat(
   message,
@@ -21,7 +22,10 @@ async function chat(
   image,
   imageDescp?
 ) {
-  var token = await useToken("gpt-3");
+  var token = { id: "", key: "" };
+  if (m == "gpt-3" || m == "dan" || m == "chatgpt") {
+    token = await useToken("gpt-3");
+  }
   if (!token) {
     return {
       error: `We are reaching our capacity limits right now. \nFor more information join our discord: [dsc.gg/turing](https://dsc.gg/turing)`,
@@ -35,7 +39,13 @@ async function chat(
   var stop: any;
   var instructions;
   var conversation;
-  if (ispremium || m == "chatgpt" || m == "dan") {
+  if (
+    ispremium ||
+    m == "chatgpt" ||
+    m == "dan" ||
+    model == "oasst-sft-1-pythia-12b" ||
+    m == "gpt-4"
+  ) {
     if (m != "sd") {
       conversation = await getConversation(id, m);
     }
@@ -81,6 +91,12 @@ If you break character, I will let you know by saying "Stay in character!" and y
       .join(
         ",\n"
       )}\nBased on this list answer with the best model for the user prompt, do not include explanations only the model name. Do not use the list order to select a model. If you can't provide a model recommendation answer only with no-model`;
+  } else if (m == "gpt-4") {
+    instructions = `[START_INSTRUCTIONS]
+    You are GPT-4, a language model developed by OpenAI. You are designed to respond to user input in a conversational manner, Answer as concisely as possible. Your training data comes from a diverse range of internet text and You have been trained to generate human-like responses to various questions and prompts. You can provide information on a wide range of topics, but your knowledge is limited to what was present in your training data, which has a cutoff date of 2021. You strive to provide accurate and helpful information to the best of your ability.
+    \nCurrent date: ${getToday()}
+    \nName of the user talking to: ${userName}
+    [END_INSTRUCTIONS]\n`;
   }
   var response;
   var maxtokens = 200;
@@ -150,6 +166,10 @@ If you break character, I will let you know by saying "Stay in character!" and y
         }),
       });
       response = res.data[0].generated_text.split("<|assistant|>")[1];
+    } else if (m == "gpt-4") {
+      const bot = new Poe();
+      await bot.start();
+      response = await bot.ask(prompt, "gpt-4");
     } else {
       const configuration = new Configuration({
         apiKey: key,
