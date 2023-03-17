@@ -39,6 +39,6 @@ eventHandler(client);
 commandHandler(client);
 interactionsHandler(client);
 // Log in to Discord with your client's token
+client.rest.on("rateLimited", (data) => console.log(data));
 
-client.on(Events.Error, console.error);
 client.login(process.env.TOKEN);
