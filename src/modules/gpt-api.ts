@@ -140,6 +140,7 @@ If you break character, I will let you know by saying "Stay in character!" and y
   });
   try {
     if (m == "gpt-3") {
+      //@ts-ignore
       bot = new OpenAI(key, {
         max_tokens: maxtokens, // OpenAI parameter [Max response size by tokens]
         stop: stop, // OpenAI parameter
