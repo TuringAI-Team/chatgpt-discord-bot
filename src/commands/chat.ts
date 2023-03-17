@@ -16,6 +16,7 @@ import { ImagineInteraction } from "../modules/stablehorde.js";
 
 export default {
   cooldown: "90s",
+  disablePing: null,
   data: new SlashCommandBuilder()
     .setName("chat")
     .setDescription("Chat with an AI")
