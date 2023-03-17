@@ -5,9 +5,15 @@ console.log("Starting bot...");
 const manager = new ShardingManager("./dist/bot.js", {
   token: process.env.TOKEN,
 });
-console.log("Starting shards...");
 
 manager.on("shardCreate", (shard) => console.log(`Launched shard ${shard.id}`));
-manager.spawn();
+
+(async () => {
+  try {
+    await manager.spawn();
+  } catch (err) {
+    console.log(err);
+  }
+})();
 
 import "./whatsapp/index.js";
