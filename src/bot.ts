@@ -35,11 +35,8 @@ client.guildsVoice = [];
 client.tasks = [];
 
 // Handlers
-console.log("Loading events...");
 eventHandler(client);
-console.log("Loading commands...");
 commandHandler(client);
-console.log("Loading interactions...");
 interactionsHandler(client);
 // Log in to Discord with your client's token
 rest.on("rateLimited", (data) => {
