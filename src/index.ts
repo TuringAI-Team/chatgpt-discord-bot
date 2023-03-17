@@ -6,13 +6,6 @@ const manager = new ShardingManager("./dist/bot.js", {
 });
 
 manager.on("shardCreate", (shard) => console.log(`Launched shard ${shard.id}`));
+manager.spawn();
 
-(async () => {
-  try {
-    await manager.spawn();
-  } catch (err: any) {
-    console.log(err.headers);
-  }
-})();
-
-//import "./whatsapp/index.js";
+import "./whatsapp/index.js";

@@ -146,15 +146,15 @@ If you break character, I will let you know by saying "Stay in character!" and y
     const openai = new OpenAIApi(configuration);
     if (m == "gpt-3") {
       //@ts-ignore
-      bot = await openai.createCompletion({
+      /* bot = await openai.createCompletion({
         max_tokens: maxtokens, // OpenAI parameter [Max response size by tokens]
         stop: stop, // OpenAI parameter
         model: model,
         prompt: prompt,
       }); // Note: options is optional
 
-      response = bot.data.choices[0].text;
-      //response = await gpt3(prompt, maxtokens);
+      response = bot.data.choices[0].text;*/
+      response = await gpt3(prompt, maxtokens);
     } else if (m == "OpenAssistant") {
       let res = await axios({
         url: "https://api-inference.huggingface.co/models/OpenAssistant/oasst-sft-1-pythia-12b",
@@ -169,11 +169,7 @@ If you break character, I will let you know by saying "Stay in character!" and y
         }),
       });
       response = res.data[0].generated_text.split("<|assistant|>")[1];
-    } /*else if (m == "gpt-4") {
-      const bot = new Poe();
-      await bot.start();
-      response = await bot.ask(prompt, "gpt-4");
-    } */ else {
+    } else if (m == "gpt-4") {
       const completion = await openai.createChatCompletion({
         model: model,
         max_tokens: maxtokens,
@@ -181,7 +177,8 @@ If you break character, I will let you know by saying "Stay in character!" and y
       });
 
       response = completion.data.choices[0].message.content;
-      //response = await chatgpt(messages, maxtokens);
+    } else {
+      response = await chatgpt(messages, maxtokens);
     }
 
     if (response) {
