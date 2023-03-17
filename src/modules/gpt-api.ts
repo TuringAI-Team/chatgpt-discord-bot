@@ -139,18 +139,21 @@ If you break character, I will let you know by saying "Stay in character!" and y
     content: fullMsg,
   });
   try {
+    const configuration = new Configuration({
+      apiKey: key,
+    });
+
+    const openai = new OpenAIApi(configuration);
     if (m == "gpt-3") {
       //@ts-ignore
-      bot = new OpenAI(key, {
+      bot = await openai.createCompletion({
         max_tokens: maxtokens, // OpenAI parameter [Max response size by tokens]
         stop: stop, // OpenAI parameter
-        instructions: instructions,
-        aiName: "AI",
         model: model,
-        revProxy: revProxy,
+        prompt: prompt,
       }); // Note: options is optional
 
-      response = await bot.ask(prompt, randomUUID());
+      response = bot.data.choices[0].text;
       //response = await gpt3(prompt, maxtokens);
     } else if (m == "OpenAssistant") {
       let res = await axios({
@@ -171,11 +174,6 @@ If you break character, I will let you know by saying "Stay in character!" and y
       await bot.start();
       response = await bot.ask(prompt, "gpt-4");
     } */ else {
-      const configuration = new Configuration({
-        apiKey: key,
-      });
-
-      const openai = new OpenAIApi(configuration);
       const completion = await openai.createChatCompletion({
         model: model,
         max_tokens: maxtokens,

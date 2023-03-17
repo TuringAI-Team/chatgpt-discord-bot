@@ -15,4 +15,4 @@ manager.on("shardCreate", (shard) => console.log(`Launched shard ${shard.id}`));
   }
 })();
 
-import "./whatsapp/index.js";
+//import "./whatsapp/index.js";
