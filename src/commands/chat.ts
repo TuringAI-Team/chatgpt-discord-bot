@@ -15,7 +15,7 @@ var maintenance = false;
 import { ImagineInteraction } from "../modules/stablehorde.js";
 
 export default {
-  cooldown: "2m",
+  cooldown: "90s",
   data: new SlashCommandBuilder()
     .setName("chat")
     .setDescription("Chat with an AI")
@@ -31,13 +31,13 @@ export default {
         .setDescription("The model you want to use for the AI.")
         .setRequired(true)
         .addChoices(
-          { name: "GPT-4", value: "gpt-4" },
           { name: "GPT-3", value: "gpt-3" },
           { name: "ChatGPT(gpt-3.5)", value: "chatgpt" },
           {
             name: "Open Assistant(oasst-sft-1-pythia-12b)",
             value: "oasst-sft-1-pythia-12b",
-          }
+          },
+          { name: "GPT-4", value: "gpt-4" }
           //  { name: "DAN(gpt-3.5)", value: "dan" }
         )
     )
@@ -92,7 +92,7 @@ export default {
     if (!ispremium && model == "gpt-4") {
       await commandType.reply(interaction, {
         content:
-          "This feature is premium only(testing phase), to get premium use the command `/premium buy`",
+          "This model is premium only (test phase), to get premium use the command `/premium buy`",
         ephemeral: true,
       });
       return;
@@ -104,15 +104,20 @@ export default {
       });
       return;
     }
-    if (model == "gpt-3") {
+    if (
+      model == "gpt-3" ||
+      model == "oasst-sft-1-pythia-12b" ||
+      model == "gpt-4"
+    ) {
       let { data: results, error } = await supabase
         .from("results")
         .select("*")
 
         // Filters
         .eq("prompt", message.toLowerCase())
-        .eq("provider", "gpt-3");
+        .eq("provider", model);
       if (!results || error) {
+        console.log(error, results);
         var errr = "Error connecting with db";
 
         await responseWithText(
@@ -127,8 +132,14 @@ export default {
         );
         return;
       }
-      if (results[0] && results[0].result.text && !ispremium) {
-        result = { text: results[0].result.text, type: "gpt-3" };
+      if (
+        (results[0] && results[0].result.text && !ispremium) ||
+        (model != "gpt-4" && results[0] && results[0].result.text)
+      ) {
+        result = {
+          text: results[0].result.text,
+          type: model == "oasst-sft-1-pythia-12b" ? "OpenAssistant" : model,
+        };
         const { data, error } = await supabase
           .from("results")
           .update({ uses: results[0].uses + 1 })
@@ -139,56 +150,14 @@ export default {
           message,
           interaction.user.username,
           ispremium,
-          "gpt-3",
-          `gpt-3-${interaction.user.id}`,
+          model,
+          `${model}-${interaction.user.id}`,
           0,
           null
         );
       }
     }
-    if (model == "oasst-sft-1-pythia-12b") {
-      let { data: results, error } = await supabase
-        .from("results")
-        .select("*")
-
-        // Filters
-        .eq("prompt", message.toLowerCase())
-        .eq("provider", "oasst-sft-1-pythia-12b");
-      if (!results || error) {
-        var errr = "Error connecting with db";
-
-        await responseWithText(
-          interaction,
-          message,
-          errr,
-          channel,
-          "error",
-          commandType,
-          null,
-          client
-        );
-        return;
-      }
-      if (results[0] && results[0].result.text && !ispremium) {
-        result = { text: results[0].result.text, type: "Open Assistant" };
-        const { data, error } = await supabase
-          .from("results")
-          .update({ uses: results[0].uses + 1 })
-          .eq("id", results[0].id);
-        cached = true;
-      } else {
-        result = await chat(
-          message,
-          interaction.user.username,
-          ispremium,
-          "OpenAssistant",
-          `oa-${interaction.user.id}`,
-          0,
-          null
-        );
-      }
-    }
-    if (model == "chatgpt" || model == "dan" || "gpt-4") {
+    if (model == "chatgpt" || model == "dan") {
       result = await chat(
         message,
         interaction.user.username,

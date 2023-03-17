@@ -32,9 +32,14 @@ export default {
   async execute(message, client) {
     if (message.mentions.has(client.user) && !message.author.bot) {
       var content = message.content;
+      console.log(content);
       if (
-        message.content.startsWith("@everyone") ||
-        message.content.startsWith("@here")
+        message.content.includes("@everyone") ||
+        message.content.includes("@here") ||
+        message.content.includes("<@&")(
+          message.content.includes(`<@${client.user.id}`) &&
+            !message.content.startsWith(`<@${client.user.id}>`)
+        )
       )
         return;
       if (message.content.startsWith(`<@`)) {
