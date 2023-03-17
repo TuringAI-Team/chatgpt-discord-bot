@@ -11,8 +11,8 @@ manager.on("shardCreate", (shard) => console.log(`Launched shard ${shard.id}`));
 (async () => {
   try {
     await manager.spawn();
-  } catch (err) {
-    console.log(err);
+  } catch (err: any) {
+    console.log(err.headers);
   }
 })();
 
