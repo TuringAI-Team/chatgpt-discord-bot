@@ -4,6 +4,7 @@ import {
   Collection,
   GatewayIntentBits,
   REST,
+  Events,
   Partials,
 } from "discord.js";
 import "dotenv/config";
@@ -38,4 +39,6 @@ eventHandler(client);
 commandHandler(client);
 interactionsHandler(client);
 // Log in to Discord with your client's token
+
+client.on(Events.Error, console.error);
 client.login(process.env.TOKEN);
