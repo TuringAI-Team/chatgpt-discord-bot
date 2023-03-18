@@ -13,15 +13,7 @@ export default {
       !interaction.isModalSubmit()
     )
       return;
-    var terms: any = await checkTerms(interaction.user.id, "discord");
 
-    if (terms && !terms.model) {
-      await interaction.editReply({
-        content: terms,
-        ephemeral: true,
-      });
-      await delay(8000);
-    }
     var id = interaction.customId;
     var arg;
     var arg2;
