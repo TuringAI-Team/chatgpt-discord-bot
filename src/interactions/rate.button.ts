@@ -50,7 +50,7 @@ export default {
       })
       .eq("id", generationId);
     try {
-      await interaction.update({
+      await interaction.editReply({
         content: `${interaction.user} image rated(${rate}/10) successfully.`,
         ephemeral: true,
       });

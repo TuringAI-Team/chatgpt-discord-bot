@@ -54,7 +54,7 @@ export default {
     var key = interaction.options.getString("key");
     var type = interaction.options.getString("type");
     if (interaction.options.getSubcommand() === "buy") {
-      await interaction.reply({
+      await interaction.editReply({
         content:
           `You can buy a key to get Turing AI Premium [here](https://turingai.mysellix.io/). After buying your key you can activate your subscription using the command:` +
           "`/premium claim`",
@@ -62,7 +62,7 @@ export default {
       });
     } else {
       if (!key) {
-        await interaction.reply({
+        await interaction.editReply({
           content: `Invalid key`,
           ephemeral: true,
         });
@@ -85,14 +85,14 @@ export default {
         r = await activateKey(key, interaction.user.id, type);
       }
       if (r.error) {
-        await interaction.reply({
+        await interaction.editReply({
           content: r.error,
           ephemeral: true,
         });
         return;
       }
       if (r.message) {
-        await interaction.reply({
+        await interaction.editReply({
           content: `${interaction.user}, ${r.message}`,
           ephemeral: true,
         });

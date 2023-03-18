@@ -109,11 +109,12 @@ export default {
       }
     } catch (error) {
       console.log(error);
-
-      await interactionType.reply(interaction, {
-        content: "There was an error while executing this command!",
-        ephemeral: true,
-      });
+      try {
+        await interactionType.reply(interaction, {
+          content: "There was an error while executing this command!",
+          ephemeral: true,
+        });
+      } catch (err) {}
     }
   },
 };
