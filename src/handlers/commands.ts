@@ -30,25 +30,44 @@ export default async function commandHandler(client) {
       );
     }
   }
+  // read previous commands from json
+  const previousCommands = fs.readFileSync(
+    path.join(__dirname, "../../previousCommands.json"),
+    "utf8"
+  );
+  // check if commands have been updated
+  if (JSON.stringify(commands, null, 2) == previousCommands) {
+    console.log(
+      chalk.yellow(
+        "[WARNING] The commands have not been updated since the last time the bot was started."
+      )
+    );
+    return;
+  } else {
+    // save commands in json
+    fs.writeFileSync(
+      path.join(__dirname, "../../previousCommands.json"),
+      JSON.stringify(commands, null, 2)
+    );
+    (async () => {
+      try {
+        console.log(
+          `Started refreshing ${commands.length} application (/) commands.`
+        );
+        // The put method is used to fully refresh all commands in the guild with the current set
+        const data = await rest.put(
+          Routes.applicationCommands(process.env.CLIENT_ID),
+          { body: commands }
+        );
+
+        console.log(`Successfully reloaded application (/) commands.`);
+      } catch (error) {
+        // And of course, make sure you catch and log any errors!
+        console.log(error);
+      }
+    })();
+  }
 
   // Construct and prepare an instance of the REST module
   // and deploy your commands!
-
-  (async () => {
-    try {
-      console.log(
-        `Started refreshing ${commands.length} application (/) commands.`
-      );
-      // The put method is used to fully refresh all commands in the guild with the current set
-      const data = await rest.put(
-        Routes.applicationCommands(process.env.CLIENT_ID),
-        { body: commands }
-      );
-
-      console.log(`Successfully reloaded application (/) commands.`);
-    } catch (error) {
-      // And of course, make sure you catch and log any errors!
-      console.log(error);
-    }
-  })();
 }
