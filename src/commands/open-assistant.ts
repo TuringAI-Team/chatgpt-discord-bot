@@ -28,7 +28,9 @@ export default {
     });
     return;*/
     var lang = await getUserLang(interaction.user.id);
-    await interaction.deferReply();
+    if (interaction && !interaction.deferred && !interaction.replied) {
+      await interaction.deferReply();
+    }
 
     if (!lang) {
       await langInteraction(interaction);

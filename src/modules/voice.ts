@@ -272,6 +272,7 @@ export async function createListeningStream(
         model,
         `${model}-${interaction.user.id}`,
         0,
+        null,
         null
       );
       if (!result.error) {

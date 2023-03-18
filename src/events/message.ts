@@ -18,11 +18,9 @@ const msgType = {
   reply: async (msg, content) => {
     try {
       return await msg.reply(content);
-    } catch (err) {}
-
-    try {
-      await msg.reactions.removeAll();
-    } catch (err) {}
+    } catch (err) {
+      console.log(err);
+    }
   },
 };
 

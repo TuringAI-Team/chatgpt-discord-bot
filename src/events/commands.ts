@@ -12,17 +12,17 @@ const interactionType = {
     if (interaction && !interaction.deferred && !interaction.replied) {
       try {
         await interaction.deferReply({
-          ephemeral: true,
+          ephemeral: ephemeral,
         });
       } catch (err) {}
     }
   },
-  reply: async (interaction, content, ephemeral = false) => {
+  reply: async (interaction, content) => {
     try {
       if (interaction.deferred || interaction.replied) {
-        return await interaction.editReply({ content, ephemeral });
+        return await interaction.editReply(content);
       } else {
-        return await interaction.reply({ content, ephemeral });
+        return await interaction.reply(content);
       }
     } catch (err) {}
   },
@@ -48,7 +48,8 @@ export default {
     }
     var guildId;
     if (interaction.guild) guildId = interaction.guild.id;
-    await interactionType.load(interaction);
+
+    await interactionType.load(interaction, command.ephemeral);
 
     var terms: any = await checkTerms(interaction.user.id, "discord");
     interaction.user.hasVoted = false;

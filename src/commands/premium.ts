@@ -50,6 +50,7 @@ var data = new SlashCommandBuilder()
 export default {
   data,
   disablePing: true,
+  ephemeral: true,
   async execute(interaction, client) {
     var key = interaction.options.getString("key");
     var type = interaction.options.getString("type");

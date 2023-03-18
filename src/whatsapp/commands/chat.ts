@@ -35,7 +35,8 @@ export default {
       "chatgpt",
       message.user.id,
       0,
-      image
+      image,
+      null
     );
     await message.reply(resoponse.text);
   },

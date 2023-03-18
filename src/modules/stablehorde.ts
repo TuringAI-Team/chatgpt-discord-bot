@@ -332,7 +332,8 @@ export async function ImagineInteraction(interaction, client, style, prompt) {
             "sd",
             `sd-${interaction.user.id}`,
             0,
-            null
+            null,
+            interaction
           );
 
           model = response.text;

@@ -15,20 +15,24 @@
       {
         "choices": [
           {
-            "name": "GPT-3",
-            "value": "gpt-3"
-          },
-          {
             "name": "ChatGPT(gpt-3.5)",
             "value": "chatgpt"
           },
           {
-            "name": "Open Assistant(oasst-sft-1-pythia-12b)",
-            "value": "oasst-sft-1-pythia-12b"
+            "name": "Clyde(gpt-3.5)",
+            "value": "clyde"
           },
           {
-            "name": "GPT-4(Premium only)",
+            "name": "GPT-4",
             "value": "gpt-4"
+          },
+          {
+            "name": "GPT-3",
+            "value": "gpt-3"
+          },
+          {
+            "name": "Open Assistant(oasst-sft-1-pythia-12b)",
+            "value": "oasst-sft-1-pythia-12b"
           }
         ],
         "type": 3,
