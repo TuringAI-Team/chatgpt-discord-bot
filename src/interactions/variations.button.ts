@@ -2,6 +2,7 @@ import {
   SlashCommandBuilder,
   AttachmentBuilder,
   EmbedBuilder,
+  WebhookClient,
 } from "discord.js";
 import stable_horde, {
   generateImg2img,
@@ -128,16 +129,25 @@ export default {
           gen.message.includes("unethical image") ||
           gen.message.includes("nsfw")
         ) {
-          const channel = client.channels.cache.get("1055943633716641853");
-          channel.send(
-            `**Wrong prompt from __${interaction.user.tag}__** (${
+          var webhook = new WebhookClient({
+            url: process.env.DISCORD_WEBHOOK_URL_MODS,
+          });
+          webhook.send({
+            content: `**Wrong prompt from __${interaction.user.tag}__** (${
               interaction.user.id
             })\n**Prompt:** ${prompt}\n**Model:** ${
               generation.provider.split("imagine-")[1]
             }\n**NSFW:** ${nsfw}\n**ChatGPT filter:** ${
               gen.filter ? "yes" : "no"
-            }`
-          );
+            }`,
+            username: "ChatGPT",
+            avatarURL: client.user.displayAvatarURL(),
+          });
+          const channel = client.channels.cache.get("1055943633716641853");
+          await interaction.editReply({
+            content: `To prevent generation of unethical images, we cannot allow this prompt with NSFW models/tags. You have received a strike. If you receive 3 strikes, you will be banned from using the bot(/imagine).`,
+            ephemeral: true,
+          });
           if (!userBans.data[0]) {
             await supabase.from("bans").insert([
               {
