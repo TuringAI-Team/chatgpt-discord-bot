@@ -310,6 +310,7 @@ async function responseWithText(
   if (type != "error") {
     rows.push(row);
   }
+  /*
   if (image) {
     var files = [
       {
@@ -317,7 +318,8 @@ async function responseWithText(
         name: "image.png",
       },
     ];
-  }
+  }*/
+
   if (charsCount / 2000 >= 1) {
     var lastMsg;
     var loops = Math.ceil(charsCount / 2000);
@@ -329,7 +331,7 @@ async function responseWithText(
           lastMsg = await commandType.reply(interaction, {
             content: completeResponse.split("").slice(0, 2000).join(""),
             components: rows,
-            files: files,
+            //    files: files,
           });
         } catch (err) {
           console.log(err);
@@ -351,7 +353,7 @@ async function responseWithText(
     commandType.reply(interaction, {
       content: completeResponse,
       components: rows,
-      files: files,
+      //files: files,
     });
   }
 }
