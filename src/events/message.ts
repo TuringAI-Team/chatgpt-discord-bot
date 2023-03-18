@@ -78,6 +78,13 @@ export default {
         options.model = terms.model;
         options.hasVoted = terms.hasVoted;
       }
+      // if message includes a attachment
+      if (message.attachments.size > 0) {
+        var attachment = message.attachments.first();
+        if (attachment) {
+          options.attachment = attachment;
+        }
+      }
       var ispremium = await isPremium(message.author.id, guildId);
       try {
         if (command.cooldown && ispremium == false) {

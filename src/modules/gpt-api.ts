@@ -39,6 +39,7 @@ async function chat(
   if (image && image.url && !imageDescp) {
     imageDescription = await getImageDescription(image.url);
   }
+  console.log(imageDescription);
   var model = "gpt-3.5-turbo";
   var stop: any;
   var instructions;
@@ -147,10 +148,20 @@ async function chat(
       }
     });
   }
+  if (imageDescription) {
+    messages.push({
+      role: "system",
+      content: `You can view images.\nHere you have image descriptions of image attachments by the user. Do not refer to them as \"description\", instead as \"image\". Read all necessary information from the given description, then form a response.\nImage description: ${imageDescription} ${
+        image.url.includes("base64") ? "" : `\nImage URL:  ${image.url}`
+      }`,
+    });
+  }
+
   messages.push({
     role: "user",
-    content: fullMsg,
+    content: message,
   });
+
   try {
     const configuration = new Configuration({
       apiKey: key,
@@ -183,6 +194,7 @@ async function chat(
       });
       response = res.data[0].generated_text.split("<|assistant|>")[1];
     } else if (m == "gpt-4") {
+      console.log(messages);
       const completion = await openai.createChatCompletion({
         model: model,
         max_tokens: maxtokens,

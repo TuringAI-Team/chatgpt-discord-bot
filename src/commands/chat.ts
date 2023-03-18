@@ -67,6 +67,7 @@ export default {
       message = options.message;
       model = options.model;
       hasVoted = options.hasVoted;
+      attachment = options.attachment;
     } else {
       message = interaction.options.getString("message");
       attachment = interaction.options.getAttachment("image");
@@ -96,8 +97,7 @@ export default {
     }*/
     if (!ispremium && model == "gpt-4" && !hasVoted) {
       await commandType.reply(interaction, {
-        content:
-          "This model is premium only (test phase), to get premium use the command `/premium buy`",
+        content: `For using this model you need to be a premium user or vote for us on [top.gg](https://top.gg/bot/852791525517404200/vote) . To get premium use the command \`/premium buy\``,
         ephemeral: true,
       });
       return;
@@ -140,7 +140,10 @@ export default {
       }
       if (
         (results[0] && results[0].result.text && !ispremium) ||
-        (model != "gpt-4" && results[0] && results[0].result.text)
+        (model != "gpt-4" &&
+          results[0] &&
+          results[0].result.text &&
+          !attachment)
       ) {
         result = {
           text: results[0].result.text,
@@ -159,7 +162,7 @@ export default {
           model,
           `${model}-${interaction.user.id}`,
           0,
-          null,
+          attachment,
           interaction
         );
       }
