@@ -219,7 +219,7 @@ If you break character, I will let you know by saying "Stay in character!" and y
     }
     if (
       err == "Error: Request failed with status code 429" ||
-      err.message.includes("429")
+      (err.message && err.message.includes("429"))
     ) {
       await disableAcc(token.id, false);
       setTimeout(async () => {
