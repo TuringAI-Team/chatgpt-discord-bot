@@ -144,7 +144,9 @@ export default {
             ephemeral: true,
           });
         } catch (err) {
-          console.log(message.guild.id, message.guild.ownerId);
+          if (message.guild) {
+            console.log(message.guild.id, message.guild.ownerId);
+          }
         }
       }
     }

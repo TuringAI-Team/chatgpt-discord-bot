@@ -29,8 +29,14 @@ export async function checkTerms(userId, platform) {
   } else {
     let hasVoted = false;
     try {
-      let voted = await votesClient.hasVoted(userId);
-      if (voted) hasVoted = true;
+      hasVoted = await Promise.race([
+        votesClient.hasVoted(userId),
+        new Promise<boolean>((_, reject) => {
+          setTimeout(() => {
+            reject(new Error("Timeout"));
+          }, 5000);
+        }),
+      ]);
     } catch (e) {
       hasVoted = false;
     }
@@ -39,8 +45,15 @@ export async function checkTerms(userId, platform) {
 }
 export async function hasVoted(userId) {
   try {
-    let voted = await votesClient.hasVoted(userId);
-    return voted;
+    let hasVoted = await Promise.race([
+      votesClient.hasVoted(userId),
+      new Promise<boolean>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error("Timeout"));
+        }, 5000);
+      }),
+    ]);
+    return hasVoted;
   } catch (e) {
     return false;
   }
