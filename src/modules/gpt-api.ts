@@ -483,7 +483,7 @@ async function getSearchResults(message) {
   let messages = [];
   messages.push({
     role: "system",
-    content: `your function is to determine which search queries for a search engine, if any, may be needed for the following topic for Google, maximum 3 entries. Make each of the queries descriptive and include all related topics. Search for something if it may require any knowledge past 2021. updated information, or knowledge of user's or people. Create a | seperated list without quotes. Otherwise if NO queries are applicable, \"N\" Don't answer user messages, do not be conversational, just answer with queries`,
+    content: `your function is to determine which search queries for a search engine, if any, may be needed for the following topic for Google, maximum 3 entries. Make each of the queries descriptive and include all related topics. If the prompt is a question to/about you directly, reply with N . Search for something if it may require any knowledge past 2021. updated information, or knowledge of user's or people. Create a | seperated list without quotes. Otherwise if NO queries are applicable, \"N\" Don't answer user messages, do not be conversational, just answer with queries`,
   });
   messages.push({
     role: "user",
