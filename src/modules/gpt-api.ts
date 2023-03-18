@@ -10,6 +10,7 @@ import OpenAI from "chatgpt-official";
 import { Configuration, OpenAIApi } from "openai";
 import ms from "ms";
 import models from "./models.js";
+import googleAPI from "googlethis";
 
 async function chat(
   message,
@@ -48,7 +49,9 @@ async function chat(
     m == "chatgpt" ||
     m == "dan" ||
     m == "oasst-sft-1-pythia-12b" ||
-    m == "gpt-4"
+    m == "gpt-4" ||
+    m == "clyde" ||
+    m == "alan"
   ) {
     if (m != "sd") {
       conversation = await getConversation(id, m);
@@ -106,6 +109,17 @@ async function chat(
     <@!${interaction.user.id}>
      - Avatar url: ${interaction.user.avatarURL()}
      - User name: ${interaction.user.username}`;
+  } else if (m == "alan") {
+    instructions = `Current date: ${getToday()}\nYou are an AI named Alan - and are currently chatting in a Discord server. You have been developed by Turing AI
+    \n Consider the following in your responses:
+    - Be conversational 
+    - Add unicode emoji to be more playful in your responses.
+    \nInformation about your environment:
+    ${
+      interaction.guild
+        ? `- The server you are in is called: ${interaction.guild.name} ; The server is owned by: <@${interaction.guild.ownerId}> ;The channel you are in is called: ${interaction.channel.name}`
+        : `- You are in a DM with: @${interaction.user.username}`
+    }\nUsername of the user talking to: ${userName}`;
   }
   var response;
   var maxtokens = 250;
@@ -127,11 +141,27 @@ async function chat(
   }\nUser: ${fullMsg}\nAI:\n`;
   var messages = [];
   if (instructions) {
-    messages.push({
-      role: "system",
-      content: instructions,
-    });
+    if (m == "alan") {
+      let results = await getSearchResults(message);
+      if (results) {
+        messages.push({
+          role: "system",
+          content: `${instructions}\nHere you have results from google that you can use to answer the user, do not mention the results, extract information from them to answer the question..\n${results}`,
+        });
+      } else {
+        messages.push({
+          role: "system",
+          content: `${instructions}`,
+        });
+      }
+    } else {
+      messages.push({
+        role: "system",
+        content: instructions,
+      });
+    }
   }
+
   if (conversation) {
     conversation.split("<split>").forEach((msg) => {
       // role: content
@@ -160,12 +190,10 @@ async function chat(
     role: "user",
     content: message,
   });
-
   try {
     const configuration = new Configuration({
       apiKey: key,
     });
-
     const openai = new OpenAIApi(configuration);
     if (m == "gpt-3") {
       //@ts-ignore
@@ -193,13 +221,14 @@ async function chat(
       });
       response = res.data[0].generated_text.split("<|assistant|>")[1];
     } else if (m == "gpt-4") {
-      const completion = await openai.createChatCompletion({
+      /*    const completion = await openai.createChatCompletion({
         model: model,
         max_tokens: maxtokens,
         messages: messages,
       });
 
-      response = completion.data.choices[0].message.content;
+      response = completion.data.choices[0].message.content;*/
+      response = await gpt4(messages, maxtokens);
     } else {
       response = await chatgpt(messages, maxtokens);
     }
@@ -210,9 +239,27 @@ async function chat(
       response = response.replaceAll("@here", "pingSecurity");
     }
 
-    if (ispremium || m == "chatgpt" || m == "dan") {
+    if (
+      ispremium ||
+      m == "chatgpt" ||
+      m == "dan" ||
+      m == "gpt-4" ||
+      m == "OpenAssistant" ||
+      m == "clyde" ||
+      m == "alan"
+    ) {
       if (m != "sd") {
-        await saveMsg(m, fullMsg, response, id, ispremium, userName);
+        await saveMsg(
+          m,
+          m == "gpt-3" ? fullMsg : message,
+          response,
+          id,
+          ispremium,
+          {
+            imageDescription,
+            image,
+          }
+        );
       }
     }
     setTimeout(async () => {
@@ -220,6 +267,7 @@ async function chat(
     }, 6000);
     return { text: response, type: m };
   } catch (err: any) {
+    console.log(JSON.stringify(err));
     console.log(`${token.id}: ${err} -- ${m}`);
     if (err == "Error: Request failed with status code 400") {
       console.log(messages);
@@ -303,13 +351,29 @@ async function getConversation(id, model): Promise<any> {
   return;
 }
 
-async function saveMsg(model, userMsg, aiMsg, id, ispremium, userName) {
+async function saveMsg(model, userMsg, aiMsg, id, ispremium, img) {
   var conversation;
   if (model == "gpt-3") {
     conversation = `\n<split>User: ${userMsg}\nAI: ${aiMsg}`;
   }
-  if (model == "chatgpt" || model == "dan") {
-    conversation = `user: ${userMsg}<split>assistant: ${aiMsg}<split>`;
+  if (
+    model == "chatgpt" ||
+    model == "dan" ||
+    model == "gpt-4" ||
+    model == "clyde" ||
+    model == "alan"
+  ) {
+    conversation = `${
+      img.imageDescription
+        ? `<split>system: You can view images.\nHere you have image descriptions of image attachments by the user. Do not refer to them as \"description\", instead as \"image\". Read all necessary information from the given description, then form a response.\nImage description: ${
+            img.imageDescription
+          } ${
+            img.image.url.includes("base64")
+              ? ""
+              : `\nImage URL:  ${img.image.url}`
+          }`
+        : ``
+    }<split>user: ${userMsg}<split>assistant: ${aiMsg}`;
   }
   var { data } = await supabase
     .from("conversations")
@@ -378,7 +442,7 @@ function getToday() {
   let dd = String(today.getDate()).padStart(2, "0");
   let mm = String(today.getMonth() + 1).padStart(2, "0");
   let yyyy = today.getFullYear();
-  return `${yyyy}-${mm}-${dd}`;
+  return `${yyyy}-${mm}-${dd} ${today.getHours()}:${today.getMinutes()}:${today.getSeconds()}`;
 }
 
 import { predict } from "replicate-api";
@@ -398,6 +462,66 @@ export async function getImageDescription(image) {
   if (prediction.error) return prediction.error;
   return prediction.output;
 }
+async function getImagePrompt(message) {
+  let messages = [];
+  let imagePrompt =
+    "If user messages ask to generate an image answer with GEN_IMG='image descriptiong with descriptive tasks' , if the user don't ask to generate an image simply answer with 'N' ";
+
+  messages.push({
+    role: "system",
+    content: imagePrompt,
+  });
+  messages.push({
+    role: "user",
+    content: message,
+  });
+  let imgPrompt = await chatgpt(messages, 150);
+  console.log(`imgPrompt: ${imgPrompt}`);
+  return imgPrompt;
+}
+async function getSearchResults(message) {
+  let messages = [];
+  messages.push({
+    role: "system",
+    content: `your function is to determine which search queries for a search engine, if any, may be needed for the following topic for Google, maximum 3 entries. Make each of the queries descriptive and include all related topics. Search for something if it may require any knowledge past 2021. updated information, or knowledge of user's or people. Create a | seperated list without quotes. Otherwise if NO queries are applicable, \"N\" Don't answer user messages, do not be conversational, just answer with queries`,
+  });
+  messages.push({
+    role: "user",
+    content: message,
+  });
+  let searchQueries = await chatgpt(messages, 150);
+  // search in google and get results
+  console.log(`searchQueries: ${searchQueries}`);
+  let searchResults = [];
+  if (searchQueries == "N AT ALL COSTS" || searchQueries == "N") return null;
+  searchQueries = searchQueries.split("|");
+  for (let i = 0; i < searchQueries.length; i++) {
+    const query = searchQueries[i];
+    if (query == "N" || query == "N.") continue;
+    const results = await google(query);
+    searchResults.push({
+      query: query,
+      results: results,
+    });
+  }
+
+  return JSON.stringify(searchResults);
+}
+
+async function google(query) {
+  // use google-it
+  const options = {
+    page: 0,
+    safe: false, // Safe Search
+    parse_ads: false, // If set to true sponsored results will be parsed
+    additional_params: {},
+  };
+
+  let response = await googleAPI.search(query, options);
+  //  return first 2 results
+  response.results = response.results.slice(0, 2);
+  return response;
+}
 async function gpt3(prompt: string, maxtokens) {
   const data = JSON.stringify({
     prompt: prompt,
@@ -409,7 +533,7 @@ async function gpt3(prompt: string, maxtokens) {
   try {
     let response = await axios({
       method: "post",
-      url: "https://gpt.pawan.krd/api/completions",
+      url: "https://api.pawan.krd/v1/completions",
       headers: {
         Authorization: `Bearer ${process.env.PAWAN_KEY}`,
         "Content-Type": "application/json",
@@ -430,7 +554,28 @@ async function chatgpt(messages, maxtokens) {
   try {
     let response = await axios({
       method: "post",
-      url: "https://gpt.pawan.krd/api/chat/completions",
+      url: "https://api.pawan.krd/v1/chat/completions",
+      headers: {
+        Authorization: `Bearer ${process.env.PAWAN_KEY}`,
+        "Content-Type": "application/json",
+      },
+      data: data,
+    });
+    return response.data.choices[0].message.content;
+  } catch (e: any) {
+    throw e.response.data.error;
+  }
+}
+async function gpt4(messages, maxtokens) {
+  const data = JSON.stringify({
+    max_tokens: maxtokens,
+    model: "gpt-4",
+    messages,
+  });
+  try {
+    let response = await axios({
+      method: "post",
+      url: "https://api.pawan.krd/v1/chat/completions",
       headers: {
         Authorization: `Bearer ${process.env.PAWAN_KEY}`,
         "Content-Type": "application/json",

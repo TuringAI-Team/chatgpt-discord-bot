@@ -32,6 +32,7 @@ export default {
         .setDescription("The model you want to use for the AI.")
         .setRequired(true)
         .addChoices(
+          { name: "Alan(gpt-3.5)", value: "alan" },
           { name: "ChatGPT(gpt-3.5)", value: "chatgpt" },
           { name: "Clyde(gpt-3.5)", value: "clyde" },
           //{ name: "DAN(gpt-3.5)", value: "dan" },
@@ -95,7 +96,11 @@ export default {
       });
       return;
     }*/
-    if (!ispremium && model == "gpt-4" && !hasVoted) {
+    if (
+      (!ispremium && model == "gpt-4" && !hasVoted) ||
+      (!ispremium && model == "gpt-3" && !hasVoted) ||
+      (!ispremium && model == "alan" && !hasVoted)
+    ) {
       await commandType.reply(interaction, {
         content: `For using this model you need to be a premium user or vote for us on [top.gg](https://top.gg/bot/1053015370115588147/vote) for free. To get premium use the command \`/premium buy\``,
         ephemeral: true,
@@ -167,7 +172,12 @@ export default {
         );
       }
     }
-    if (model == "chatgpt" || model == "dan" || model == "clyde") {
+    if (
+      model == "chatgpt" ||
+      model == "dan" ||
+      model == "clyde" ||
+      model == "alan"
+    ) {
       result = await chat(
         message,
         interaction.user.username,
@@ -319,6 +329,11 @@ async function responseWithText(
       },
     ];
   }*/
+  if (result.includes("GEN_IMG=")) {
+    var imgPrompt = result.split("GEN_IMG=")[1];
+    await ImagineInteraction(interaction, client, "auto", imgPrompt);
+    return;
+  }
 
   if (charsCount / 2000 >= 1) {
     var lastMsg;
