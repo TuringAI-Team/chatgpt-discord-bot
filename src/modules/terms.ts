@@ -4,9 +4,8 @@ import { VoteClient } from "topgg-votes";
 
 const votesClient = new VoteClient()
   .setToken(process.env.TOPGG_TOKEN)
-  .setPort(3131);
+  .setPort(randomPort());
 votesClient.postWebhook();
-
 export async function checkTerms(userId, platform) {
   const { data, error } = await supabase
     .from("users")
@@ -33,4 +32,8 @@ export async function checkTerms(userId, platform) {
     if (voted) hasVoted = true;
     return { model: data[0].defaultChatModel, hasVoted: hasVoted };
   }
+}
+
+function randomPort() {
+  return Math.floor(Math.random() * (65535 - 1024) + 1024);
 }
