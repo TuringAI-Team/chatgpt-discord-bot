@@ -54,6 +54,10 @@ export default async function commandHandler(client) {
       await reloadCommands(commands);
     }
   } catch (error) {
+    fs.writeFileSync(
+      path.join(__dirname, `../../previousCommands/${shard}.json`),
+      JSON.stringify(commands, null, 2)
+    );
     await reloadCommands(commands);
   }
   // check if commands have been updated
