@@ -97,7 +97,7 @@ export default {
     }*/
     if (!ispremium && model == "gpt-4" && !hasVoted) {
       await commandType.reply(interaction, {
-        content: `For using this model you need to be a premium user or vote for us on [top.gg](https://top.gg/bot/852791525517404200/vote) . To get premium use the command \`/premium buy\``,
+        content: `For using this model you need to be a premium user or vote for us on [top.gg](https://top.gg/bot/1053015370115588147/vote) . To get premium use the command \`/premium buy\``,
         ephemeral: true,
       });
       return;
