@@ -15,7 +15,7 @@ var maintenance = false;
 import { ImagineInteraction } from "../modules/stablehorde.js";
 
 export default {
-  cooldown: "90s",
+  cooldown: "2m",
   disablePing: null,
   data: new SlashCommandBuilder()
     .setName("chat")
