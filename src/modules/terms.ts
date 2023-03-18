@@ -33,6 +33,10 @@ export async function checkTerms(userId, platform) {
     return { model: data[0].defaultChatModel, hasVoted: hasVoted };
   }
 }
+export async function hasVoted(userId) {
+  var voted = await votesClient.hasVoted(userId);
+  return voted;
+}
 
 function randomPort() {
   let port = Math.floor(Math.random() * (65535 - 1024) + 1024);

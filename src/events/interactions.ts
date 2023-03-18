@@ -14,8 +14,9 @@ export default {
     )
       return;
     var terms: any = await checkTerms(interaction.user.id, "discord");
+
     if (terms && !terms.model) {
-      await interaction.reply({
+      await interaction.editReply({
         content: terms,
         ephemeral: true,
       });

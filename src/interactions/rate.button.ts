@@ -8,8 +8,11 @@ export default {
     description: "Button for rating images",
   },
   async execute(interaction, client, generationId, imageId, userId, rate) {
-    if (!interaction.deferred && !interaction.replied)
-      await interaction.reply("Loading...");
+    if (interaction && !interaction.deferred && !interaction.replied) {
+      try {
+        await interaction.deferReply();
+      } catch (err) {}
+    }
 
     if (userId != interaction.user.id) {
       await interaction.editReply({

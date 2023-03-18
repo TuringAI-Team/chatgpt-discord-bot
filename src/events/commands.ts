@@ -47,15 +47,17 @@ export default {
     await interactionType.load(interaction);
 
     var terms: any = await checkTerms(interaction.user.id, "discord");
+    interaction.user.hasVoted = false;
     if (terms && !terms.model) {
       await interaction.editReply({
         content: terms,
         ephemeral: true,
       });
       await delay(8000);
+    } else {
+      interaction.user.hasVoted = terms.hasVoted;
     }
     var ispremium = await isPremium(interaction.user.id, guildId);
-
     try {
       if (command.cooldown && ispremium == false) {
         let { data: cooldowns, error } = await supabase

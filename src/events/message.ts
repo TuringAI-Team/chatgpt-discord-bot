@@ -58,6 +58,7 @@ export default {
       if (command.disablePing) return;
       if (commandName == "chat" || commandName == "voice") {
         options.message = content.replace("chat ", "");
+        options.hasVoted = false;
       }
       var guildId;
       if (message.guild) guildId = message.guild.id;
@@ -77,6 +78,7 @@ export default {
         }
       } else if (terms && terms.model) {
         options.model = terms.model;
+        options.hasVoted = terms.hasVoted;
       }
       var ispremium = await isPremium(message.author.id, guildId);
       try {

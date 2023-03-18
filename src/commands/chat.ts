@@ -60,11 +60,13 @@ export default {
     }
     var message;
     var model;
+    var hasVoted = false;
     var attachment;
 
     if (!interaction.options) {
       message = options.message;
       model = options.model;
+      hasVoted = options.hasVoted;
     } else {
       message = interaction.options.getString("message");
       attachment = interaction.options.getAttachment("image");
@@ -76,6 +78,7 @@ export default {
         return;
       }
       model = interaction.options.getString("model");
+      hasVoted = interaction.user.hasVoted;
     }
 
     var result;
@@ -91,7 +94,7 @@ export default {
       });
       return;
     }*/
-    if (!ispremium && model == "gpt-4") {
+    if (!ispremium && model == "gpt-4" && !hasVoted) {
       await commandType.reply(interaction, {
         content:
           "This model is premium only (test phase), to get premium use the command `/premium buy`",

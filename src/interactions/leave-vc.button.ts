@@ -12,6 +12,11 @@ export default {
     description: "Make the bot leave a voice channel",
   },
   async execute(interaction, client) {
+    if (interaction && !interaction.deferred && !interaction.replied) {
+      try {
+        await interaction.deferReply();
+      } catch (err) {}
+    }
     if (getVoiceConnection(interaction.guildId)) {
       var voiceConnection = getVoiceConnection(interaction.guildId);
 
@@ -19,7 +24,7 @@ export default {
         voiceConnection.joinConfig.channelId
       );
       if (!channel) {
-        await interaction.reply({
+        await interaction.editReply({
           content: "No voice connection was found to this discord channel",
           components: [],
           embeds: [],
@@ -33,14 +38,14 @@ export default {
           // only splice array when item is found
           client.guildsVoice.splice(index, 1); // 2nd parameter means remove one item only
         }
-        await interaction.reply({
+        await interaction.editReply({
           content: "ChatGPT voice off",
           components: [],
           embeds: [],
           ephemeral: true,
         });
       } else {
-        await interaction.reply({
+        await interaction.editReply({
           content:
             "You are not connnected to the same voice channel as the bot.",
           components: [],
@@ -49,7 +54,7 @@ export default {
         });
       }
     } else {
-      await interaction.reply({
+      await interaction.editReply({
         content: "No voice connection was found to this discord channel",
         components: [],
         embeds: [],

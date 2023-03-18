@@ -14,6 +14,11 @@ export default {
     description: "Chat with the bot in a voice channel",
   },
   async execute(interaction, client, model) {
+    if (interaction && !interaction.deferred && !interaction.replied) {
+      try {
+        await interaction.deferReply();
+      } catch (err) {}
+    }
     var guildId;
     if (interaction.guild) guildId = interaction.guild.id;
     var ispremium = await isPremium(interaction.user.id, guildId);
@@ -50,7 +55,7 @@ export default {
             .eq("command", "chat-vc");
           await voiceAudio(interaction, client, interactionType, model, false);
         } else {
-          await interaction.reply({
+          await interaction.editReply({
             content:
               `Please wait **${ms(
                 count
@@ -74,7 +79,11 @@ export default {
 const interactionType = {
   type: "interaction",
   load: async (interaction) => {
-    await interaction.deferReply();
+    if (interaction && !interaction.deferred && !interaction.replied) {
+      try {
+        await interaction.deferReply();
+      } catch (err) {}
+    }
   },
   reply: async (interaction, content) => {
     if (interaction.deferred || interaction.replied) {
