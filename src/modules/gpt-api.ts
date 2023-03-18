@@ -81,7 +81,7 @@ async function chat(
       )}\nBased on this list answer with the best model for the user prompt, do not include explanations only the model name. Do not use the list order to select a model. If you can't provide a model recommendation answer only with no-model`;
   } else if (m == "gpt-4") {
     model = "gpt-4";
-    instructions = `Current date: ${getToday()}\nName of the user talking to: ${userName}`;
+    instructions = `Your are GPT-4, a large language model released 14/3/2023 \nCurrent date: ${getToday()}\nName of the user talking to: ${userName}`;
   } else if (m == "clyde") {
     instructions = `Current date: ${getToday()}\nYou are an AI named Clyde - and are currently chatting in a Discord server.
 
