@@ -87,7 +87,7 @@ export default {
               interactionType
             );
           } else {
-            await interaction.reply({
+            await interaction.editReply({
               content:
                 `Use this command again **${ms(
                   count
