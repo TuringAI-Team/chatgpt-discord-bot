@@ -34,11 +34,12 @@ export default {
         .addChoices(
           { name: "GPT-3", value: "gpt-3" },
           { name: "ChatGPT(gpt-3.5)", value: "chatgpt" },
+          { name: "Clyde(gpt-3.5)", value: "clyde" },
           {
             name: "Open Assistant(oasst-sft-1-pythia-12b)",
             value: "oasst-sft-1-pythia-12b",
           },
-          { name: "GPT-4", value: "gpt-4" }
+          { name: "GPT-4(Premium only)", value: "gpt-4" }
           //  { name: "DAN(gpt-3.5)", value: "dan" }
         )
     )

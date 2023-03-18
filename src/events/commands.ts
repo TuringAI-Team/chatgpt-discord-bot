@@ -11,9 +11,7 @@ const interactionType = {
   load: async (interaction, ephemeral = false) => {
     if (interaction && !interaction.deferred && !interaction.replied) {
       try {
-        await interaction.deferReply({
-          ephemeral: ephemeral,
-        });
+        await interaction.deferReply();
       } catch (err) {}
     }
   },
@@ -46,9 +44,11 @@ export default {
     }
     var guildId;
     if (interaction.guild) guildId = interaction.guild.id;
+    await interactionType.load(interaction);
+
     var terms = await checkTerms(interaction.user.id, "discord");
     if (terms) {
-      await interaction.reply({
+      await interaction.editReply({
         content: terms,
         ephemeral: true,
       });
