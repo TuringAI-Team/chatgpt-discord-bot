@@ -35,5 +35,12 @@ export async function checkTerms(userId, platform) {
 }
 
 function randomPort() {
-  return Math.floor(Math.random() * (65535 - 1024) + 1024);
+  let port = Math.floor(Math.random() * (65535 - 1024) + 1024);
+  // check if port is in use
+  try {
+    fs.accessSync(`http://localhost:${port}`);
+    return randomPort();
+  } catch (e) {
+    return port;
+  }
 }
