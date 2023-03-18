@@ -13,8 +13,8 @@ export default {
       !interaction.isModalSubmit()
     )
       return;
-    var terms = await checkTerms(interaction.user.id, "discord");
-    if (terms) {
+    var terms: any = await checkTerms(interaction.user.id, "discord");
+    if (terms && !terms.model) {
       await interaction.reply({
         content: terms,
         ephemeral: true,
