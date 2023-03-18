@@ -11,16 +11,18 @@ const interactionType = {
   load: async (interaction, ephemeral = false) => {
     if (interaction && !interaction.deferred && !interaction.replied) {
       try {
-        await interaction.deferReply();
+        await interaction.deferReply({
+          ephemeral: true,
+        });
       } catch (err) {}
     }
   },
-  reply: async (interaction, content) => {
+  reply: async (interaction, content, ephemeral = false) => {
     try {
       if (interaction.deferred || interaction.replied) {
-        return await interaction.editReply(content);
+        return await interaction.editReply({ content, ephemeral });
       } else {
-        return await interaction.reply(content);
+        return await interaction.reply({ content, ephemeral });
       }
     } catch (err) {}
   },

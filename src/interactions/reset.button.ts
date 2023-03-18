@@ -13,7 +13,9 @@ export default {
   },
   async execute(interaction, client, conversationId) {
     if (!interaction.deferred && !interaction.replied) {
-      await interaction.deferReply();
+      await interaction.deferReply({
+        ephemeral: true,
+      });
     }
 
     var conversationOwner = conversationId.split("-")[1];
