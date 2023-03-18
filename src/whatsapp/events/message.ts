@@ -46,8 +46,8 @@ export default {
     }
     var command = client.commands.find((x) => x.name == message.commandName);
     if (!command) return await message.reply("Command not found");
-    var terms = await checkTerms(message.user.id, "whatsapp");
-    if (terms) {
+    var terms: any = await checkTerms(message.user.id, "whatsapp");
+    if (terms && !terms.model) {
       await message.reply(terms);
       await delay(8000);
     }

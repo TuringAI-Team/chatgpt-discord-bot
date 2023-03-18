@@ -109,7 +109,8 @@ export default {
     if (
       model == "gpt-3" ||
       model == "oasst-sft-1-pythia-12b" ||
-      model == "gpt-4"
+      model == "gpt-4" ||
+      model == "OpenAssistant"
     ) {
       let { data: results, error } = await supabase
         .from("results")
@@ -242,6 +243,7 @@ export default {
       }
       var channel = interaction.channel;
       if (!interaction.channel) channel = interaction.user;
+      // change user default model to selected model
 
       await responseWithText(
         interaction,
@@ -253,6 +255,10 @@ export default {
         attachment,
         client
       );
+      const { data, error } = await supabase
+        .from("users")
+        .update({ defaultChatModel: result.type })
+        .eq("id", interaction.user.id);
     } else {
       await responseWithText(
         interaction,

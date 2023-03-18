@@ -58,23 +58,25 @@ export default {
       if (command.disablePing) return;
       if (commandName == "chat" || commandName == "voice") {
         options.message = content.replace("chat ", "");
-        options.model = "chatgpt";
       }
       var guildId;
       if (message.guild) guildId = message.guild.id;
-      var terms = await checkTerms(message.author.id, "discord");
-      if (terms) {
+      var terms: any = await checkTerms(message.author.id, "discord");
+      if (terms && !terms.model) {
         try {
           var msg = await message.reply({
             content: terms,
             ephemeral: true,
           });
           await delay(8000);
+          options.model = "chatgpt";
           await msg.delete();
         } catch (err: any) {
           // if missing permissions contact server owner
           console.log(message.guild.id, message.guild.ownerId);
         }
+      } else if (terms && terms.model) {
+        options.model = terms.model;
       }
       var ispremium = await isPremium(message.author.id, guildId);
       try {
@@ -92,10 +94,15 @@ export default {
             var milliseconds = createdAt.getTime();
             var now = Date.now();
             var diff = now - milliseconds;
+            let cooldownTime = ms(command.cooldown);
+            // if terms.votedAt which is ms time has been less than 12 hours ago then reduce cooldown by 50%
+            if (terms && terms.hasVoted) {
+              cooldownTime = cooldownTime / 2;
+            }
             //@ts-ignore
-            var count = ms(command.cooldown) - diff;
+            var count = cooldownTime - diff;
             //@ts-ignore
-            if (diff >= ms(command.cooldown)) {
+            if (diff >= cooldownTime) {
               const { data, error } = await supabase
                 .from("cooldown")
                 .update({ created_at: new Date() })
@@ -113,8 +120,8 @@ export default {
                 content:
                   `Use this command again **${ms(
                     count
-                  )}**.\nIf you want to **avoid this cooldown** you can **donate to get premium**. If you want to donate use the command ` +
-                  "`/premium buy` .",
+                  )}**. \nIf you want to **reduce your cooldown** you can **vote us for free** in [our top.gg page](https://top.gg/bot/1053015370115588147/vote)\nIf you want to **avoid this cooldown** you can **donate to get premium**. If you want to donate use the command ` +
+                  "`/premium buy` . ",
                 ephemeral: true,
               });
             }

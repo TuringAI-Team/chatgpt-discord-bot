@@ -45,7 +45,7 @@ async function chat(
     ispremium ||
     m == "chatgpt" ||
     m == "dan" ||
-    model == "oasst-sft-1-pythia-12b" ||
+    m == "oasst-sft-1-pythia-12b" ||
     m == "gpt-4"
   ) {
     if (m != "sd") {
