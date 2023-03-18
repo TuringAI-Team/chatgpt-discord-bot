@@ -16,11 +16,13 @@ const interactionType = {
     }
   },
   reply: async (interaction, content) => {
-    if (interaction.deferred || interaction.replied) {
-      return await interaction.editReply(content);
-    } else {
-      return await interaction.reply(content);
-    }
+    try {
+      if (interaction.deferred || interaction.replied) {
+        return await interaction.editReply(content);
+      } else {
+        return await interaction.reply(content);
+      }
+    } catch (err) {}
   },
 };
 

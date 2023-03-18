@@ -99,7 +99,10 @@ If you break character, I will let you know by saying "Stay in character!" and y
   }
   var response;
   var maxtokens = 200;
-  if (ispremium) maxtokens = 400;
+  if (ispremium && m != "gpt-4") maxtokens = 600;
+  if (ispremium && m == "gpt-4") maxtokens = 300;
+  if (!ispremium && m == "gpt-4") maxtokens = 150;
+
   var bot;
   var fullMsg = `${message}${
     imageDescription
