@@ -194,7 +194,6 @@ async function chat(
       });
       response = res.data[0].generated_text.split("<|assistant|>")[1];
     } else if (m == "gpt-4") {
-      console.log(messages);
       const completion = await openai.createChatCompletion({
         model: model,
         max_tokens: maxtokens,
