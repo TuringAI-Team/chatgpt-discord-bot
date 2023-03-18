@@ -135,7 +135,7 @@ export default {
           webhook.send({
             content: `**Wrong prompt from __${interaction.user.tag}__** (${
               interaction.user.id
-            })\n**Prompt:** ${prompt}\n**Model:** ${
+            })\n**Prompt:** ${generation.prompt}\n**Model:** ${
               generation.provider.split("imagine-")[1]
             }\n**NSFW:** ${nsfw}\n**ChatGPT filter:** ${
               gen.filter ? "yes" : "no"
