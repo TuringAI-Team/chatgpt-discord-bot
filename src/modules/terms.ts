@@ -2,7 +2,9 @@ import supabase from "./supabase.js";
 import fs from "fs";
 import { VoteClient } from "topgg-votes";
 
-const votesClient = new VoteClient().setToken(process.env.TOPGG_TOKEN);
+const votesClient = new VoteClient()
+  .setToken(process.env.TOPGG_TOKEN)
+  .setPort(3131);
 votesClient.postWebhook();
 
 export async function checkTerms(userId, platform) {
