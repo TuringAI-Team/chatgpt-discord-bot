@@ -39,7 +39,6 @@ async function chat(
   if (image && image.url && !imageDescp) {
     imageDescription = await getImageDescription(image.url);
   }
-  console.log(imageDescription);
   var model = "gpt-3.5-turbo";
   var stop: any;
   var instructions;
