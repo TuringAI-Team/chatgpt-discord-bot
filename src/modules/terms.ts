@@ -28,14 +28,22 @@ export async function checkTerms(userId, platform) {
     return `By using this service you accept the following terms of service:\n\nhttps://turingai.tech/botterms\n\nThis message is going to be deleted in 8s in order to continue with your request.`;
   } else {
     let hasVoted = false;
-    var voted = await votesClient.hasVoted(userId);
-    if (voted) hasVoted = true;
+    try {
+      let voted = await votesClient.hasVoted(userId);
+      if (voted) hasVoted = true;
+    } catch (e) {
+      hasVoted = false;
+    }
     return { model: data[0].defaultChatModel, hasVoted: hasVoted };
   }
 }
 export async function hasVoted(userId) {
-  var voted = await votesClient.hasVoted(userId);
-  return voted;
+  try {
+    let voted = await votesClient.hasVoted(userId);
+    return voted;
+  } catch (e) {
+    return false;
+  }
 }
 
 function randomPort() {
