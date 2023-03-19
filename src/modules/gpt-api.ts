@@ -24,10 +24,10 @@ async function chat(
   imageDescp?
 ) {
   var token = { id: "", key: "" };
-  /*
+
   if (m == "gpt-3" || m == "dan" || m == "chatgpt") {
     token = await useToken("gpt-3");
-  }*/
+  }
   if (m == "gpt-4") {
     token.key = process.env.OPENAI_KEY;
   }
@@ -206,8 +206,8 @@ async function chat(
       }); // Note: options is optional
 
       response = bot.data.choices[0].text;*/
-      response = await gpt3(prompt, maxtokens);
-      //response = `GPT-3 is down for maintenance, please try again later.`;
+      //response = await gpt3(prompt, maxtokens);
+      response = `GPT-3 is down for maintenance, please try again later.`;
     } else if (m == "OpenAssistant") {
       let res = await axios({
         url: "https://api-inference.huggingface.co/models/OpenAssistant/oasst-sft-1-pythia-12b",
@@ -223,26 +223,26 @@ async function chat(
       });
       response = res.data[0].generated_text.split("<|assistant|>")[1];
     } else if (m == "gpt-4") {
-      /* const completion = await openai.createChatCompletion({
+      const completion = await openai.createChatCompletion({
         model: model,
         max_tokens: maxtokens,
         messages: messages,
       });
 
-      response = completion.data.choices[0].message.content;*/
-      response = await gpt4(messages, maxtokens);
+      response = completion.data.choices[0].message.content;
+      //response = await gpt4(messages, maxtokens);
       //response = `GPT-4 is down for maintenance, please try again later.`;
     } else if (m == "alan") {
       response = "Alan is not avaiable switch to another model with /chat ";
     } else {
-      /* const completion = await openai.createChatCompletion({
+      const completion = await openai.createChatCompletion({
         model: model,
         max_tokens: maxtokens,
         messages: messages,
       });
 
-      response = completion.data.choices[0].message.content;*/
-      response = await chatgpt(messages, maxtokens);
+      response = completion.data.choices[0].message.content;
+      //   response = await chatgpt(messages, maxtokens);
     }
 
     if (response) {
