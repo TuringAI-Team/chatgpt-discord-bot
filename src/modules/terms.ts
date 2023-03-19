@@ -61,7 +61,7 @@ export async function hasVoted(userId) {
 
 function randomPort() {
   let port = Math.floor(Math.random() * (65535 - 1024) + 1024);
-  // check if port is in use
+  // check if port is being used
   try {
     fs.accessSync(`http://localhost:${port}`);
     return randomPort();
