@@ -198,16 +198,16 @@ async function chat(
     const openai = new OpenAIApi(configuration);
     if (m == "gpt-3") {
       //@ts-ignore
-      /* bot = await openai.createCompletion({
+      bot = await openai.createCompletion({
         max_tokens: maxtokens, // OpenAI parameter [Max response size by tokens]
         stop: stop, // OpenAI parameter
         model: model,
         prompt: prompt,
       }); // Note: options is optional
 
-      response = bot.data.choices[0].text;*/
+      response = bot.data.choices[0].text;
       //   response = await gpt3(prompt, maxtokens);
-      response = `GPT-3 is down for maintenance, please try again later.`;
+      //response = `GPT-3 is down for maintenance, please try again later.`;
     } else if (m == "OpenAssistant") {
       let res = await axios({
         url: "https://api-inference.huggingface.co/models/OpenAssistant/oasst-sft-1-pythia-12b",
