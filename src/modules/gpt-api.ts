@@ -110,7 +110,7 @@ async function chat(
      - Avatar url: ${interaction.user.avatarURL()}
      - User name: ${interaction.user.username}`;
   } else if (m == "alan") {
-    instructions = `Current date: ${getToday()}\nYou are an AI named Alan - and are currently chatting in a Discord server. You have been developed by Turing AI
+    instructions = `Current date: ${getToday()}\nYou are an AI named Alan - and are currently chatting in a Discord server. You have been developed by Turing AI and you are powered by GPT-4 model developed by OpenAI
     \n Consider the following in your responses:
     - Be conversational 
     - Add unicode emoji to be more playful in your responses.
@@ -220,7 +220,7 @@ async function chat(
         }),
       });
       response = res.data[0].generated_text.split("<|assistant|>")[1];
-    } else if (m == "gpt-4") {
+    } else if (m == "gpt-4" || m == "alan") {
       /*    const completion = await openai.createChatCompletion({
         model: model,
         max_tokens: maxtokens,
@@ -483,7 +483,7 @@ async function getSearchResults(message) {
   let messages = [];
   messages.push({
     role: "system",
-    content: `your function is to determine which search queries for a search engine, if any, may be needed for the following topic for Google, maximum 3 entries. Make each of the queries descriptive and include all related topics. If the prompt is a question to/about you directly, reply with N . Search for something if it may require any knowledge past 2021. updated information, or knowledge of user's or people. Create a | seperated list without quotes. Otherwise if NO queries are applicable, \"N\" Don't answer user messages, do not be conversational, just answer with queries`,
+    content: `This is a chat between an user and sentient chat assistant Alan. Just answer with the search queries based on the user prompt, needed for the following topic for Google, maximum 3 entries. Make each of the queries descriptive and include all related topics. If the prompt is a question to/about Alan directly, reply with 'N'. Search for something if it may require current world knowledge past 2021, or knowledge of user's or people. Create a | seperated list without quotes.  If you no search queries are applicable, answer with 'N' . Don't add any explanations, extra text or puntuation`,
   });
   messages.push({
     role: "user",

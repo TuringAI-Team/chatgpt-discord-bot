@@ -17,6 +17,17 @@ const msgType = {
   },
   reply: async (msg, content) => {
     try {
+      const userReactions = msg.reactions.cache.filter((reaction) =>
+        reaction.users.cache.has(process.env.CLIENT_ID)
+      );
+      try {
+        for (const reaction of userReactions.values()) {
+          reaction.users.remove(process.env.CLIENT_ID);
+        }
+      } catch (error) {
+        console.error("Failed to remove reactions:", error);
+      }
+
       return await msg.reply(content);
     } catch (err) {
       console.log(err);

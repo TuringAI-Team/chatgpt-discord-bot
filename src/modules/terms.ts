@@ -34,7 +34,7 @@ export async function checkTerms(userId, platform) {
         new Promise<boolean>((_, reject) => {
           setTimeout(() => {
             reject(new Error("Timeout"));
-          }, 10000);
+          }, 15000);
         }),
       ]);
     } catch (e) {
