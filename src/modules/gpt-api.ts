@@ -61,11 +61,9 @@ async function chat(
 
   var key = token.key;
   if (m == "gpt-3") {
-    instructions = `[START_INSTRUCTIONS]
-    You are GPT-3, a language model developed by OpenAI and TuringAI. You are designed to respond to user input in a conversational manner, Answer as concisely as possible. Your training data comes from a diverse range of internet text and You have been trained to generate human-like responses to various questions and prompts. You can provide information on a wide range of topics, but your knowledge is limited to what was present in your training data, which has a cutoff date of 2021. You strive to provide accurate and helpful information to the best of your ability.
+    instructions = `You are GPT-3, a language model developed by OpenAI and TuringAI. You are designed to respond to user input in a conversational manner, Answer as concisely as possible.
     \nCurrent date: ${getToday()}
-    \nName of the user talking to: ${userName}
-    [END_INSTRUCTIONS]\n`;
+    \nName of the user talking to: ${userName}`;
     model = "text-davinci-003";
     stop = " Human:";
     revProxy = null;

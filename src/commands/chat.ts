@@ -34,9 +34,9 @@ export default {
         .addChoices(
           //  { name: "Alan(gpt-4)", value: "alan" },
           { name: "ChatGPT(gpt-3.5)", value: "chatgpt" },
-          { name: "Clyde(gpt-3.5)", value: "clyde" },
+          //{ name: "Clyde(gpt-3.5)", value: "clyde" },
           //{ name: "DAN(gpt-3.5)", value: "dan" },
-          { name: "GPT-4", value: "gpt-4" },
+          { name: "GPT-4(Premium only)", value: "gpt-4" },
           { name: "GPT-3", value: "gpt-3" },
           {
             name: "Open Assistant(oasst-sft-1-pythia-12b)",
@@ -97,11 +97,17 @@ export default {
       return;
     }*/
     if (
-      (!ispremium && model == "gpt-4" && !hasVoted) ||
+      (!ispremium && model == "gpt-4") ||
       (!ispremium && model == "gpt-3" && !hasVoted)
     ) {
+      /*
       await commandType.reply(interaction, {
         content: `For using this model you need to be a premium user or vote for us on [top.gg](https://top.gg/bot/1053015370115588147/vote) for free. To get premium use the command \`/premium buy\``,
+        ephemeral: true,
+      });
+      return;*/
+      await commandType.reply(interaction, {
+        content: `For using this model you need to be a premium user. To get premium use the command \`/premium buy\``,
         ephemeral: true,
       });
       return;
