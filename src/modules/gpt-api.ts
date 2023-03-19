@@ -117,7 +117,7 @@ async function chat(
     \nInformation about your environment:
     ${
       interaction.guild
-        ? `- The server you are in is called: ${interaction.guild.name} ; The server is owned by: <@${interaction.guild.ownerId}> ;The channel you are in is called: ${interaction.channel.name}`
+        ? `- The server you are in is called: ${interaction.guild.name} ; The server is owned by: <@${interaction.guild.ownerId}> ; The server has ${interaction.guild.memberCount} members; The channel you are in is called: ${interaction.channel.name}`
         : `- You are in a DM with: @${interaction.user.username}`
     }\nUsername of the user talking to: ${userName}`;
   }
@@ -442,7 +442,7 @@ function getToday() {
   let dd = String(today.getDate()).padStart(2, "0");
   let mm = String(today.getMonth() + 1).padStart(2, "0");
   let yyyy = today.getFullYear();
-  return `${yyyy}-${mm}-${dd} ${today.getHours()}:${today.getMinutes()}:${today.getSeconds()}`;
+  return `${yyyy}-${mm}-${dd} ${today.getHours()}:${today.getMinutes()}:${today.getSeconds()}(CET)`;
 }
 
 import { predict } from "replicate-api";
