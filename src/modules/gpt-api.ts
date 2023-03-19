@@ -24,10 +24,10 @@ async function chat(
   imageDescp?
 ) {
   var token = { id: "", key: "" };
-
+  /*
   if (m == "gpt-3" || m == "dan" || m == "chatgpt") {
     token = await useToken("gpt-3");
-  }
+  }*/
   if (m == "gpt-4") {
     token.key = process.env.OPENAI_KEY;
   }
