@@ -24,10 +24,10 @@ async function chat(
   imageDescp?
 ) {
   var token = { id: "", key: "" };
-  /*
+
   if (m == "gpt-3" || m == "dan" || m == "chatgpt") {
     token = await useToken("gpt-3");
-  }*/
+  }
   if (m == "gpt-4") {
     token.key = process.env.OPENAI_KEY;
   }
@@ -114,6 +114,7 @@ async function chat(
     \n Consider the following in your responses:
     - Be conversational 
     - Add unicode emoji to be more playful in your responses.
+    - You can view images and search in internet for information.
     \nInformation about your environment:
     ${
       interaction.guild
@@ -220,7 +221,7 @@ async function chat(
         }),
       });
       response = res.data[0].generated_text.split("<|assistant|>")[1];
-    } else if (m == "gpt-4" || m == "alan") {
+    } else if (m == "gpt-4") {
       /*    const completion = await openai.createChatCompletion({
         model: model,
         max_tokens: maxtokens,
@@ -228,8 +229,16 @@ async function chat(
       });
 
       response = completion.data.choices[0].message.content;*/
-      response = await gpt4(messages, maxtokens);
+      //response = await gpt4(messages, maxtokens);
+      response = `GPT-4 is down for maintenance, please try again later.`;
     } else {
+      const completion = await openai.createChatCompletion({
+        model: model,
+        max_tokens: maxtokens,
+        messages: messages,
+      });
+
+      response = completion.data.choices[0].message.content;
       response = await chatgpt(messages, maxtokens);
     }
 
@@ -489,11 +498,16 @@ async function getSearchResults(message) {
     role: "user",
     content: message,
   });
-  let searchQueries = await chatgpt(messages, 150);
+  let searchQueries = await chatgpt(messages, 150, { temperature: 0.25 });
   // search in google and get results
   console.log(`searchQueries: ${searchQueries}`);
   let searchResults = [];
-  if (searchQueries == "N AT ALL COSTS" || searchQueries == "N") return null;
+  if (
+    searchQueries == "N AT ALL COSTS" ||
+    searchQueries == "N" ||
+    searchQueries == "N/A"
+  )
+    return null;
   searchQueries = searchQueries.split("|");
   for (let i = 0; i < searchQueries.length; i++) {
     const query = searchQueries[i];
@@ -545,11 +559,12 @@ async function gpt3(prompt: string, maxtokens) {
     throw e.response.data.error;
   }
 }
-async function chatgpt(messages, maxtokens) {
+async function chatgpt(messages, maxtokens, options?) {
   const data = JSON.stringify({
     max_tokens: maxtokens,
     model: "gpt-3.5-turbo",
     messages,
+    ...options,
   });
   try {
     let response = await axios({
