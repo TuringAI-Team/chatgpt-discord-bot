@@ -21,7 +21,7 @@ import { isPremium } from "../modules/premium.js";
 
 import sharp from "sharp";
 import { generateRateRow, generateUpscaleRow } from "../modules/stablehorde.js";
-var maintenance = false;
+var maintenance = true;
 
 var data = new SlashCommandBuilder()
   .setName("imagine")
