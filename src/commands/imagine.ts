@@ -60,14 +60,12 @@ export default {
   async execute(interaction, client) {
     if (!interaction.deferred && !interaction.replied)
       await interaction.deferReply();
-    if (maintenance == true && interaction.user.id != "530102778408861706") {
-      await interaction.editReply({
-        content:
-          "Service under maintenance, for more information join us on [dsc.gg/turing](https://dsc.gg/turing)",
-        ephemeral: true,
-      });
-      return;
-    }
+    await interaction.editReply({
+      content:
+        "Service under maintenance, for more information join us on [dsc.gg/turing](https://dsc.gg/turing)",
+      ephemeral: true,
+    });
+    return;
     var tags = [];
 
     var style = interaction.options.getString("style");
