@@ -248,7 +248,6 @@ export default {
   },
 };
 async function checkDB(message, model, tries) {
-  console.log(`${message.toLowerCase().split(" ").join(`' & `)}`);
   let { data: results, error } = await supabase
     .from("results")
     .select("*")
