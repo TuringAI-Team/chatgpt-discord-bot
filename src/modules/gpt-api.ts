@@ -68,7 +68,7 @@ async function chat(
     stop = " Human:";
     revProxy = null;
   } else if (m == "chatgpt") {
-    instructions = `Current date: ${getToday()}\nName of the user talking to: ${userName}`;
+    instructions = `You are ChatGPT; Current date: ${getToday()}\nName of the user talking to: ${userName}`;
   } else if (m == "dan") {
     instructions = `
     \nCurrent date: ${getToday()}

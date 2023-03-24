@@ -21,10 +21,6 @@ export default {
       chalk.white(`Ready! Logged in as `) + chalk.blue.bold(client.user.tag)
     );
     /*if (client.shard.client.options.shards[0] + 1 == 1) {
-      await checkLimited();
-      setInterval(async () => {
-        await checkLimited();
-      }, ms("2m"));
     }*/
 
     /*

@@ -9,36 +9,41 @@ export default {
   cooldown: "1m",
   async execute(message, client) {
     var image;
-    if (message.hasMedia) {
-      const media = await message.downloadMedia();
-      if (media.mimetype.includes("image")) {
-        var base64 = media.data;
-        var url = `data:image/png;base64,${base64}`;
-        image = { url };
-      } else if (media.mimetype.includes("audio")) {
-        var transcription: any = await getTranscription(media.data);
-        if (transcription.error) {
-          await message.reply("Error occured");
-          return;
-        } else {
-          message.content = transcription;
+    try {
+      if (message.hasMedia) {
+        const media = await message.downloadMedia();
+        if (media.mimetype.includes("image")) {
+          var base64 = media.data;
+          var url = `data:image/png;base64,${base64}`;
+          image = { url };
+        } else if (media.mimetype.includes("audio")) {
+          var transcription: any = await getTranscription(media.data);
+          if (transcription.error) {
+            await message.reply("Error occured");
+            return;
+          } else {
+            message.content = transcription;
+          }
         }
       }
+
+      await message.load();
+
+      var resoponse = await chat(
+        message.content,
+        message.user.name,
+        message.user.ispremium,
+        "chatgpt",
+        message.user.id,
+        0,
+        image,
+        null
+      );
+      await message.reply(resoponse.text);
+    } catch (err) {
+      console.log(err);
+      await message.reply("Error occured");
     }
-
-    await message.load();
-
-    var resoponse = await chat(
-      message.content,
-      message.user.name,
-      message.user.ispremium,
-      "chatgpt",
-      message.user.id,
-      0,
-      image,
-      null
-    );
-    await message.reply(resoponse.text);
   },
 };
 

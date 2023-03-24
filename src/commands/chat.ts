@@ -13,6 +13,7 @@ import chatSonic from "../modules/sonic.js";
 import { isPremium } from "../modules/premium.js";
 var maintenance = false;
 import { ImagineInteraction } from "../modules/stablehorde.js";
+import delay from "delay";
 
 export default {
   cooldown: "2m",
@@ -104,7 +105,7 @@ export default {
       });
       return;*/
       await commandType.reply(interaction, {
-        content: `For using this model you need to be a premium user. To get premium use the command \`/premium buy\``,
+        content: `For using this model you need to be a **premium user**. To get premium use the command \`/premium buy\``,
         ephemeral: true,
       });
       return;
@@ -112,7 +113,7 @@ export default {
 
     if (!ispremium && model == "gpt-3" && !hasVoted) {
       await commandType.reply(interaction, {
-        content: `For using this model you need to be a premium user or vote for us on [top.gg](https://top.gg/bot/1053015370115588147/vote) for free. To get premium use the command \`/premium buy\``,
+        content: `For using this model you need to be a **premium user** or **vote for us** on [top.gg](https://top.gg/bot/1053015370115588147/vote) **for free**. To get premium use the command \`/premium buy\``,
         ephemeral: true,
       });
       return;
@@ -124,19 +125,17 @@ export default {
       });
       return;
     }
+    let channel = interaction.channel;
+    if (!interaction.channel) channel = interaction.user;
     if (
       model == "gpt-3" ||
       model == "oasst-sft-1-pythia-12b" ||
       model == "gpt-4" ||
       model == "OpenAssistant"
     ) {
-      let { data: results, error } = await supabase
-        .from("results")
-        .select("*")
+      // change default timeout to 30s using supabasejs here u have official docs:
 
-        // Filters
-        .eq("prompt", message.toLowerCase())
-        .eq("provider", model);
+      let { results, error } = await checkDB(message, model, 0);
       if (!results || error) {
         console.log(error, results);
         var errr = "Error connecting with db";
@@ -200,49 +199,7 @@ export default {
       );
       // }
     }
-    if (model == "chatsonic") {
-      if (!ispremium) {
-        await commandType.reply(interaction, {
-          ephemeral: true,
-          content:
-            `This model is only for premium users. If you want to donate use the command ` +
-            "`/premium buy` .",
-        });
-        return;
-      }
-      let { data: results, error } = await supabase
-        .from("results")
-        .select("*")
 
-        // Filters
-        .eq("prompt", message.toLowerCase())
-        .eq("provider", "chatsonic");
-      if (!results || error) {
-        var errr = "Error connecting with db";
-
-        await responseWithText(
-          interaction,
-          message,
-          errr,
-          channel,
-          "error",
-          commandType,
-          attachment,
-          client
-        );
-        return;
-      }
-      if (results[0] && results[0].result.text) {
-        result = { text: results[0].result.text, type: "chatsonic" };
-        const { data, error } = await supabase
-          .from("results")
-          .update({ uses: results[0].uses + 1 })
-          .eq("id", results[0].id);
-        cached = true;
-      } else {
-        result = await chatSonic(message);
-      }
-    }
     if (!result) {
       await responseWithText(
         interaction,
@@ -258,31 +215,19 @@ export default {
     }
     if (!result.error) {
       var response = result.text;
-      if (cached == false) {
-        const { data, error } = await supabase.from("results").insert([
-          {
-            provider: model,
-            prompt: message.toLowerCase(),
-            result: { text: response },
-            guildId: interaction.guildId,
-          },
-        ]);
-        // console.log(error);
-      }
-      var channel = interaction.channel;
-      if (!interaction.channel) channel = interaction.user;
-      // change user default model to selected model
-
-      await responseWithText(
+      await sendAnswer(
         interaction,
-        message,
+        cached,
+        model,
         response,
+        message,
+        result,
         channel,
-        result.type,
         commandType,
         attachment,
         client
       );
+
       const { data, error } = await supabase
         .from("users")
         .update({ defaultChatModel: result.type })
@@ -302,7 +247,74 @@ export default {
     return;
   },
 };
+async function checkDB(message, model, tries) {
+  console.log(`${message.toLowerCase().split(" ").join(`' & `)}`);
+  let { data: results, error } = await supabase
+    .from("results")
+    .select("*")
 
+    // Filters
+    .eq("provider", model)
+    .textSearch("prompt", `${message.toLowerCase().split(" ").join(`' & `)}}`);
+
+  if (error && error.code == "57014" && tries < 3) {
+    await delay(10000);
+    return await checkDB(message, model, tries + 1);
+  } else if (error && error.code == "57014" && tries >= 3) {
+    return { results: [], error };
+  }
+  results = results.filter((r) => r.prompt == message.toLowerCase());
+
+  return { results, error };
+}
+async function sendAnswer(
+  interaction,
+  cached,
+  model,
+  response,
+  message,
+  result,
+  channel,
+  commandType,
+  attachment,
+  client
+) {
+  if (cached == false) {
+    const { data, error } = await supabase.from("results").insert([
+      {
+        provider: model,
+        prompt: message.toLowerCase(),
+        result: { text: response },
+        guildId: interaction.guildId,
+      },
+    ]);
+
+    // console.log(error);
+  } else {
+    let { data: results, error } = await supabase
+      .from("results")
+      .select("*")
+      .eq("prompt", message.toLowerCase())
+      .eq("provider", model);
+    await supabase
+      .from("results")
+      .update({ uses: results[0].uses + 1 })
+      .eq("id", results[0].id);
+  }
+
+  // change user default model to selected model
+
+  await responseWithText(
+    interaction,
+    message,
+    response,
+    channel,
+    result.type,
+    commandType,
+    attachment,
+    client
+  );
+}
 async function responseWithText(
   interaction,
   prompt,
