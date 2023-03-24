@@ -170,6 +170,10 @@
     "description": "Get your Turing AI premium subscription and use the bot without restrictions."
   },
   {
+    "name": "Translate this message",
+    "type": 3
+  },
+  {
     "options": [
       {
         "type": 1,

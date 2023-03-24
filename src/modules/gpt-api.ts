@@ -25,7 +25,14 @@ async function chat(
 ) {
   var token = { id: "", key: "" };
 
-  if (m == "gpt-3" || m == "dan" || m == "chatgpt") {
+  if (
+    m == "gpt-3" ||
+    m == "dan" ||
+    m == "chatgpt" ||
+    "translator" ||
+    m == "clyde" ||
+    m == "alan"
+  ) {
     token = await useToken("gpt-3");
   }
   if (m == "gpt-4") {
@@ -119,6 +126,8 @@ async function chat(
         ? `- The server you are in is called: ${interaction.guild.name} ; The server is owned by: <@${interaction.guild.ownerId}> ; The server has ${interaction.guild.memberCount} members; The channel you are in is called: ${interaction.channel.name}`
         : `- You are in a DM with: @${interaction.user.username}`
     }\nUsername of the user talking to: ${userName}`;
+  } else if (m == "translator") {
+    instructions = `act as an English translator, spelling corrector and improver. User will speak to you in any language and you will detect the language, translate it and answer in the corrected and improved version of user text, in English. Keep the meaning same, but make them more literary. I want you to only reply the correction, the improvements and nothing else, do not write explanations.`;
   }
   var response;
   var maxtokens = 250;
@@ -232,6 +241,16 @@ async function chat(
       //response = `GPT-4 is down for maintenance, please try again later.`;
     } else if (m == "alan") {
       response = "Alan is not avaiable switch to another model with /chat ";
+    } else if (m == "translator") {
+      const completion = await openai.createChatCompletion({
+        model: model,
+        max_tokens: maxtokens,
+        messages: messages,
+        temperature: 0.25,
+      });
+
+      response = completion.data.choices[0].message.content;
+      //   response = await chatgpt(messages, maxtokens);
     } else {
       const completion = await openai.createChatCompletion({
         model: model,
