@@ -262,7 +262,9 @@ async function checkDB(message, model, tries) {
   } else if (error && error.code == "57014" && tries >= 3) {
     return { results: [], error };
   }
-  results = results.filter((r) => r.prompt == message.toLowerCase());
+  if (results) {
+    results = results.filter((r) => r.prompt == message.toLowerCase());
+  }
 
   return { results, error };
 }
