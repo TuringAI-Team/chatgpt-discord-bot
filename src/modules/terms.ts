@@ -5,7 +5,12 @@ import { VoteClient } from "topgg-votes";
 const votesClient = new VoteClient()
   .setToken(process.env.TOPGG_TOKEN)
   .setPort(randomPort());
-votesClient.postWebhook();
+try {
+  votesClient.postWebhook();
+} catch (err) {
+  votesClient.setPort(randomPort());
+  votesClient.postWebhook();
+}
 export async function checkTerms(userId, platform) {
   const { data, error } = await supabase
     .from("users")
