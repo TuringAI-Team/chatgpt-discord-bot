@@ -8,7 +8,10 @@
     "build": "tsc",
     "start": "tsc && node .",
     "dev": "concurrently \"tsc --watch\" \"npx nodemon\"",
-    "git": "git fetch && git pull"
+    "git": "git fetch && git pull",
+    "redis:start": "docker-compose up -d",
+    "redis:stop": "docker-compose stop",
+    "redis:logs": "docker-compose logs -f --tail=0"
   },
   "keywords": [],
   "author": "MrlolDev",
@@ -42,6 +45,7 @@
     "openai": "^3.2.1",
     "prism-media": "^2.0.0-alpha.0",
     "qrcode": "^1.5.1",
+    "redis": "^4.6.5",
     "replicate-api": "^0.4.4",
     "sharp": "^0.31.3",
     "telegraf": "^4.11.2",
