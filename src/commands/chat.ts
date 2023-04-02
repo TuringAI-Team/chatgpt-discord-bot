@@ -9,11 +9,15 @@ import {
 import { chat } from "../modules/gpt-api.js";
 import supabase from "../modules/supabase.js";
 import { useToken } from "../modules/loadbalancer.js";
-import chatSonic from "../modules/sonic.js";
 import { isPremium } from "../modules/premium.js";
 var maintenance = false;
 import { ImagineInteraction } from "../modules/stablehorde.js";
 import delay from "delay";
+import {
+  checkInCache,
+  saveInCache,
+  addUsesInCache,
+} from "../modules/cache-responses.js";
 
 export default {
   cooldown: "2m",
@@ -135,9 +139,8 @@ export default {
     ) {
       // change default timeout to 30s using supabasejs here u have official docs:
 
-      let { results, error } = await checkDB(message, model, 0);
-      if (!results || error) {
-        console.log(error, results);
+      let results: any = await checkInCache(message, model);
+      if (!results) {
         var errr = "Error connecting with db";
 
         await responseWithText(
@@ -153,20 +156,14 @@ export default {
         return;
       }
       if (
-        (results[0] && results[0].result.text && !ispremium) ||
-        (model != "gpt-4" &&
-          results[0] &&
-          results[0].result.text &&
-          !attachment)
+        (results && results.text && !ispremium && !attachment) ||
+        (results && results.text && !attachment && model == "gpt-4")
       ) {
         result = {
-          text: results[0].result.text,
+          text: results.text,
           type: model == "oasst-sft-1-pythia-12b" ? "OpenAssistant" : model,
         };
-        const { data, error } = await supabase
-          .from("results")
-          .update({ uses: results[0].uses + 1 })
-          .eq("id", results[0].id);
+
         cached = true;
       } else {
         result = await chat(
@@ -281,6 +278,7 @@ async function sendAnswer(
   client
 ) {
   if (cached == false) {
+    await saveInCache(message, response, model);
     const { data, error } = await supabase.from("results").insert([
       {
         provider: model,
@@ -289,18 +287,9 @@ async function sendAnswer(
         guildId: interaction.guildId,
       },
     ]);
-
     // console.log(error);
   } else {
-    let { data: results, error } = await supabase
-      .from("results")
-      .select("*")
-      .eq("prompt", message.toLowerCase())
-      .eq("provider", model);
-    await supabase
-      .from("results")
-      .update({ uses: results[0].uses + 1 })
-      .eq("id", results[0].id);
+    await addUsesInCache(message, model);
   }
 
   // change user default model to selected model
