@@ -23,4 +23,6 @@ client.commands = [];
 eventHandler(client);
 commandHandler(client);
 
-client.initialize();
+if (process.env.NODE_ENV != "development") {
+  client.initialize();
+}
