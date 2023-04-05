@@ -26,18 +26,18 @@ async function useToken(model): Promise<null | {
   if (!tokens || tokens.length <= 0) {
     return;
   }
-  var t = tokens.filter((x) => x.messages <= 2 && x.abled != false);
+  var t = tokens.filter((x) => x.messages <= 4 && x.abled != false);
   if (model == "chatgpt" || model == "dan") {
     t = tokens.filter(
       (x) =>
-        x.messages <= 1 &&
+        x.messages <= 2 &&
         x.access != null &&
         x.access.includes("ey") &&
         x.limited == null
     );
   }
   if (model == "filter") {
-    t = tokens.filter((x) => x.messages <= 2);
+    t = tokens.filter((x) => x.messages <= 4);
   }
   var i = getRndInteger(0, t.length - 1);
   if (t.length <= 0) return;
