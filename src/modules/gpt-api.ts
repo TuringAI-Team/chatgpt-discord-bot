@@ -26,7 +26,7 @@ async function chat(
   var token = { id: "", key: "" };
 
   if (
-    m == "gpt-3" ||
+    m == "gpt3" ||
     m == "dan" ||
     m == "chatgpt" ||
     "translator" ||
@@ -35,7 +35,7 @@ async function chat(
   ) {
     token = await useToken("gpt-3");
   }
-  if (m == "gpt-4") {
+  if (m == "gpt4") {
     token.key = process.env.OPENAI_KEY;
   }
   if (!token) {
@@ -56,7 +56,7 @@ async function chat(
     m == "chatgpt" ||
     m == "dan" ||
     m == "oasst-sft-1-pythia-12b" ||
-    m == "gpt-4" ||
+    m == "gpt4" ||
     m == "clyde" ||
     m == "alan"
   ) {
@@ -67,7 +67,7 @@ async function chat(
   var revProxy = "https://chatgpt.pawan.krd/conversation";
 
   var key = token.key;
-  if (m == "gpt-3") {
+  if (m == "gpt3") {
     instructions = `You are GPT-3, a language model developed by OpenAI and TuringAI. You are designed to respond to user input in a conversational manner, Answer as concisely as possible.
     \nCurrent date: ${getToday()}
     \nName of the user talking to: ${userName}`;
@@ -86,7 +86,7 @@ async function chat(
       .join(
         ",\n"
       )}\nBased on this list answer with the best model for the user prompt, do not include explanations only the model name. Do not use the list order to select a model. If you can't provide a model recommendation answer only with no-model`;
-  } else if (m == "gpt-4") {
+  } else if (m == "gpt4") {
     model = "gpt-4";
     instructions = `Your are GPT-4, a large language model released 14/3/2023 \nCurrent date: ${getToday()}\nName of the user talking to: ${userName}`;
   } else if (m == "clyde") {
@@ -131,9 +131,9 @@ async function chat(
   }
   var response;
   var maxtokens = 250;
-  if (ispremium && m != "gpt-4") maxtokens = 600;
-  if (ispremium && m == "gpt-4") maxtokens = 300;
-  if (!ispremium && m == "gpt-4") maxtokens = 150;
+  if (ispremium && m != "gpt4") maxtokens = 600;
+  if (ispremium && m == "gpt4") maxtokens = 300;
+  if (!ispremium && m == "gpt4") maxtokens = 150;
 
   var bot;
   var fullMsg = `${message}${
@@ -203,7 +203,7 @@ async function chat(
       apiKey: key,
     });
     const openai = new OpenAIApi(configuration);
-    if (m == "gpt-3") {
+    if (m == "gpt3") {
       //@ts-ignore
       bot = await openai.createCompletion({
         max_tokens: maxtokens, // OpenAI parameter [Max response size by tokens]
@@ -229,7 +229,7 @@ async function chat(
         }),
       });
       response = res.data[0].generated_text.split("<|assistant|>")[1];
-    } else if (m == "gpt-4") {
+    } else if (m == "gpt4") {
       const completion = await openai.createChatCompletion({
         model: model,
         max_tokens: maxtokens,
@@ -272,7 +272,7 @@ async function chat(
       ispremium ||
       m == "chatgpt" ||
       m == "dan" ||
-      m == "gpt-4" ||
+      m == "gpt4" ||
       m == "OpenAssistant" ||
       m == "clyde" ||
       m == "alan"
@@ -280,7 +280,7 @@ async function chat(
       if (m != "sd") {
         await saveMsg(
           m,
-          m == "gpt-3" ? fullMsg : message,
+          m == "gpt3" ? fullMsg : message,
           response,
           id,
           ispremium,
@@ -361,7 +361,7 @@ async function chat(
       );
     }
     return {
-      error: `Something wrong happened, please retry again. If this issue persist please report it in our support server [dsc.gg/turing](https://dsc.gg/turing)`,
+      error: `Something wrong happened, please try using \`/reset\` command and retry again. If this issue persist please report it in our support server [dsc.gg/turing](https://dsc.gg/turing)`,
     };
   }
 }
@@ -382,13 +382,13 @@ async function getConversation(id, model): Promise<any> {
 
 async function saveMsg(model, userMsg, aiMsg, id, ispremium, img) {
   var conversation;
-  if (model == "gpt-3") {
+  if (model == "gpt3") {
     conversation = `\n<split>User: ${userMsg}\nAI: ${aiMsg}`;
   }
   if (
     model == "chatgpt" ||
     model == "dan" ||
-    model == "gpt-4" ||
+    model == "gpt4" ||
     model == "clyde" ||
     model == "alan"
   ) {
@@ -604,7 +604,7 @@ async function chatgpt(messages, maxtokens, options?) {
 async function gpt4(messages, maxtokens) {
   const data = JSON.stringify({
     max_tokens: maxtokens,
-    model: "gpt-4",
+    model: "gpt4",
     messages,
   });
   try {

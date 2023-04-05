@@ -41,8 +41,8 @@ export default {
           { name: "ChatGPT(gpt-3.5)", value: "chatgpt" },
           //{ name: "Clyde(gpt-3.5)", value: "clyde" },
           //{ name: "DAN(gpt-3.5)", value: "dan" },
-          { name: "GPT-4(Premium only)", value: "gpt-4" },
-          { name: "GPT-3", value: "gpt-3" },
+          { name: "GPT-4(Premium only)", value: "gpt4" },
+          { name: "GPT-3", value: "gpt3" },
           {
             name: "Open Assistant(oasst-sft-1-pythia-12b)",
             value: "oasst-sft-1-pythia-12b",
@@ -101,7 +101,7 @@ export default {
       });
       return;
     }*/
-    if ((!ispremium && model == "gpt-4") || (!ispremium && model == "alan")) {
+    if ((!ispremium && model == "gpt4") || (!ispremium && model == "alan")) {
       /*
       await commandType.reply(interaction, {
         content: `For using this model you need to be a premium user or vote for us on [top.gg](https://top.gg/bot/1053015370115588147/vote) for free. To get premium use the command \`/premium buy\``,
@@ -115,14 +115,14 @@ export default {
       return;
     }
 
-    if (!ispremium && model == "gpt-3" && !hasVoted) {
+    if (!ispremium && model == "gpt3" && !hasVoted) {
       await commandType.reply(interaction, {
         content: `For using this model you need to be a **premium user** or **vote for us** on [top.gg](https://top.gg/bot/1053015370115588147/vote) **for free**. To get premium use the command \`/premium buy\``,
         ephemeral: true,
       });
       return;
     }
-    if (attachment && model == "gpt-3") {
+    if (attachment && model == "gpt3") {
       await commandType.reply(interaction, {
         content: "This feature(image) is not available for this model",
         ephemeral: true,
@@ -132,9 +132,9 @@ export default {
     let channel = interaction.channel;
     if (!interaction.channel) channel = interaction.user;
     if (
-      model == "gpt-3" ||
+      model == "gpt3" ||
       model == "oasst-sft-1-pythia-12b" ||
-      model == "gpt-4" ||
+      model == "gpt4" ||
       model == "OpenAssistant"
     ) {
       // change default timeout to 30s using supabasejs here u have official docs:
@@ -157,7 +157,7 @@ export default {
       }
       if (
         (results && results.text && !ispremium && !attachment) ||
-        (results && results.text && !attachment && model == "gpt-4")
+        (results && results.text && !attachment && model == "gpt4")
       ) {
         result = {
           text: results.text,

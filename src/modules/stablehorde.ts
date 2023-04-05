@@ -268,14 +268,14 @@ export async function ImagineInteraction(interaction, client, style, prompt) {
 
   if (interaction.channel && interaction.channel.nsfw) nsfw = true;
   if (!interaction.channel || !interaction.guild) nsfw = true;
-  if (!nsfw) {
+  /*  if (!nsfw) {
     // lock command to nsfw channels
     await interaction.editReply({
       content: `This command can only be used in nsfw channels. Would be able for normal channels soon`,
       ephemeral: true,
     });
     return;
-  }
+  }*/
   try {
     var generation;
     var number = 2;
@@ -592,9 +592,7 @@ export async function sendResults(
   var row = await generateRateRow(id, userId, images[0].id);
   if (imagesArr.length > 1) {
     row = [await generateUpscaleRow(id, images)];
-    if (variations) {
-      row.push(await generateVariationRow(id, images));
-    }
+    row.push(await generateVariationRow(id, images));
   }
   var imgs = images.map((g, i) => {
     const sfbuff = Buffer.from(g.img, "base64");

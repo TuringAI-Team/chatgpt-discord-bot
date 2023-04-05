@@ -58,26 +58,18 @@ export default {
   data,
   disablePing: true,
   async execute(interaction, client) {
-    if (!interaction.deferred && !interaction.replied)
-      await interaction.deferReply();
-    await interaction.editReply({
-      content:
-        "Service under maintenance, for more information join us on [dsc.gg/turing](https://dsc.gg/turing)",
-      ephemeral: true,
-    });
-    return;
     var tags = [];
 
     var style = interaction.options.getString("style");
     var prompt = interaction.options.getString("prompt");
     // if style is auto say is premium because of testing
     if (
-      style == "auto" &&
+      //      style == "auto" &&
       !(await isPremium(interaction.user.id, interaction.guild.id))
     ) {
       interaction.editReply({
         content:
-          "This feature is only available for premium users for testing reasons, to get premium use the command `/premium buy`",
+          "This feature is only available for premium users for testing/security reasons, to get premium use the command `/premium buy`",
         ephemeral: true,
       });
       return;

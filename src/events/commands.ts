@@ -61,6 +61,7 @@ export default {
       await delay(8000);
     } else {
       interaction.user.hasVoted = terms.hasVoted;
+      interaction.user.model = terms.model;
     }
     var ispremium = await isPremium(interaction.user.id, guildId);
     try {
