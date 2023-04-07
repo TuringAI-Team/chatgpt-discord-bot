@@ -7,6 +7,7 @@ import supabase from "../modules/supabase.js";
 import { getVoiceConnection } from "@discordjs/voice";
 import { checkTerms } from "../modules/terms.js";
 import { chat } from "../modules/gpt-api.js";
+import ms from "ms";
 import { isPremium } from "../modules/premium.js";
 
 export default {
@@ -47,50 +48,89 @@ export default {
     let channel = interaction.channel;
     if (!interaction.channel) channel = interaction.user;
     if (terms) {
-      var model = terms.model;
-      let result = await chat(
-        "continue",
-        interaction.user.username,
-        ispremium,
-        model,
-        `${model}-${interaction.user.id}`,
-        0,
-        null,
-        interaction
-      );
-      // }
+      if (!ispremium) {
+        let { data: cooldowns, error } = await supabase
+          .from("cooldown")
+          .select("*")
 
-      if (!result) {
-        await responseWithText(
-          interaction,
-          "continue",
-          `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)`,
-          channel,
-          "error"
-        );
-        return;
-      }
-      if (!result.error) {
-        var response = result.text;
-        await responseWithText(
-          interaction,
-          "continue",
-          response,
-          channel,
-          model
-        );
+          // Filters
+          .eq("userId", interaction.user.id)
+          .eq("command", "continue-btn");
+        if (cooldowns && cooldowns[0]) {
+          var cooldown = cooldowns[0];
+          var createdAt = new Date(cooldown.created_at);
+          var milliseconds = createdAt.getTime();
+          var now = Date.now();
+          var diff = now - milliseconds;
+          // @ts-ignore
+          var count = ms("1m") - diff;
+          // @ts-ignore
+          if (diff >= ms("1m")) {
+            const { data, error } = await supabase
+              .from("cooldown")
+              .update({ created_at: new Date() })
+              .eq("userId", interaction.user.id)
+              .eq("command", "continue-btn");
+            await continuefn(terms, interaction, ispremium, channel);
+          } else {
+            await interaction.editReply({
+              content:
+                `Please wait **${ms(
+                  count
+                )}** to use this command again.\nIf you want to **avoid this cooldown** you can **donate to get premium**. If you want to donate use the command ` +
+                "`/premium buy` .",
+              ephemeral: true,
+            });
+          }
+        } else {
+          const { data, error } = await supabase
+            .from("cooldown")
+            .insert([{ userId: interaction.user.id, command: "continue-btn" }]);
+          await continuefn(terms, interaction, ispremium, channel);
+        }
       } else {
-        await responseWithText(
-          interaction,
-          "continue",
-          result.error,
-          channel,
-          "error"
-        );
+        await continuefn(terms, interaction, ispremium, channel);
       }
     }
   },
 };
+async function continuefn(terms, interaction, ispremium, channel) {
+  var model = terms.model;
+  let result = await chat(
+    "continue",
+    interaction.user.username,
+    ispremium,
+    model,
+    `${model}-${interaction.user.id}`,
+    0,
+    null,
+    interaction
+  );
+  // }
+
+  if (!result) {
+    await responseWithText(
+      interaction,
+      "continue",
+      `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)`,
+      channel,
+      "error"
+    );
+    return;
+  }
+  if (!result.error) {
+    var response = result.text;
+    await responseWithText(interaction, "continue", response, channel, model);
+  } else {
+    await responseWithText(
+      interaction,
+      "continue",
+      result.error,
+      channel,
+      "error"
+    );
+  }
+}
 
 export async function responseWithText(
   interaction,
