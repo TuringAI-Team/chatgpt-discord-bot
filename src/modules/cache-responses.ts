@@ -1,5 +1,9 @@
 import redisClient from "./redis.js";
 async function checkInCache(message, model) {
+  let wordCount = message.split(" ").length;
+  if (wordCount <= 1) {
+    return {};
+  }
   let responses = await redisClient.get(model);
   if (responses) {
     responses = JSON.parse(responses);
