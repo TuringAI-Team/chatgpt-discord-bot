@@ -305,7 +305,7 @@ async function sendAnswer(
     client
   );
 }
-async function responseWithText(
+export async function responseWithText(
   interaction,
   prompt,
   result,
@@ -323,6 +323,10 @@ async function responseWithText(
   var completeResponse = `**${interaction.user.tag}:** ${prompt}\n**AI(${type}):** ${result}`;
   var charsCount = completeResponse.split("").length;
   const row = new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setStyle(ButtonStyle.Primary)
+      .setLabel(`Continue answer with ${type}`)
+      .setCustomId(`co_${interaction.user.id}`),
     new ButtonBuilder()
       .setStyle(ButtonStyle.Danger)
       .setLabel(`Reset conversation with ${type}`)
