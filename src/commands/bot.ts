@@ -122,7 +122,7 @@ export default {
     await commandType.reply(interaction, {
       embeds: [embed],
       components: [row],
-      ephemeral: false,
+      ephemeral: true,
     });
     return;
   },
