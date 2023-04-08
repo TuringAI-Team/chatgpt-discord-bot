@@ -22,7 +22,9 @@ export default {
     const __dirname = path.dirname(__filename);
     var shard = client.shard.client.options.shards[0] + 1;
 
-    await commandType.load(interaction);
+    await commandType.load(interaction, {
+      ephemeral: true
+    });
     var totalGuildsR = await client.shard.fetchClientValues(
       "guilds.cache.size"
     );
