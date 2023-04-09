@@ -16,24 +16,17 @@ export default {
     description: "Continue your conversation",
   },
   async execute(interaction, client, userId) {
-    if (!interaction.deferred && !interaction.replied) {
-      try {
-        await interaction.deferReply({
-          ephemeral: false,
-        });
-      } catch (err) {}
-    }
-
     if (interaction.user.id != userId) {
-      await interaction.editReply({
-        content: "You can't continue this message",
+      await interaction.reply({
+        content: `${interaction.user} , you can't continue this answer because you are not the owner of this conversation.`,
         ephemeral: true,
       });
       return;
     }
+
     let terms = await checkTerms(userId, "discord");
     if (typeof terms == "string") {
-      await interaction.editReply({
+      await interaction.reply({
         content: terms,
         ephemeral: true,
       });
@@ -73,7 +66,7 @@ export default {
               .eq("command", "continue-btn");
             await continuefn(terms, interaction, ispremium, channel);
           } else {
-            await interaction.editReply({
+            await interaction.reply({
               content:
                 `Please wait **${ms(
                   count
@@ -95,6 +88,13 @@ export default {
   },
 };
 async function continuefn(terms, interaction, ispremium, channel) {
+  if (!interaction.deferred && !interaction.replied) {
+    try {
+      await interaction.deferReply({
+        ephemeral: false,
+      });
+    } catch (err) {}
+  }
   var model = terms.model;
   let result = await chat(
     "continue",
