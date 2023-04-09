@@ -12,13 +12,11 @@ export default {
     description: "Reset your conversation",
   },
   async execute(interaction, client, conversationId) {
-    if (!interaction.deferred && !interaction.replied) {
-      try {
-        await interaction.deferReply({
-          ephemeral: true,
-        });
-      } catch (err) {}
-    }
+    try {
+      await interaction.deferReply({
+        ephemeral: true,
+      });
+    } catch (err) {}
 
     var conversationOwner = conversationId.split("-")[1];
     if (interaction.user.id != conversationOwner) {
