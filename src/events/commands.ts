@@ -54,6 +54,7 @@ export default {
     var terms: any = await checkTerms(interaction.user.id, "discord");
     interaction.user.hasVoted = false;
     if (terms && !terms.model) {
+      await interaction.deferReply();
       await interaction.editReply({
         content: terms,
         ephemeral: true,
