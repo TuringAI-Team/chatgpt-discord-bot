@@ -99,9 +99,9 @@ export default {
         await command.execute(message, client, args);
       }
     } catch (error) {
-      console.log(error);
-
-      await message.reply("There was an error while executing this command!");
+      try {
+        await message.reply("There was an error while executing this command!");
+      } catch (error) {}
     }
   },
 };
