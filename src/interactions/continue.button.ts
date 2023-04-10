@@ -76,25 +76,22 @@ export default {
             });
           }
         } else {
+          if (!interaction.deferred && !interaction.replied)
+            await interaction.deferReply();
           const { data, error } = await supabase
             .from("cooldown")
             .insert([{ userId: interaction.user.id, command: "continue-btn" }]);
           await continuefn(terms, interaction, ispremium, channel);
         }
       } else {
+        if (!interaction.deferred && !interaction.replied)
+          await interaction.deferReply();
         await continuefn(terms, interaction, ispremium, channel);
       }
     }
   },
 };
 async function continuefn(terms, interaction, ispremium, channel) {
-  try {
-    await interaction.deferReply({
-      ephemeral: false,
-    });
-  } catch (err) {
-    console.log(err);
-  }
   var model = terms.model;
   let result = await chat(
     "continue",
@@ -139,6 +136,8 @@ export async function responseWithText(
   channel,
   type
 ) {
+  if (!interaction.deferred && !interaction.replied)
+    await interaction.deferReply();
   prompt = prompt
     .replaceAll("@everyone", "everyone")
     .replaceAll("@here", "here")
