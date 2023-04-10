@@ -43,5 +43,10 @@ rest.on("rateLimited", (data) => {
   console.log("data");
   console.log(data);
 });
+client.on("shardDisconnect", (error, shardId) => {
+  console.log(`Shard ${shardId} disconnected: ${error}`);
 
+  // Reload the shard
+  client.shard.respawnAll();
+});
 client.login(process.env.TOKEN);
