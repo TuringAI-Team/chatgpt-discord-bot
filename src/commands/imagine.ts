@@ -62,26 +62,27 @@ export default {
       await interaction.deferReply({
         ephemeral: true,
       });
+
+      var tags = [];
+
+      var style = interaction.options.getString("style");
+      var prompt = interaction.options.getString("prompt");
+      // if style is auto say is premium because of testing
+      if (
+        //      style == "auto" &&
+        !(await isPremium(interaction.user.id, interaction.guild.id))
+      ) {
+        interaction.editReply({
+          content:
+            "This feature is only available for premium users for testing/security reasons, to get premium use the command `/premium buy`",
+          ephemeral: true,
+        });
+        return;
+      }
+
+      await ImagineInteraction(interaction, client, style, prompt);
     } catch (err) {
       console.log(err);
     }
-    var tags = [];
-
-    var style = interaction.options.getString("style");
-    var prompt = interaction.options.getString("prompt");
-    // if style is auto say is premium because of testing
-    if (
-      //      style == "auto" &&
-      !(await isPremium(interaction.user.id, interaction.guild.id))
-    ) {
-      interaction.editReply({
-        content:
-          "This feature is only available for premium users for testing/security reasons, to get premium use the command `/premium buy`",
-        ephemeral: true,
-      });
-      return;
-    }
-
-    await ImagineInteraction(interaction, client, style, prompt);
   },
 };
