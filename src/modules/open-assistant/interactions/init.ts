@@ -20,7 +20,11 @@ export async function initInteraction(interaction, translation, lang) {
   if (translation["conversational"]) {
     embed.setDescription(`${translation["conversational"]}`);
   } else {
-    embed.setDescription(`Conversational AI for everyone.`);
+    embed.setDescription(
+      `Conversational AI for everyone. (we recommend changing the language to English since the translation for ${getLocaleDisplayName(
+        lang
+      )} is not complete yet and this can lead to bugs.`
+    );
   }
   const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
