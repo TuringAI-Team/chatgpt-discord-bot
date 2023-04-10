@@ -16,47 +16,49 @@ export default {
       await interaction.deferReply({
         ephemeral: true,
       });
-    } catch (err) {}
 
-    var conversationOwner = conversationId.split("-")[1];
-    if (interaction.user.id != conversationOwner) {
-      await interaction.editReply({
-        content: "You can't reset this conversation",
-        ephemeral: true,
-      });
-      return;
-    }
-    var { data: conversation, error } = await supabase
-      .from("conversations")
-      .select("*")
-      .eq("id", conversationId)
-      .single();
-    if (error) {
-      await interaction.editReply({
-        content: "Error connecting with db",
-        ephemeral: true,
-      });
-      return;
-    }
-    if (!conversation) {
-      await interaction.editReply({
-        content: "Conversation not found",
-        ephemeral: true,
-      });
-      return;
-    }
-    try {
-      await supabase.from("conversations").delete().eq("id", conversationId);
-      await interaction.editReply({
-        content: "Conversation has been reset",
-        ephemeral: true,
-      });
+      var conversationOwner = conversationId.split("-")[1];
+      if (interaction.user.id != conversationOwner) {
+        await interaction.editReply({
+          content: "You can't reset this conversation",
+          ephemeral: true,
+        });
+        return;
+      }
+      var { data: conversation, error } = await supabase
+        .from("conversations")
+        .select("*")
+        .eq("id", conversationId)
+        .single();
+      if (error) {
+        await interaction.editReply({
+          content: "Error connecting with db",
+          ephemeral: true,
+        });
+        return;
+      }
+      if (!conversation) {
+        await interaction.editReply({
+          content: "Conversation not found",
+          ephemeral: true,
+        });
+        return;
+      }
+      try {
+        await supabase.from("conversations").delete().eq("id", conversationId);
+        await interaction.editReply({
+          content: "Conversation has been reset",
+          ephemeral: true,
+        });
+      } catch (err) {
+        await interaction.editReply({
+          content: "Error connecting with db",
+          ephemeral: true,
+        });
+        return;
+      }
     } catch (err) {
-      await interaction.editReply({
-        content: "Error connecting with db",
-        ephemeral: true,
-      });
-      return;
+      console.log(err);
     }
   },
 };
