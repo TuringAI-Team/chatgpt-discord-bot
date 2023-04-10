@@ -15,10 +15,13 @@ export async function initInteraction(interaction, translation, lang) {
     .setTimestamp()
     .setFooter({ text: `${getLocaleDisplayName(lang)}` })
     .setTitle("Open assistant")
-    .setDescription(`${translation["conversational"]}`)
     .setURL("https://open-assistant.io/?ref=turing")
     .setThumbnail("https://open-assistant.io/images/logos/logo.png");
-
+  if (translation["conversational"]) {
+    embed.setDescription(`${translation["conversational"]}`);
+  } else {
+    embed.setDescription(`Conversational AI for everyone.`);
+  }
   const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setLabel(translation.about)
