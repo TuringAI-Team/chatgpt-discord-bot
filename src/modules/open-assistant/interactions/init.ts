@@ -17,7 +17,7 @@ export async function initInteraction(interaction, translation, lang) {
     .setTitle("Open assistant")
     .setURL("https://open-assistant.io/?ref=turing")
     .setThumbnail("https://open-assistant.io/images/logos/logo.png");
-  if (translation["conversational"]) {
+  if (translation && translation["conversational"]) {
     embed.setDescription(`${translation["conversational"]}`);
   } else {
     embed.setDescription(
