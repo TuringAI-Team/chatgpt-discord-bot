@@ -48,8 +48,12 @@ export default {
     if (!command) return await message.reply("Command not found");
     var terms: any = await checkTerms(message.user.id, "whatsapp");
     if (terms && !terms.model) {
-      await message.reply(terms);
-      await delay(8000);
+      try {
+        await message.reply(terms);
+        await delay(8000);
+      } catch (e) {
+        console.log(e);
+      }
     }
     var ispremium = message.user.ispremium;
     try {
