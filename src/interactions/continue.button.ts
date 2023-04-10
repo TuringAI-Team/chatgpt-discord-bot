@@ -88,9 +88,13 @@ export default {
   },
 };
 async function continuefn(terms, interaction, ispremium, channel) {
-  await interaction.deferReply({
-    ephemeral: false,
-  });
+  try {
+    await interaction.deferReply({
+      ephemeral: false,
+    });
+  } catch (err) {
+    console.log(err);
+  }
   var model = terms.model;
   let result = await chat(
     "continue",
