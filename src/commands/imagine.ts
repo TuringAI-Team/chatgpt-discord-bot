@@ -58,6 +58,13 @@ export default {
   data,
   disablePing: true,
   async execute(interaction, client) {
+    try {
+      await interaction.deferReply({
+        ephemeral: true,
+      });
+    } catch (err) {
+      console.log(err);
+    }
     var tags = [];
 
     var style = interaction.options.getString("style");
