@@ -16,78 +16,84 @@ export default {
     description: "Continue your conversation",
   },
   async execute(interaction, client, userId) {
-    if (interaction.user.id != userId) {
-      await interaction.reply({
-        content: `${interaction.user} , you can't continue this answer because you are not the owner of this conversation.`,
-        ephemeral: true,
-      });
-      return;
-    }
+    try {
+      if (interaction.user.id != userId) {
+        await interaction.reply({
+          content: `${interaction.user} , you can't continue this answer because you are not the owner of this conversation.`,
+          ephemeral: true,
+        });
+        return;
+      }
 
-    let terms = await checkTerms(userId, "discord");
-    if (typeof terms == "string") {
-      await interaction.reply({
-        content: terms,
-        ephemeral: true,
-      });
-      setTimeout(async () => {
-        await interaction.deleteReply();
-      }, 8000);
-      return;
-    }
-    var guildId;
-    if (interaction.guild) guildId = interaction.guild.id;
-    var ispremium = await isPremium(interaction.user.id, guildId);
-    let channel = interaction.channel;
-    if (!interaction.channel) channel = interaction.user;
-    if (terms) {
-      if (!ispremium) {
-        let { data: cooldowns, error } = await supabase
-          .from("cooldown")
-          .select("*")
+      let terms = await checkTerms(userId, "discord");
+      if (typeof terms == "string") {
+        await interaction.reply({
+          content: terms,
+          ephemeral: true,
+        });
+        setTimeout(async () => {
+          await interaction.deleteReply();
+        }, 8000);
+        return;
+      }
+      var guildId;
+      if (interaction.guild) guildId = interaction.guild.id;
+      var ispremium = await isPremium(interaction.user.id, guildId);
+      let channel = interaction.channel;
+      if (!interaction.channel) channel = interaction.user;
+      if (terms) {
+        if (!ispremium) {
+          let { data: cooldowns, error } = await supabase
+            .from("cooldown")
+            .select("*")
 
-          // Filters
-          .eq("userId", interaction.user.id)
-          .eq("command", "continue-btn");
-        if (cooldowns && cooldowns[0]) {
-          var cooldown = cooldowns[0];
-          var createdAt = new Date(cooldown.created_at);
-          var milliseconds = createdAt.getTime();
-          var now = Date.now();
-          var diff = now - milliseconds;
-          // @ts-ignore
-          var count = ms("1m") - diff;
-          // @ts-ignore
-          if (diff >= ms("1m")) {
+            // Filters
+            .eq("userId", interaction.user.id)
+            .eq("command", "continue-btn");
+          if (cooldowns && cooldowns[0]) {
+            var cooldown = cooldowns[0];
+            var createdAt = new Date(cooldown.created_at);
+            var milliseconds = createdAt.getTime();
+            var now = Date.now();
+            var diff = now - milliseconds;
+            // @ts-ignore
+            var count = ms("1m") - diff;
+            // @ts-ignore
+            if (diff >= ms("1m")) {
+              const { data, error } = await supabase
+                .from("cooldown")
+                .update({ created_at: new Date() })
+                .eq("userId", interaction.user.id)
+                .eq("command", "continue-btn");
+              await continuefn(terms, interaction, ispremium, channel);
+            } else {
+              await interaction.reply({
+                content:
+                  `Please wait **${ms(
+                    count
+                  )}** to use this command again.\nIf you want to **avoid this cooldown** you can **donate to get premium**. If you want to donate use the command ` +
+                  "`/premium buy` .",
+                ephemeral: true,
+              });
+            }
+          } else {
+            if (!interaction.deferred && !interaction.replied)
+              await interaction.deferReply();
             const { data, error } = await supabase
               .from("cooldown")
-              .update({ created_at: new Date() })
-              .eq("userId", interaction.user.id)
-              .eq("command", "continue-btn");
+              .insert([
+                { userId: interaction.user.id, command: "continue-btn" },
+              ]);
             await continuefn(terms, interaction, ispremium, channel);
-          } else {
-            await interaction.reply({
-              content:
-                `Please wait **${ms(
-                  count
-                )}** to use this command again.\nIf you want to **avoid this cooldown** you can **donate to get premium**. If you want to donate use the command ` +
-                "`/premium buy` .",
-              ephemeral: true,
-            });
           }
         } else {
           if (!interaction.deferred && !interaction.replied)
             await interaction.deferReply();
-          const { data, error } = await supabase
-            .from("cooldown")
-            .insert([{ userId: interaction.user.id, command: "continue-btn" }]);
           await continuefn(terms, interaction, ispremium, channel);
         }
-      } else {
-        if (!interaction.deferred && !interaction.replied)
-          await interaction.deferReply();
-        await continuefn(terms, interaction, ispremium, channel);
       }
+    } catch (err) {
+      console.log(err);
     }
   },
 };
