@@ -59,9 +59,8 @@ export default {
   disablePing: true,
   async execute(interaction, client) {
     try {
-      await interaction.deferReply({
-        ephemeral: true,
-      });
+      if (!interaction.deferred && !interaction.replied)
+        await interaction.deferReply();
 
       var tags = [];
 
