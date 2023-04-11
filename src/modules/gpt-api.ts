@@ -296,7 +296,6 @@ async function chat(
     }, 6000);
     return { text: response, type: m };
   } catch (err: any) {
-    console.log(JSON.stringify(err));
     console.log(`${token.id}: ${err} -- ${m}`);
     if (err == "Error: Request failed with status code 400") {
     }
