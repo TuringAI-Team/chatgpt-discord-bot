@@ -8,10 +8,10 @@ import delay from "delay";
 export default {
   name: "message",
   async execute(message, client) {
-  	//Check if message is from group;
-  	if (message.message.chat.type == 'group') return;
+    //Check if message is from group;
+    if (message.message.chat.type == "group") return;
 
-  	 message.user = {
+    message.user = {
       id: message.message.from.from.id,
       name: message.message.from.id,
       ispremium: await isPremium(message.message.from.id, null),
@@ -96,8 +96,6 @@ export default {
         await command.execute(message, client, args);
       }
     } catch (error) {
-      console.log(error);
-
       await message.reply("There was an error while executing this command!");
     }
   },

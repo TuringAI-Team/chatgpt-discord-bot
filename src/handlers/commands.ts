@@ -80,6 +80,5 @@ async function reloadCommands(commands) {
     console.log(`Successfully reloaded application (/) commands.`);
   } catch (error) {
     // And of course, make sure you catch and log any errors!
-    console.log(error);
   }
 }

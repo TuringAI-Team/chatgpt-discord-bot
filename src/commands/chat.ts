@@ -287,7 +287,7 @@ async function sendAnswer(
         guildId: interaction.guildId,
       },
     ]);
-    // console.log(error);
+    //
   } else {
     await addUsesInCache(message, model);
   }

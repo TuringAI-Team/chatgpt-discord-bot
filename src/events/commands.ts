@@ -124,7 +124,6 @@ export default {
         await command.execute(interaction, client, commands, interactionType);
       }
     } catch (error) {
-      console.log(error);
       try {
         await interactionType.reply(interaction, {
           content: "There was an error while executing this command!",

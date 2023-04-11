@@ -153,7 +153,6 @@ export default {
           await command.execute(message, client, commands, msgType, options);
         }
       } catch (error) {
-        console.log(error);
         try {
           await message.reply({
             content: "There was an error while executing this command!",

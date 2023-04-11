@@ -18,7 +18,6 @@ export async function checkTerms(userId, platform) {
     .eq("id", userId);
 
   if (error) {
-    console.log(error);
     return false;
   }
   if (!data || data.length == 0 || !data[0]) {

@@ -61,7 +61,6 @@ export default {
       .eq("id", conversationId)
       .single();
     if (error) {
-      console.log(error);
       await interaction.editReply({
         content: "Error connecting with db/Conversation not found",
         ephemeral: true,
