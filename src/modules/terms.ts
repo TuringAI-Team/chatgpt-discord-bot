@@ -40,7 +40,6 @@ export async function hasVoted(userId) {
     });
 
     let data = await res.json();
-    console.log(data);
     return data.hasVoted;
   } catch (e) {
     return false;
