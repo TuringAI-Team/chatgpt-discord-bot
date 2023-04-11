@@ -1,17 +1,5 @@
 import supabase from "./supabase.js";
-import fs from "fs";
-import { VoteClient } from "topgg-votes";
 
-const votesClient = new VoteClient()
-  .setToken(process.env.TOPGG_TOKEN)
-  .setPort(randomPort());
-try {
-  votesClient.postWebhook();
-} catch (err) {
-  console.log(err);
-  votesClient.setPort(randomPort());
-  votesClient.postWebhook();
-}
 export async function checkTerms(userId, platform) {
   const { data, error } = await supabase
     .from("users")
@@ -32,45 +20,29 @@ export async function checkTerms(userId, platform) {
     ]);
     return `By using this service you accept the following terms of service:\n\nhttps://turingai.tech/botterms\n\nThis message is going to be deleted in 8s in order to continue with your request.`;
   } else {
-    let hasVoted = false;
+    let hasvoted = false;
     try {
-      hasVoted = await Promise.race([
-        votesClient.hasVoted(userId),
-        new Promise<boolean>((_, reject) => {
-          setTimeout(() => {
-            reject(new Error("Timeout"));
-          }, 15000);
-        }),
-      ]);
+      hasvoted = await hasVoted(userId);
     } catch (e) {
-      hasVoted = false;
+      hasvoted = false;
     }
-    return { model: data[0].defaultChatModel, hasVoted: hasVoted };
+    return { model: data[0].defaultChatModel, hasVoted: hasvoted };
   }
 }
 export async function hasVoted(userId) {
   try {
-    let hasVoted = await Promise.race([
-      votesClient.hasVoted(userId),
-      new Promise<boolean>((_, reject) => {
-        setTimeout(() => {
-          reject(new Error("Timeout"));
-        }, 5000);
-      }),
-    ]);
-    return hasVoted;
+    let res = await fetch(`https://api.turingai.tech/topgg/${userId}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + process.env.TURING_API,
+      },
+    });
+
+    let data = await res.json();
+    console.log(data);
+    return data.hasVoted;
   } catch (e) {
     return false;
-  }
-}
-
-function randomPort() {
-  let port = Math.floor(Math.random() * (65535 - 1024) + 1024);
-  // check if port is being used
-  try {
-    fs.accessSync(`http://localhost:${port}`);
-    return randomPort();
-  } catch (e) {
-    return port;
   }
 }
