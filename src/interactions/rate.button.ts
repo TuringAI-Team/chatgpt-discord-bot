@@ -15,11 +15,13 @@ export default {
     }
 
     if (userId != interaction.user.id) {
-      await interaction.editReply({
-        content: `You can't rate a image that you haven't generated.`,
-        ephemeral: true,
-      });
-      return;
+      try {
+        await interaction.editReply({
+          content: `You can't rate a image that you haven't generated.`,
+          ephemeral: true,
+        });
+        return;
+      } catch (err) {}
     }
     var { data, error } = await supabase
       .from("results")
