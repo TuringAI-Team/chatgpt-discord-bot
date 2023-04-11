@@ -8,6 +8,7 @@ const votesClient = new VoteClient()
 try {
   votesClient.postWebhook();
 } catch (err) {
+  console.log(err);
   votesClient.setPort(randomPort());
   votesClient.postWebhook();
 }
