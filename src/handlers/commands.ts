@@ -8,6 +8,7 @@ const __dirname = path.dirname(__filename);
 // Create a new client instance
 const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
 export default async function commandHandler(client) {
+  if (client.commands.size > 0) return;
   const commands = [];
   const commandsPath = path.join(__dirname, "../commands");
 

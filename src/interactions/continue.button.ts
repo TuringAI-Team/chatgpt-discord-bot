@@ -98,40 +98,44 @@ export default {
   },
 };
 async function continuefn(terms, interaction, ispremium, channel) {
-  var model = terms.model;
-  let result = await chat(
-    "continue",
-    interaction.user.username,
-    ispremium,
-    model,
-    `${model}-${interaction.user.id}`,
-    0,
-    null,
-    interaction
-  );
-  // }
+  try {
+    var model = terms.model;
+    let result = await chat(
+      "continue",
+      interaction.user.username,
+      ispremium,
+      model,
+      `${model}-${interaction.user.id}`,
+      0,
+      null,
+      interaction
+    );
+    // }
 
-  if (!result) {
-    await responseWithText(
-      interaction,
-      "continue",
-      `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)`,
-      channel,
-      "error"
-    );
-    return;
-  }
-  if (!result.error) {
-    var response = result.text;
-    await responseWithText(interaction, "continue", response, channel, model);
-  } else {
-    await responseWithText(
-      interaction,
-      "continue",
-      result.error,
-      channel,
-      "error"
-    );
+    if (!result) {
+      await responseWithText(
+        interaction,
+        "continue",
+        `Something wrong happened, please wait we are solving this issue [dsc.gg/turing](https://dsc.gg/turing)`,
+        channel,
+        "error"
+      );
+      return;
+    }
+    if (!result.error) {
+      var response = result.text;
+      await responseWithText(interaction, "continue", response, channel, model);
+    } else {
+      await responseWithText(
+        interaction,
+        "continue",
+        result.error,
+        channel,
+        "error"
+      );
+    }
+  } catch (err) {
+    console.log(err);
   }
 }
 

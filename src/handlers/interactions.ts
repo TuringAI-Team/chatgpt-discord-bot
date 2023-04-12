@@ -6,6 +6,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export default async function interactionsHandler(client) {
+  if (client.interactions.size > 0) return;
   const interactionsPath = path.join(__dirname, "../interactions");
   const interactionFiles = fs
     .readdirSync(interactionsPath)
