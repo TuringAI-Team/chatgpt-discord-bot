@@ -25,5 +25,5 @@ manager.on("shardCreate", (shard) => {
     console.log(`Shard ${shard.id} ready`);
   });
 });
-manager.spawn({ amount: 64, timeout: 60000, delay: 5500 });
+manager.spawn({ amount: "auto", timeout: 60000, delay: 5500 });
 import "./whatsapp/index.js";
