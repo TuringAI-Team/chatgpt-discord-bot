@@ -7,13 +7,10 @@ const manager = new ShardingManager("./dist/bot.js", {
 });
 
 manager.on("shardCreate", (shard) => {
-  let isRespawn = false;
   console.log(`Launched shard ${shard.id}`);
   // on error respawn
-  shard.on("death", async (process) => {
-    console.log(`Shard ${shard.id} died`);
-    if (isRespawn) return;
-    isRespawn = true;
+  shard.on("error", async (error) => {
+    console.log(`Shard ${shard.id} error: ${error}`);
     await shard.respawn();
   });
   shard.on("disconnect", async () => {
@@ -25,5 +22,5 @@ manager.on("shardCreate", (shard) => {
     console.log(`Shard ${shard.id} ready`);
   });
 });
-manager.spawn({ amount: "auto", timeout: 60000, delay: 5500 });
+manager.spawn({ amount: 64, timeout: 60000, delay: 5500 });
 import "./whatsapp/index.js";
