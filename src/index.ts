@@ -7,10 +7,13 @@ const manager = new ShardingManager("./dist/bot.js", {
 });
 
 manager.on("shardCreate", (shard) => {
+  let isRespawn = false;
   console.log(`Launched shard ${shard.id}`);
   // on error respawn
-  shard.on("error", async (error) => {
-    console.log(`Shard ${shard.id} error: ${error}`);
+  shard.on("death", async (process) => {
+    console.log(`Shard ${shard.id} died`);
+    if (isRespawn) return;
+    isRespawn = true;
     await shard.respawn();
   });
   shard.on("disconnect", async () => {
