@@ -12,17 +12,23 @@ manager.on("shardCreate", (shard) => {
   // on error respawn
   shard.on("error", async (error) => {
     console.log(`Shard ${shard.id} error: ${error}`);
-    await shard.respawn();
+    try {
+      await shard.respawn();
+    } catch (error) {}
   });
   shard.on("death", async (process) => {
     if (!isRespawned) return;
     isRespawned = true;
     console.log(`Shard ${shard.id} death`);
-    await shard.respawn();
+    try {
+      await shard.respawn();
+    } catch (error) {}
   });
   shard.on("disconnect", async () => {
     console.log(`Shard ${shard.id} disconnected`);
-    await shard.respawn();
+    try {
+      await shard.respawn();
+    } catch (error) {}
   });
 
   shard.on("ready", () => {
