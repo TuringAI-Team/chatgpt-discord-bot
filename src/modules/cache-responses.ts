@@ -1,39 +1,48 @@
-import redisClient from "./redis.js";
 async function checkInCache(message, model) {
-  /*  let wordCount = message.split(" ").length;
-  if (wordCount <= 1) {
-    return {};
-  }*/
-  let responses = await redisClient.get(model);
-  if (responses) {
-    responses = JSON.parse(responses);
-    if (responses[message]) {
-      return responses[message];
-    } else {
-      return {};
-    }
-  }
-  return {};
+  let res = await fetch(`https://api.turingai.tech/checkcache`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${process.env.TURING_API}`,
+    },
+    body: JSON.stringify({
+      message,
+      model,
+    }),
+  });
+  let data = await res.json();
+  return data.response;
 }
 async function saveInCache(message: string, response, model) {
-  let responses: any = await redisClient.get(model);
-  if (responses) {
-    responses = JSON.parse(responses);
-    responses[message] = { text: response, uses: 1 };
-  } else {
-    responses = { [message]: { text: response, uses: 1 } };
-  }
-  await redisClient.set(model, JSON.stringify(responses));
+  let res = await fetch(`https://api.turingai.tech/savecache`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${process.env.TURING_API}`,
+    },
+    body: JSON.stringify({
+      message,
+      response,
+      model,
+    }),
+  });
+  let data = await res.json();
+  return data.success;
 }
 async function addUsesInCache(message, model) {
-  let responses: any = await redisClient.get(model);
-  if (responses) {
-    responses = JSON.parse(responses);
-    if (responses[message]) {
-      responses[message].uses += 1;
-    }
-  }
-  await redisClient.set(model, JSON.stringify(responses));
+  let res = await fetch(`https://api.turingai.tech/addusescache`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${process.env.TURING_API}`,
+    },
+    body: JSON.stringify({
+      message,
+      model,
+    }),
+  });
+  let data = await res.json();
+  return data.success;
 }
 
 export { checkInCache, saveInCache, addUsesInCache };
