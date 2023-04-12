@@ -9,10 +9,6 @@ const manager = new ShardingManager("./dist/bot.js", {
 manager.on("shardCreate", (shard) => {
   console.log(`Launched shard ${shard.id}`);
   // on error respawn
-  shard.on("death", async () => {
-    console.log(`Shard ${shard.id} died`);
-    await shard.respawn();
-  });
   shard.on("error", async (error) => {
     console.log(`Shard ${shard.id} error: ${error}`);
     await shard.respawn();
