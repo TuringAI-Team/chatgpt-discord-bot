@@ -20,12 +20,12 @@ const msgType = {
       const userReactions = msg.reactions.cache.filter((reaction) =>
         reaction.users.cache.has(process.env.CLIENT_ID)
       );
-      try {
-        for (const reaction of userReactions.values()) {
-          reaction.users.remove(process.env.CLIENT_ID);
+      for (const reaction of userReactions.values()) {
+        try {
+          await reaction.users.remove(process.env.CLIENT_ID);
+        } catch (error) {
+          console.error("Failed to remove reactions:", error);
         }
-      } catch (error) {
-        console.error("Failed to remove reactions:", error);
       }
 
       return await msg.reply(content);
