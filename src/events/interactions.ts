@@ -33,9 +33,7 @@ export default {
     const interact = interaction.client.interactions.get(id);
 
     if (!interact) {
-      console.error(
-        `No interaction matching ${interaction.customId} was found.`
-      );
+      console.log(`No interaction matching ${interaction.customId} was found.`);
       return;
     }
 
@@ -51,7 +49,7 @@ export default {
         arg6
       );
     } catch (error) {
-      console.error(error);
+      console.log(error);
       if (interaction.deferred || interaction.replied) {
         try {
           await interaction.editReply({

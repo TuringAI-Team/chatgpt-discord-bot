@@ -81,6 +81,7 @@ export default {
         ephemeral: true,
       });
     } catch (err) {
+      console.log(err);
       await interaction.editReply({
         content: "Error connecting with db",
         ephemeral: true,

@@ -376,7 +376,9 @@ export async function responseWithText(
                 .slice(2000 * i, 2000 * i + 2000)
                 .join("")
             );
-          } catch (err) {}
+          } catch (err) {
+            console.log(err);
+          }
         }
       }
     }

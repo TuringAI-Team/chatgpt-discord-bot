@@ -24,7 +24,7 @@ const msgType = {
         try {
           await reaction.users.remove(process.env.CLIENT_ID);
         } catch (error) {
-          console.error("Failed to remove reactions:", error);
+          console.log("Failed to remove reactions:", error);
         }
       }
 
@@ -153,6 +153,7 @@ export default {
           await command.execute(message, client, commands, msgType, options);
         }
       } catch (error) {
+        console.log(error);
         try {
           await message.reply({
             content: "There was an error while executing this command!",

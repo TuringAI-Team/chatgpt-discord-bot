@@ -14,7 +14,9 @@ const interactionType = {
         await interaction.deferReply({
           ephemeral: ephemeral,
         });
-      } catch (err) {}
+      } catch (err) {
+        console.log(err);
+      }
     }
   },
   reply: async (interaction, content) => {
@@ -24,7 +26,9 @@ const interactionType = {
       } else {
         return await interaction.reply(content);
       }
-    } catch (err) {}
+    } catch (err) {
+      console.log(err);
+    }
   },
 };
 
@@ -41,9 +45,7 @@ export default {
     const command = interaction.client.commands.get(interaction.commandName);
 
     if (!command) {
-      console.error(
-        `No command matching ${interaction.commandName} was found.`
-      );
+      console.log(`No command matching ${interaction.commandName} was found.`);
       return;
     }
     var guildId;
@@ -60,7 +62,9 @@ export default {
           content: terms,
           ephemeral: true,
         });
-      } catch (err) {}
+      } catch (err) {
+        console.log(err);
+      }
       await delay(8000);
     } else {
       interaction.user.hasVoted = terms.hasVoted;
@@ -124,6 +128,7 @@ export default {
         await command.execute(interaction, client, commands, interactionType);
       }
     } catch (error) {
+      console.log(error);
       try {
         await interactionType.reply(interaction, {
           content: "There was an error while executing this command!",

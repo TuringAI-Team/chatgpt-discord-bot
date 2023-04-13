@@ -105,7 +105,9 @@ export default {
     } catch (error) {
       try {
         await message.reply("There was an error while executing this command!");
-      } catch (error) {}
+      } catch (error) {
+        console.log(error);
+      }
     }
   },
 };
