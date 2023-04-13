@@ -17,7 +17,7 @@ manager.on("shardCreate", (shard) => {
     } catch (error) {}
   });
   shard.on("death", async (process) => {
-    if (!isRespawned) return;
+    if (isRespawned) return;
     isRespawned = true;
     console.log(`Shard ${shard.id} death`);
     try {
