@@ -1,3 +1,5 @@
+import fetch from "node-fetch";
+
 async function checkInCache(message, model) {
   let res = await fetch(`https://api.turingai.tech/checkcache`, {
     method: "POST",

@@ -1,3 +1,5 @@
+import fetch from "node-fetch";
+
 export async function getTranlation(lang: string) {
   try {
     var res = await fetch(
