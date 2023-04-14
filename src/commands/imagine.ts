@@ -40,6 +40,7 @@ var data = new SlashCommandBuilder()
       .addChoices(
         // anime, realistic, paintart,
         { name: "Auto select using AI(premium only)", value: "auto" },
+        { name: "Default", value: "other" },
         { name: "Anime", value: "anime" },
         { name: "Realistic", value: "realistic" },
         { name: "Paintart", value: "paintart" },
@@ -49,8 +50,7 @@ var data = new SlashCommandBuilder()
         { name: "T-Shirt", value: "tshirt" },
         { name: "Logo", value: "logo" },
         { name: "GTA 5 Art", value: "gta5" },
-        { name: "Funko Pop", value: "funko" },
-        { name: "Other", value: "other" }
+        { name: "Funko Pop", value: "funko" }
       )
   );
 export default {
@@ -68,7 +68,7 @@ export default {
       var prompt = interaction.options.getString("prompt");
       // if style is auto say is premium because of testing
       if (
-        //      style == "auto" &&
+        style == "auto" &&
         !(await isPremium(interaction.user.id, interaction.guild.id))
       ) {
         interaction.editReply({

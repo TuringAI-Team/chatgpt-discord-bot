@@ -26,8 +26,8 @@ import "dotenv/config";
 import axios from "axios";
 import { AttachmentBuilder, StringSelectMenuBuilder } from "discord.js";
 import { isPremium } from "./premium.js";
+import { predict } from "replicate-api";
 
-import underagedCebs from "./all_name_regex.js";
 import { useToken, removeMessage, disableAcc } from "./loadbalancer.js";
 import { chat } from "./gpt-api.js";
 
@@ -116,6 +116,20 @@ export async function generateImg2img(
   } catch (e) {
     return { message: e, isNsfw: passFilter.isNsfw };
   }
+}
+
+export async function kandinsky(prompt, steps = 50, guidance_scale = 4) {
+  const prediction = await predict({
+    model: `ai-forever/kandinsky-2`, // The model name
+    input: {
+      prompt: prompt,
+    }, // The model specific input
+    token: process.env.REPLICATE_API_KEY, // You need a token from replicate.com
+    poll: true, // Wait for the model to finish
+  });
+
+  if (prediction.error) return prediction.error;
+  return prediction.output;
 }
 
 export async function png2webp(pngUrl) {
@@ -282,6 +296,7 @@ export async function ImagineInteraction(interaction, client, style, prompt) {
     if (ispremium) number = 4;
     var model;
     var fullPrompt;
+
     if (style == "anime") {
       model = "Anything Diffusion";
       fullPrompt = `${prompt}, ((anime)), ((anime style))`;
@@ -318,8 +333,8 @@ export async function ImagineInteraction(interaction, client, style, prompt) {
     } else if (style == "auto") {
       var token = await useToken("gpt-3");
       if (!token) {
-        model = "Midjourney Diffusion";
-        fullPrompt = `${prompt}, mdjrny-v4 style`;
+        model = "Dreamshaper";
+        fullPrompt = `${prompt}`;
       } else {
         const configuration = new Configuration({
           apiKey: token.key,
@@ -342,8 +357,8 @@ export async function ImagineInteraction(interaction, client, style, prompt) {
             await removeMessage(token.id);
           }, 6000);
         } catch (error) {
-          model = "Midjourney Diffusion";
-          fullPrompt = `${prompt}, mdjrny-v4 style`;
+          model = "Dreamshaper";
+          fullPrompt = `${prompt}`;
           await disableAcc(token.id, false);
           setTimeout(async () => {
             await removeMessage(token.id);
@@ -351,8 +366,8 @@ export async function ImagineInteraction(interaction, client, style, prompt) {
         }
       }
     } else {
-      model = "Midjourney Diffusion";
-      fullPrompt = `${prompt}, mdjrny-v4 style`;
+      model = "Dreamshaper";
+      fullPrompt = `${prompt}`;
     }
     fullPrompt = `${fullPrompt} ### ${negPrompt}`;
     generation = await generateImg(
@@ -390,7 +405,7 @@ export async function ImagineInteraction(interaction, client, style, prompt) {
             },
           ]);
         } else {
-          if (userBans.data[0].tries >= 2) {
+          if (userBans.data[0].tries >= 1) {
             await supabase
               .from("bans")
               .update({
@@ -441,7 +456,7 @@ export async function ImagineInteraction(interaction, client, style, prompt) {
         });
         const channel = client.channels.cache.get("1055943633716641853");
         await interaction.editReply({
-          content: `To prevent generation of unethical images, we cannot allow this prompt with NSFW models/tags. You have received a strike. If you receive 3 strikes, you will be banned from using the bot(/imagine).`,
+          content: `To prevent generation of unethical images, we cannot allow this prompt with NSFW models/tags. You have received a strike. If you receive 3 strikes, you will be banned from using this feature.`,
           ephemeral: true,
         });
         return;
