@@ -279,10 +279,10 @@ async function sendAnswer(
 ) {
   if (
     cached == false &&
-    (model != "chatgpt" ||
-      model != "dan" ||
-      model != "clyde" ||
-      model != "alan")
+    model != "chatgpt" &&
+    model != "dan" &&
+    model != "clyde" &&
+    model != "alan"
   ) {
     await saveInCache(message, response, model);
     const { data, error } = await supabase.from("results").insert([
@@ -295,9 +295,9 @@ async function sendAnswer(
     ]);
     //
   } else if (
-    model != "chatgpt" ||
-    model != "dan" ||
-    model != "clyde" ||
+    model != "chatgpt" &&
+    model != "dan" &&
+    model != "clyde" &&
     model != "alan"
   ) {
     await addUsesInCache(message, model);

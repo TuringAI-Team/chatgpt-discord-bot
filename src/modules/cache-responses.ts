@@ -18,6 +18,7 @@ async function checkInCache(message, model) {
   return data.response;
 }
 async function saveInCache(message: string, response, model) {
+  console.log("saving in cache");
   let res = await fetch(`https://api.turingai.tech/savecache`, {
     method: "POST",
     headers: {
@@ -34,6 +35,8 @@ async function saveInCache(message: string, response, model) {
   return data.success;
 }
 async function addUsesInCache(message, model) {
+  console.log("add uses");
+
   let res = await fetch(`https://api.turingai.tech/addusescache`, {
     method: "POST",
     headers: {
