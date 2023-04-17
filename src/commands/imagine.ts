@@ -68,7 +68,7 @@ export default {
       var prompt = interaction.options.getString("prompt");
       // if style is auto say is premium because of testing
       if (
-        style == "auto" &&
+        //   style == "auto" &&
         !(await isPremium(interaction.user.id, interaction.guild.id))
       ) {
         interaction.editReply({
