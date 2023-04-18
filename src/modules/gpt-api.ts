@@ -130,9 +130,9 @@ async function chat(
     instructions = `act as an English translator, spelling corrector and improver. User will speak to you in any language and you will detect the language, translate it and answer in the corrected and improved version of user text, in English. Keep the meaning same, but make them more literary. I want you to only reply the correction, the improvements and nothing else, do not write explanations.`;
   }
   var response;
-  var maxtokens = 300;
-  if (ispremium && m != "gpt4") maxtokens = 600;
-  if (ispremium && m == "gpt4") maxtokens = 350;
+  var maxtokens = 250;
+  if (ispremium && m != "gpt4") maxtokens = 500;
+  if (ispremium && m == "gpt4") maxtokens = 300;
   if (!ispremium && m == "gpt4") maxtokens = 150;
 
   var bot;
