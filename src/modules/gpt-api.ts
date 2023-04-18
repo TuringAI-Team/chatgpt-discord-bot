@@ -132,7 +132,7 @@ async function chat(
   var response;
   var maxtokens = 250;
   if (ispremium && m != "gpt4") maxtokens = 500;
-  if (ispremium && m == "gpt4") maxtokens = 300;
+  if (ispremium && m == "gpt4") maxtokens = 250;
   if (!ispremium && m == "gpt4") maxtokens = 150;
 
   var bot;

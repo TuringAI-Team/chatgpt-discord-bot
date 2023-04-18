@@ -57,9 +57,9 @@ export default {
             var now = Date.now();
             var diff = now - milliseconds;
             // @ts-ignore
-            var count = ms("1m") - diff;
+            var count = ms("2m") - diff;
             // @ts-ignore
-            if (diff >= ms("1m")) {
+            if (diff >= ms("2m")) {
               const { data, error } = await supabase
                 .from("cooldown")
                 .update({ created_at: new Date() })

@@ -20,7 +20,7 @@ import {
 } from "../modules/cache-responses.js";
 
 export default {
-  cooldown: "150s",
+  cooldown: "160s",
   disablePing: null,
   data: new SlashCommandBuilder()
     .setName("chat")
