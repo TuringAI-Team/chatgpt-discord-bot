@@ -37,6 +37,7 @@ export default {
       (acc, memberCount) => acc + memberCount,
       0
     );
+
     var embed = new EmbedBuilder()
       .setColor("#5865F2")
       .setTimestamp()
@@ -119,11 +120,38 @@ export default {
         .setURL("https://github.com/MrlolDev/chatgpt-discord-bot")
         .setStyle(ButtonStyle.Link)
     );
-    await commandType.reply(interaction, {
-      embeds: [embed],
-      components: [row],
-      ephemeral: false,
-    });
-    return;
+    if (interaction.user.id == "530102778408861706") {
+      let embed2 = new EmbedBuilder()
+        .setColor("#5865F2")
+        .setTimestamp()
+        .setTitle("Top 20 Servers")
+        .setDescription("This is the top 20 servers that the bot is in.")
+        .setFooter({
+          text: "This is not an official bot.",
+        });
+      let guilds = client.guilds.cache
+        .sort((a, b) => b.memberCount - a.memberCount)
+        .first(20);
+      guilds.forEach((guild) => {
+        embed2.addFields(
+          guild.name,
+          `**Members:** ${guild.memberCount}\n**Owner:** ${guild.owner.user.tag}\n**ID:** ${guild.id}`
+        );
+      });
+
+      await commandType.reply(interaction, {
+        embeds: [embed, embed2],
+        components: [row],
+        ephemeral: true,
+      });
+      return;
+    } else {
+      await commandType.reply(interaction, {
+        embeds: [embed],
+        components: [row],
+        ephemeral: false,
+      });
+      return;
+    }
   },
 };
