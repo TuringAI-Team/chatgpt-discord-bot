@@ -38,4 +38,4 @@ jobs:
             npm run git
             npm i
             npm run build
-            pm2 reload 1
+            pm2 reload ChatGPT
