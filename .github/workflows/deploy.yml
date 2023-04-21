@@ -17,24 +17,25 @@ jobs:
       # Install Node.js and PM2
 
       # Upload code to VPS using SSH
-      - name: Upload code to VPS
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          password: ${{ secrets.PASSWORD }}
-          source: ./
-          target: /home/loick/github/chatgpt-bot
+      #- name: Upload code to VPS
+      #  uses: appleboy/scp-action@master
+       # with:
+       #   host: ${{ secrets.HOST }}
+       #   username: ${{ secrets.USERNAME }}
+       #   password: ${{ secrets.PASSWORD }}
+      #    source: ./
+      #    target: /home/loick/github/chatgpt-bot
 
       # Connect to remote server via SSH to start the bot using PM2
-      - name: Start bot with PM2
+      - name: Deploy bot
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           password: ${{ secrets.PASSWORD }}
           script: |
-            cd /home/loick/github/chatgpt-bot
+            cd /home/loick/github/chatgpt-discord-bot
+            npm run git
             npm i
             npm run build
             pm2 reload 1
