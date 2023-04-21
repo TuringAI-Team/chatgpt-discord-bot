@@ -135,7 +135,7 @@ export default {
       guilds.forEach((guild) => {
         embed2.addFields(
           guild.name,
-          `**Members:** ${guild.memberCount}\n**Owner:** ${guild.owner.user.tag}\n**ID:** ${guild.id}`
+          `**Members:** ${guild.memberCount}\n**Owner:** ${guild.ownerID}\n**ID:** ${guild.id}`
         );
       });
 
