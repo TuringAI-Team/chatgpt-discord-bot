@@ -124,20 +124,18 @@ export default {
       let embed2 = new EmbedBuilder()
         .setColor("#5865F2")
         .setTimestamp()
-        .setTitle("Top 20 Servers")
+        .setTitle("Top 30 Servers")
         .setDescription("This is the top 20 servers that the bot is in.")
         .setFooter({
           text: "This is not an official bot.",
         });
       let totalGuilds = await client.shard.fetchClientValues("guilds.cache"); // many arrays of guilds
       // merge all arrays into one
-      console.log(totalGuilds.length);
       totalGuilds = totalGuilds.reduce((acc, guilds) => acc.concat(guilds), []);
-      console.log(totalGuilds.length);
       // sort by member count
       let guilds = totalGuilds.sort((a, b) => b.memberCount - a.memberCount);
       // get top 20
-      guilds = guilds.slice(0, 20);
+      guilds = guilds.slice(0, 30);
       guilds.forEach((guild) => {
         embed2.addFields({
           name: guild.name,

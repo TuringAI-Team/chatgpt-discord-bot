@@ -166,7 +166,10 @@ export default {
       ) {
         result = {
           text: results.text,
-          type: model == "oasst-sft-1-pythia-12b" ? "OpenAssistant" : model,
+          type:
+            model == "oasst-sft-4-pythia-12b-epoch-3.5b"
+              ? "OpenAssistant"
+              : model,
         };
 
         cached = true;
@@ -189,16 +192,45 @@ export default {
       model == "clyde" ||
       model == "alan"
     ) {
-      result = await chat(
-        message,
-        interaction.user.username,
-        ispremium,
-        model,
-        `${model}-${interaction.user.id}`,
-        0,
-        attachment,
-        interaction
-      );
+      /*if (!ispremium && message.split(" ").length > 10) {
+        let results: any = await checkInCache(message, model);
+        if (!results) {
+          var errr = "Error connecting with db";
+
+          await responseWithText(
+            interaction,
+            message,
+            errr,
+            channel,
+            "error",
+            commandType,
+            null,
+            client
+          );
+          return;
+        }
+        if (results && results.text && !ispremium && !attachment) {
+          result = {
+            text: results.text,
+            type: model,
+          };
+
+          cached = true;
+        }
+      }*/
+      if (!result) {
+        result = await chat(
+          message,
+          interaction.user.username,
+          ispremium,
+          model,
+          `${model}-${interaction.user.id}`,
+          0,
+          attachment,
+          interaction
+        );
+      }
+
       // }
     }
 
@@ -282,13 +314,7 @@ async function sendAnswer(
   attachment,
   client
 ) {
-  if (
-    cached == false &&
-    model != "chatgpt" &&
-    model != "dan" &&
-    model != "clyde" &&
-    model != "alan"
-  ) {
+  if (cached == false) {
     await saveInCache(message, response, model);
     const { data, error } = await supabase.from("results").insert([
       {
@@ -299,12 +325,6 @@ async function sendAnswer(
       },
     ]);
     //
-  } else if (
-    model != "chatgpt" &&
-    model != "dan" &&
-    model != "clyde" &&
-    model != "alan"
-  ) {
   }
 
   // change user default model to selected model

@@ -15,8 +15,7 @@ async function checkInCache(message, model) {
       }),
     });
     let data = await res.json();
-    console.log(data);
-    return data.response;
+    return { text: data.response.response };
   } catch (e) {
     return null;
   }
