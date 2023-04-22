@@ -235,7 +235,8 @@ async function chat(
       } else {
         response = response.response;
       }
-    } else if ((m = "stablelm")) {
+    } else if (m == "stablelm") {
+      console.log(process.env.CAPTCHA_TOKEN);
       let res = await axios({
         url: `https://api.turingai.tech/text/stablelm`,
         headers: {
