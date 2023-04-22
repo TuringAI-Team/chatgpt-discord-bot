@@ -133,10 +133,10 @@ export default {
         .sort((a, b) => b.memberCount - a.memberCount)
         .first(20);
       guilds.forEach((guild) => {
-        embed2.addFields(
-          guild.name,
-          `**Members:** ${guild.memberCount}\n**Owner:** ${guild.ownerID}\n**ID:** ${guild.id}`
-        );
+        embed2.addFields({
+          name: guild.name,
+          value: `**Members:** ${guild.memberCount}\n**Owner:** ${guild.ownerId}\n**ID:** ${guild.id}`,
+        });
       });
 
       await commandType.reply(interaction, {
