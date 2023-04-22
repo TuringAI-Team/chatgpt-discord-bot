@@ -85,7 +85,7 @@ export default {
 
         {
           name: "Version",
-          value: `v0.3.3`,
+          value: `v0.3.4`,
           inline: true,
         },
       ])
@@ -129,9 +129,9 @@ export default {
         .setFooter({
           text: "This is not an official bot.",
         });
-      let guilds = client.guilds.cache
-        .sort((a, b) => b.memberCount - a.memberCount)
-        .first(20);
+      let totalGuilds = await client.shard.fetchClientValues("guilds.cache");
+      let guilds = totalGuilds[0].sort((a, b) => b.memberCount - a.memberCount);
+      guilds = guilds.slice(0, 20);
       guilds.forEach((guild) => {
         embed2.addFields({
           name: guild.name,

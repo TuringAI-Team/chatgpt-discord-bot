@@ -2,28 +2,32 @@ import fetch from "node-fetch";
 
 async function checkInCache(message, model) {
   console.log("Checking in cache");
-  let res = await fetch(`https://api.turingai.tech/checkcache`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.TURING_API}`,
-    },
-    body: JSON.stringify({
-      message,
-      model,
-    }),
-  });
-  let data = await res.json();
-  console.log(data);
-  return data.response;
+  try {
+    let res = await fetch(`https://api.turingai.tech/cache/checkcache`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.TURING_KEY}`,
+      },
+      body: JSON.stringify({
+        message,
+        model,
+      }),
+    });
+    let data = await res.json();
+    console.log(data);
+    return data.response;
+  } catch (e) {
+    return null;
+  }
 }
 async function saveInCache(message: string, response, model) {
   console.log("saving in cache");
-  let res = await fetch(`https://api.turingai.tech/savecache`, {
+  let res = await fetch(`https://api.turingai.tech/cache/savecache`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.TURING_API}`,
+      Authorization: `Bearer ${process.env.TURING_KEY}`,
     },
     body: JSON.stringify({
       message,
@@ -37,11 +41,11 @@ async function saveInCache(message: string, response, model) {
 async function addUsesInCache(message, model) {
   console.log("add uses");
 
-  let res = await fetch(`https://api.turingai.tech/addusescache`, {
+  let res = await fetch(`https://api.turingai.tech/cache/addusescache`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.TURING_API}`,
+      Authorization: `Bearer ${process.env.TURING_KEY}`,
     },
     body: JSON.stringify({
       message,

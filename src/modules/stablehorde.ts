@@ -145,14 +145,15 @@ export async function png2webp(pngUrl) {
 
 async function filter(prompt, model?) {
   var req = await axios.post(
-    "https://api.turingai.tech/filter",
+    "https://api.turingai.tech/imgs/filter",
     {
       prompt: prompt,
       model: model,
     },
     {
       headers: {
-        Authorization: `Bearer ${process.env.TURING_API}`,
+        Authorization: `Bearer ${process.env.TURING_KEY}`,
+        "x-captcha-token": process.env.CAPTCHA_TOKEN,
       },
     }
   );

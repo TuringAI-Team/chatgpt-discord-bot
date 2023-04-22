@@ -31,11 +31,12 @@ export async function checkTerms(userId, platform) {
 }
 export async function hasVoted(userId) {
   try {
-    let res = await fetch(`https://api.turingai.tech/topgg/${userId}`, {
+    let res = await fetch(`https://api.turingai.tech/other/topgg/${userId}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        Authorization: "Bearer " + process.env.TURING_API,
+        Authorization: "Bearer " + process.env.TURING_KEY,
+        "x-captcha-token": process.env.CAPTCHA_TOKEN,
       },
     });
 

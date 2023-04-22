@@ -44,8 +44,12 @@ export default {
           { name: "GPT-4(Premium only)", value: "gpt4" },
           { name: "GPT-3", value: "gpt3" },
           {
-            name: "Open Assistant(oasst-sft-1-pythia-12b)",
-            value: "oasst-sft-1-pythia-12b",
+            name: "Open Assistant(pythia)",
+            value: "oasst-sft-4-pythia-12b-epoch-3.5b",
+          },
+          {
+            name: "StableLM",
+            value: "stablelm",
           }
         )
     )
@@ -133,9 +137,10 @@ export default {
     if (!interaction.channel) channel = interaction.user;
     if (
       model == "gpt3" ||
-      model == "oasst-sft-1-pythia-12b" ||
+      model == "oasst-sft-4-pythia-12b-epoch-3.5b" ||
       model == "gpt4" ||
-      model == "OpenAssistant"
+      model == "OpenAssistant" ||
+      model == "stablelm"
     ) {
       // change default timeout to 30s using supabasejs here u have official docs:
 
@@ -300,7 +305,6 @@ async function sendAnswer(
     model != "clyde" &&
     model != "alan"
   ) {
-    await addUsesInCache(message, model);
   }
 
   // change user default model to selected model

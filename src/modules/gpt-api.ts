@@ -215,20 +215,45 @@ async function chat(
       response = bot.data.choices[0].text;
       //response = await gpt3(prompt, maxtokens);
       // response = `GPT-3 is down for maintenance, please try again later.`;
-    } else if (m == "OpenAssistant") {
+    } else if (m == "oasst-sft-4-pythia-12b-epoch-3.5b") {
       let res = await axios({
-        url: "https://api-inference.huggingface.co/models/OpenAssistant/oasst-sft-1-pythia-12b",
-
+        url: `https://api.turingai.tech/text/open-assistant`,
         headers: {
-          Authorization: `Bearer ${process.env.HF_KEY}`,
+          Authorization: `Bearer ${process.env.TURING_KEY}`,
+          "x-captcha-token": process.env.CAPTCHA_TOKEN,
           "Content-Type": "application/json",
         },
         method: "POST",
         data: JSON.stringify({
-          inputs: `<|prompter|>${prompt}<|endoftext|>\n<|assistant|>`,
+          prompt: `${prompt}`,
         }),
       });
-      response = res.data[0].generated_text.split("<|assistant|>")[1];
+      response = res.data;
+      console.log(response);
+      if (response.error) {
+        throw new Error(response.error);
+      } else {
+        response = response.response;
+      }
+    } else if ((m = "stablelm")) {
+      let res = await axios({
+        url: `https://api.turingai.tech/text/stablelm`,
+        headers: {
+          Authorization: `Bearer ${process.env.TURING_KEY}`,
+          "x-captcha-token": process.env.CAPTCHA_TOKEN,
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+        data: JSON.stringify({
+          prompt: `${prompt}`,
+        }),
+      });
+      response = res.data;
+      if (response.error) {
+        throw new Error(response.error);
+      } else {
+        response = response.response.join(" ");
+      }
     } else if (m == "gpt4") {
       const completion = await openai.createChatCompletion({
         model: model,
