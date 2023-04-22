@@ -8,10 +8,7 @@
     "build": "tsc",
     "start": "tsc && node .",
     "dev": "concurrently \"tsc --watch\" \"npx nodemon\"",
-    "git": "git fetch && git pull",
-    "redis:start": "docker-compose up -d",
-    "redis:stop": "docker-compose stop",
-    "redis:logs": "docker-compose logs -f --tail=0"
+    "git": "git fetch && git stash && git pull"
   },
   "keywords": [],
   "author": "MrlolDev",
