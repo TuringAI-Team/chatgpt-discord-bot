@@ -50,6 +50,14 @@ export default {
           {
             name: "StableLM",
             value: "stablelm",
+          },
+          {
+            name: "Dolly v2",
+            value: "dolly",
+          },
+          {
+            name: "Vicuna",
+            value: "vicuna",
           }
         )
     )
@@ -140,7 +148,9 @@ export default {
       model == "oasst-sft-4-pythia-12b-epoch-3.5b" ||
       model == "gpt4" ||
       model == "OpenAssistant" ||
-      model == "stablelm"
+      model == "stablelm" ||
+      model == "dolly" ||
+      model == "vicuna"
     ) {
       // change default timeout to 30s using supabasejs here u have official docs:
 

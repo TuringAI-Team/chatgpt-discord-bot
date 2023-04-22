@@ -236,7 +236,6 @@ async function chat(
         response = response.response;
       }
     } else if (m == "stablelm") {
-      console.log(process.env.CAPTCHA_TOKEN);
       let res = await axios({
         url: `https://api.turingai.tech/text/stablelm`,
         headers: {
@@ -252,9 +251,44 @@ async function chat(
       response = res.data;
       if (response.error) {
         throw new Error(response.error);
-      } else {
-        response = response.response.join(" ");
       }
+      response = response.response;
+    } else if (m == "dolly") {
+      let res = await axios({
+        url: `https://api.turingai.tech/text/dolly`,
+        headers: {
+          Authorization: `Bearer ${process.env.TURING_KEY}`,
+          "x-captcha-token": process.env.CAPTCHA_TOKEN,
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+        data: JSON.stringify({
+          prompt: `${prompt}`,
+        }),
+      });
+      response = res.data;
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      response = response.response;
+    } else if (m == "vicuna") {
+      let res = await axios({
+        url: `https://api.turingai.tech/text/vicuna`,
+        headers: {
+          Authorization: `Bearer ${process.env.TURING_KEY}`,
+          "x-captcha-token": process.env.CAPTCHA_TOKEN,
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+        data: JSON.stringify({
+          prompt: `${prompt}`,
+        }),
+      });
+      response = res.data;
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      response = response.response;
     } else if (m == "gpt4") {
       const completion = await openai.createChatCompletion({
         model: model,
