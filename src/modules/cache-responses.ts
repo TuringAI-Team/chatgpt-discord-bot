@@ -2,7 +2,6 @@ import fetch from "node-fetch";
 
 async function checkInCache(message, model) {
   console.log("Checking in cache");
-  console.log(process.env.TURING_KEY);
   try {
     let res = await fetch(`https://api.turingai.tech/cache/checkcache`, {
       method: "POST",
