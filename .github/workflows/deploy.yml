@@ -34,7 +34,7 @@ jobs:
           username: ${{ secrets.USERNAME }}
           password: ${{ secrets.PASSWORD }}
           script: |
-            cd /home/loick/github/chatgpt-discord-bot
+            cd /home/loick/github/chatgpt-bot
             npm run git
             npm i
             npm run build
