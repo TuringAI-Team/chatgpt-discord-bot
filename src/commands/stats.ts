@@ -1,0 +1,77 @@
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, SlashCommandBuilder } from "discord.js";
+
+import { Command, CommandInteraction, CommandResponse } from "../command/command.js";
+import { Response, ResponseType } from "../command/response.js";
+import { Utils } from "../util/utils.js";
+import { Bot } from "../bot/bot.js";
+
+export default class StatisticsCommand extends Command {
+    constructor(bot: Bot) {
+        super(bot,
+            new SlashCommandBuilder()
+                .setName("stats")
+                .setDescription("View information & statistics about the bot")
+		, { long: true, always: true, cooldown: 10 * 1000 });
+    }
+
+    public async run(interaction: CommandInteraction): CommandResponse {
+		const fields = [
+			{
+				key: "Servers 🖥️",
+				value: this.bot.statistics.guildCount
+			},
+
+			{
+				key: "Latency 🏓",
+				value: `**\`${this.bot.statistics.discordPing.toFixed(1)}\`** ms`
+			},
+
+			{
+				key: interaction.guild !== null ? "Cluster & Shard 💎" : "Cluster 💎",
+				value: interaction.guild !== null ? `\`${this.bot.data.id + 1}\`/\`${this.bot.client.cluster.count}\` — \`${interaction.guild.shardId}\`` : `\`${this.bot.data.id + 1}\`/\`${this.bot.client.cluster.count}\``
+			},
+
+			{
+				key: "Users 🫂",
+				value: `${this.bot.statistics.discordUsers} <:discord:1074420172032589914> — ${this.bot.statistics.databaseUsers} <:ampere_round_bolt:1095676185645678612>`
+			},
+
+			{
+				key: "Conversations 💬",
+				value: this.bot.statistics.conversations
+			},
+
+			{
+				key: "RAM 🖨️",
+				value: `**\`${(this.bot.statistics.memoryUsage / 1024 / 1024).toFixed(2)}\`** MB`
+			}
+		];
+
+		const builder: EmbedBuilder = new EmbedBuilder()
+			.setTitle("Bot Statistics")
+			.setDescription(`The ultimate AI-powered Discord bot 🚀`)
+			.setColor(this.bot.branding.color)
+
+			.addFields(fields.map(({ key, value }) => ({
+				name: key, value: value.toString(),
+				inline: true
+			})));
+
+		const row = new ActionRowBuilder<ButtonBuilder>()
+			.addComponents(
+                new ButtonBuilder()
+                    .setURL(Utils.inviteLink(this.bot))
+                    .setLabel("Add me to your server")
+                    .setStyle(ButtonStyle.Link),
+
+                new ButtonBuilder()
+                    .setURL(Utils.supportInvite(this.bot))
+                    .setLabel("Join the support server")
+                    .setStyle(ButtonStyle.Link)
+			);
+
+        return new Response(ResponseType.Edit)
+            .addEmbed(builder)
+			.addComponent(ActionRowBuilder<ButtonBuilder>, row);
+    }
+}

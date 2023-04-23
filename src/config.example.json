@@ -1,0 +1,92 @@
+{
+    "discord": {
+        "token": "Discord bot token",
+        "id": "Discord bot ID",
+
+		"owner": [ "Your user ID" ],
+        "inviteCode": "Invite code to support server, e.g. ampere-chatgpt-1063957096225321075"
+    },
+
+    "branding": {
+        "noticeColor": "This is the color used for most embeds",
+        "color": "#68BAC9"
+    },
+
+    "noticeDev": "Whether developer info should be logged",
+    "dev": false,
+
+    "clusters": "auto",
+    "shardsPerCluster": 3,
+
+    "channels": {
+        "moderation": {
+            "channel": "channel id",
+            "guild": "guild id"
+        },
+
+        "error": {
+            "channel": "channel id",
+            "guild": "guild id"
+        },
+
+        "status": {
+            "channel": "channel id",
+            "guild": "guild id"
+        }
+    },
+
+    "openAI": {
+        "key": "OpenAI API key"
+    },
+
+    "replicate": {
+        "key": "Replicate API key"
+    },
+
+    "ocr": {
+        "key": "https://ocr.space API key"
+    },
+
+	"huggingFace": {
+		"key": "HuggingFace session key"
+	},
+
+    "topgg": {
+        "key": "top.gg webhook key"
+    },
+
+    "giphy": {
+        "key": "GIPHY API key"
+    },
+
+    "nat": {
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36 Edg/111.0.1661.62",
+        "token": "OpenPlayground session token",
+
+        "auth": {
+            "noticeUat": "steal this from headers",
+            "uat": -1
+        }
+    },
+
+    "stableHorde": {
+        "key": "Stable Horde API key"
+    },
+
+    "db": {
+        "supabase": {
+            "url": "Supabase URL",
+            "key": {
+                "service": "SupaBase service API key"
+            },
+            "collections": {
+                "users": "users",
+                "conversations": "conversations",
+                "guilds": "guilds",
+                "interactions": "interactions",
+                "images": "images",
+                "keys": "keys"
+            }
+        }
+    }
+}
