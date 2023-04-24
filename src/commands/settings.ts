@@ -1,9 +1,9 @@
-import { SlashCommandBuilder, EmbedBuilder, AutocompleteInteraction, CacheType, CommandInteractionOption, CommandInteractionOptionResolver, ApplicationCommandOptionType } from "discord.js";
+import { SlashCommandBuilder, EmbedBuilder, AutocompleteInteraction, CacheType, CommandInteractionOption } from "discord.js";
 
 import { Command, CommandInteraction, CommandOptionChoice, CommandResponse } from "../command/command.js";
 import { Response } from "../command/response.js";
 
-import { AutocompleteChoiceSettingsOption, ChoiceSettingsOption, SettingsName, SettingsOption, SettingsOptionType } from "../db/managers/settings.js";
+import { AutocompleteChoiceSettingsOption, ChoiceSettingsOption, SettingsName, SettingsOptionType } from "../db/managers/settings.js";
 import { DatabaseInfo, DatabaseUser } from "../db/managers/user.js";
 import { Conversation } from "../conversation/conversation.js";
 import { Bot } from "../bot/bot.js";

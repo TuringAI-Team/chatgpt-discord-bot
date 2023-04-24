@@ -11,6 +11,7 @@ import { Response } from "../../command/response.js";
 import { messageChannel } from "./channel.js";
 import { Bot } from "../../bot/bot.js";
 import { Utils } from "../utils.js";
+import { AutoModerationActionType } from "../../conversation/moderation/automod/automod.js";
 
 const ActionToEmoji: { [ Key in DatabaseUserInfractionType as string ]: string; } = {
 	"warn": "⚠️",
@@ -63,7 +64,6 @@ interface ModerationSendOptions {
     db: DatabaseInfo;
     content: string;
     type: ModerationSource;
-    message?: Message;
 }
 
 type ModerationImageSendOptions = Pick<ModerationSendOptions, "result" | "conversation" | "db" | "content">
@@ -501,9 +501,13 @@ export const buildUserOverview = async (bot: Bot, target: User, db: DatabaseUser
  * 
  * @returns The constructed action row, with the buttons
  */
-export const buildModerationToolbar = (user: User): ActionRowBuilder[] => {
+export const buildModerationToolbar = (user: User, result: ModerationResult): ActionRowBuilder[] => {
     const buildIdentifier = (type: ModerationToolbarAction | string, args?: string[]) => `${type}:${user.id}${args && args.length > 0 ? `:${args.join(":")}` : ""}`;
     const rows: ActionRowBuilder[] = [];
+
+    /* Whether any action can be taken */
+    const punishable: boolean = result.auto ? result.auto.type !== "ban" && result.auto.type !== "warn" : true;
+    const action: AutoModerationActionType | "none" = result.auto?.type ?? "none";
 
     const initial: ButtonBuilder[] = [
         new ButtonBuilder()
@@ -513,35 +517,39 @@ export const buildModerationToolbar = (user: User): ActionRowBuilder[] => {
 
         new ButtonBuilder()
             .setEmoji({ name: "✉️" })
+            .setDisabled(action === "warn" || action === "ban")
             .setCustomId(buildIdentifier("warn"))
             .setStyle(ButtonStyle.Secondary),
             
         new ButtonBuilder()
             .setEmoji({ name: "🔨" })
+            .setDisabled(action === "ban")
             .setCustomId(buildIdentifier("ban"))
             .setStyle(ButtonStyle.Secondary),
-
+        
         new ButtonBuilder()
             .setEmoji({ name: "🔒" })
             .setCustomId(buildIdentifier("lock"))
             .setStyle(ButtonStyle.Danger)
     ];
 
-    /* Create the various moderation rows. */
-    for (const name of [ "warn", "ban" ]) {
-        const components: StringSelectMenuBuilder[] = [
-            new StringSelectMenuBuilder()
-                .setCustomId(buildIdentifier("quick", [ name ]))
-
-                .addOptions(...QuickReasons.map(reason => ({
-                    label: `${reason} ${ActionToEmoji[name]}`,
-                    value: reason
-                })))
-
-                .setPlaceholder(`Select a quick ${name === "ban" ? "ban" : "warning"} reason ... ${ActionToEmoji[name]}`)
-        ];
-
-        rows.push(new ActionRowBuilder().addComponents(components));
+    /* Create the various moderation rows, if the user is punishable. */
+    if (punishable) {
+        for (const name of [ "warn", "ban" ]) {
+            const components: StringSelectMenuBuilder[] = [
+                new StringSelectMenuBuilder()
+                    .setCustomId(buildIdentifier("quick", [ name ]))
+    
+                    .addOptions(...QuickReasons.map(reason => ({
+                        label: `${reason} ${ActionToEmoji[name]}`,
+                        value: reason
+                    })))
+    
+                    .setPlaceholder(`Select a quick ${name === "ban" ? "ban" : "warning"} reason ... ${ActionToEmoji[name]}`)
+            ];
+    
+            rows.push(new ActionRowBuilder().addComponents(components));
+        }
     }
     
     rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(initial));
@@ -554,7 +562,7 @@ export const buildModerationToolbar = (user: User): ActionRowBuilder[] => {
  * 
  * @param options Moderation send options
  */
-export const sendModerationMessage = async ({ result, conversation, db, content, type, message }: ModerationSendOptions) => {
+export const sendModerationMessage = async ({ result, conversation, db, content, type }: ModerationSendOptions) => {
     /* Get the moderation channel. */
     const channel = await messageChannel(conversation.manager.bot, "moderation");
 
@@ -562,7 +570,7 @@ export const sendModerationMessage = async ({ result, conversation, db, content,
     const description: string = Utils.truncate(result.translation ? `(Translated from \`${result.translation.detected}\`)\n*\`\`\`\n${result.translation.content}\n\`\`\`*` : `\`\`\`\n${content}\n\`\`\``, 4096);
 
     /* Toolbar component rows */
-    const rows = buildModerationToolbar(conversation.user);
+    const rows = buildModerationToolbar(conversation.user, result);
 
     /* Send the moderation message to the channel. */
     const reply = new Response()

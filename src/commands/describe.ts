@@ -21,9 +21,9 @@ export default class ResetCommand extends Command {
 		, {
 			cooldown: {
                 Free: 3 * 60 * 1000,
-                Voter: 2 * 60 * 1000,
-                GuildPremium: 45 * 1000,
-                UserPremium: 30 * 1000
+                Voter: 1.75 * 60 * 1000,
+                GuildPremium: 50 * 1000,
+                UserPremium: 25 * 1000
             }
 		});
     }

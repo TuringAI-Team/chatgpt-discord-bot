@@ -20,7 +20,7 @@ export interface AutoModerationFilterData {
 }
 
 /* Which action to perform regarding the flagged content */
-type AutoModerationActionType = DatabaseUserInfractionType | "block" | "flag"
+export type AutoModerationActionType = DatabaseUserInfractionType | "block" | "flag"
 
 export type AutoModerationAction = Pick<DatabaseUserInfraction, "reason"> & {
     /* Which action to perform */

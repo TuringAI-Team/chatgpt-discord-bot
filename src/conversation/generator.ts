@@ -640,9 +640,9 @@ export class Generator {
 		let data: ResponseMessage | null = null!;
 		let queued: boolean = false;
 
-		/* Whether partial results should be shown, and often they should be updated */
+		/* Whether partial results should be shown, and how often they should be updated */
 		const partial: boolean = true;
-		const updateTime: number = this.bot.db.users.canUsePremiumFeatures(db) ? 2700 : 5200;
+		const updateTime: number = this.bot.db.users.canUsePremiumFeatures(db) ? 2500 : 5000;
 
 		let typingTimer: NodeJS.Timer | null = setInterval(async () => {
 			try {
@@ -673,9 +673,9 @@ export class Generator {
 
 				try {
 					reply = await message.reply(response.get() as MessageCreateOptions).catch(() => null!);
-					queued = false;
 				} catch (_) {
 					reply = await message.channel.send(response.get() as MessageCreateOptions).catch(() => null!)
+				} finally {
 					queued = false;
 				}
 
@@ -696,9 +696,8 @@ export class Generator {
 			data = raw;
 		};
 
-		/* If the user used the `Continue` button, remove it from the original message. */
+		/* Remove all components from the previous reply, if applicable. */
 		if (conversation.previous !== null && conversation.previous.reply !== null) {
-			/* Remove all components from the message. */
 			await conversation.previous.reply.edit({
 				components: []
 			}).catch(() => {});
@@ -734,7 +733,7 @@ export class Generator {
 			if (mentions !== "dm") reactToMessage(this.bot, message, "orb:1088545392351793232");
 			await message.channel.sendTyping();
 
-			/* Send the request to ChatGPT. */
+			/* Send the request to the selected chat model. */
 			final = await conversation.generate({
 				...options,
 				conversation, db,

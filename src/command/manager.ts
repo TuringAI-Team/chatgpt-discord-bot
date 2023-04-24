@@ -1,14 +1,13 @@
 import { ActionRowBuilder, AutocompleteInteraction, ComponentType, ButtonStyle, ButtonBuilder, ChatInputCommandInteraction, Collection, CommandInteraction, ContextMenuCommandInteraction, InteractionResponse, Message, SlashCommandBuilder, MessageContextMenuCommandInteraction } from "discord.js";
 import { RESTPostAPIApplicationCommandsJSONBody, Routes } from "discord-api-types/v10";
 import { DiscordAPIError, REST } from "@discordjs/rest";
-import Keyv from "@keyvhq/core";
 
 import { Command, CommandOptionChoice, CommandPrivateType, CommandSpecificCooldown } from "./command.js";
 import { DatabaseInfo, DatabaseUserInfraction } from "../db/managers/user.js";
 import { handleError } from "../util/moderation/error.js";
-import { Response, ResponseType } from "./response.js";
 import { Bot, BotStatus } from "../bot/bot.js";
 import { CooldownData } from "./cooldown.js";
+import { Response } from "./response.js";
 import { Utils } from "../util/utils.js";
 
 export class CommandManager {
@@ -262,7 +261,7 @@ export class CommandManager {
 		const unread: DatabaseUserInfraction[] = this.bot.db.users.unread(db.user);
 
 		/* If the user is banned from the bot, send a notice message. */
-		if (banned !== null && !command.options.always && command.options.private == undefined) return void await new Response(command.options.long ? ResponseType.Edit : ResponseType.Send)
+		if (banned !== null && !command.options.always && command.options.private == undefined) return void await new Response()
 			.addEmbed(builder => builder
 				.setTitle(`You have been banned **permanently** from the bot 😔`)
 				.addFields({

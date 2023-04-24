@@ -21,7 +21,6 @@
     "@dqbd/tiktoken": "^1.0.2",
     "@iamtraction/google-translate": "^2.0.1",
     "@keyv/redis": "^2.5.7",
-    "@keyvhq/core": "^1.6.26",
     "@napi-rs/canvas": "^0.1.39",
     "@supabase/storage-js": "^2.5.1",
     "@supabase/supabase-js": "^2.12.1",

@@ -10,7 +10,7 @@ export type CommandBuilder =
 	SlashCommandBuilder
 	| Omit<SlashCommandBuilder, "addSubcommand" | "addSubcommandGroup">
 	| SlashCommandSubcommandsOnlyBuilder
-	| ContextMenuCommandBuilder;
+	| ContextMenuCommandBuilder
 
 export type CommandInteraction = ChatInputCommandInteraction
 export type CommandOptionChoice<T = string | number> = APIApplicationCommandOptionChoice<T>

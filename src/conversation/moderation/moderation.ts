@@ -138,7 +138,7 @@ export const check = async ({ conversation, db, content, reply, message, source,
 
     /* Send the moderation message to the private channel. */
     if (flagged || blocked) await sendModerationMessage({
-        content, conversation, db, message,
+        content, conversation, db,
 
         type: source,
         result: data

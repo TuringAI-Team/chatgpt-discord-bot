@@ -1,7 +1,7 @@
 import { ActionRowBuilder, AttachmentBuilder, AutocompleteInteraction, ButtonBuilder, ButtonInteraction, ButtonStyle, ChannelType, ChatInputCommandInteraction, EmbedBuilder, EmbedField, InteractionReplyOptions, SlashCommandBuilder } from "discord.js";
 
 import { Command, CommandInteraction, CommandOptionChoice, CommandResponse } from "../command/command.js";
-import { Response, ResponseType } from "../command/response.js";
+import { Response } from "../command/response.js";
 
 import { DatabaseImage, ImageGenerationCheckData, ImageGenerationOptions, ImageGenerationPrompt, ImageGenerationResult, StableHordeGenerationResult } from "../image/types/image.js";
 import { StableHordeConfigModel, StableHordeModel, STABLE_HORDE_AVAILABLE_MODELS } from "../image/types/model.js";
@@ -602,7 +602,7 @@ export default class ImagineCommand extends Command {
 			cancelled = true;
 			await conversation.setImageGenerationStatus(false);
 
-			if (reason === "button") return await new Response(ResponseType.Edit)
+			if (reason === "button") return await new Response()
 					.addEmbed(builder => builder
 						.setDescription("Cancelled ❌")
 						.setColor("Red")
@@ -610,7 +610,7 @@ export default class ImagineCommand extends Command {
 				.send(interaction).catch(() => {});
 				
 			else if (reason === "timeOut") {
-				const response = new Response(ResponseType.Edit)
+				const response = new Response()
 					.addEmbed(builder => builder
 						.setDescription("This image generation request has been running for **several minutes**, and had to be cancelled automatically.\n*Try again later, when demand is lower*.")
 						.setColor("Red")
@@ -671,7 +671,7 @@ export default class ImagineCommand extends Command {
 			if (!usable) {
 				await conversation.setImageGenerationStatus(false);
 
-				return new Response(ResponseType.Edit)
+				return new Response()
 					.addEmbed(builder => builder
 						.setTitle("What's this? 🤨")
 						.setDescription("All of the generated images were deemed as **not safe for work**. 🔞\n_Try changing your prompt, or using the bot in a channel marked as **NSFW**_.")
@@ -691,7 +691,7 @@ export default class ImagineCommand extends Command {
 					result: { blocked: true, flagged: true, source: "image" }
 				});
 
-				return new Response(ResponseType.Edit)
+				return new Response()
 					.addEmbed(builder => builder
 						.setTitle("What's this? 🤨")
 						.setDescription("Your image prompt was flagged as inappropriate by **[Stable Horde](https://stablehorde.net)**.\n*If you continue to violate the usage policies, we may have to take moderative actions*.")
@@ -700,7 +700,7 @@ export default class ImagineCommand extends Command {
 			}
 
 			/* If the image would've been too expensive to run, show the user a notice message. */
-			if (error instanceof StableHordeAPIError && error.isTooExpensive()) return new Response(ResponseType.Edit)
+			if (error instanceof StableHordeAPIError && error.isTooExpensive()) return new Response()
 				.addEmbed(builder => builder
 					.setDescription("Your prompt & model settings are too expensive for **[Stable Horde](https://stablehorde.net)**.\n_Use fewer weights & steps, or consider upgrading to **Premium 🌟** to get rid of these restrictions - view `/premium info` for more_.")
 					.setColor("Red")
@@ -715,7 +715,7 @@ export default class ImagineCommand extends Command {
 				reply: false
 			});
 
-			return new Response(ResponseType.Edit)
+			return new Response()
 				.addEmbed(builder => builder
 					.setTitle("Uh-oh... 😬")
 					.setDescription("It seems like we encountered an error while trying to generate the images for you.\n*The developers have been notified*.")
@@ -855,7 +855,7 @@ export default class ImagineCommand extends Command {
 				});
 
 				/* If the message was flagged, send a warning message. */
-				if (moderation !== null && moderation.blocked) return new Response(ResponseType.Edit)
+				if (moderation !== null && moderation.blocked) return new Response()
 					.addEmbed(builder => builder
 						.setTitle("What's this? 🤨")
 						.setDescription(`Your image prompt was blocked by our filters.\nTry using the bot in a channel marked as **NSFW**, or using a different prompt.\n\n*If you violate the usage policies, we may have to take moderative actions; otherwise, you can ignore this notice*.`)
@@ -885,7 +885,7 @@ export default class ImagineCommand extends Command {
 				});
 
 				/* If the message was flagged, send a warning message. */
-				if (moderation !== null && moderation.blocked) return new Response(ResponseType.Edit)
+				if (moderation !== null && moderation.blocked) return new Response()
 					.addEmbed(builder => builder
 						.setTitle("What's this? 🤨")
 						.setDescription(`Your image prompt was blocked by our filters.\nTry using the bot in a channel marked as **NSFW**, or using a different prompt.\n\n*If you violate the usage policies, we may have to take moderative actions; otherwise, you can ignore this notice*.`)
@@ -919,7 +919,7 @@ export default class ImagineCommand extends Command {
 					"Enhancing the small details"
 				];
 
-				await new Response(ResponseType.Edit)
+				await new Response()
 					.addEmbed(builder => builder
 						.setTitle(`${Utils.random(randomPhrases)} **...** 🤖`)
 						.setColor("Aqua")
@@ -946,7 +946,7 @@ export default class ImagineCommand extends Command {
 					return null;
 				})(raw.response.message.content);
 
-				if (data === null) return new Response(ResponseType.Edit)
+				if (data === null) return new Response()
 					.addEmbed(builder => builder
 						.setTitle("Uh-oh...")
 						.setDescription(`It seems like **ChatGPT** didn't come up with a prompt for this request. 😕\n_If this issue persists, contact us on our **[support server](${Utils.supportInvite(this.bot)})**_.`)

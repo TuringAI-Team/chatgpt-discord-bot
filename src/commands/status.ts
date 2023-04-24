@@ -69,7 +69,7 @@ export default class StatusCommand extends Command {
 		/* Status of the bot */
 		const status: BotStatus = await this.bot.status();
 
-		const response: Response = new Response(ResponseType.Edit)
+		const response: Response = new Response()
 			.addEmbed(builder => builder
 				.setTitle("Status 🧐")
 				.setDescription("*Status of various services and the Discord bot*")

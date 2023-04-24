@@ -1,4 +1,4 @@
-import { ColorResolvable, EmbedBuilder } from "discord.js";
+import { ColorResolvable } from "discord.js";
 import { Response } from "../response.js";
 
 interface NoticeResponseOptions {
@@ -16,7 +16,7 @@ export class NoticeResponse extends Response {
     constructor(options: NoticeResponseOptions) {
         super();
 
-        this.addEmbed(_ => new EmbedBuilder()
+        this.addEmbed(builder => builder
             .setDescription(options.message) 
             .setFooter(options.footer ? { text: options.footer } : null)
             .setColor(options.color)

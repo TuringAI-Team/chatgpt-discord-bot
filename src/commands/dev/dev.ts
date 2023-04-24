@@ -101,7 +101,7 @@ export default class DeveloperCommand extends Command {
 			/* Get information about the Stable Horde API user. */
 			const user = await this.bot.image.findUser();
 
-			return new Response(ResponseType.Edit)
+			return new Response()
 				.addEmbed(builder => builder
 					.setTitle("Development Statistics")
 					.setColor(this.bot.branding.color)
@@ -167,7 +167,7 @@ export default class DeveloperCommand extends Command {
 		} else if (action === "flush") {
 			await this.bot.client.cluster.broadcastEval(((client: BotDiscordClient) => client.bot.db.users.workOnQueue()) as any);
 
-			return new Response(ResponseType.Edit)
+			return new Response()
 				.addEmbed(builder => builder
 					.setDescription("Done 🙏")
 					.setColor("Orange")
