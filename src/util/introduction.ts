@@ -160,8 +160,13 @@ export const buildIntroductionPage = async (bot: Bot, author: User, page: Introd
 
                 new ButtonBuilder()
                     .setURL(Utils.supportInvite(bot))
-                    .setLabel("Join the support server")
+                    .setLabel("Support server")
                     .setStyle(ButtonStyle.Link),
+
+                new ButtonBuilder()	
+					.setURL("https://github.com/f1nniboy/ampere")
+					.setStyle(ButtonStyle.Link)
+					.setLabel("GitHub"),
 
                 new ButtonBuilder()
                     .setEmoji("🗑️")

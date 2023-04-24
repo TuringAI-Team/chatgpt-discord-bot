@@ -66,8 +66,13 @@ export default class StatisticsCommand extends Command {
 
                 new ButtonBuilder()
                     .setURL(Utils.supportInvite(this.bot))
-                    .setLabel("Join the support server")
-                    .setStyle(ButtonStyle.Link)
+                    .setLabel("Support server")
+                    .setStyle(ButtonStyle.Link),
+
+				new ButtonBuilder()	
+					.setURL("https://github.com/f1nniboy/ampere")
+					.setStyle(ButtonStyle.Link)
+					.setLabel("GitHub")
 			);
 
         return new Response(ResponseType.Edit)
