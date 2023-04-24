@@ -212,7 +212,7 @@ export class CommandManager {
 				const duration: number = (command.options.cooldown as CommandSpecificCooldown).UserPremium;
 
 				response.addEmbed(builder => builder
-					.setDescription(`✨ By buying **[Premium](${Utils.shopURL()})**, the cool-down will be lowered to **${duration} seconds** only.\n**Premium** *also includes further benefits, view \`/premium info\` for more*. ✨`)
+					.setDescription(`✨ By buying **[Premium](${Utils.shopURL()})**, the cool-down will be lowered to **${Math.floor(duration / 1000)} seconds** only.\n**Premium** *also includes further benefits, view \`/premium info\` for more*. ✨`)
 					.setColor("Orange")
 				);
 			}
