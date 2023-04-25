@@ -104,6 +104,14 @@ export interface DatabaseSubscriptionKey {
     redeemed: DatabaseSubscriptionRedeemStatus | null;
 }
 
+export interface DatabaseSubscriptionHistoryKey {
+    /* The key that was redeemed */
+    key: string;
+
+    /* When this key was claimed */
+    claimedAt: number;
+}
+
 export interface DatabaseSubscription {
     /* Since when the user has an active subscription */
     since: number;
@@ -112,7 +120,7 @@ export interface DatabaseSubscription {
     expires: number;
 
     /* Which key was used to redeem this subscription */
-    keys: string[];
+    keys: DatabaseSubscriptionHistoryKey[];
 }
 
 export type DatabaseGuildSubscription = DatabaseSubscription & {
@@ -590,8 +598,8 @@ export class UserManager {
      */
     public async grantSubscription(user: DatabaseUser | DatabaseGuild, type: DatabaseSubscriptionType, expires: number, by?: Snowflake, key?: DatabaseSubscriptionKey): Promise<void> {
         /* All previously redeemed subscription keys */
-        const keys: string[] = user.subscription && user.subscription.keys ? user.subscription.keys : [];
-        if (key) keys.push(key.id);
+        const keys: DatabaseSubscriptionHistoryKey[] = user.subscription && user.subscription.keys ? user.subscription.keys : [];
+        if (key) keys.push({ key: key.id, claimedAt: Date.now() });
 
         const updated: DatabaseSubscription | DatabaseGuildSubscription = {
             since: user.subscription !== null ? user.subscription.since : Date.now(),

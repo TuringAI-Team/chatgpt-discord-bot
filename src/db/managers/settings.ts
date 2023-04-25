@@ -299,8 +299,8 @@ export class UserSettingsManager {
         return settings as UserSettings;
     }
 
-    public get<T extends string | number | boolean>(user: DatabaseUser, option: SettingsOption): T {
-        return user.settings[option.key] as T;
+    public get<T extends string | number | boolean>(user: DatabaseUser, option: SettingsOption | SettingsName): T {
+        return user.settings[typeof option === "string" ? option : option.key] as T;
     }
 
     public async apply(user: DatabaseUser, changes: Partial<Record<SettingsName, any>>): Promise<void> {

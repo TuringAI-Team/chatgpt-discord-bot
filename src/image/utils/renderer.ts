@@ -2,8 +2,8 @@ import { Canvas, Image } from "@napi-rs/canvas";
 import mergeImages from "merge-images";
 
 import { StableHordeGenerationResult, ImageGenerationOptions } from "../types/image.js";
-import { Bot } from "../../bot/bot.js";
 import { StorageImage } from "../../db/managers/storage.js";
+import { Bot } from "../../bot/bot.js";
 
 /**
  * Render the specified image generation results into a single image, to display in a Discord embed.
