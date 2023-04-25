@@ -300,7 +300,6 @@ export class UserSettingsManager {
     }
 
     public get<T extends string | number | boolean>(user: DatabaseUser, option: SettingsOption): T {
-        if (this.db.bot.dev) this.db.bot.logger.debug("Get setting ->", chalk.bold(user.id), "->", chalk.bold(option.key));
         return user.settings[option.key] as T;
     }
 

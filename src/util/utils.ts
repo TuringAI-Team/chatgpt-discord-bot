@@ -123,6 +123,6 @@ export abstract class Utils {
 	}
 
 	public static shopURL(): string {
-		return "https://ampere-bot.mysellix.io";
+		return "https://turingai.mysellix.io";
 	}
 }

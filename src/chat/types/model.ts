@@ -19,9 +19,6 @@ export enum ModelType {
     /* OpenAI's completion API */
     OpenAICompletion,
 
-    /** HuggingFace text inference */
-    HuggingFace,
-
     /** Replicate text inference */
     Replicate,
 

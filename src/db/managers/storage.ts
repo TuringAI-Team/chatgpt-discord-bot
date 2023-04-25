@@ -1,8 +1,8 @@
 import { Bucket, StorageClient, StorageError } from "@supabase/storage-js";
 
-import { DatabaseManager } from "../manager.js";
-import { GPTDatabaseError } from "../../error/gpt/db.js";
 import { ImageGenerationResult, StableHordeGenerationResult } from "../../image/types/image.js";
+import { GPTDatabaseError } from "../../error/gpt/db.js";
+import { DatabaseManager } from "../manager.js";
 
 type StorageBucketName = "images"
 

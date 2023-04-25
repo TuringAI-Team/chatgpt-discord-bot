@@ -1,11 +1,11 @@
 import { ActionRowBuilder, SlashCommandBuilder, StringSelectMenuBuilder, StringSelectMenuInteraction, InteractionUpdateOptions, ComponentEmojiResolvable, ChatInputCommandInteraction } from "discord.js";
 
-import { Command, CommandInteraction, CommandResponse } from "../command/command.js";
+import { Command, CommandResponse } from "../command/command.js";
 import { Response } from "../command/response.js";
 
-import { DatabaseGuild, DatabaseInfo, DatabaseUser } from "../db/managers/user.js";
 import { Conversation } from "../conversation/conversation.js";
 import { ChatTone, ChatTones } from "../conversation/tone.js";
+import { DatabaseInfo } from "../db/managers/user.js";
 import { Utils } from "../util/utils.js";
 import { Bot } from "../bot/bot.js";
 

@@ -5,7 +5,6 @@ import EventEmitter from "events";
 import chalk from "chalk";
 
 import { ConversationManager } from "../conversation/manager.js";
-import { HuggingFaceAPI } from "../chat/other/huggingface.js";
 import { ReplicateManager } from "../chat/other/replicate.js";
 import { StatusIncidentType } from "../util/statuspage.js";
 import { BotClusterManager, BotData } from "./manager.js";
@@ -112,9 +111,6 @@ export class Bot extends EventEmitter {
     /* Conversation & session manager, in charge of managing Microsoft sessions & conversations with the bot */
     public readonly conversation: ConversationManager;
 
-    /* HuggingFace API manager */
-    public readonly hf: HuggingFaceAPI;
-
     /* Nat Playground API manager */
     public readonly nat: NatAI;
 
@@ -168,7 +164,6 @@ export class Bot extends EventEmitter {
         this.logger = new ShardLogger(this);
         this.image = new ImageManager(this);
         this.db = new DatabaseManager(this);
-        this.hf = new HuggingFaceAPI(this);
         this.vote = new VoteManager(this);
         this.ai = new OpenAIManager(this);
         this.task = new TaskManager(this);

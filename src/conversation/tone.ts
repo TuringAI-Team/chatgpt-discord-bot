@@ -149,7 +149,7 @@ export class ReplicateChatTone extends ChatTone {
 export const ChatTones: ChatTone[] = [
     new ChatTone({
         name: "ChatGPT",
-        emoji: { display: "<:chatgpt:1087127347792191519>", fallback: "😐" },
+        emoji: { display: "<:chatgpt:1097849346164281475>", fallback: "😐" },
         description: "The usual ChatGPT",
         prompt: null,
         model: { temperature: 0.4 },
@@ -167,7 +167,7 @@ export const ChatTones: ChatTone[] = [
 
     new ChatTone({
         name: "GPT-3",
-        emoji: { display: "<:gpt3:1093254891625005106>", fallback: "🤖" },
+        emoji: { display: "<:gpt3:1097849352657047562>", fallback: "🤖" },
         description: "OpenAI's original GPT-3; less restrictions than ChatGPT",
         model: { temperature: 0.7, model: "text-davinci-003" },
         prompt: null,
@@ -176,7 +176,7 @@ export const ChatTones: ChatTone[] = [
 
     new ChatTone({
         name: "Claude",
-        emoji: { display: "<:anthropic:1087127650071478432>", fallback: "😲" },
+        emoji: { display: "<:anthropic:1097849339432423454>", fallback: "😲" },
         description: "Anthropic's Claude",
         prompt: "I am Claude, created by Anthropic, PBC. I am helpful, harmless, and honest using a technique called Constitutional AI.",
         model: { temperature: 0.8, model: "anthropic:claude-instant-v1" },
@@ -185,25 +185,16 @@ export const ChatTones: ChatTone[] = [
 
     new ChatTone({
         name: "Alpaca",
-        emoji: { display: "<:alpaca:1093584446990581910>", fallback: "🦙" },
+        emoji: { display: "<:alpaca:1097849324945289326>", fallback: "🦙" },
         description: "An instruction-following LLaMA model",
         prompt: "I am Alpaca, a fine-tuned model specialized in following instructions, based on LLaMA, which was created by Meta. I was created by Stanford researchers.",
         model: { temperature: 0.4, model: "replicate:alpaca-7b" },
         settings: { type: TonePromptType.Other, model: ModelType.Nat, contextTokens: 800, displayName: "Fine-tuned LLaMA model", generationTokens: 750 }
     }),
 
-    new ChatTone({
-        name: "Open Assistant",
-        emoji: { display: "<:openassistant:1087126423736696943>", fallback: "🤖" },
-        description: "WIP open-source alternative to ChatGPT",
-        prompt: null,
-        model: { model: "OpenAssistant/oasst-sft-1-pythia-12b" },
-        settings: { displayName: "Open Assistant - Pythia 12B", model: ModelType.HuggingFace, generationTokens: 500 }
-    }),
-
     new ReplicateChatTone({
         name: "Dolly",
-        emoji: { display: "<:dolly:1098573162469400586>", fallback: "🐑" },
+        emoji: { display: "<:dolly:1100453639396524122>", fallback: "🐑" },
         description: "Open source instruction-tuned large language model developed by Databricks",
         prompt: null,
         model: { model: "replicate/dolly-v2-12b" },
@@ -221,7 +212,7 @@ export const ChatTones: ChatTone[] = [
 
     new ReplicateChatTone({
         name: "StableLM",
-        emoji: { display: "<:stablelm:1098697565765111859>", fallback: "🦜" },
+        emoji: { display: "<:stablelm:1100453631746113597>", fallback: "🦜" },
         description: "7 billion parameter version of Stability AI's language model",
         prompt: null,
         model: { model: "stability-ai/stablelm-tuned-alpha-7b" },
@@ -237,7 +228,7 @@ export const ChatTones: ChatTone[] = [
 
     new ReplicateChatTone({
         name: "Vicuna",
-        emoji: { display: "<:vicuna:1099451341639786629>", fallback: "🦙" },
+        emoji: { display: "<:vicuna:1100453628256456765>", fallback: "🦙" },
         description: "An open-source chatbot impressing GPT-4 with 90% ChatGPT quality",
         prompt: null,
         model: { model: "replicate/vicuna-13b" },
@@ -265,7 +256,7 @@ export const ChatTones: ChatTone[] = [
 
     new ChatTone({
         name: "Clyde",
-        emoji: { display: "<a:clyde:1098628852076523540>", fallback: "🤖" },
+        emoji: { display: "<a:clyde:1100453636414378125>", fallback: "🤖" },
         description: "Recreation of Discord's AI chatbot",
         prompt: null,
         settings: { model: ModelType.Clyde, premium: true, cooldown: { time: 40 * 1000 } },
@@ -318,7 +309,7 @@ export const ChatTones: ChatTone[] = [
         settings: { }
     }),
 
-    new ChatTone({
+    /*new ChatTone({
         name: "Drunk",
         emoji: { fallback: "🍺" },
         description: "WOOOOOOOOO",

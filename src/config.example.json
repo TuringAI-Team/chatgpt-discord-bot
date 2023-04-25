@@ -4,12 +4,12 @@
         "id": "Discord bot ID",
 
 		"owner": [ "Your user ID" ],
-        "inviteCode": "Invite code to support server, e.g. ampere-chatgpt-1063957096225321075"
+        "inviteCode": "Invite code to support server, e.g. turing"
     },
 
     "branding": {
         "noticeColor": "This is the color used for most embeds",
-        "color": "#68BAC9"
+        "color": "#5765F2"
     },
 
     "noticeDev": "Whether developer info should be logged",

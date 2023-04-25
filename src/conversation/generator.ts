@@ -22,9 +22,8 @@ import { handleError } from "../util/moderation/error.js";
 import { GPTAPIError } from "../error/gpt/api.js";
 import { OtherPrompts } from "../chat/client.js";
 
-
 /* Emoji to indicate that a generation is running */
-const BOT_GENERATING_EMOJI: EmojiIdentifierResolvable = "<a:orb:1088545392351793232>"
+const BOT_GENERATING_EMOJI: string = "loading:1051419341914132554"
 
 /* Permissions required by the bot to function correctly */
 const BOT_REQUIRED_PERMISSIONS: { [key: string]: PermissionsString } = {
@@ -102,7 +101,7 @@ export class Generator {
 			response
 				.setContent(null)
 				.addEmbed(builder => builder
-					.setDescription(`${data.text} ${pending ? `**...** ${BOT_GENERATING_EMOJI}` : ""}`)
+					.setDescription(`${data.text} ${pending ? `**...** <a:${BOT_GENERATING_EMOJI}>` : ""}`)
 					.setColor("Orange")
 				);
 
@@ -113,7 +112,7 @@ export class Generator {
 		/* If the received data is a chat notice request, simply add the notice to the formatted message. */
 		if (data.type === "ChatNotice") {
 			embeds.push(new EmbedBuilder()
-				.setDescription(`${(data as ChatNoticeMessage).notice} ${pending ? `**...** ${BOT_GENERATING_EMOJI}` : ""}`)
+				.setDescription(`${(data as ChatNoticeMessage).notice} ${pending ? `**...** <a:${BOT_GENERATING_EMOJI}>` : ""}`)
 				.setColor("Orange")
 			);
 
@@ -182,7 +181,7 @@ export class Generator {
 		}
 
 		/* Generated response, with the pending indicator */
-		const formatted: string = `${content} **...** ${BOT_GENERATING_EMOJI}`;
+		const formatted: string = `${content} **...** <a:${BOT_GENERATING_EMOJI}>`;
 
 		/* If the message would be too long, send it as an attachment. */
 		if (formatted.length > 2000) {
@@ -190,7 +189,7 @@ export class Generator {
 				.setName("output.txt")
 			);
 
-			response.setContent(pending ? BOT_GENERATING_EMOJI.toString() : "_ _");
+			response.setContent(pending ? `<a:${BOT_GENERATING_EMOJI}>` : "_ _");
 		} else {
 			/* Finally, set the actual content of the message. */
 			response.setContent(pending ? formatted : content);
@@ -338,7 +337,7 @@ export class Generator {
 		else if (message.content.includes(`<@${this.bot.client.user!.id}>`)) return "inMessage";
 		
 		const roles: Role[] = Array.from(message.mentions.roles.values());
-		const mentionedRole: boolean = roles.find(r => !r.editable && ([ "ChatGPT", "Ampere" ].includes(r.name))) != undefined;
+		const mentionedRole: boolean = roles.find(r => !r.editable && ([ "ChatGPT", "Turing" ].includes(r.name))) != undefined;
 
 		if (mentionedRole) return "role";
 		return null;
@@ -730,7 +729,7 @@ export class Generator {
 
 		/* Start the generation process. */
 		try {
-			if (mentions !== "dm") reactToMessage(this.bot, message, "orb:1088545392351793232");
+			if (mentions !== "dm") reactToMessage(this.bot, message, BOT_GENERATING_EMOJI);
 			await message.channel.sendTyping();
 
 			/* Send the request to the selected chat model. */
@@ -812,7 +811,7 @@ export class Generator {
 			if (typingTimer !== null) clearInterval(typingTimer);
 			clearInterval(updateTimer);
 
-			if (mentions !== "dm") await removeReaction(this.bot, message, "orb:1088545392351793232");
+			if (mentions !== "dm") await removeReaction(this.bot, message, BOT_GENERATING_EMOJI);
 		}
 
 		/* Try to send the response & generate a nice embed for the message. */

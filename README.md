@@ -1,4 +1,4 @@
-<h1 align="center"><b>Ampere</b> <img src="https://cdn.discordapp.com/attachments/964997165825024080/1099787508356763669/rwSL1fL.png" width="24"></h1>
+<h1 align="center"><b>Turing</b> <img src="https://cdn.discordapp.com/attachments/1061155385563676772/1100473069279133878/3S2ykOT.png" width="28"></h1>
 <p align="center"><i>The ultimate AI-powered Discord bot</i></p>
 
 

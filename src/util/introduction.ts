@@ -113,7 +113,6 @@ export const IntroductionPages: IntroductionPage[] = [
 
         build: (builder, { bot }) => builder
             .setDescription(`All of this wouldn't be possible without our **Premium** supporters. **Premium ✨** gives you additional benefits and incredibly useful features for the bot.`)
-            .setImage("https://media.discordapp.net/attachments/1096768933983424572/1096815577672208404/EjHuYDD.png")
             .addFields([
                 {
                     name: "Longer messages 🆙",
@@ -164,7 +163,8 @@ export const buildIntroductionPage = async (bot: Bot, author: User, page: Introd
                     .setStyle(ButtonStyle.Link),
 
                 new ButtonBuilder()	
-					.setURL("https://github.com/f1nniboy/ampere")
+					.setURL("https://github.com/TuringAI-Team/chatgpt-discord-bot")
+                    .setEmoji("<:github:1097828013871222865>")
 					.setStyle(ButtonStyle.Link)
 					.setLabel("GitHub"),
 

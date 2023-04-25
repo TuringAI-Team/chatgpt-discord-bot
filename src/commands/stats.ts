@@ -33,7 +33,7 @@ export default class StatisticsCommand extends Command {
 
 			{
 				key: "Users 🫂",
-				value: `${this.bot.statistics.discordUsers} <:discord:1074420172032589914> — ${this.bot.statistics.databaseUsers} <:ampere_round_bolt:1095676185645678612>`
+				value: `${this.bot.statistics.discordUsers} <:discord:1097815072602067016> — ${this.bot.statistics.databaseUsers} <:chatgpt_blurple:1081530335306727545>`
 			},
 
 			{
@@ -70,7 +70,8 @@ export default class StatisticsCommand extends Command {
                     .setStyle(ButtonStyle.Link),
 
 				new ButtonBuilder()	
-					.setURL("https://github.com/f1nniboy/ampere")
+					.setURL("https://github.com/TuringAI-Team/chatgpt-discord-bot")
+					.setEmoji("<:github:1097828013871222865>")
 					.setStyle(ButtonStyle.Link)
 					.setLabel("GitHub")
 			);

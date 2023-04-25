@@ -28,7 +28,7 @@ export interface BotTask {
 const BOT_TASKS: BotTask[] = [
     {
         name: "Post top.gg stats",
-        interval: 5 * 60 * 1000,
+        interval: 1 * 60 * 60 * 1000,
 
         condition: bot => bot.data.id === 0 && !bot.dev,
         callback: async bot => await bot.vote.postStatistics()
@@ -44,7 +44,7 @@ const BOT_TASKS: BotTask[] = [
     {
         name: "Get bot statistics",
         type: BotTaskType.RunOnStart,
-        interval: 5 * 60 * 1000,
+        interval: 15 * 60 * 1000,
 
         callback: async bot => {
             /* Total guild count */

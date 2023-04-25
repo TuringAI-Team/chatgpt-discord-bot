@@ -110,7 +110,6 @@ export default class PremiumCommand extends Command {
 			return new Response()
 				.addEmbed(builder => builder
 					.setDescription(`You can get a **Premium** subscription key **[here](${Utils.shopURL()})**.\n*Once you got your subscription key, run \`/premium redeem\` with the received **key**.*`)
-					.setImage("https://media.discordapp.net/attachments/1096768933983424572/1096815577672208404/EjHuYDD.png")
 					.setColor("Orange")
 				);
 
