@@ -5,6 +5,7 @@
   "scripts": {
     "start": "npm run build && npm run run",
     "run": "node --no-warnings build/main.js",
+    "git": "git fetch && git stash && git pull",
     "build": "tsc"
   },
   "devDependencies": {

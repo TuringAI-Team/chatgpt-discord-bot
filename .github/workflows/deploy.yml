@@ -1,0 +1,29 @@
+name: Deploy to VPS via SSH
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout code from the main branch
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # Connect to remote server via SSH to restart the bot using PM2
+      - name: Deploy bot
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          password: ${{ secrets.PASSWORD }}
+          script: |
+            cd /home/loick/github/chatgpt-bot
+            npm run git
+            npm i
+            npm run build
+            pm2 reload ChatGPT
