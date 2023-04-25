@@ -550,6 +550,7 @@ export class Generator {
 
 		/* Remaining cool-down time */
 		const remaining: number = (conversation.cooldown.state.startedAt! + conversation.cooldown.state.expiresIn!) - Date.now();
+		if (conversation.cooldown.active) await this.bot.db.users.incrementInteractions(db.user, "cooldown_messages");
 
 		/* If the command is on cool-down, don't run the request. */
 		if (conversation.cooldown.active && remaining > Math.max(conversation.cooldown.state.expiresIn! / 2, 10 * 1000)) {

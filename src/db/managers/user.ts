@@ -191,6 +191,7 @@ export interface DatabaseInteractionStatistics {
     image_descriptions: number;
     resets: number;
     votes: number;
+    cooldown_messages: number;
 }
 
 export interface DatabaseInfo {
@@ -321,7 +322,7 @@ export class UserManager {
             created: Date.now(),
             infractions: [],
             interactions: {
-                commands: 0, messages: 0, images: 0, resets: 0, translations: 0, votes: 0, image_descriptions: 0
+                commands: 0, messages: 0, images: 0, resets: 0, translations: 0, votes: 0, image_descriptions: 0, cooldown_messages: 0
             },
             moderator: this.db.bot.app.config.discord.owner.includes(user.id),
             subscription: null,
@@ -332,7 +333,7 @@ export class UserManager {
     }
 
     private async rawToUser(raw: RawDatabaseUser): Promise<DatabaseUser> {
-        const keys: (keyof DatabaseInteractionStatistics)[] = [ "commands", "images", "messages", "resets", "translations", "votes", "image_descriptions" ];
+        const keys: (keyof DatabaseInteractionStatistics)[] = [ "commands", "images", "messages", "resets", "translations", "votes", "image_descriptions", "cooldown_messages" ];
         const interactions: Partial<DatabaseInteractionStatistics> = {};
 
         for (const key of keys) {
@@ -529,9 +530,9 @@ export class UserManager {
      * Increment the user's amount of interactions with the bot.
      * @param user User to increment interaction count for
      */
-    public async incrementInteractions(user: DatabaseUser, key: keyof DatabaseInteractionStatistics): Promise<void> {
+    public async incrementInteractions(user: DatabaseUser, key: keyof DatabaseInteractionStatistics, increment: number = 1): Promise<void> {
         const updated: DatabaseInteractionStatistics = user.interactions;
-        updated[key] = updated[key] + 1;
+        updated[key] = updated[key] + increment;
 
         return this.updateUser(user, { interactions: updated });
     }
@@ -662,7 +663,6 @@ export class UserManager {
 
         /* Add all of the keys to the queue & cache. */
         await Promise.all(keys.map(key => this.updateSubscriptionKey(key.id, key)));
-
         return keys;
     }
 
