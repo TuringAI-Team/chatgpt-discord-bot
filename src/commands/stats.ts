@@ -73,7 +73,13 @@ export default class StatisticsCommand extends Command {
 					.setURL("https://github.com/TuringAI-Team/chatgpt-discord-bot")
 					.setEmoji("<:github:1097828013871222865>")
 					.setStyle(ButtonStyle.Link)
-					.setLabel("GitHub")
+					.setLabel("GitHub"),
+
+				new ButtonBuilder()	
+					.setURL("https://bit.ly/chatgpt-whatsapp")
+                    .setEmoji("<:WhatsApp:1079831241601323078>")
+					.setStyle(ButtonStyle.Link)
+					.setLabel("WhatsApp bot"),
 			);
 
         return new Response(ResponseType.Edit)

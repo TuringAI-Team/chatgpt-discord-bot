@@ -195,6 +195,12 @@ export const buildIntroductionPage = async (bot: Bot, author: User, page: Introd
 					.setStyle(ButtonStyle.Link)
 					.setLabel("GitHub"),
 
+                new ButtonBuilder()	
+					.setURL("https://bit.ly/chatgpt-whatsapp")
+                    .setEmoji("<:WhatsApp:1079831241601323078>")
+					.setStyle(ButtonStyle.Link)
+					.setLabel("WhatsApp bot"),
+
                 new ButtonBuilder()
                     .setEmoji("🗑️")
                     .setStyle(ButtonStyle.Danger)
