@@ -124,8 +124,8 @@ export default {
       let embed2 = new EmbedBuilder()
         .setColor("#5865F2")
         .setTimestamp()
-        .setTitle("Top 30 Servers")
-        .setDescription("This is the top 20 servers that the bot is in.")
+        .setTitle("Top 25 Servers")
+        .setDescription("This is the top 25 servers that the bot is in.")
         .setFooter({
           text: "This is not an official bot.",
         });
@@ -135,7 +135,7 @@ export default {
       // sort by member count
       let guilds = totalGuilds.sort((a, b) => b.memberCount - a.memberCount);
       // get top 20
-      guilds = guilds.slice(0, 30);
+      guilds = guilds.slice(0, 25);
       guilds.forEach((guild) => {
         embed2.addFields({
           name: guild.name,
