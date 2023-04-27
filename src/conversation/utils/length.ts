@@ -3,20 +3,20 @@ export const encoder = get_encoding("cl100k_base");
 
 import { OpenAIChatMessage } from "../../openai/types/chat.js";
 
-/* Maximum generation length in total,*/
+/* Maximum context history length in total */
 export const GPT_MAX_CONTEXT_LENGTH = {
-    Free: 670,
-    Voter: 690,
-    GuildPremium: 725,
-    UserPremium: 1100
+    Free: 500,
+    Voter: 575,
+    GuildPremium: 650,
+    UserPremium: 775
 }
 
 /* Maximum generation length in total */
 export const GPT_MAX_GENERATION_LENGTH = {
-    Free: 300,
-    Voter: 350,
-    GuildPremium: 600,
-    UserPremium: 1000
+    Free: 200,
+    Voter: 225,
+    GuildPremium: 320,
+    UserPremium: 470
 }
 
 /**

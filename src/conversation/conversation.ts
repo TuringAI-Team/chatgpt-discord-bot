@@ -60,7 +60,7 @@ export const CONVERSATION_COOLDOWN_MODIFIER = {
 }
 
 export const CONVERSATION_DEFAULT_COOLDOWN: CooldownModifier = {
-	time: 110 * 1000
+	time: 150 * 1000
 }
 
 export declare interface Conversation {
