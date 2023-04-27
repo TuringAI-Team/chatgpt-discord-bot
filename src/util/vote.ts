@@ -54,7 +54,7 @@ export class VoteManager {
     }
 
     private botPath(path: "check" | "stats"): VoteAPIPath {
-        return `bots/${this.bot.client.user!.id}/${path}`;
+        return `bots/${this.bot.app.config.discord.id}/${path}`;
     }
 
     private async request<T>(path: VoteAPIPath, method: "GET" | "POST" | "DELETE", data?: { [key: string]: any }): Promise<T> {
