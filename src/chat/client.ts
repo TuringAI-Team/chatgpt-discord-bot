@@ -259,7 +259,7 @@ export class ChatClient {
         const initial: string = options.conversation.session.client.initialPrompt(options.conversation, options, type, data);
 
         const tags: { [key: string]: (interaction: ChatInteraction | null) => string } = {
-            Assistant: () => `${type === "Custom" ? "Assistant" : type}:`,
+            Assistant: () => "Assistant:",
             User: () => `${options.conversation.user.username}:`
         };
 
