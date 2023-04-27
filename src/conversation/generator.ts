@@ -674,10 +674,10 @@ export class Generator {
 				try {
 					reply = await message.reply(response.get() as MessageCreateOptions).catch(() => null!);
 				} catch (_) {
-					reply = await message.channel.send(response.get() as MessageCreateOptions).catch(() => null!)
-				} finally {
-					queued = false;
+					reply = await message.channel.send(response.get() as MessageCreateOptions).catch(() => null!);
 				}
+
+				queued = false;
 
 			} else if (reply !== null && !queued && (partial || (!partial && (data.type !== "Chat" && data.type !== "ChatNotice")))) {	
 				try {
@@ -685,6 +685,8 @@ export class Generator {
 					if (reply !== null && response !== null) await reply.edit(response.get() as MessageEditOptions);
 
 				} catch (error) {
+					console.log(error)
+
 					reply = null!;
 					queued = false;
 				}

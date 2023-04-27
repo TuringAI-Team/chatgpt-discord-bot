@@ -15,6 +15,13 @@ export default class StatisticsCommand extends Command {
     }
 
     public async run(interaction: CommandInteraction): CommandResponse {
+		if (!this.bot.started) return new Response()
+			.addEmbed(builder => builder
+				.setDescription("The bot is currently reloading **...**")
+				.setColor("Orange")
+			)
+			.setEphemeral(true);
+
 		const fields = [
 			{
 				key: "Servers 🖥️",
