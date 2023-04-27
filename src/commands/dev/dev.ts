@@ -11,12 +11,6 @@ import { Bot, BotDiscordClient } from "../../bot/bot.js";
 
 export default class DeveloperCommand extends Command {
 	constructor(bot: Bot) {
-		const clusters: string[] = [];
-
-		for (let i = 0; i < getInfo().CLUSTER_COUNT; i++) {
-			clusters.push(`#${i + 1}`);
-		}
-
 		super(bot, new SlashCommandBuilder()
 			.setName("dev")
 			.setDescription("View developer bot statistics")
@@ -31,14 +25,13 @@ export default class DeveloperCommand extends Command {
 			.addSubcommand(builder => builder
 				.setName("restart")
 				.setDescription("Restart a specific or this cluster")
-				.addStringOption(builder => builder
+				.addIntegerOption(builder => builder
 					.setName("which")
 					.setDescription("Which cluster to restart")
 					.setRequired(false)
-					.setChoices(...clusters.map((cluster, index) => ({
-						name: cluster,
-						value: index.toString()
-					}))))
+					.setMaxValue(getInfo().CLUSTER_COUNT)
+					.setMinValue(1)
+				)
 			)
 		, { long: true, private: CommandPrivateType.ModeratorOnly });
 	}
@@ -147,8 +140,8 @@ export default class DeveloperCommand extends Command {
 
 		/* Trigger a specific or this cluster */
 		} else if (action === "restart") {
-			const which: string = interaction.options.getString("which") ?? getInfo().CLUSTER.toString();
-			const index: number = parseInt(which);
+			const which: number = interaction.options.getInteger("which") ?? getInfo().CLUSTER + 1;
+			const index: number = which - 1;
 
 			await interaction.editReply(new Response()
 				.addEmbed(builder => builder
