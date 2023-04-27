@@ -3,7 +3,7 @@ name: Deploy to VPS via SSH
 on:
   push:
     branches:
-      - main
+      - merge
 
 jobs:
   deploy:
