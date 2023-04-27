@@ -348,7 +348,7 @@ export class UserManager {
             moderator: raw.moderator,
             subscription: raw.subscription ?? null,
             tester: raw.tester,
-            settings: raw.settings,
+            settings: raw.settings ?? this.db.settings.template(),
             voted: raw.voted
         };
     
