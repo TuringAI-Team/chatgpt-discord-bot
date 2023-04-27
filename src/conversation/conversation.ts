@@ -54,13 +54,13 @@ const CONVERSATION_ERROR_RETRY_MAX_TRIES: number = 10
 /* Usual cool-down for interactions in the conversation */
 export const CONVERSATION_COOLDOWN_MODIFIER = {
 	Free: 1,
-	Voter: 0.6,
+	Voter: 0.5,
 	GuildPremium: 0.4,
-	UserPremium: 0.15
+	UserPremium: 0.1
 }
 
 export const CONVERSATION_DEFAULT_COOLDOWN: CooldownModifier = {
-	time: 75 * 1000
+	time: 110 * 1000
 }
 
 export declare interface Conversation {
