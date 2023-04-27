@@ -337,7 +337,7 @@ export class UserManager {
         const interactions: Partial<DatabaseInteractionStatistics> = {};
 
         for (const key of keys) {
-            interactions[key] = raw.interactions[key] ?? 0;
+            interactions[key] = raw.interactions ? raw.interactions[key] ?? 0 : 0;
         }
 
         const db: DatabaseUser =  {
