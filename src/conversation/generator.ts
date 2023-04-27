@@ -641,7 +641,7 @@ export class Generator {
 		let queued: boolean = false;
 
 		/* Whether partial results should be shown, and how often they should be updated */
-		const partial: boolean = true;
+		const partial: boolean = false;
 		const updateTime: number = this.bot.db.users.canUsePremiumFeatures(db) ? 2500 : 5000;
 
 		let typingTimer: NodeJS.Timer | null = setInterval(async () => {
@@ -685,8 +685,6 @@ export class Generator {
 					if (reply !== null && response !== null) await reply.edit(response.get() as MessageEditOptions);
 
 				} catch (error) {
-					console.log(error)
-
 					reply = null!;
 					queued = false;
 				}
