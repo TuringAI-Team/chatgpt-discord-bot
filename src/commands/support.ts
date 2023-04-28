@@ -21,11 +21,6 @@ export default class SupportCommand extends Command {
 			},
 
 			{
-				key: "Ask the owner 🫂",
-				value: `Don't be shy; if you have questions about the bot, you can ask **\`f1nniboy#2806\`** directly in his DMs.`
-			},
-
-			{
 				key: "Donations 💰",
 				value: `The bot is constantly growing; ***and so are the costs***. In order to keep the bot running for free, we would appreciate a small *donation* in the form of a [**Premium** subscription](${Utils.shopURL()})! 💕`
 			}
@@ -33,7 +28,7 @@ export default class SupportCommand extends Command {
 
 		const builder: EmbedBuilder = new EmbedBuilder()
 			.setTitle("Support")
-			.setDescription("*You have questions about the bot or want to appeal your ban?*")
+			.setDescription("*You have questions about the bot or want to give feedback?*")
 			.setColor(this.bot.branding.color)
 
 			.addFields(fields.map(({ key, value }) => ({
