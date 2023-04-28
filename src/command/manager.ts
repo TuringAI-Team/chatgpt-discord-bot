@@ -177,6 +177,12 @@ export class CommandManager {
 		const command: Command | null = this.commands.get(interaction.commandName) ?? null;
 		if (command === null) return;
 
+		if (command.options.waitForStart && !this.bot.started) return void await new Response()
+			.addEmbed(builder => builder
+				.setTitle("The bot is currently reloading**...** ⏳")
+				.setColor("Orange")
+			).send(interaction);
+
 		/* Current status of the bot */
 		const status: BotStatus = await this.bot.status();
 
@@ -248,7 +254,7 @@ export class CommandManager {
 					).setEphemeral(true)
 				.send(interaction);
 			}
-		} 
+		}
 
 		/* Defer the message, in case the command may execute for more than 3 seconds. */
 		if (command.options.long) try {
