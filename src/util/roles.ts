@@ -5,7 +5,7 @@ import { Bot } from "../bot/bot.js";
 import chalk from "chalk";
 
 /* ID of the Premium role */
-export const PREMIUM_ROLE_ID: Snowflake = "1085376863670644756"
+export const PREMIUM_ROLE_ID: Snowflake = "1061660141533007974"
 
 enum PremiumRoleStatus {
     /* The user is not a Premium meber */
