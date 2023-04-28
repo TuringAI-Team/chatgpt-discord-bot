@@ -51,7 +51,7 @@ interface BaseSettingsOptionData<T = any> {
 
 type SettingOptionsData<T = any> = Omit<BaseSettingsOptionData, "type">
 
-export abstract class SettingsOption<T = string | number | boolean, U extends BaseSettingsOptionData = BaseSettingsOptionData> {
+export abstract class SettingsOption<T = string | number | boolean, U extends BaseSettingsOptionData<T> = BaseSettingsOptionData<T>> {
     public readonly data: U;
 
     constructor(data: U) {
@@ -209,7 +209,7 @@ export class ImagineModelAutocompleteSettingsOption extends AutocompleteChoiceSe
 }
 
 export type GetSettingsTypeParameter<T> = T extends SettingsOption<infer R> ? R : never
-export type SettingsName = "image_count" | "image_steps" | "image_model" | "image_size" | "language"
+export type SettingsName = "image_count" | "image_steps" | "image_model" | "image_size" | "partial_messages" | "language"
 
 const SETTINGS_OPTION_LANGUAGES: string[] = [
     "en-US", "es-ES", "fr-FR", "de-DE", "it-IT", "ja-JP", "ko-KR", "pt-BR", "ru-RU", "zh-CN", "zh-TW"
@@ -248,6 +248,14 @@ export const SettingOptions: Record<SettingsName, SettingsOption> = {
         emoji: { fallback: "📸" },
         description: "How big the generated images should be",
         default: "512:512:false"
+    }),
+
+    partial_messages: new BooleanSettingsOption({
+        key: "partial_messages",
+        name: "Partial messages",
+        emoji: { fallback: "⏳" },
+        description: "Whether messages by the bot should be shown while they're being generated",
+        default: false
     }),
 
     language: new ChoiceSettingsOption({

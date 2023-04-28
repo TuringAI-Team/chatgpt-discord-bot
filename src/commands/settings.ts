@@ -41,6 +41,7 @@ export default class SettingsCommand extends Command {
 			});
 		}
 
+		if (Object.keys(changes).length === 0) embed.setFooter({ text: "Change the settings by specifying changes you want to make when running /settings" })
 		return new Response().addEmbed(embed);
 	}
 
