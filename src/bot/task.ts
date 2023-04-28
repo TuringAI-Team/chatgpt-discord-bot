@@ -101,7 +101,11 @@ export class TaskManager {
      */
     public setup(): void {
         BOT_TASKS.forEach(task => {
-            if (task.type === BotTaskType.RunOnStart) this.bot.on("done", () => this.executeTask(task));
+            if (task.type === BotTaskType.RunOnStart) {
+                if (!this.bot.started) this.bot.on("done", () => this.executeTask(task));
+                else this.executeTask(task);
+            }
+            
             this.prepareTask(task);
         });
     }
