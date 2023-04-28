@@ -223,7 +223,7 @@ export default class ImagineCommand extends Command {
 
 				.addSubcommand(builder => builder
 					.setName("ai")
-					.setDescription("Let ChatGPT improve your prompt & determine which model to use")
+					.setDescription("Let ChatGPT magically improve your prompt & pick a model")
 					.addStringOption(builder => builder
 						.setName("prompt")
 						.setDescription("Watch ChatGPT do the rest... 🤖")

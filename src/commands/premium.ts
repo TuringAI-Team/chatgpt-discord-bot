@@ -1,4 +1,5 @@
 import { ChatInputCommandInteraction, EmbedBuilder, GuildMember, PermissionsBitField, SlashCommandBuilder, User } from "discord.js";
+import dayjs from "dayjs";
 
 import { DatabaseSubscriptionKey, DatabaseSubscription, DatabaseGuildSubscription, DatabaseInfo } from "../db/managers/user.js";
 import { Command, CommandResponse } from "../command/command.js";
@@ -6,7 +7,6 @@ import { Response } from "../command/response.js";
 import { PremiumRole } from "../util/roles.js";
 import { Utils } from "../util/utils.js";
 import { Bot } from "../bot/bot.js";
-import dayjs from "dayjs";
 
 export default class PremiumCommand extends Command {
     constructor(bot: Bot) {
@@ -54,7 +54,7 @@ export default class PremiumCommand extends Command {
 
 				{
 					name: "GPT-4 access 🤖",
-					value: `Be part of the few people that have access to **GPT-4**  - _while still being **cheaper** than **ChatGPT Plus**_.`
+					value: `Be part of the few people that have access to **GPT-4** - _while still being **cheaper** than **ChatGPT Plus**_.`
 				},
 	
 				{
@@ -83,10 +83,10 @@ export default class PremiumCommand extends Command {
 
 			if (guild && guild.subscription !== null) {
 				/* Fetch the user, who redeemed the Premium key. */
-				const owner: User = await this.bot.client.users.fetch(guild.subscription.by);
+				const owner: User | null = guild.subscription.by ? await this.bot.client.users.fetch(guild.subscription.by) : null;
 
 				response.addEmbed(builder => builder
-					.setDescription(`This server has had a **Premium** subscription since <t:${Math.floor(guild.subscription!.since / 1000)}:R>, redeemed by **${owner.tag}** 🙏\n*The subscription will expire <t:${Math.floor(guild.subscription!.expires / 1000)}:R>.*`)
+					.setDescription(`This server has had a **Premium** subscription since <t:${Math.floor(guild.subscription!.since / 1000)}:R>${owner !== null ? `, redeemed by **${owner.tag}**` : ""} 🙏\n*The subscription will expire <t:${Math.floor(guild.subscription!.expires / 1000)}:R>.*`)
 					.setColor("Purple")
 				);
 			}
@@ -136,7 +136,7 @@ export default class PremiumCommand extends Command {
 				.setEphemeral(true);
 
 			/* If the command wasn't executed on a guild, show an error. */
-			if (!guild) return new Response()
+			if ((!guild && db.type === "guild")) return new Response()
 				.addEmbed(builder => builder
 					.setDescription("You can only redeem **Premium** server keys on guilds ❌")
 					.setColor("Red")
@@ -145,14 +145,14 @@ export default class PremiumCommand extends Command {
 
 			/* Either the current guild or user subscription */
 			const subscription: DatabaseGuildSubscription | DatabaseSubscription | null =
-				(db.type === "user" ? user.subscription : guild.subscription);
+				(db.type === "user" ? user.subscription : guild!.subscription);
 
 			/* Whether the subscription can be "ovewritten" */
 			const overwrite: boolean = subscription !== null ?
 				subscription!.expires - Date.now() < 7 * 24 * 60 * 60 * 1000
 				: false;
 			
-			if (((guild.subscription !== null && db.type === "guild") || (user.subscription !== null && db.type === "user")) && !overwrite) return new Response()
+			if (((guild!.subscription !== null && db.type === "guild") || (user.subscription !== null && db.type === "user")) && !overwrite) return new Response()
 				.addEmbed(builder => builder
 					.setDescription(db.type === "user" ? "You already have a **Premium** subscription 🎉" : "This server already has a **Premium** subscription 🎉")
 					.setFooter({ text: "You can redeem a new subscription key, when the subscription expires in less than 7 days." })
@@ -175,7 +175,7 @@ export default class PremiumCommand extends Command {
 
 			/* Try to redeem the key for the user. */
 			if (db.type === "user") await this.bot.db.users.redeemSubscriptionKey(user, db);
-			else if (db.type === "guild") await this.bot.db.users.redeemSubscriptionKey(guild, db, interaction.user.id);
+			else if (db.type === "guild") await this.bot.db.users.redeemSubscriptionKey(guild!, db, interaction.user.id);
 
 			return new Response()
 				.addEmbed(builder => builder

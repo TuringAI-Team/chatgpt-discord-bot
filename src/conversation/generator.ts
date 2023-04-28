@@ -672,12 +672,15 @@ export class Generator {
 				}
 
 				try {
-					reply = await message.reply(response.get() as MessageCreateOptions).catch(() => null!);
+					reply = await message.reply(response.get() as MessageCreateOptions);
 				} catch (_) {
-					reply = await message.channel.send(response.get() as MessageCreateOptions).catch(() => null!);
+					try {
+						reply = await message.channel.send(response.get() as MessageCreateOptions);
+					} catch (_) {}
+				} finally {
+					reply = null!;
+					queued = false;
 				}
-
-				queued = false;
 
 			} else if (reply !== null && !queued && (partial || (!partial && (data.type !== "Chat" && data.type !== "ChatNotice")))) {	
 				try {

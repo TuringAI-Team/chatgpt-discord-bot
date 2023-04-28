@@ -344,10 +344,10 @@ export class UserManager {
             created: Date.parse(raw.created),
             id: raw.id,
             interactions: interactions as DatabaseInteractionStatistics,
-            infractions: raw.infractions,
-            moderator: raw.moderator,
+            infractions: raw.infractions ?? [],
+            moderator: raw.moderator ?? false,
             subscription: raw.subscription ?? null,
-            tester: raw.tester,
+            tester: raw.tester ?? UserTestingGroup.None,
             settings: raw.settings ?? this.db.settings.template(),
             voted: raw.voted
         };

@@ -12,11 +12,11 @@ interface DocumentationCommandOptions {
 	page: IntroductionPage;
 }
 
-export default class DocumentationCommand extends Command {
+export default class HelpCommand extends Command {
 	constructor(bot: Bot) {
 		super(bot, new SlashCommandBuilder()
-			.setName("docs")
-			.setDescription("Look at various documentation & information about the bot")
+			.setName("help")
+			.setDescription("Look at various help information for the bot")
 			.addIntegerOption(builder => builder
 				.setName("page")
 				.setDescription("Which page to view")

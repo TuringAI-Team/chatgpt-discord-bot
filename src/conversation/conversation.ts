@@ -508,7 +508,7 @@ export class Conversation {
 			}
 		}
 
-		if (additional[0]) additional[0].setDescription(`${additional[0].data.description!}\n\nYou can also reduce your cool-down for **completely free**, by simply voting for us on **[top.gg](https://top.gg/bot/1064152790181609532)**. 📩\nAfter voting, run \`/vote\` and press the \`Check your vote\` button.`)
+		if (additional[0]) additional[0].setDescription(`${additional[0].data.description!}\n\nYou can also reduce your cool-down for **completely free**, by simply voting for us on **[top.gg](https://top.gg/en/bot/${this.manager.bot.client.user!.id}/vote)**. 📩\nAfter voting, run \`/vote\` and press the **Check your vote** button.`)
 
 		return [
 			new EmbedBuilder()

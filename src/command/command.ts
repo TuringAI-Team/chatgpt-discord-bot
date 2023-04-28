@@ -44,6 +44,9 @@ export interface CommandOptions {
 	/* Whether the command works when someone is banned from the bot */
 	always?: boolean;
 
+	/* Whether the command requires the bot to be fully started */
+	waitForStart?: boolean;
+
 	/* Whether the command should be restricted to the development server */
 	private?: CommandPrivateType;
 }
@@ -57,7 +60,7 @@ export class Command<U extends ContextMenuCommandInteraction | ChatInputCommandI
     /* Other command options */
     public readonly options: T;
 
-	constructor(bot: Bot, builder: CommandBuilder, options?: T, defaultOptions: T = { long: false, cooldown: null, private: undefined } as any) {
+	constructor(bot: Bot, builder: CommandBuilder, options?: T, defaultOptions: T = { long: false, cooldown: null, private: undefined, waitForStart: false } as any) {
 		this.bot = bot;
 		this.builder = builder;
 

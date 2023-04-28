@@ -49,12 +49,12 @@ export const IntroductionPages: IntroductionPage[] = [
 
                 {
                     name: "All AIs in one place 🤖",
-                    value: "No more wasting time searching for AI models on various websites; use them all through a single, **ultimate** Discord bot. 🔥"
+                    value: "No more wasting time searching for AI models on various websites; use them all through a single Discord bot. 🔥"
                 },
 
                 {
                     name: "Competitive features 📈",
-                    value: "We offer a fair daily limit and amazing message length limit to free users, and an additional **Premium** tier for even more perks; view `/premium info` for more."
+                    value: "We offer a fair cool-down and amazing message length limit to free users, and an additional **Premium** tier for even more perks; view `/premium info` for more."
                 },
 
                 {

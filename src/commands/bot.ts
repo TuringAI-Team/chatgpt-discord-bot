@@ -9,19 +9,12 @@ export default class StatisticsCommand extends Command {
     constructor(bot: Bot) {
         super(bot,
             new SlashCommandBuilder()
-                .setName("stats")
+                .setName("bot")
                 .setDescription("View information & statistics about the bot")
-		, { long: true, always: true, cooldown: 10 * 1000 });
+		, { always: true });
     }
 
     public async run(interaction: CommandInteraction): CommandResponse {
-		if (!this.bot.started) return new Response()
-			.addEmbed(builder => builder
-				.setDescription("The bot is currently reloading **...**")
-				.setColor("Orange")
-			)
-			.setEphemeral(true);
-
 		const fields = [
 			{
 				key: "Servers 🖥️",

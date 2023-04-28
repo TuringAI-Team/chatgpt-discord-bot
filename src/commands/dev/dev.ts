@@ -2,12 +2,11 @@ import { getInfo } from "discord-hybrid-sharding";
 import { SlashCommandBuilder } from "discord.js";
 import prettyBytes from "pretty-bytes";
 import NodeCache from "node-cache";
-import dayjs from "dayjs";
 
 import { Command, CommandInteraction, CommandPrivateType, CommandResponse } from "../../command/command.js";
 import { SessionCostProducts } from "../../conversation/session.js";
-import { Response, ResponseType } from "../../command/response.js";
 import { Bot, BotDiscordClient } from "../../bot/bot.js";
+import { Response } from "../../command/response.js";
 
 export default class DeveloperCommand extends Command {
 	constructor(bot: Bot) {
@@ -33,12 +32,12 @@ export default class DeveloperCommand extends Command {
 					.setMinValue(1)
 				)
 			)
-		, { long: true, private: CommandPrivateType.ModeratorOnly });
+		, { long: true, private: CommandPrivateType.OwnerOnly });
 	}
 
     public async run(interaction: CommandInteraction): CommandResponse {
 		/* Which sub-command to execute */
-		const action: "debug" | "keys" | "restart" | "flush" = interaction.options.getSubcommand(true) as any;
+		const action: "debug" | "restart" | "flush" = interaction.options.getSubcommand(true) as any;
 
 		/* View debug information */
 		if (action === "debug") {
@@ -62,8 +61,8 @@ export default class DeveloperCommand extends Command {
 					hits: 0, keys: 0, ksize: 0, misses: 0, vsize: 0
 				});
 
-			const uptime: number[] = (await this.bot.client.cluster.fetchClientValues("bot.since")) as number[];
-			const guilds: number[] = (await this.bot.client.cluster.fetchClientValues("guilds.cache.size")) as number[];
+			/*const uptime: number[] = (await this.bot.client.cluster.fetchClientValues("bot.since")) as number[];
+			const guilds: number[] = (await this.bot.client.cluster.fetchClientValues("guilds.cache.size")) as number[];*/
 			const running: boolean[] = (await this.bot.client.cluster.fetchClientValues("bot.started")) as boolean[];
 
 			const fields = [
@@ -79,7 +78,7 @@ export default class DeveloperCommand extends Command {
 			];
 
 			/* Debug information about the clusters */
-			const clusterCount: number = getInfo().CLUSTER_COUNT;
+			/*const clusterCount: number = getInfo().CLUSTER_COUNT;
 			let clusterDebug: string = "";
 
 			for (let i = 0; i < clusterCount; i++) {
@@ -89,7 +88,7 @@ export default class DeveloperCommand extends Command {
 
 				if (clusterRunning) clusterDebug = `${clusterDebug}\n\`#${i + 1}\` • **${clusterGuilds}** guilds • **${dayjs.duration(Date.now() - clusterUptime).format("HH:mm:ss")}**`;
 				else clusterDebug = `${clusterDebug}\n\`#${i + 1}\` • **Reloading** ... ⌛`;
-			}
+			}*/
 
 			/* Get information about the Stable Horde API user. */
 			const user = await this.bot.image.findUser();
@@ -103,13 +102,13 @@ export default class DeveloperCommand extends Command {
 						name: key, value
 					}))))
 				)
-				.addEmbed(builder => builder
+				/*.addEmbed(builder => builder
 					.setColor(this.bot.branding.color)
 					.setTitle("Clusters 🤖")
 					.setDescription(
 						clusterDebug.trim()
 					)
-				)
+				)*/
 				.addEmbed(builder => builder
 					.setColor(this.bot.branding.color)
 					.setTitle("Guilds 💻")

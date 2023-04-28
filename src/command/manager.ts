@@ -1,4 +1,4 @@
-import { ActionRowBuilder, AutocompleteInteraction, ComponentType, ButtonStyle, ButtonBuilder, ChatInputCommandInteraction, Collection, CommandInteraction, ContextMenuCommandInteraction, InteractionResponse, Message, SlashCommandBuilder, MessageContextMenuCommandInteraction } from "discord.js";
+import { ActionRowBuilder, AutocompleteInteraction, ComponentType, ButtonStyle, ButtonBuilder, ChatInputCommandInteraction, Collection, InteractionResponse, Message, SlashCommandBuilder, MessageContextMenuCommandInteraction } from "discord.js";
 import { RESTPostAPIApplicationCommandsJSONBody, Routes } from "discord-api-types/v10";
 import { DiscordAPIError, REST } from "@discordjs/rest";
 
@@ -234,7 +234,7 @@ export class CommandManager {
 		/* If the command is marked as private, do some checks to make sure only privileged users are able to execute this command. */
 		if (command.options.private != undefined) {
 			/* If the command was executed on the wrong guild, silently ignore it. */
-			// if (interaction.guildId === null || interaction.guildId !== this.bot.app.config.channels.moderation.guild) return;
+			if (interaction.guildId === null || interaction.guildId !== this.bot.app.config.channels.moderation.guild) return;
 
 			/* Check whether the user has the correct permissions to execute this command. */
 			if (
