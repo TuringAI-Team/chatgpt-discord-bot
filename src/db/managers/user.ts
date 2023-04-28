@@ -718,11 +718,11 @@ export class UserManager {
     private async update<T extends DatabaseAll = DatabaseAll>(type: keyof typeof this.updates, obj: T | Snowflake, updates: Partial<T>): Promise<void> {
         const id: Snowflake = typeof obj === "string" ? obj : obj.id;
 
-        const existing: DatabaseAll | null = this.updates[type].get(id) ?? null;
+        const queuedUpdates: DatabaseAll | null = this.updates[type].get(id) ?? null;
         let updated: DatabaseAll;
 
         if (typeof obj === "string") updated = updates as T;
-        else updated = { ...existing !== null ? existing : {}, ...updates as T };
+        else updated = { ...obj, ...queuedUpdates !== null ? queuedUpdates : {}, ...updates as T };
 
         this.updates[type].set(id, updated as any);
     }
