@@ -2,6 +2,7 @@ import { ChatInputCommandInteraction, EmbedBuilder, GuildMember, PermissionsBitF
 import dayjs from "dayjs";
 
 import { DatabaseSubscriptionKey, DatabaseSubscription, DatabaseGuildSubscription, DatabaseInfo } from "../db/managers/user.js";
+import { CONVERSATION_COOLDOWN_MODIFIER, CONVERSATION_DEFAULT_COOLDOWN } from "../conversation/conversation.js";
 import { Command, CommandResponse } from "../command/command.js";
 import { Response } from "../command/response.js";
 import { PremiumRole } from "../util/roles.js";
@@ -37,7 +38,7 @@ export default class PremiumCommand extends Command {
 
     public async run(interaction: ChatInputCommandInteraction, { user, guild }: DatabaseInfo): CommandResponse {
 		/* Which sub-command to execute */
-		const action: "info" | "redeem" | "buy" = interaction.options.getSubcommand(true) as "info" | "redeem" | "buy";
+		const action: "info" | "redeem" | "buy" = interaction.options.getSubcommand(true) as any;
 
 		/* If the command was run on the support server, check whether the user already has their Premium role. */
 		if (guild && guild.id === this.bot.app.config.channels.moderation.guild && interaction.member instanceof GuildMember) {
@@ -49,7 +50,7 @@ export default class PremiumCommand extends Command {
 			const fields = [
 				{
 					name: "Way lower cool-down ⏰",
-					value: `Chat with **ChatGPT** for as long as you want - without being interrupted by an annoying cool-down! ⏰\nYour cool-down will be lowered to an amazing **10 seconds**, for all normal models.`
+					value: `Chat with **ChatGPT** for as long as you want - without being interrupted by an annoying cool-down! ⏰\nYour cool-down will be lowered to an amazing **${Math.floor((CONVERSATION_DEFAULT_COOLDOWN.time! * CONVERSATION_COOLDOWN_MODIFIER.UserPremium) / 1000)} seconds**, for all normal models.`
 				},
 
 				{

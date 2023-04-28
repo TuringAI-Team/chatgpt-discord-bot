@@ -1,8 +1,8 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, SlashCommandBuilder } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, EmbedBuilder, SlashCommandBuilder } from "discord.js";
 
 import { Command, CommandInteraction, CommandResponse } from "../command/command.js";
 import { Response, ResponseType } from "../command/response.js";
-import { Utils } from "../util/utils.js";
+import { introductionButtons } from "../util/introduction.js";
 import { Bot } from "../bot/bot.js";
 
 export default class StatisticsCommand extends Command {
@@ -57,33 +57,8 @@ export default class StatisticsCommand extends Command {
 				inline: true
 			})));
 
-		const row = new ActionRowBuilder<ButtonBuilder>()
-			.addComponents(
-                new ButtonBuilder()
-                    .setURL(Utils.inviteLink(this.bot))
-                    .setLabel("Add me to your server")
-                    .setStyle(ButtonStyle.Link),
-
-                new ButtonBuilder()
-                    .setURL(Utils.supportInvite(this.bot))
-                    .setLabel("Support server")
-                    .setStyle(ButtonStyle.Link),
-
-				new ButtonBuilder()	
-					.setURL("https://github.com/TuringAI-Team/chatgpt-discord-bot")
-					.setEmoji("<:github:1097828013871222865>")
-					.setStyle(ButtonStyle.Link)
-					.setLabel("GitHub"),
-
-				new ButtonBuilder()	
-					.setURL("https://bit.ly/chatgpt-whatsapp")
-                    .setEmoji("<:WhatsApp:1079831241601323078>")
-					.setStyle(ButtonStyle.Link)
-					.setLabel("WhatsApp bot"),
-			);
-
-        return new Response(ResponseType.Edit)
+        return new Response()
             .addEmbed(builder)
-			.addComponent(ActionRowBuilder<ButtonBuilder>, row);
+			.addComponent(ActionRowBuilder<ButtonBuilder>, introductionButtons(this.bot));
     }
 }

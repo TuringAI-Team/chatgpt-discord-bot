@@ -435,7 +435,7 @@ export const buildUserOverview = async (bot: Bot, target: User, db: DatabaseUser
             .setDescription(description)
             .setFields(
                 {
-                    name: "Discord member since <:discord:1074420172032589914>",
+                    name: "Discord member since <:discord:1097815072602067016>",
                     value: `<t:${Math.floor(target.createdTimestamp / 1000)}:f>`,
                     inline: true
                 },

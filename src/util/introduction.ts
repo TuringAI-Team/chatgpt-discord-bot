@@ -121,7 +121,7 @@ export const IntroductionPages: IntroductionPage[] = [
 
                 {
                     name: "Way lower cool-down ⏰",
-                    value: `Chat with **ChatGPT** for as long as you want - without being interrupted by an annoying cool-down! ⏰\nYour cool-down will be lowered to an amazing **10 seconds**, for all normal models.`
+                    value: `Chat with **ChatGPT** for as long as you want - without being interrupted by an annoying cool-down! ⏰\nYour cool-down will be lowered to an amazing **15 seconds**, for all normal models.`
                 },
 
                 {
@@ -174,11 +174,9 @@ const buildPageSelector = (bot: Bot, author: User, page: IntroductionPage): Stri
         );
 }
 
-export const buildIntroductionPage = async (bot: Bot, author: User, page: IntroductionPage = IntroductionPages[0], standalone: boolean = false): Promise<Response> => {
-    /* Action component rows to add to the message */
-    const rows: ActionRowBuilder<any>[] = [
-        new ActionRowBuilder<ButtonBuilder>()
-            .addComponents(
+export const introductionButtons = (bot: Bot): ActionRowBuilder<ButtonBuilder> => {
+    return new ActionRowBuilder<ButtonBuilder>()
+			.addComponents(
                 new ButtonBuilder()
                     .setURL(Utils.inviteLink(bot))
                     .setLabel("Add me to your server")
@@ -189,17 +187,24 @@ export const buildIntroductionPage = async (bot: Bot, author: User, page: Introd
                     .setLabel("Support server")
                     .setStyle(ButtonStyle.Link),
 
-                new ButtonBuilder()	
+				new ButtonBuilder()	
 					.setURL("https://github.com/TuringAI-Team/chatgpt-discord-bot")
-                    .setEmoji("<:github:1097828013871222865>")
-					.setStyle(ButtonStyle.Link)
-					.setLabel("GitHub"),
+					.setEmoji("<:github:1097828013871222865>")
+					.setStyle(ButtonStyle.Link),
 
-                new ButtonBuilder()	
+				new ButtonBuilder()	
 					.setURL("https://bit.ly/chatgpt-whatsapp")
                     .setEmoji("<:WhatsApp:1079831241601323078>")
 					.setStyle(ButtonStyle.Link)
-					.setLabel("WhatsApp bot"),
+			);
+}
+
+export const buildIntroductionPage = async (bot: Bot, author: User, page: IntroductionPage = IntroductionPages[0], standalone: boolean = false): Promise<Response> => {
+    /* Action component rows to add to the message */
+    const rows: ActionRowBuilder<any>[] = [
+        new ActionRowBuilder<ButtonBuilder>()
+            .addComponents(
+                ...introductionButtons(bot).components,
 
                 new ButtonBuilder()
                     .setEmoji("🗑️")

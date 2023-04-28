@@ -588,7 +588,12 @@ export class UserManager {
         if (db.subscription === null) return null;
         if (db.subscription !== null && Date.now() > db.subscription.expires) return null;
 
-        return db.subscription as T;
+        return {
+            ...db.subscription as T,
+            
+            /* Handle an edge case where `since` is actually a date string instead of a UNIX timestamp. */
+            since: typeof db.subscription.since === "string" ? Date.parse(db.subscription.since) : db.subscription.since
+        };
     }
 
     /**
