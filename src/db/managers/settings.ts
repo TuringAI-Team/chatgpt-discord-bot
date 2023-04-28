@@ -255,7 +255,7 @@ export const SettingOptions: Record<SettingsName, SettingsOption> = {
         name: "Partial messages",
         emoji: { fallback: "⏳" },
         description: "Whether messages by the bot should be shown while they're being generated",
-        default: false
+        default: true
     }),
 
     language: new ChoiceSettingsOption({
