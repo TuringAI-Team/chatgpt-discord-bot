@@ -1,11 +1,16 @@
+import { Guild, GuildMember, SlashCommandBuilder } from "discord.js";
 import { getInfo } from "discord-hybrid-sharding";
-import { SlashCommandBuilder } from "discord.js";
+import { setTimeout } from "timers/promises";
 import prettyBytes from "pretty-bytes";
 import NodeCache from "node-cache";
+import chalk from "chalk";
+import dayjs from "dayjs";
 
 import { Command, CommandInteraction, CommandPrivateType, CommandResponse } from "../../command/command.js";
 import { SessionCostProducts } from "../../conversation/session.js";
+import { RawDatabaseUser } from "../../db/managers/user.js";
 import { Bot, BotDiscordClient } from "../../bot/bot.js";
+import { PREMIUM_ROLE_ID } from "../../util/roles.js";
 import { Response } from "../../command/response.js";
 
 export default class DeveloperCommand extends Command {
@@ -20,6 +25,10 @@ export default class DeveloperCommand extends Command {
 			.addSubcommand(builder => builder
 				.setName("flush")
 				.setDescription("Execute all the queued database requests in all clusters")
+			)
+			.addSubcommand(builder => builder
+				.setName("premium-roles")
+				.setDescription("Give all Premium members the corresponding role on the support server")
 			)
 			.addSubcommand(builder => builder
 				.setName("restart")
@@ -37,7 +46,7 @@ export default class DeveloperCommand extends Command {
 
     public async run(interaction: CommandInteraction): CommandResponse {
 		/* Which sub-command to execute */
-		const action: "debug" | "restart" | "flush" = interaction.options.getSubcommand(true) as any;
+		const action: "debug" | "restart" | "flush" | "premium-roles" = interaction.options.getSubcommand(true) as any;
 
 		/* View debug information */
 		if (action === "debug") {
@@ -61,11 +70,19 @@ export default class DeveloperCommand extends Command {
 					hits: 0, keys: 0, ksize: 0, misses: 0, vsize: 0
 				});
 
-			/*const uptime: number[] = (await this.bot.client.cluster.fetchClientValues("bot.since")) as number[];
-			const guilds: number[] = (await this.bot.client.cluster.fetchClientValues("guilds.cache.size")) as number[];*/
+			const guilds: number[] = (await this.bot.client.cluster.fetchClientValues("guilds.cache.size")) as number[];
 			const running: boolean[] = (await this.bot.client.cluster.fetchClientValues("bot.started")) as boolean[];
 
+			/* Find the smallest starting time out of all clusters, to calculate the bot uptime. */
+			const uptimes: number[] = (await this.bot.client.cluster.fetchClientValues("bot.since")) as number[];
+			const uptime: number = Math.min(...uptimes);
+
 			const fields = [
+				{
+					key: "Running since 🕒",
+					value: `**${dayjs.duration(Date.now() - uptime).format("HH:mm:ss")}**`
+				},
+
 				{
 					key: "Processed messages 💬",
 					value: `**\`${count}\`** (\`${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(SessionCostProducts[0].calculate({ completion: tokens, prompt: tokens }).completion)}\`)`
@@ -78,17 +95,17 @@ export default class DeveloperCommand extends Command {
 			];
 
 			/* Debug information about the clusters */
-			/*const clusterCount: number = getInfo().CLUSTER_COUNT;
+			const clusterCount: number = getInfo().CLUSTER_COUNT;
 			let clusterDebug: string = "";
 
 			for (let i = 0; i < clusterCount; i++) {
-				const clusterUptime: number = uptime[i];
-				const clusterGuilds: number = guilds[i];
 				const clusterRunning: boolean = running[i] != undefined;
+				const clusterUptime: number = uptimes[i];
+				const clusterGuilds: number = guilds[i];
 
 				if (clusterRunning) clusterDebug = `${clusterDebug}\n\`#${i + 1}\` • **${clusterGuilds}** guilds • **${dayjs.duration(Date.now() - clusterUptime).format("HH:mm:ss")}**`;
 				else clusterDebug = `${clusterDebug}\n\`#${i + 1}\` • **Reloading** ... ⌛`;
-			}*/
+			}
 
 			/* Get information about the Stable Horde API user. */
 			const user = await this.bot.image.findUser();
@@ -102,13 +119,13 @@ export default class DeveloperCommand extends Command {
 						name: key, value
 					}))))
 				)
-				/*.addEmbed(builder => builder
+				.addEmbed(builder => builder
 					.setColor(this.bot.branding.color)
 					.setTitle("Clusters 🤖")
 					.setDescription(
 						clusterDebug.trim()
 					)
-				)*/
+				)
 				.addEmbed(builder => builder
 					.setColor(this.bot.branding.color)
 					.setTitle("Guilds 💻")
@@ -154,6 +171,79 @@ export default class DeveloperCommand extends Command {
 
 			/* Broadcast a stop to the specific cluster. */
 			else await this.bot.client.cluster.broadcastEval(((client: BotDiscordClient) => client.bot.stop(0)) as any, { cluster: index });
+
+		/* Give all Premium members the corresponding role on the support server */
+		} else if (action === "premium-roles") {
+			/* Fetch all Premium users from the database. */
+			const { data, error } = await this.bot.db.client
+				.from(this.bot.db.users.collectionName("users"))
+				.select("*")
+				.neq("subscription", null);
+
+			if (data === null || error !== null) return new Response()
+				.addEmbed(builder => builder
+					.setDescription("Something went while fetching all Premium users from the database 😕")
+					.setColor("Red")
+				)
+				.setEphemeral(true);
+
+			/* Raw database users */
+			const users: RawDatabaseUser[] = (data as RawDatabaseUser[])
+				.map(user => ({ ...user, subscription: this.bot.db.users.subscription(user) }));
+
+			const members: GuildMember[] = [];
+
+			/* Support server */
+			const guild: Guild = this.bot.client.guilds.cache.get(this.bot.app.config.channels.moderation.guild)!;
+			
+			/* Counters */
+			const total: number = users.length;
+			let current: number = 0;
+
+			const progress = (member: GuildMember, current: number, total: number) => {
+				interaction.editReply(new Response()
+					.addEmbed(builder => builder
+						.setDescription(`Working on member **<@${member.user.id}>**... [**${current + 1}**/**${total}**]`)
+						.setColor("Yellow")
+					)
+				.get());
+			}
+
+			/* Find all corresponding members on the support server. */
+			for (const db of users.filter(db => !db.id.includes("@"))) {
+				if (db.subscription === null) continue;
+				const member = await guild.members.fetch(db.id).catch(() => null) ?? null;
+
+				if (member !== null && !member.roles.cache.has(PREMIUM_ROLE_ID)) {
+					this.bot.logger.debug(`Premium member ${chalk.bold(member.user.tag)} has been fetched. [${chalk.bold(current + 1)}/${chalk.bold(users.length)}]`);
+
+					if (current % 5 === 0) progress(member, current, total);
+					current++;
+
+					/* Give the user their Premium role. */
+					await member.roles.add(PREMIUM_ROLE_ID);
+
+					await setTimeout(500);
+					members.push(member);
+				} else {
+					continue;
+				}
+			}
+
+			if (members.length === 0) {
+				return new Response()
+					.addEmbed(builder => builder
+						.setDescription("All Premium members already have the corresponding role 🎉")
+						.setColor("Green")
+					);
+
+			} else {
+				return new Response()
+					.addEmbed(builder => builder
+						.setDescription(`**${current}** Premium members have received the corresponding role 🎉`)
+						.setColor("Green")
+					);
+			}
 
 		/* Execute all the queued database requests in all clusters */
 		} else if (action === "flush") {

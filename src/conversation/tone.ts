@@ -162,7 +162,7 @@ export const ChatTones: ChatTone[] = [
         description: "OpenAI's GPT-4",
         prompt: "I am GPT-4, a new GPT model by OpenAI released on the 14th March 2023. I am an improved version of GPT-3, and more human-like.",
         model: { temperature: 0.7, model: "gpt-4" },
-        settings: { premium: true, cooldown: { time: 35 * 1000 }, contextTokens: 400, generationTokens: 175 }
+        settings: { premium: true, cooldown: { time: 35 * 1000 }, contextTokens: 400, generationTokens: 200 }
     }),
 
     new ChatTone({

@@ -561,7 +561,7 @@ export default class ImagineCommand extends Command {
 			...DEFAULT_GEN_OPTIONS,
 
 			priority: true,
-			nsfw: true,
+			nsfw: nsfw,
 			shared: true,
 			model: model,
 

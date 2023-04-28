@@ -31,7 +31,6 @@ export default class VoteCommand extends Command {
 			.setTitle("Vote for our bot 📩")
 			.setDescription(`*By voting for **${this.bot.client.user!.username}**, you'll get the following rewards, for as long as you vote*.`)
 			.setColor(this.bot.branding.color)
-			.setTimestamp()
 
 			.addFields(fields.map(({ key, value }) => ({
 				name: key, value: value.toString()

@@ -292,7 +292,6 @@ export class Conversation {
 	public async reset(remove: boolean = true): Promise<void> {
 		/* Reset the conversation data. */
 		this.applyResetTimer();
-		this.cooldown.cancel();
 		this.history = [];
 
 		/* Remove the entry in the database. */
@@ -492,7 +491,7 @@ export class Conversation {
 		const additional: EmbedBuilder[] = [];
 		
 		if (subscriptionType !== "UserPremium") {
-			if (subscriptionType === "Free") {
+			if (subscriptionType === "Free" || subscriptionType === "Voter") {
 				additional.push(
 					new EmbedBuilder()
 						.setDescription(`✨ By buying **[Premium](${Utils.shopURL()})**, your cool-down will be lowered to **a few seconds** only, with **unlimited** messages per day.\n**Premium** *also includes further benefits, view \`/premium info\` for more*. ✨`)

@@ -584,7 +584,7 @@ export class UserManager {
      * 
      * @returns User/guild's current subscription, if available
      */
-    private subscription<T extends DatabaseGuildSubscription | DatabaseSubscription>(db: DatabaseUser | DatabaseGuild): T | null {
+    public subscription<T extends DatabaseGuildSubscription | DatabaseSubscription>(db: DatabaseUser | DatabaseGuild | RawDatabaseGuild | RawDatabaseUser): T | null {
         if (db.subscription === null) return null;
         if (db.subscription !== null && Date.now() > db.subscription.expires) return null;
 

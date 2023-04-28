@@ -299,6 +299,12 @@ export class Generator {
 
 			return;
 		}
+		
+		if (conversation.generating) return void await new Response()
+			.addEmbed(builder => builder
+				.setDescription("You already have a request running in your conversation, *wait for it to finish* 😔")
+				.setColor("Red")
+			).send(button);
 
 		/* Continue generating the cut-off message. */
 		if (action === "continue") {
@@ -541,10 +547,9 @@ export class Generator {
 				).send(message).catch(() => {});
 		}
 
-		/* If the conversation is still locked, send a notice message & delete it once the request completed. */
 		if (conversation.generating) return void await new Response()
 			.addEmbed(builder => builder
-				.setDescription("You already have a request running in this conversation, *wait for it to finish* 😔")
+				.setDescription("You already have a request running in your conversation, *wait for it to finish* 😔")
 				.setColor("Red")
 			).send(message).catch(() => {});
 
@@ -641,7 +646,7 @@ export class Generator {
 		let queued: boolean = false;
 
 		/* Whether partial results should be shown, and how often they should be updated */
-		const partial: boolean = false;
+		const partial: boolean = true;
 		const updateTime: number = this.bot.db.users.canUsePremiumFeatures(db) ? 2500 : 5000;
 
 		let typingTimer: NodeJS.Timer | null = setInterval(async () => {
@@ -676,11 +681,12 @@ export class Generator {
 				} catch (_) {
 					try {
 						reply = await message.channel.send(response.get() as MessageCreateOptions);
-					} catch (_) {}
-				} finally {
-					reply = null!;
-					queued = false;
+					} catch (_) {
+						reply = null!;
+					}
 				}
+
+				queued = false;
 
 			} else if (reply !== null && !queued && (partial || (!partial && (data.type !== "Chat" && data.type !== "ChatNotice")))) {	
 				try {
@@ -773,9 +779,9 @@ export class Generator {
 					.setColor("Red")
 				), false);
 
-				if (error instanceof GPTGenerationError && error.options.data.type === GPTGenerationErrorType.Busy) return await sendError(new Response()
+			if (error instanceof GPTGenerationError && error.options.data.type === GPTGenerationErrorType.Busy) return await sendError(new Response()
 				.addEmbed(builder => builder
-					.setDescription("You already have a request running in this conversation, *wait for it to finish* 😔")
+					.setDescription("You already have a request running in your conversation, *wait for it to finish* 😔")
 					.setColor("Red")
 				), false);
 

@@ -153,7 +153,7 @@ export default class PremiumCommand extends Command {
 				subscription!.expires - Date.now() < 7 * 24 * 60 * 60 * 1000
 				: false;
 			
-			if (((guild!.subscription !== null && db.type === "guild") || (user.subscription !== null && db.type === "user")) && !overwrite) return new Response()
+			if (((guild?.subscription && db.type === "guild") || (user.subscription !== null && db.type === "user")) && !overwrite) return new Response()
 				.addEmbed(builder => builder
 					.setDescription(db.type === "user" ? "You already have a **Premium** subscription 🎉" : "This server already has a **Premium** subscription 🎉")
 					.setFooter({ text: "You can redeem a new subscription key, when the subscription expires in less than 7 days." })
@@ -168,7 +168,7 @@ export default class PremiumCommand extends Command {
 				/* If the user doesn't have the required permissions, show a notice. */
 				if (!permissions.has("Administrator", true)) return new Response()
 					.addEmbed(builder => builder
-						.setDescription("You need to have the `Administrator` permission to redeem a **Premium** server key ❌")
+						.setDescription("You need to have the `Administrator` permission in order to redeem a **Premium** server key ❌")
 						.setColor("Red")
 					)
 					.setEphemeral(true);
