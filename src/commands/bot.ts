@@ -11,7 +11,7 @@ export default class StatisticsCommand extends Command {
             new SlashCommandBuilder()
                 .setName("bot")
                 .setDescription("View information & statistics about the bot")
-		, { always: true });
+		, { always: true, waitForStart: true });
     }
 
     public async run(interaction: CommandInteraction): CommandResponse {
