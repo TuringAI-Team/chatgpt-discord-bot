@@ -12,7 +12,7 @@ export class GPT3Model extends ChatModel {
             name: "GPT-3",
             type: ModelType.OpenAICompletion,
 
-            capabilities: [ ModelCapability.ImageViewing ]
+            capabilities: [ ModelCapability.ImageViewing, ModelCapability.UserLanguage ]
         });
     }
 

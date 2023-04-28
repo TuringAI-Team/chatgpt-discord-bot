@@ -143,7 +143,7 @@ export const AutoModerationFilters: AutoModerationFilter[] = [
     }),
 
     new AutoModerationWordFilter({
-        description: "Block racist words",
+        description: "Block homophobic words",
         action: { reason: "Homophobic content", type: "block" },
 
         blocked: [

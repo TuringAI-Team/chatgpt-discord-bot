@@ -654,7 +654,7 @@ export default class ImagineCommand extends Command {
 			clearTimeout(idleTimer);
 			
 			/* Whether the generate images are still usable & whether only some of them were censored */
-			const usable: boolean = result.images.every(i => !i.censored);
+			const usable: boolean = result.images.filter(i => !i.censored).length > 0;
 			const censored: boolean = result.images.some(i => i.censored);
 
 			/* Add the generated results to the database. */
@@ -674,7 +674,7 @@ export default class ImagineCommand extends Command {
 				return new Response()
 					.addEmbed(builder => builder
 						.setTitle("What's this? 🤨")
-						.setDescription("All of the generated images were deemed as **not safe for work**. 🔞\n_Try changing your prompt, or using the bot in a channel marked as **NSFW**_.")
+						.setDescription("All of the generated images were deemed as **not safe for work**. 🔞\n_Try changing your prompt or using the bot in a channel marked as **NSFW**_.")
 						.setColor("Red")
 					);
 			}

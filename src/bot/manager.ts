@@ -220,7 +220,7 @@ export class BotManager extends EventEmitter {
         await this.manager.spawn({
             /* Reduce the delay between the initialization of clusters, to improve startup time. */
             timeout: -1,
-            delay: 10 * 1000
+            delay: 7 * 1000
         })
 			.catch(error => {
 				this.app.logger.error(`Failed to set up cluster manager ->`, error);

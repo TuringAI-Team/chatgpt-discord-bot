@@ -49,7 +49,7 @@ export default class StatisticsCommand extends Command {
 
 		const builder: EmbedBuilder = new EmbedBuilder()
 			.setTitle("Bot Statistics")
-			.setDescription(`The ultimate AI-powered Discord bot 🚀`)
+			.setDescription("*The ultimate AI-powered Discord bot*")
 			.setColor(this.bot.branding.color)
 
 			.addFields(fields.map(({ key, value }) => ({

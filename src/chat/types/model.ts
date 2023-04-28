@@ -9,7 +9,10 @@ export enum ModelCapability {
     ImageViewing = "imageViewing",
 
     /* The model only works in guilds */
-    GuildOnly = "guildOnly"
+    GuildOnly = "guildOnly",
+
+    /* The model can be set to respond in the user's language */
+    UserLanguage = "userLanguage"
 }
 
 export enum ModelType {

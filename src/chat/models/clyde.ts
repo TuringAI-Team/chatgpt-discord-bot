@@ -205,7 +205,7 @@ export class ClydeModel extends ChatGPTModel {
             name: "Clyde",
             type: ModelType.Clyde,
 
-            capabilities: [ ModelCapability.GuildOnly, ModelCapability.ImageViewing ]
+            capabilities: [ ModelCapability.GuildOnly, ModelCapability.ImageViewing, ModelCapability.UserLanguage ]
         });
     }
 

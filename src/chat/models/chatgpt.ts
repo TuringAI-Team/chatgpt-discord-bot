@@ -11,7 +11,7 @@ export class ChatGPTModel extends ChatModel {
             name: "ChatGPT",
             type: ModelType.OpenAIChat,
 
-            capabilities: [ ModelCapability.ImageViewing ]
+            capabilities: [ ModelCapability.ImageViewing, ModelCapability.UserLanguage ]
         });
     }
 

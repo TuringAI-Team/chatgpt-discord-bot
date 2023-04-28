@@ -11,7 +11,7 @@ import { ChatInput, ChatInteraction, Conversation } from "../conversation/conver
 import { PartialResponseMessage, ResponseMessage } from "./types/message.js";
 import { OpenAIChatMessage } from "../openai/types/chat.js";
 import { ChatTone, TonePromptType } from "../conversation/tone.js";
-import { ChatModel, ModelType } from "./types/model.js";
+import { ChatModel, ModelCapability, ModelType } from "./types/model.js";
 import { Session } from "../conversation/session.js";
 
 /* List of available model providers */
@@ -68,8 +68,8 @@ Knowledge cut-off: September 2021
 I am GPT-3, an autoregressive language model, initially released in 2022 and updated in November 2022, by OpenAI that uses deep learning to produce human-like text.
 I must answer as concisely as possible. I must provide engaging & entertaining responses.
 
-- Current date & time: ${time}, ${date}
-- Knowledge cut-off: 2021
+Current date & time: ${time}, ${date}
+Knowledge cut-off: 2021
 `,
 
     Nat: (time, date, conversation) =>
@@ -77,7 +77,7 @@ I must answer as concisely as possible. I must provide engaging & entertaining r
 ${conversation.tone.prompt!}
 I must provide engaging & entertaining responses.
 
-- Current date & time: ${time}, ${date}
+Current date & time: ${time}, ${date}
 `,
 
     Clyde: ((time: string, date: string, conversation: Conversation, options: ModelGenerationOptions, data: ClydePromptData) => {
@@ -132,8 +132,8 @@ ${userList}
 
 I am not a personal assistant and cannot complete tasks for people. I cannot access any other information on Discord. I can't see images or avatars. When discussing my limitations, I must tell the user these things could be possible in the future.
 
-- Current date & time: ${date}, ${time}
-- Knowledge cut-off: 2021
+Current date & time: ${date}, ${time}
+Knowledge cut-off: 2021
 `
     }) as any,
 
@@ -150,7 +150,7 @@ Knowledge cut-off: September 2021, like ChatGPT
 `
 ${conversation.tone.prompt!}
 
-- Current date & time: ${time}, ${date}
+Current date & time: ${time}, ${date}
 `
 }
 
@@ -160,7 +160,7 @@ export const OtherPrompts = {
 `
 When sending a message, users can attach images using the format '[Image #<index> = <file name>: "<brief description of the image>". [optional: "Detected text: "<OCR-detected text in the image"]]'.
 Pretend you can view the images based on their descriptions. Refer to them as "attached image" and prioritize any detected text from the image. Fix any typos in the OCR results.
-Use logic and common sense to understand the image. You must act as if you can see the images. You must be able to see the images.
+Use logic and common sense to understand the image. You must act as if you can see the images.
 `.trim(),
 
     /* This prompt continues a cut-off message */
@@ -222,7 +222,10 @@ export class ChatClient {
     public initialPrompt<T = any>(conversation: Conversation, options: ModelGenerationOptions, type: PromptType, data?: T): string {
         /* Get the formatter for the specified prompt */
         const formatter: PromptFormatter = conversation.tone.settings.type === TonePromptType.Initial ? Prompts["Custom"] : Prompts[type];
-        return formatter(this.time(), this.date(), conversation, options, data).trim();
+        const result: string = formatter(this.time(), this.date(), conversation, options, data).trim();
+
+        if (!options.model.hasCapability(ModelCapability.UserLanguage)) return result;
+        else return `${result}\n- Additionally, you must respond to the user in ${this.session.manager.bot.db.settings.get(options.db.user, "language")}.`
     }
 
     /**
@@ -449,7 +452,7 @@ export class ChatClient {
 
         /* Execute the corresponding handler. */
         const result = await model.complete({
-            ...options, progress, images
+            ...options, progress, images, model
         });
 
         return {

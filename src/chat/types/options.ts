@@ -1,12 +1,15 @@
-import { Guild, GuildMember, GuildTextBasedChannel, Message, TextBasedChannel, TextChannel, User } from "discord.js";
+import { Guild, GuildMember, Message, TextChannel } from "discord.js";
 
 import { ChatNoticeMessage, PartialResponseMessage, ResponseMessage } from "./message.js";
 import { Conversation } from "../../conversation/conversation.js";
 import { ChatBaseImage, ChatInputImage } from "./image.js";
 import { DatabaseInfo } from "../../db/managers/user.js";
-
+import { ChatModel } from "./model.js";
 
 export type ModelGenerationOptions = Pick<ChatGenerationOptions, "conversation" | "trigger" | "db" | "prompt" | "guild"> & {
+    /* Which model is being used for generation */
+    model: ChatModel;
+
     /* Function to call on partial message generation */
     progress: (message: PartialResponseMessage | ChatNoticeMessage) => Promise<void> | void;
 
