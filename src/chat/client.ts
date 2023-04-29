@@ -1,23 +1,24 @@
-import { ActivityType, Attachment, ChannelType, Collection, ForumChannel, GuildChannel, GuildEmoji, GuildMember, GuildTextBasedChannel, Message, StageChannel, TextChannel, TextChannelResolvable, ThreadChannel, VoiceChannel } from "discord.js";
+import { Attachment, ChannelType, Collection, ForumChannel, GuildChannel, GuildEmoji, Message, StageChannel, TextChannel, VoiceChannel } from "discord.js";
 import { setTimeout } from "timers/promises";
+import localeCode from "locale-code";
 import { randomUUID } from "crypto";
 import chalk from "chalk";
 
-import { GPT_MAX_CONTEXT_LENGTH, GPT_MAX_GENERATION_LENGTH, countChatMessageTokens, isPromptLengthAcceptable } from "../conversation/utils/length.js";
+import { GPT_MAX_CONTEXT_LENGTH, GPT_MAX_GENERATION_LENGTH, countChatMessageTokens, getChatMessageLength, isPromptLengthAcceptable } from "../conversation/utils/length.js";
 import { ChatAnalyzedImage, ChatBaseImage, ChatImageType, ChatInputImage, ImageBuffer } from "./types/image.js";
+import { ChatInput, ChatInteraction, Conversation } from "../conversation/conversation.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
 import { ChatGenerationOptions, ModelGenerationOptions } from "./types/options.js";
-import { ChatInput, ChatInteraction, Conversation } from "../conversation/conversation.js";
 import { PartialResponseMessage, ResponseMessage } from "./types/message.js";
-import { OpenAIChatMessage } from "../openai/types/chat.js";
-import { ChatTone, TonePromptType } from "../conversation/tone.js";
 import { ChatModel, ModelCapability, ModelType } from "./types/model.js";
+import { ChatTone, TonePromptType } from "../conversation/tone.js";
+import { OpenAIChatMessage } from "../openai/types/chat.js";
+import { handleError } from "../util/moderation/error.js";
 import { Session } from "../conversation/session.js";
+import { ClydePromptData } from "./models/clyde.js";
 
 /* List of available model providers */
 import { ChatModels } from "./models/index.js";
-import { handleError } from "../util/moderation/error.js";
-import { ClydePromptData } from "./models/clyde.js";
 
 
 export interface ChatClientResult {
@@ -224,8 +225,12 @@ export class ChatClient {
         const formatter: PromptFormatter = conversation.tone.settings.type === TonePromptType.Initial ? Prompts["Custom"] : Prompts[type];
         const result: string = formatter(this.time(), this.date(), conversation, options, data).trim();
 
-        if (!options.model.hasCapability(ModelCapability.UserLanguage)) return result;
-        else return `${result}\n- Additionally, you must respond to the user in ${this.session.manager.bot.db.settings.get(options.db.user, "language")}.`
+        /* Language selected by the user */
+        const language: string = localeCode.getLanguageName(this.session.manager.bot.db.settings.get(options.db.user, "language"));
+        const hasCapability: boolean = options.model.hasCapability(ModelCapability.UserLanguage);
+
+        if (!hasCapability || (hasCapability && language === "en-US")) return result;
+        else return `${result}\n- Additionally, you must prioritize responding to the user in ${language}.`
     }
 
     /**
@@ -248,7 +253,7 @@ export class ChatClient {
         });
 
         /* Actual maximum token count for the prompt */
-        const maxContextLength: number = options.conversation.tone.settings.contextTokens ?? GPT_MAX_CONTEXT_LENGTH[subscriptionType];
+        let maxContextLength: number = options.conversation.tone.settings.contextTokens ?? GPT_MAX_CONTEXT_LENGTH[subscriptionType];
 
         /* Maximum generation length */
         const maxGenerationTokens: number = options.conversation.tone.settings.generationTokens ?? GPT_MAX_GENERATION_LENGTH[subscriptionType];
@@ -308,6 +313,14 @@ export class ChatClient {
             /* Calculate the amount of used tokens. */
             tokens = countChatMessageTokens(Object.values(messages));
 
+            /* Tokens used for the initial prompt */
+            const currentContextLength: number = getChatMessageLength(messages.Initial!);
+
+            /* If the max context length exceeds even the length of the initial prompt itself, account for that too. */
+            if (maxContextLength < currentContextLength) {
+                maxContextLength += currentContextLength;
+            }
+
             /* If a too long user prompt is causing the prompt to be too long, throw an error. */
             if (history.length === 0 && maxContextLength - tokens <= 0) throw new GPTGenerationError({
                 type: GPTGenerationErrorType.Length
@@ -340,7 +353,7 @@ export class ChatClient {
      * Get all usable Discord image attachments.
      * @returns Usable Discord Image attachments
      */
-    public getMessageAttachments(message: Message): Attachment[] {
+    public findMessageAttachments(message: Message): Attachment[] {
         return Array.from(message.attachments.values())
             .filter(a => {
                 const allowed: string[] = [ "png", "jpg", "jpeg", "webp", "gif" ];
@@ -352,7 +365,7 @@ export class ChatClient {
     }
 
     private async messageAttachments(message: Message): Promise<ChatBaseImage[]> {
-        return Promise.all(this.getMessageAttachments(message)
+        return Promise.all(this.findMessageAttachments(message)
             .map(async attachment => {
                 const [ _, extension ] = attachment.name.split(".");
 

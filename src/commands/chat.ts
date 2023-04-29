@@ -29,6 +29,11 @@ export default class SupportCommand extends Command {
 					{
 						name: "How can I change the model?",
 						value: `You can either run \`/tone\` beforehand to select one, or you can press the first button below a generated message to choose the model from a dropdown menu.`
+					},
+					
+					{
+						name: "How can I reset my conversation?",
+						value: `You can run the \`/reset\` command to reset your current conversation with the bot.`
 					}
 				])
 				.setColor("Orange")

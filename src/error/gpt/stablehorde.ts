@@ -1,20 +1,35 @@
 import { GPTAPIError, GPTAPIErrorOptions } from "./api.js";
 
+export enum StableHordeErrorType {
+    Blocked, ViolatesTOS, AbusePrevention
+}
+
 export class StableHordeAPIError extends GPTAPIError {
     constructor(opts: GPTAPIErrorOptions) {
         super(opts);
     }
 
-    /**
-     * Tell whether this error is due to the image generation being blocked, caused by blocked keywords.
-     * @returns Whether the generation request was blocked
-     */
     public isBlocked(): boolean {
-        return this.options.data.message !== null ? this.options.data.message.includes("unethical images") : false;
+        return this.hasError() === StableHordeErrorType.Blocked;
     }
 
-    public isTooExpensive(): boolean {
-        return this.options.data.message !== null ? this.options.data.message.includes("the client needs to already have the required kudos") : false;
+    public violatesTermsOfService(): boolean {
+        return this.hasError() === StableHordeErrorType.ViolatesTOS;
+    }
+
+    public blockedByAbusePrevention(): boolean {
+        return this.hasError() === StableHordeErrorType.AbusePrevention;
+    }
+
+    private hasError(): StableHordeErrorType | null {
+        const message = this.options.data.message;
+        if (message === null) return null;
+
+        if (message.includes("unethical images")) return StableHordeErrorType.Blocked;
+        else if (message.includes("This prompt appears to violate our terms of service")) return StableHordeErrorType.ViolatesTOS;
+        else if (message.includes("Due to abuse prevention")) return StableHordeErrorType.AbusePrevention; 
+
+        return null;
     }
     
     /**

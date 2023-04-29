@@ -304,7 +304,9 @@ export class Generator {
 			.addEmbed(builder => builder
 				.setDescription("You already have a request running in your conversation, *wait for it to finish* 😔")
 				.setColor("Red")
-			).send(button);
+			)
+			.setEphemeral(true)
+		.send(button);
 
 		/* Continue generating the cut-off message. */
 		if (action === "continue") {
@@ -558,7 +560,7 @@ export class Generator {
 		if (conversation.cooldown.active) await this.bot.db.users.incrementInteractions(db.user, "cooldown_messages");
 
 		/* If the command is on cool-down, don't run the request. */
-		if (conversation.cooldown.active && remaining > Math.max(conversation.cooldown.state.expiresIn! / 2, 10 * 1000)) {
+		if (conversation.cooldown.active && remaining > Math.min(conversation.cooldown.state.expiresIn! / 2, 10 * 1000)) {
 			const reply = await message.reply({
 				embeds: conversation.cooldownMessage(db)
 			}).catch(() => null);
@@ -591,7 +593,7 @@ export class Generator {
 		const model: ChatModel = conversation.session.client.modelForTone(conversation.tone);
 
 		/* Whether the user attached any images to their message */
-		const attachedImages: boolean = conversation.session.client.getMessageAttachments(message).length > 0;
+		const attachedImages: boolean = conversation.session.client.findMessageAttachments(message).length > 0;
 
 		/* If the user attached images to their messages, but doesn't have Premium access, ignore their request. */
 		if (attachedImages && !premium) return void await new Response()

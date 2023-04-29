@@ -10,6 +10,7 @@ import { ToneEmoji } from "../../conversation/tone.js";
 import { DatabaseManager } from "../manager.js";
 import { Utils } from "../../util/utils.js";
 import { Bot } from "../../bot/bot.js";
+import { Languages, UserLanguage } from "../types/locale.js";
 
 
 export enum SettingsOptionType {
@@ -166,11 +167,11 @@ export abstract class AutocompleteChoiceSettingsOption extends SettingsOption<st
     }
 
     public abstract complete(bot: Bot, interaction: AutocompleteInteraction, value: string): CommandOptionChoice<string>[];
-    public abstract displayForID(bot: Bot, id: string): string;
+    public abstract displayForID(bot: Bot, id: string): string | null;
     public abstract valid(bot: Bot, id: string): boolean;
 
     public display(bot: Bot, value: string): string {
-        return this.displayForID(bot, value);
+        return this.displayForID(bot, value) ?? "❓";
     }
 }
 
@@ -196,9 +197,9 @@ export class ImagineModelAutocompleteSettingsOption extends AutocompleteChoiceSe
 		}));
     }
 
-    public displayForID(bot: Bot, id: string): string {
+    public displayForID(bot: Bot, id: string): string | null {
         const model: StableHordeModel | null = bot.image.getModels().find(m => m.name === id) ?? null;
-        if (model === null) return "❓";
+        if (model === null) return null;
 
         return `**${bot.image.displayNameForModel(model)}**${bot.image.isModelNSFW(model) ? " 🔞" : ""}`;
     }
@@ -208,12 +209,40 @@ export class ImagineModelAutocompleteSettingsOption extends AutocompleteChoiceSe
     }
 }
 
+export class LanguageAutocompleteSettingsOption extends AutocompleteChoiceSettingsOption {
+    constructor() {
+        super({
+            key: "language",
+            name: "Language",
+            emoji: { fallback: "🌐" },
+            description: "Primary language to use for the bot",
+            default: "en-US"
+        });
+    }
+
+    public complete(bot: Bot): CommandOptionChoice<string>[] {
+		return Languages.map(locale => {
+            return {
+    			name: `${locale.name} (${locale.id})`,
+			    value: locale.id
+		    };
+        });
+    }
+
+    public displayForID(bot: Bot, id: string): string | null {
+        const locale: UserLanguage | null = Languages.find(l => l.id === id) ?? null;
+        if (locale === null) return null;
+
+        return `${locale.name} ${locale.emoji}`;
+    }
+
+    public valid(bot: Bot, id: string): boolean {
+        return Languages.find(l => l.id === id) != undefined;
+    }
+}
+
 export type GetSettingsTypeParameter<T> = T extends SettingsOption<infer R> ? R : never
 export type SettingsName = "image_count" | "image_steps" | "image_model" | "image_size" | "partial_messages" | "language"
-
-const SETTINGS_OPTION_LANGUAGES: string[] = [
-    "en-US", "es-ES", "fr-FR", "de-DE", "it-IT", "ja-JP", "ko-KR", "pt-BR", "ru-RU", "zh-CN", "zh-TW"
-] 
 
 export const SettingOptions: Record<SettingsName, SettingsOption> = {
     image_count: new IntegerSettingsOption({
@@ -258,21 +287,7 @@ export const SettingOptions: Record<SettingsName, SettingsOption> = {
         default: true
     }),
 
-    language: new ChoiceSettingsOption({
-        choices: SETTINGS_OPTION_LANGUAGES.map(code => {
-            return {
-                name: `${LocaleCodes.getLanguageName(code)} (${code})`,
-                value: code,
-                premium: false
-            }
-        }),
-
-        key: "language",
-        name: "Language",
-        emoji: { fallback: "🌐" },
-        description: "Language to use for various features of the bot",
-        default: "en-US"
-    })
+    language: new LanguageAutocompleteSettingsOption()
 }
 
 export class UserSettingsManager {

@@ -64,9 +64,10 @@ interface ModerationSendOptions {
     db: DatabaseInfo;
     content: string;
     type: ModerationSource;
+    notice?: string;
 }
 
-type ModerationImageSendOptions = Pick<ModerationSendOptions, "result" | "conversation" | "db" | "content">
+type ModerationImageSendOptions = Pick<ModerationSendOptions, "result" | "conversation" | "db" | "content" | "notice">
 export type ModerationSource = "user" | "bot" | "image" | "translationPrompt" | "translationResult" | "describe"
 
 /**
@@ -562,7 +563,7 @@ export const buildModerationToolbar = (user: User, result: ModerationResult): Ac
  * 
  * @param options Moderation send options
  */
-export const sendModerationMessage = async ({ result, conversation, db, content, type }: ModerationSendOptions) => {
+export const sendModerationMessage = async ({ result, conversation, db, content, type, notice }: ModerationSendOptions) => {
     /* Get the moderation channel. */
     const channel = await messageChannel(conversation.manager.bot, "moderation");
 
@@ -592,6 +593,16 @@ export const sendModerationMessage = async ({ result, conversation, db, content,
 
     /* Add the toolbar rows to the reply. */
     rows.forEach(row => reply.addComponent(ActionRowBuilder<ButtonBuilder>, row));
+
+    if (notice) {
+        reply.embeds[0].addFields(
+            {
+                name: "Notice 📝",
+                value: `\`${notice}\``,
+                inline: true
+            }
+        )
+    }
 
     if (result.auto) {
         reply.embeds[0].addFields(

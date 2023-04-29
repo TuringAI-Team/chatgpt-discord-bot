@@ -8,11 +8,13 @@ import { StableHordeConfigModel, StableHordeModel, STABLE_HORDE_AVAILABLE_MODELS
 import { checkImagePrompt, ModerationResult } from "../conversation/moderation/moderation.js";
 import { StableHordeGenerationFilter, STABLE_HORDE_FILTERS } from "../image/types/filter.js";
 import { ImageGenerationSamplers, ImageGenerationSampler } from "../image/types/image.js";
+import { PremiumUpsellResponse, PremiumUpsellType } from "../command/response/premium.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
 import { sendImageModerationMessage } from "../util/moderation/moderation.js";
 import { renderIntoSingleImage } from "../image/utils/renderer.js";
 import { StableHordeAPIError } from "../error/gpt/stablehorde.js";
 import { Conversation } from "../conversation/conversation.js";
+import { ErrorResponse, ErrorType } from "../command/response/error.js";
 import { SettingOptions } from "../db/managers/settings.js";
 import { OpenAIChatMessage } from "../openai/types/chat.js";
 import { handleError } from "../util/moderation/error.js";
@@ -91,11 +93,10 @@ const DEFAULT_PROMPT: Partial<ImageGenerationPrompt> & Required<Pick<ImageGenera
 }
 
 const MAX_STEP_COUNT = {
-	/* Normal (free) user, no Premium subscription */
-	User: 50,
-
-	/* Premium user, with subscription */
-	Premium: 100
+	Free: 50,
+	Voter: 60,
+	GuildPremium: 75,
+	UserPremium: 100
 }
 
 /* ChatGPT prompt used to improve an image generation prompt & add additional tags */
@@ -181,7 +182,7 @@ export default class ImagineCommand extends Command {
 						.setDescription("How many steps to generate the images for")
 						.setRequired(false)
 						.setMinValue(5)
-						.setMaxValue(MAX_STEP_COUNT.Premium)
+						.setMaxValue(MAX_STEP_COUNT.UserPremium)
 					)
 					.addStringOption(builder => builder
 						.setName("negative")
@@ -260,7 +261,7 @@ export default class ImagineCommand extends Command {
 						.setDescription("How many steps to generate the images for")
 						.setRequired(false)
 						.setMinValue(5)
-						.setMaxValue(MAX_STEP_COUNT.Premium)
+						.setMaxValue(MAX_STEP_COUNT.UserPremium)
 					)
 					.addNumberOption(builder => builder
 						.setName("guidance")
@@ -293,11 +294,6 @@ export default class ImagineCommand extends Command {
 				.setDescription(`${data.wait_time > 0 ? `**${data.wait_time}**s` : "**Generating**"} ...`)
 				.setColor("Aqua")
 			);
-
-		if (data.wait_time > 60 && !this.bot.db.users.canUsePremiumFeatures(db)) response.addEmbed(builder => builder
-			.setDescription("✨ _**Premium** gives you **priority access** to `/imagine`, and also grants you exclusive features - view \`/premium info\` for more_.")
-			.setColor("Yellow")
-		);
 
 		if (moderation !== null && moderation.flagged) response.addEmbed(builder => builder
 			.setDescription("Your prompt may violate our **usage policies**. *If you use the bot as intended, you can ignore this notice*.")
@@ -362,13 +358,6 @@ export default class ImagineCommand extends Command {
 
 		/* Add the various message component rows. */
 		const rows = this.createRows(conversation, result);
-
-		/*rows[1].addComponents(
-			new ButtonBuilder()
-				.setCustomId(`delete:${conversation.id}`)
-				.setStyle(ButtonStyle.Danger)
-				.setEmoji("🗑️")
-		);*/
 		
 		rows.forEach(row => response.addComponent(ActionRowBuilder<ButtonBuilder>, row));
 		return response;
@@ -603,26 +592,18 @@ export default class ImagineCommand extends Command {
 			await conversation.setImageGenerationStatus(false);
 
 			if (reason === "button") return await new Response()
-					.addEmbed(builder => builder
-						.setDescription("Cancelled ❌")
-						.setColor("Red")
-					)
-				.send(interaction).catch(() => {});
+				.addEmbed(builder => builder
+					.setDescription("Cancelled ❌")
+					.setColor("Red")
+				)
+			.send(interaction).catch(() => {});
 				
-			else if (reason === "timeOut") {
-				const response = new Response()
-					.addEmbed(builder => builder
-						.setDescription("This image generation request has been running for **several minutes**, and had to be cancelled automatically.\n*Try again later, when demand is lower*.")
-						.setColor("Red")
-					);
-
-				if (!premium) response.addEmbed(builder => builder
-					.setDescription("✨ **Premium** drastically improves the generation speed of `/imagine`, and grants you other exclusive features; view `/premium info` for more.")
-					.setColor("Orange")
-				);
-
-				await response.send(interaction).catch(() => {});
-			}
+			else if (reason === "timeOut") return await new Response()
+				.addEmbed(builder => builder
+					.setDescription("This image generation request has been running for **several minutes**, and had to be cancelled automatically.\n*Try again later, when demand is lower*.")
+					.setColor("Red")
+				)
+			.send(interaction).catch(() => {});
 		}
 
 		const onProgress = async (data: ImageGenerationCheckData) => {
@@ -671,12 +652,10 @@ export default class ImagineCommand extends Command {
 			if (!usable) {
 				await conversation.setImageGenerationStatus(false);
 
-				return new Response()
-					.addEmbed(builder => builder
-						.setTitle("What's this? 🤨")
-						.setDescription("All of the generated images were deemed as **not safe for work**. 🔞\n_Try changing your prompt or using the bot in a channel marked as **NSFW**_.")
-						.setColor("Red")
-					);
+				return new ErrorResponse({
+					interaction, command: this, emoji: null,
+					message: "All of the generated images were deemed as **not safe for work**. 🔞\n_Try changing your prompt or using the bot in a channel marked as **NSFW**_."
+				});
 			}
 
 			/* Generate the final message, showing the generated results. */
@@ -685,26 +664,23 @@ export default class ImagineCommand extends Command {
 
 		} catch (error) {
 			/* If the image generation was blocked by Stable Horde itself, show a notice to the user. */
-			if (error instanceof StableHordeAPIError && error.isBlocked()) {
+			if (error instanceof StableHordeAPIError && (error.isBlocked() || error.violatesTermsOfService())) {
 				await sendImageModerationMessage({
-					content: prompt.prompt, conversation, db,
+					content: prompt.prompt, conversation, db, notice: error.violatesTermsOfService() ? "violates Terms of Service" : undefined,
 					result: { blocked: true, flagged: true, source: "image" }
 				});
 
-				return new Response()
-					.addEmbed(builder => builder
-						.setTitle("What's this? 🤨")
-						.setDescription("Your image prompt was flagged as inappropriate by **[Stable Horde](https://stablehorde.net)**.\n*If you continue to violate the usage policies, we may have to take moderative actions*.")
-						.setColor("Red")
-					);
+				return new ErrorResponse({
+					interaction, command: this, emoji: null,
+					message: "Your image prompt was flagged as inappropriate by **[Stable Horde](https://stablehorde.net)**.\n*If you continue to violate the usage policies, we may have to take moderative actions*."
+				});
 			}
 
-			/* If the image would've been too expensive to run, show the user a notice message. */
-			if (error instanceof StableHordeAPIError && error.isTooExpensive()) return new Response()
-				.addEmbed(builder => builder
-					.setDescription("Your prompt & model settings are too expensive for **[Stable Horde](https://stablehorde.net)**.\n_Use fewer weights & steps, or consider upgrading to **Premium 🌟** to get rid of these restrictions - view `/premium info` for more_.")
-					.setColor("Red")
-				);
+			/* If we got blocked by Stable Horde for some reason. show a notice to the user. */
+			if (error instanceof StableHordeAPIError && error.blockedByAbusePrevention()) return new ErrorResponse({
+				interaction, command: this, emoji: "😔",
+				message: "We are currently unable to generate images using **[Stable Horde](https://stablehorde.net)**; please try your request again in a few minutes."
+			});
 
 			/* If the request got cancelled, delete the interaction & clean up, if possible. */
 			if (error instanceof GPTGenerationError && error.options.data.type === GPTGenerationErrorType.Cancelled) return void await cancel(error.options.data.data as any);
@@ -715,12 +691,10 @@ export default class ImagineCommand extends Command {
 				reply: false
 			});
 
-			return new Response()
-				.addEmbed(builder => builder
-					.setTitle("Uh-oh... 😬")
-					.setDescription("It seems like we encountered an error while trying to generate the images for you.\n*The developers have been notified*.")
-					.setColor("Red")
-				);
+			return new ErrorResponse({
+				interaction, command: this, type: ErrorType.Error,
+				message: "It seems like we encountered an error while trying to generate the images for you."
+			});
 				
 		} finally {
 			await conversation.setImageGenerationStatus(false);
@@ -740,31 +714,23 @@ export default class ImagineCommand extends Command {
 	};
 
     public async run(interaction: ChatInputCommandInteraction, db: DatabaseInfo): CommandResponse {
-		/* Whether the user can use Premium features */
 		const canUsePremiumFeatures: boolean = this.bot.db.users.canUsePremiumFeatures(db);
+		const subscriptionType = this.bot.db.users.subscriptionType(db);
 
-		/* Get the user's conversation. */
 		const conversation: Conversation = await this.bot.conversation.create(interaction.user);
 
 		/* Which sub-command to run */
 		const action: "generate" | "ai" | "models" = interaction.options.getSubcommand(true) as any;
 
-		if (action === "generate" || action === "ai") {
-			if (conversation.generatingImage || conversation.generating) return new Response()
-				.addEmbed(builder => builder
-					.setDescription(`You still have ${conversation.generatingImage ? "an image generation" : "a chat"} request running, *wait for it to finish* 😔`)
-					.setColor("Red")
-				)
-				.setEphemeral(true);
-		}
+		if ((action === "generate" || action === "ai") && (conversation.generatingImage || conversation.generating)) return new ErrorResponse({
+			interaction, command: this,
+			message: `You still have ${conversation.generatingImage ? "an image generation" : "a chat"} request running, *wait for it to finish*`,
+			emoji: "😔"
+		});
 
-		if (action === "ai" && !canUsePremiumFeatures) return new Response()
-			.addEmbed(builder => builder
-				.setTitle("We appreciate your enthusiasm ...")
-				.setDescription(`..., but this feature is only available to **Premium ✨ users** for now.\n**Premium** *also includes further benefits, view \`/premium info\` for more*.`)
-				.setColor("Orange")
-			)
-			.setEphemeral(true);
+		if (action === "ai" && !canUsePremiumFeatures) return new PremiumUpsellResponse({
+			type: PremiumUpsellType.SDChatGPT
+		});
 		
 		if (action === "generate" || action === "ai") {
 			/* How many images to generate */
@@ -775,7 +741,7 @@ export default class ImagineCommand extends Command {
 			/* How many steps to generate the images with */
 			const steps: number =
 				interaction.options.getInteger("steps")
-				?? this.bot.db.settings.get<number>(db.user, SettingOptions.image_steps);
+				?? this.bot.db.settings.get<number>(db.user, "image_steps");
 
 			/* To which scale the AI should follow the prompt; higher values mean that the AI will respect the prompt more */
 			const guidance: number = Math.round(interaction.options.getNumber("guidance") ?? DEFAULT_GEN_OPTIONS.params!.cfg_scale!);
@@ -784,24 +750,18 @@ export default class ImagineCommand extends Command {
 			const sampler: ImageGenerationSampler = interaction.options.getString("sampler") ?? "k_euler";
 
 			/* If the user is trying to generate an image with more steps than possible for a normal user, send them a notice. */
-			if (steps > MAX_STEP_COUNT.User && !canUsePremiumFeatures) return new Response()
-				.addEmbed(builder => builder
-					.setDescription(`As a normal user, you can only generate images with up to **${MAX_STEP_COUNT.User}** steps.\n**Premium 🌟** increases this limit up to **${MAX_STEP_COUNT.Premium}** steps, and gives you many more benefits; view \`/premium info\` for more.`)
-					.setColor("Orange")
-				)
-				.setEphemeral(true);
+			if (steps > MAX_STEP_COUNT[subscriptionType] && !canUsePremiumFeatures) return new PremiumUpsellResponse({
+				type: PremiumUpsellType.SDSteps
+			});
 
 			/* Size the images should be */
 			const rawSize: string[] = interaction.options.getString("size") ? interaction.options.getString("size", true).split(":") : this.bot.db.settings.get<string>(db.user, SettingOptions.image_size).split(":");
-			const size: ImageGenerationSize = { width: parseInt(rawSize[0]), height: parseInt(rawSize[1]), premium: rawSize[2] == "true" };
+			const size: ImageGenerationSize = { width: parseInt(rawSize[0]), height: parseInt(rawSize[1]), premium: !!rawSize[2] };
 
 			/* If the user is trying to generate an image with more steps than possible for a normal user, send them a notice. */
-			if (size.premium && !canUsePremiumFeatures) return new Response()
-				.addEmbed(builder => builder
-					.setDescription(`**Premium 🌟** allows you to generate way bigger images, and gives you many additional benefits; view \`/premium info\` for more.`)
-					.setColor("Orange")
-				)
-				.setEphemeral(true);
+			if (size.premium && !canUsePremiumFeatures) return new PremiumUpsellResponse({
+				type: PremiumUpsellType.SDSize
+			});
 
 			/* Whether NSFW content can be shown */
 			const nsfw: boolean = interaction.channel ? this.bot.image.shouldShowNSFW(interaction.channel) : false;
@@ -810,12 +770,10 @@ export default class ImagineCommand extends Command {
 			const prompt: string = interaction.options.getString("prompt", true);
 			const negativePrompt: string | null = interaction.options.getString("negative");
 
-			if (prompt.length > MAX_IMAGE_PROMPT_LENGTH || (negativePrompt ?? "").length > MAX_IMAGE_PROMPT_LENGTH) return new Response()
-				.addEmbed(builder => builder
-					.setDescription(`Your specified image prompt is **too long**, it can't be longer than **${MAX_IMAGE_PROMPT_LENGTH}** characters ❌`)
-					.setColor("Red")
-				)
-				.setEphemeral(true);
+			if (prompt.length > MAX_IMAGE_PROMPT_LENGTH || (negativePrompt ?? "").length > MAX_IMAGE_PROMPT_LENGTH) return new ErrorResponse({
+				interaction, command: this,
+				message: `Your specified image prompt is **too long**, it can't be longer than **${MAX_IMAGE_PROMPT_LENGTH}** characters ❌`,
+			});
 
 			if (action === "generate") {
 				/* Random seed, to reproduce the generated images in the future */
@@ -830,22 +788,19 @@ export default class ImagineCommand extends Command {
 				/* Try to get the Stable Horde model. */
 				const model: StableHordeModel | null = this.bot.image.models.get(modelName) ?? null;
 
-				if (model === null) return new Response()
-					.addEmbed(builder => builder
-						.setDescription("You specified an invalid **Stable Diffusion** model ❌")
-						.setColor("Red")
-					)
-					.setEphemeral(true);
+				if (model === null) return new ErrorResponse({
+					interaction, command: this,
+					message: "You specified an invalid **Stable Diffusion** model",
+				});
 
 				/* Whether the model should be shown */
 				const show: boolean = this.bot.image.shouldShowModel(interaction, model);
 
-				if (!show) return new Response()
-					.addEmbed(builder => builder
-						.setDescription("This **Stable Diffusion** model can only be used in **NSFW** channels 🔞")
-						.setColor("Red")
-					)
-					.setEphemeral(true);
+				if (!show) return new ErrorResponse({
+					interaction, command: this,
+					message: "This **Stable Diffusion** model can only be used in **NSFW** channels",
+					emoji: "🔞"
+				});
 
 				/* Defer the reply, as this might take a while. */
 				await interaction.deferReply().catch(() => {});
@@ -855,12 +810,11 @@ export default class ImagineCommand extends Command {
 				});
 
 				/* If the message was flagged, send a warning message. */
-				if (moderation !== null && moderation.blocked) return new Response()
-					.addEmbed(builder => builder
-						.setTitle("What's this? 🤨")
-						.setDescription(`Your image prompt was blocked by our filters.\nTry using the bot in a channel marked as **NSFW**, or using a different prompt.\n\n*If you violate the usage policies, we may have to take moderative actions; otherwise, you can ignore this notice*.`)
-						.setColor("Orange")
-					);
+				if (moderation !== null && moderation.blocked) return new ErrorResponse({
+					interaction, command: this,
+					message: "Your image prompt was blocked by our filters.\nTry using the bot in a channel marked as **NSFW**, or using a different prompt.\n\n*If you violate the usage policies, we may have to take moderative actions; otherwise, you can ignore this notice*.",
+					color: "Orange", emoji: null
+				});
 
 				return this.startGenerationProcess({
 					interaction, guidance, model, conversation, count, moderation, nsfw, sampler, seed, size, steps, db,
@@ -885,12 +839,11 @@ export default class ImagineCommand extends Command {
 				});
 
 				/* If the message was flagged, send a warning message. */
-				if (moderation !== null && moderation.blocked) return new Response()
-					.addEmbed(builder => builder
-						.setTitle("What's this? 🤨")
-						.setDescription(`Your image prompt was blocked by our filters.\nTry using the bot in a channel marked as **NSFW**, or using a different prompt.\n\n*If you violate the usage policies, we may have to take moderative actions; otherwise, you can ignore this notice*.`)
-						.setColor("Orange")
-					);
+				if (moderation !== null && moderation.blocked) return new ErrorResponse({
+					interaction, command: this,
+					message: "Your image prompt was blocked by our filters.\nTry using the bot in a channel marked as **NSFW**, or using a different prompt.\n\n*If you violate the usage policies, we may have to take moderative actions; otherwise, you can ignore this notice*.",
+					color: "Orange"
+				});
 
 				/* Which models to show as options to ChatGPT; this is reduced in order to save tokens */
 				const models: StableHordeModel[] = this.bot.image.getModels()
@@ -909,7 +862,7 @@ export default class ImagineCommand extends Command {
 					}
 				];
 
-				/* List of random phrases to display while thinking of a prompt */
+				/* List of random phrases to display while generating a prompt */
 				const randomPhrases: string[] = [
 					"Improving your prompt",
 					"Spicing up the scene",
@@ -946,12 +899,11 @@ export default class ImagineCommand extends Command {
 					return null;
 				})(raw.response.message.content);
 
-				if (data === null) return new Response()
-					.addEmbed(builder => builder
-						.setTitle("Uh-oh...")
-						.setDescription(`It seems like **ChatGPT** didn't come up with a prompt for this request. 😕\n_If this issue persists, contact us on our **[support server](${Utils.supportInvite(this.bot)})**_.`)
-						.setColor("Red")
-					);
+				if (data === null) return new ErrorResponse({
+					interaction, command: this,
+					message: "It seems like **ChatGPT** didn't come up with a prompt for this request.",
+					emoji: "😕"
+				});
 
 				/* Try to get the Stable Horde model. */
 				let model: StableHordeModel | null = data.model ? this.bot.image.models.get(data.model) ?? null : null;

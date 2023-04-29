@@ -1,4 +1,4 @@
-import { ActionRowBuilder, AutocompleteInteraction, ComponentType, ButtonStyle, ButtonBuilder, ChatInputCommandInteraction, Collection, InteractionResponse, Message, SlashCommandBuilder, MessageContextMenuCommandInteraction } from "discord.js";
+import { ActionRowBuilder, AutocompleteInteraction, ComponentType, ButtonStyle, ButtonBuilder, ChatInputCommandInteraction, Collection, InteractionResponse, Message, SlashCommandBuilder, MessageContextMenuCommandInteraction, CommandInteraction } from "discord.js";
 import { RESTPostAPIApplicationCommandsJSONBody, Routes } from "discord-api-types/v10";
 import { DiscordAPIError, REST } from "@discordjs/rest";
 
@@ -129,7 +129,6 @@ export class CommandManager {
 	public async applyCooldown(interaction: ChatInputCommandInteraction, db: DatabaseInfo, command: Command): Promise<void> {
 		/* If the command doesn't have a cool-down time set, abort. */
 		if (!command.options.cooldown || this.bot.app.config.discord.owner.includes(interaction.user.id)) return;
-
 		const name: string = this.commandName(interaction, command);
 		
 		/* How long the cool-down should last */
@@ -144,6 +143,11 @@ export class CommandManager {
 		setTimeout(async () => {
 			await this.bot.db.cache.delete("cooldown", name);
 		}, duration);
+	}
+
+	public async removeCooldown(interaction: ChatInputCommandInteraction, command: Command): Promise<void> {
+		const name: string = this.commandName(interaction, command);
+		await this.bot.db.cache.delete("cooldown", name);
 	}
 
 	/**

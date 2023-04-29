@@ -1,11 +1,11 @@
 import { Awaitable, ComponentEmojiResolvable, EmojiIdentifierResolvable } from "discord.js";
+
+import { ModelGenerationOptions } from "../chat/types/options.js";
 import { OpenAIChatBody } from "../openai/types/chat.js";
 import { CooldownModifier } from "./utils/cooldown.js";
 import { ModelType } from "../chat/types/model.js";
-import { Conversation } from "./conversation.js";
 import { ChatClient } from "../chat/client.js";
 import { PromptData } from "../chat/client.js";
-import { ModelGenerationOptions } from "../chat/types/options.js";
 
 export enum TonePromptType {
     /* Use the prompt as an additional tone */
@@ -162,7 +162,7 @@ export const ChatTones: ChatTone[] = [
         description: "OpenAI's GPT-4",
         prompt: "I am GPT-4, a new GPT model by OpenAI released on the 14th March 2023. I am an improved version of GPT-3, and more human-like.",
         model: { temperature: 0.7, model: "gpt-4" },
-        settings: { premium: true, cooldown: { time: 35 * 1000 }, contextTokens: 400, generationTokens: 200 }
+        settings: { premium: true, cooldown: { time: 30 * 1000 }, contextTokens: 425, generationTokens: 270 }
     }),
 
     new ChatTone({
@@ -243,10 +243,10 @@ export const ChatTones: ChatTone[] = [
 
         builder: async (client, tone, options) => {
             const prompt: PromptData = await client.buildPrompt(options, "Vicuna");
-
+            
             return {
                 prompt: prompt.prompt,
-                max_length: tone.settings.generationTokens,
+                max_length: prompt.length + tone.settings.generationTokens!,
                 top_p: 1,
                 temperature: 0.7,
                 repetition_penalty: 1.2

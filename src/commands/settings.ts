@@ -41,7 +41,7 @@ export default class SettingsCommand extends Command {
 			});
 		}
 
-		if (Object.keys(changes).length === 0) embed.setFooter({ text: "Change the settings by specifying changes you want to make when running /settings" })
+		if (Object.keys(changes).length === 0) embed.setFooter({ text: "Change your settings, by specifying changes you want to make when running /settings." })
 		return new Response().addEmbed(embed);
 	}
 
@@ -80,7 +80,7 @@ export default class SettingsCommand extends Command {
 		for (const option of this.bot.db.settings.options()) {
 			/* Get the value specified by the user. */
 			const param = interaction.options.get(option.key, false);
-			if (!param || !param.value) continue;
+			if (param == undefined || param.value == undefined) continue;
 
 			/* If the chosen option is Premium-only, show a notice to the user. */
 			if (option instanceof ChoiceSettingsOption) {

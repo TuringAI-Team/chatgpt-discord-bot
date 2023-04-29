@@ -55,12 +55,12 @@ const CONVERSATION_ERROR_RETRY_MAX_TRIES: number = 10
 export const CONVERSATION_COOLDOWN_MODIFIER = {
 	Free: 1,
 	Voter: 0.5,
-	GuildPremium: 0.4,
-	UserPremium: 0.1
+	GuildPremium: 0.14,
+	UserPremium: 0.075
 }
 
 export const CONVERSATION_DEFAULT_COOLDOWN: CooldownModifier = {
-	time: 150 * 1000
+	time: 140 * 1000
 }
 
 export declare interface Conversation {
@@ -524,19 +524,22 @@ export class Conversation {
 		if (entry) this.history.push(entry);
 
 		/* Then, broadcast the change to all other clusters. */
-		await this.manager.bot.client.cluster.broadcastEval(((client: BotDiscordClient, context: { id: string; history: ChatInteraction[] }) => {
-			const c: Conversation | null = client.bot.conversation.get(context.id);
+		await this.manager.bot.client.cluster.broadcastEval(((client: BotDiscordClient, context: { id: string; history: ChatInteraction[]; cluster: number }) => {
+			if (client.bot.data.id !== context.cluster) {
+				const c: Conversation | null = client.bot.conversation.get(context.id);
 
-			if (c !== null) {
-				c.history = context.history;
-				c.applyResetTimer();
+				if (c !== null) {
+					c.history = context.history;
+					c.applyResetTimer();
+				}
 			}
 		}) as any, {
 			context: {
 				id: this.id,
-				history: this.history.map(e => ({ ...e, trigger: null, reply: null }))
+				history: this.history.map(e => ({ ...e, trigger: null, reply: null })),
+				cluster: this.manager.bot.data.id
 			}
-		}).catch(() => {});
+		});
 	}
 
 	/* Previous message sent in the conversation */

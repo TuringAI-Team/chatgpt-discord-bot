@@ -156,7 +156,7 @@ export default class DeveloperCommand extends Command {
 
 		/* Trigger a specific or this cluster */
 		} else if (action === "restart") {
-			const which: number = interaction.options.getInteger("which") ?? getInfo().CLUSTER + 1;
+			const which: number = interaction.options.getInteger("which") ?? this.bot.data.id + 1;
 			const index: number = which - 1;
 
 			await interaction.editReply(new Response()
@@ -167,7 +167,7 @@ export default class DeveloperCommand extends Command {
 			.get());
 
 			/* Take the easier route, and exit this cluster directly. */
-			if (getInfo().CLUSTER === index) return this.bot.stop(0);
+			if (this.bot.data.id === index) return this.bot.stop(0);
 
 			/* Broadcast a stop to the specific cluster. */
 			else await this.bot.client.cluster.broadcastEval(((client: BotDiscordClient) => client.bot.stop(0)) as any, { cluster: index });

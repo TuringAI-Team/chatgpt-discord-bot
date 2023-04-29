@@ -1,5 +1,5 @@
 import { ContextMenuCommandBuilder, SlashCommandBuilder, SlashCommandSubcommandsOnlyBuilder } from "@discordjs/builders";
-import { AutocompleteInteraction, ChatInputCommandInteraction, ContextMenuCommandInteraction, MessageContextMenuCommandInteraction } from "discord.js";
+import { AutocompleteInteraction, ChatInputCommandInteraction, ContextMenuCommandInteraction } from "discord.js";
 import { APIApplicationCommandOptionChoice } from "discord-api-types/v10";
 
 import { DatabaseInfo } from "../db/managers/user.js";
@@ -70,14 +70,25 @@ export class Command<U extends ContextMenuCommandInteraction | ChatInputCommandI
 		};
 	}
 
-	/* Respond to auto-completion requests. */
+	/**
+	 * Reset the cool-down for this command.
+	 */
+	public async removeCooldown(interaction: ChatInputCommandInteraction): Promise<void> {
+		return this.bot.command.removeCooldown(interaction, this as any);
+	}
+
+
+	/**
+	 * Respond to auto-completion requests.
+	 */
 	public async complete(interaction: AutocompleteInteraction): Promise<CommandOptionChoice[]> {
 		return [];
 	}
 
-	/* Run the command. */
+	/**
+	 * Execute the command.
+	 */
 	public async run(interaction: U, db: DatabaseInfo): CommandResponse {
-		/* Stub */
-		return;
+		return undefined;
 	}
 }
