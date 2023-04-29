@@ -754,7 +754,7 @@ export default class ImagineCommand extends Command {
 
 			/* Size the images should be */
 			const rawSize: string[] = interaction.options.getString("size") ? interaction.options.getString("size", true).split(":") : this.bot.db.settings.get<string>(db.user, SettingOptions.image_size).split(":");
-			const size: ImageGenerationSize = { width: parseInt(rawSize[0]), height: parseInt(rawSize[1]), premium: !!rawSize[2] };
+			const size: ImageGenerationSize = { width: parseInt(rawSize[0]), height: parseInt(rawSize[1]), premium: rawSize[2] == "true" };
 
 			/* If the user is trying to generate an image with more steps than possible for a normal user, send them a notice. */
 			if (size.premium && !canUsePremiumFeatures) return new PremiumUpsellResponse({
