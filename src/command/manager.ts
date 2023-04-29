@@ -185,7 +185,7 @@ export class CommandManager {
 			.addEmbed(builder => builder
 				.setTitle("The bot is currently reloading**...** ⏳")
 				.setColor("Orange")
-			).send(interaction);
+			).setEphemeral(true).send(interaction);
 
 		/* Current status of the bot */
 		const status: BotStatus = await this.bot.status();
@@ -196,7 +196,7 @@ export class CommandManager {
 				.setDescription(status.notice !== undefined ? `*${status.notice}*` : null)
 				.setTimestamp(status.since)
 				.setColor("Orange")
-			).send(interaction);
+			).setEphemeral(true).send(interaction);
 
 		/* Get the current cool-down of the command. */
 		const cooldown: CooldownData | null = await this.cooldown(interaction, command);

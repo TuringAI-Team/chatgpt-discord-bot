@@ -464,10 +464,8 @@ export default class ImagineCommand extends Command {
 	}
 
 	private createRows(conversation: Conversation, result: StableHordeGenerationResult): ActionRowBuilder<ButtonBuilder>[] {
-		return [
-			this.createRatingRow(conversation, result),
-			...this.createViewRows(conversation, result)
-		];
+		/* TODO: Work on a proper rating row, per image */
+		return this.createViewRows(conversation, result);
 	}
 
 	public async handleButtonInteraction(button: ButtonInteraction, conversation: Conversation, action: string, parts: string[]): Promise<void> {
