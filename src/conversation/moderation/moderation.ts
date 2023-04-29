@@ -24,6 +24,7 @@ interface ModerationOptions {
 }
 
 type ImagePromptModerationOptions = Pick<ModerationOptions, "conversation" | "db" | "content"> & {
+    model: string;
     nsfw: boolean;
 }
 
@@ -76,7 +77,7 @@ export type SerializedModerationResult = ModerationResult
  * @param options Generation options
  * @returns Moderation results
  */
-export const check = async ({ conversation, db, content, reply, message, source, filter }: ModerationOptions): Promise<ModerationResult | null> => {
+export const check = async ({ conversation, db, content, reply, message, source, filter }: ModerationOptions): Promise<ModerationResult> => {
     /* Run the AutoMod filter on the message. */
     const auto: AutoModerationActionData | null = await executeModerationFilters({ conversation, content, db, source, filterCallback: filter ? (data, action) => filter(action) : undefined }); 
 
@@ -159,7 +160,7 @@ export const check = async ({ conversation, db, content, reply, message, source,
     return data;
 }
 
-export const checkImagePrompt = async ({ conversation, db, content, nsfw }: ImagePromptModerationOptions): Promise<ModerationResult | null> => {
+export const checkImagePrompt = async ({ conversation, db, content, nsfw, model }: ImagePromptModerationOptions): Promise<ModerationResult | null> => {
     const result = await check({
         conversation, db, content, source: "image",
 
@@ -171,6 +172,17 @@ export const checkImagePrompt = async ({ conversation, db, content, nsfw }: Imag
             return false;
         } : undefined
     });
+
+    /* Turing API results */
+    const turing = await conversation.manager.bot.turing.filter(content, model);
+
+    if (turing.isNsfw && !nsfw) return {
+        ...result, flagged: true
+    };
+
+    if (turing.isCP || turing.isYoung) return {
+        ...result, blocked: true, flagged: true
+    };
 
     return result;
 }

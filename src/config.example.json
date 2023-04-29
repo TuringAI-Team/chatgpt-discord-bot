@@ -55,6 +55,10 @@
         "key": "top.gg webhook key"
     },
 
+    "turing": {
+        "key": "Turing API key @ https://github.com/TuringAI-Team/turing-ai-api"
+    },
+
     "giphy": {
         "key": "GIPHY API key"
     },

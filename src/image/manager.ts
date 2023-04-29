@@ -337,7 +337,7 @@ export class ImageManager extends EventEmitter {
         };
     }
 
-    private async request<T>(path: StableHordeAPIPath, method: "GET" | "POST" | "DELETE", data?: { [key: string]: any }, anon: boolean = false): Promise<T> {
+    private async request<T>(path: StableHordeAPIPath, method: "GET" | "POST" | "DELETE" = "GET", data?: { [key: string]: any }, anon: boolean = false): Promise<T> {
         /* Make the actual request. */
         const response = await fetch(this.url(path), {
             method,

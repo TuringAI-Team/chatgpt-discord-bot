@@ -74,6 +74,17 @@ export interface Config {
 		key: string;
 	}
 
+	/* Turing API information */
+	turing: {
+		/* API key */
+		key: string;
+
+		/* Various CAPTCHA verification keys */
+		captchas: {
+			turnstile: string;
+		}
+	}
+
 	/* OCR.space API information */
 	ocr: {
 		/* API key */

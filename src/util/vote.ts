@@ -57,7 +57,7 @@ export class VoteManager {
         return `bots/${this.bot.app.config.discord.id}/${path}`;
     }
 
-    private async request<T>(path: VoteAPIPath, method: "GET" | "POST" | "DELETE", data?: { [key: string]: any }): Promise<T> {
+    private async request<T>(path: VoteAPIPath, method: "GET" | "POST" | "DELETE" = "GET", data?: { [key: string]: any }): Promise<T> {
         /* Make the actual request. */
         const response = await fetch(this.url(path), {
             method,

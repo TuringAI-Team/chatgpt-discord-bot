@@ -806,7 +806,7 @@ export default class ImagineCommand extends Command {
 				await interaction.deferReply().catch(() => {});
 
 				const moderation: ModerationResult | null = await checkImagePrompt({
-					conversation, db, content: prompt, nsfw
+					conversation, db, content: prompt, nsfw, model: model.name
 				});
 
 				/* If the message was flagged, send a warning message. */
@@ -835,7 +835,7 @@ export default class ImagineCommand extends Command {
 
 				/* If the message content was not provided by another source, check it for profanity & ask the user if they want to execute the request anyways. */
 				const moderation: ModerationResult | null = await checkImagePrompt({
-					conversation, db, content: prompt, nsfw
+					conversation, db, content: prompt, nsfw, model: "stable_diffusion"
 				});
 
 				/* If the message was flagged, send a warning message. */

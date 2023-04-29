@@ -16,13 +16,13 @@ import { ShardLogger } from "../util/logger.js";
 import { ConfigBranding } from "../config.js";
 import { VoteManager } from "../util/vote.js";
 import { NatAI } from "../chat/other/nat.js";
+import { TuringAPI } from "../turing/api.js";
 import { Event } from "../event/event.js";
 import { Utils } from "../util/utils.js";
 import { StrippedApp } from "../app.js";
 import { TaskManager } from "./task.js";
 
-
-export type BotStatusType = StatusIncidentType | "maintenance";
+export type BotStatusType = StatusIncidentType | "maintenance"
 
 export interface BotStatus {
     /* Current status of the bot */
@@ -108,6 +108,9 @@ export class Bot extends EventEmitter {
     /* OpenAI manager, in charge of moderation endpoint requests */
     public readonly ai: OpenAIManager;
 
+    /* Turing API manager */
+    public readonly turing: TuringAPI;
+
     /* Conversation & session manager, in charge of managing Microsoft sessions & conversations with the bot */
     public readonly conversation: ConversationManager;
 
@@ -164,6 +167,7 @@ export class Bot extends EventEmitter {
         this.logger = new ShardLogger(this);
         this.image = new ImageManager(this);
         this.db = new DatabaseManager(this);
+        this.turing = new TuringAPI(this);
         this.vote = new VoteManager(this);
         this.ai = new OpenAIManager(this);
         this.task = new TaskManager(this);
