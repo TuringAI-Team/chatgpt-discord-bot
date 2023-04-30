@@ -14,6 +14,7 @@ import { GeneratorOptions } from "./generator.js";
 import { BotDiscordClient } from "../bot/bot.js";
 import { ChatTone, ChatTones } from "./tone.js";
 import { Utils } from "../util/utils.js";
+import chalk from "chalk";
 
 export interface ChatInput {
 	/* The input message itself; always given */
@@ -355,7 +356,7 @@ export class Conversation {
 						});
 					}
 				} else {
-					// this.session.manager.bot.logger.warn(`Request by ${chalk.bold(options.conversation.user.tag)} failed, retrying [ ${chalk.bold(tries)}/${chalk.bold(CONVERSATION_ERROR_RETRY_MAX_TRIES)} ] ->`, error);
+					this.session.manager.bot.logger.warn(`Request by ${chalk.bold(options.conversation.user.tag)} failed, retrying [ ${chalk.bold(tries)}/${chalk.bold(CONVERSATION_ERROR_RETRY_MAX_TRIES)} ] ->`, error);
 
 					/* Display a notice message to the user on Discord. */
 					options.onProgress({
@@ -458,7 +459,7 @@ export class Conversation {
 		const cooldown: number = this.cooldownTime(options.db, this.tone);
 
 		/* Activate the cool-down. */
-		if (!this.manager.bot.app.config.discord.owner.includes(this.user.id)) this.cooldown.use(cooldown);
+		/*if (!this.manager.bot.app.config.discord.owner.includes(this.user.id))*/ this.cooldown.use(cooldown);
 
 		return {
 			...result,

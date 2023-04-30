@@ -63,11 +63,10 @@ export abstract class Utils {
 	/* Clean up the content of a bot invocation message. */
 	public static cleanContent(bot: Bot, content: string): string {
 		return content
-			/* Replace the bot mention in general, if it doesn't have a nickname or was
-			   invoked in DMs. */
+			/* Remove the bot mention. */ 
 			.replaceAll(`<@${bot.client.user!.id}>`, "")
 
-			/* Remove any leading & trailing spaces. */
+			/* Remove any leading & trailing whitespace. */
 			.trim();
 	}
 

@@ -1,7 +1,7 @@
-import { CacheType, ChatInputCommandInteraction, ColorResolvable, CommandInteraction, DMChannel, InteractionResponse, Message, MessageComponentInteraction, TextChannel, ThreadChannel } from "discord.js";
+import { CacheType, ColorResolvable, ContextMenuCommandInteraction, DMChannel, InteractionResponse, Message, MessageComponentInteraction, TextChannel, ThreadChannel } from "discord.js";
 
+import { Command, CommandInteraction } from "../command.js";
 import { Response } from "../response.js";
-import { Command } from "../command.js";
 
 export enum ErrorType {
     Error, Other
@@ -9,10 +9,10 @@ export enum ErrorType {
 
 interface ErrorResponseOptions {
     /* Interaction to reply to */
-    interaction: ChatInputCommandInteraction;
+    interaction: CommandInteraction;
 
     /* Command to reply to */
-    command: Command;
+    command: Command<any>;
 
     /* Message to display */
     message: string;
@@ -47,9 +47,9 @@ export class ErrorResponse extends Response {
         this.setEphemeral(true);
     }
 
-    public async send(interaction: MessageComponentInteraction<CacheType> | CommandInteraction<CacheType> | Message<boolean> | TextChannel | DMChannel | ThreadChannel<boolean>): Promise<Message<boolean> | InteractionResponse<boolean> | null> {
+    public async send(interaction: CommandInteraction | MessageComponentInteraction<CacheType> | Message<boolean> | TextChannel | DMChannel | ThreadChannel<boolean>): Promise<Message<boolean> | InteractionResponse<boolean> | null> {
         /* Remove the cool-down from the executed command. */
-        await this.options.command.removeCooldown(this.options.interaction);
+        await this.options.command.removeCooldown(this.options.interaction as any);
         return super.send(interaction);
     }
 }

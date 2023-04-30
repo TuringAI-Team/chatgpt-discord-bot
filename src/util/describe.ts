@@ -1,13 +1,12 @@
-import { Attachment, MessageContextMenuCommandInteraction, ChatInputCommandInteraction, Message, Embed, ContextMenuCommandInteraction, StickerFormatType, Sticker } from "discord.js";
+import { Attachment, MessageContextMenuCommandInteraction, ChatInputCommandInteraction, Message, Embed, StickerFormatType, Sticker } from "discord.js";
 import chalk from "chalk";
 
+import { ModerationResult, checkDescribeResult } from "../conversation/moderation/moderation.js";
+import { LoadingResponse } from "../command/response/loading.js";
 import { Conversation } from "../conversation/conversation.js";
 import { NoticeResponse } from "../command/response/notice.js";
-import { Response } from "../command/response.js";
-import { Utils } from "./utils.js";
-import { ModerationResult, checkDescribeResult, checkTranslationPrompt } from "../conversation/moderation/moderation.js";
 import { DatabaseInfo } from "../db/managers/user.js";
-
+import { Response } from "../command/response.js";
 
 const HAS_EMOJI_REGEX = /<a?:.+:\d+>/gm
 const NORMAL_EMOJI_REGEX = /<:.+:(\d+)>/gm
@@ -40,7 +39,7 @@ export const runDescribeAction = async (conversation: Conversation, db: Database
         const chosen: Attachment = interaction.options.getAttachment("image", true);
         attachment = { url: chosen.proxyURL, type: "image" };
 
-    } else if (interaction instanceof ContextMenuCommandInteraction) {
+    } else if (interaction instanceof MessageContextMenuCommandInteraction) {
         const message: Message = interaction.targetMessage;
 
         const attachments: Attachment[] = Array.from(message.attachments.filter(a => {
@@ -95,20 +94,13 @@ export const runDescribeAction = async (conversation: Conversation, db: Database
         color: "Red"
     }).send(interaction);
 
-    /* List of random phrases to display while translating the message */
-    const randomPhrases: string[] = [
-        "Stealing your job",
-        "Looking at the image",
-        "Inspecting your image",
-        "Looking at the details"
-    ];
-
-    await new Response()
-        .addEmbed(builder => builder
-            .setTitle(`${Utils.random(randomPhrases)} **...** 🤖`)
-            .setColor("Aqua")
-        )
-    .send(interaction);
+    new LoadingResponse({
+        phrases: [
+            "Looking at the image",
+            "Inspecting your image",
+            "Looking at the details"
+        ]
+    }).send(interaction);
 
     /* Make sure that the image is accessible. */
     const response = await fetch(attachment.url, {

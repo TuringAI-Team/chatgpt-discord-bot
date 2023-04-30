@@ -1,8 +1,8 @@
 import { ActionRowBuilder, Attachment, AttachmentBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle, ChannelType, ComponentEmojiResolvable, ComponentType, DiscordAPIError, DMChannel, EmbedBuilder, EmojiIdentifierResolvable, Guild, InteractionReplyOptions, Message, MessageCreateOptions, MessageEditOptions, PermissionsString, Role, TextChannel, User } from "discord.js";
 
-import { DatabaseInfo, DatabaseUser, DatabaseUserInfraction } from "../db/managers/user.js";
 import { check as moderate, ModerationResult } from "./moderation/moderation.js";
 import { ChatNoticeMessage, ResponseMessage } from "../chat/types/message.js";
+import { DatabaseInfo, DatabaseUserInfraction } from "../db/managers/user.js";
 import { ChatGeneratedInteraction, Conversation } from "./conversation.js";
 import { reactToMessage, removeReaction } from "./utils/reaction.js";
 import { ChatModel, ModelCapability } from "../chat/types/model.js";
@@ -66,10 +66,7 @@ export class Generator {
 	 * 
 	 * @returns Formatted Discord message
 	 */
-	public async process(conversation: Conversation, guild: Guild | null, data: ResponseMessage, options: GeneratorOptions, db: DatabaseInfo, moderations: (ModerationResult | null)[], pending: boolean): Promise<Response | null> {
-		/* If the message wasn't initialized yet, ignore this. */
-		if (data === null) return null;
-
+	public async process(conversation: Conversation, data: ResponseMessage, options: GeneratorOptions, db: DatabaseInfo, moderations: (ModerationResult | null)[], pending: boolean): Promise<Response> {
 		/* Embeds to display in the message */
 		const embeds: EmbedBuilder[] = [];
 		const response: Response = new Response();
@@ -556,7 +553,7 @@ export class Generator {
 			).send(message).catch(() => {});
 
 		/* Remaining cool-down time */
-		const remaining: number = (conversation.cooldown.state.startedAt! + conversation.cooldown.state.expiresIn!) - Date.now();
+		const remaining: number = conversation.cooldown.remaining;
 		if (conversation.cooldown.active) await this.bot.db.users.incrementInteractions(db.user, "cooldown_messages");
 
 		/* If the command is on cool-down, don't run the request. */
@@ -662,7 +659,7 @@ export class Generator {
 			if (data === null || (!partial && (data.type === "Chat" || data.type === "ChatNotice"))) return;
 
 			/* Generate a nicely formatted embed. */
-			const response: Response | null = await this.process(conversation, guild, data, options, db, [ moderation ], true);
+			const response: Response | null = await this.process(conversation, data, options, db, [ moderation ], true);
 
 			/* Send an initial reply placeholder. */
 			if (reply === null && final === null && !queued && (partial || (!partial && (data.type !== "Chat" && data.type !== "ChatNotice")))) {
@@ -838,7 +835,7 @@ export class Generator {
 			}
 
 			/* Gemerate a nicely formatted embed. */
-			const response: Response | null = final !== null ? await this.process(conversation, guild, final.output, options, db, [ moderation, final.moderation ], false) : null;
+			const response: Response | null = final !== null ? await this.process(conversation, final.output, options, db, [ moderation, final.moderation ], false) : null;
 
 			/* If the embed failed to generate, send an error message. */
 			if (response === null) return await sendError(new Response()
@@ -848,39 +845,40 @@ export class Generator {
 					.setColor("Red")
 				));
 
-			/* Final reply message to the invocation message */
-			let replyMessage: Message | null = null;
-
 			/* Wait for the queued message to be sent. */
 			while (queued) {
 				await new Promise(resolve => setTimeout(resolve, 500));
 			}
 
-			/* Edit & send the final message. */
-			try {
-				if (reply !== null) {
-					try {
-						replyMessage = await reply.edit(response.get() as MessageEditOptions);
-					} catch (_) {
-						replyMessage = await message.reply(response.get() as MessageCreateOptions);
+			const editOrSend = async (response: Response): Promise<Message> => {
+				try {
+					if (reply !== null) {
+						try {
+							return await reply.edit(response.get() as MessageEditOptions);
+						} catch (_) {
+							return await message.reply(response.get() as MessageCreateOptions);
+						}
+					} else {
+						return await message.reply(response.get() as MessageCreateOptions);
 					}
-				} else {
-					replyMessage = await message.reply(response.get() as MessageCreateOptions);
-				}
-			} catch (_) {
-				/* Add an "author" embed to the message, in order to indicate who actually triggered this message. */
-				const res = response
-					.addEmbed(builder => builder
-						.setAuthor({ name: author.tag, iconURL: author.displayAvatarURL() })
-						.setDescription(content)
-						.setColor("Red")
-					);
+				} catch (_) {
+					/* Add an "author" embed to the message, in order to indicate who actually triggered this message. */
+					const res = response
+						.addEmbed(builder => builder
+							.setAuthor({ name: author.tag, iconURL: author.displayAvatarURL() })
+							.setDescription(content)
+							.setColor("Red")
+						);
 
-				replyMessage = await message.channel.send(res.get() as MessageCreateOptions);
+					return await message.channel.send(res.get() as MessageCreateOptions);
+				}
 			}
 
+			/* Edit & send the final message. */
+			reply = await editOrSend(response);
+
 			/* Update the reply message in the history entry, if the conversation wasn't reset. */
-			if (conversation.history.length > 0) conversation.history[conversation.history.length - 1].reply = replyMessage;		
+			if (conversation.history.length > 0) conversation.history[conversation.history.length - 1].reply = reply;
 
 		} catch (error) {
 			/* Don't try to handle Discord API errors, just send the user a notice message in DMs. */
@@ -896,7 +894,7 @@ export class Generator {
 							.setColor("Red")
 						)
 					.send(channel);
-				} catch (error) {}
+				} catch (_) {}
 			}
 
 			await handleError(this.bot, {

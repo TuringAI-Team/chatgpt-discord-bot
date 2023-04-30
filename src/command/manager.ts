@@ -1,4 +1,4 @@
-import { ActionRowBuilder, AutocompleteInteraction, ComponentType, ButtonStyle, ButtonBuilder, ChatInputCommandInteraction, Collection, InteractionResponse, Message, SlashCommandBuilder, MessageContextMenuCommandInteraction, CommandInteraction } from "discord.js";
+import { ActionRowBuilder, AutocompleteInteraction, ComponentType, ButtonStyle, ButtonBuilder, ChatInputCommandInteraction, Collection, InteractionResponse, Message, SlashCommandBuilder, MessageContextMenuCommandInteraction, CommandInteraction, BaseInteraction } from "discord.js";
 import { RESTPostAPIApplicationCommandsJSONBody, Routes } from "discord-api-types/v10";
 import { DiscordAPIError, REST } from "@discordjs/rest";
 
@@ -88,8 +88,8 @@ export class CommandManager {
 		return found;
 	}
 
-	private commandName(interaction: ChatInputCommandInteraction, command: Command): string {
-		return `${interaction.user.id}-${interaction.options.getSubcommand(false) ? `${command.builder.name}-${interaction.options.getSubcommand(true)}` : command.builder.name}`;
+	private commandName(interaction: CommandInteraction, command: Command): string {
+		return `${interaction.user.id}-${interaction instanceof ChatInputCommandInteraction && interaction.options.getSubcommand(false) ? `${command.builder.name}-${interaction.options.getSubcommand(true)}` : command.builder.name}`;
 	}
 
 	/**
@@ -145,7 +145,7 @@ export class CommandManager {
 		}, duration);
 	}
 
-	public async removeCooldown(interaction: ChatInputCommandInteraction, command: Command): Promise<void> {
+	public async removeCooldown(interaction: CommandInteraction, command: Command<any>): Promise<void> {
 		const name: string = this.commandName(interaction, command);
 		await this.bot.db.cache.delete("cooldown", name);
 	}

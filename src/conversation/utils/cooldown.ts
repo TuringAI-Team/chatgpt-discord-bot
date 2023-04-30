@@ -1,3 +1,5 @@
+import { EventEmitter } from "events";
+
 export interface CooldownOptions {
     /* How long the cooldown takes to expire */
     time: number;
@@ -18,7 +20,7 @@ export interface CooldownModifier {
     multiplier?: number;
 }
 
-export class Cooldown {
+export class Cooldown extends EventEmitter {
     /* Information about the cooldown */
     public readonly options: CooldownOptions;
 
@@ -29,6 +31,7 @@ export class Cooldown {
     private timer: NodeJS.Timeout | null;
 
     constructor(options: CooldownOptions) {
+        super();
         this.options = options;
 
         this.state = { active: false, startedAt: null, expiresIn: null };
@@ -65,6 +68,11 @@ export class Cooldown {
 
     public get active(): boolean {
         return this.state && this.state.active;
+    }
+
+    public get remaining(): number {
+        if (!this.state.active) return -1;
+        return this.state.startedAt! + (this.state.expiresIn!) - Date.now();
     }
 
     /**

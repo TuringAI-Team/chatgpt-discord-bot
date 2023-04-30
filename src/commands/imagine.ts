@@ -11,11 +11,11 @@ import { ImageGenerationSamplers, ImageGenerationSampler } from "../image/types/
 import { PremiumUpsellResponse, PremiumUpsellType } from "../command/response/premium.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
 import { sendImageModerationMessage } from "../util/moderation/moderation.js";
+import { ErrorResponse, ErrorType } from "../command/response/error.js";
 import { renderIntoSingleImage } from "../image/utils/renderer.js";
 import { StableHordeAPIError } from "../error/gpt/stablehorde.js";
+import { LoadingResponse } from "../command/response/loading.js";
 import { Conversation } from "../conversation/conversation.js";
-import { ErrorResponse, ErrorType } from "../command/response/error.js";
-import { SettingOptions } from "../db/managers/settings.js";
 import { OpenAIChatMessage } from "../openai/types/chat.js";
 import { handleError } from "../util/moderation/error.js";
 import { StorageImage } from "../db/managers/storage.js";
@@ -23,7 +23,6 @@ import { DatabaseInfo } from "../db/managers/user.js";
 import { PagesBuilder } from "../pages/builder.js";
 import { Utils } from "../util/utils.js";
 import { Bot } from "../bot/bot.js";
-
 
 interface ImageGenerationProcessOptions {
 	interaction: CommandInteraction;
@@ -734,7 +733,7 @@ export default class ImagineCommand extends Command {
 			/* How many images to generate */
 			const count: number = 
 				interaction.options.getInteger("count")
-				?? this.bot.db.settings.get<number>(db.user, SettingOptions.image_count);
+				?? this.bot.db.settings.get<number>(db.user, "image_count");
 
 			/* How many steps to generate the images with */
 			const steps: number =
@@ -753,7 +752,7 @@ export default class ImagineCommand extends Command {
 			});
 
 			/* Size the images should be */
-			const rawSize: string[] = interaction.options.getString("size") ? interaction.options.getString("size", true).split(":") : this.bot.db.settings.get<string>(db.user, SettingOptions.image_size).split(":");
+			const rawSize: string[] = interaction.options.getString("size") ? interaction.options.getString("size", true).split(":") : this.bot.db.settings.get<string>(db.user, "image_size").split(":");
 			const size: ImageGenerationSize = { width: parseInt(rawSize[0]), height: parseInt(rawSize[1]), premium: rawSize[2] == "true" };
 
 			/* If the user is trying to generate an image with more steps than possible for a normal user, send them a notice. */
@@ -781,7 +780,7 @@ export default class ImagineCommand extends Command {
 				const filter: StableHordeGenerationFilter | null = interaction.options.getString("filter") ? STABLE_HORDE_FILTERS.find(f => f.name === interaction.options.getString("filter", true))! : null;
 
 				/* Which generation model to use; otherwise pick the default one */
-				const modelName: string = interaction.options.getString("model") ?? this.bot.db.settings.get<string>(db.user, SettingOptions.image_model);
+				const modelName: string = interaction.options.getString("model") ?? this.bot.db.settings.get<string>(db.user, "image_model");
 
 				/* Try to get the Stable Horde model. */
 				const model: StableHordeModel | null = this.bot.image.models.get(modelName) ?? null;
@@ -860,22 +859,15 @@ export default class ImagineCommand extends Command {
 					}
 				];
 
-				/* List of random phrases to display while generating a prompt */
-				const randomPhrases: string[] = [
-					"Improving your prompt",
-					"Spicing up the scene",
-					"Working on the small details",
-					"Choosing an awesome model",
-					"Stealing your job",
-					"Enhancing the small details"
-				];
-
-				await new Response()
-					.addEmbed(builder => builder
-						.setTitle(`${Utils.random(randomPhrases)} **...** 🤖`)
-						.setColor("Aqua")
-					)
-					.send(interaction);
+				new LoadingResponse({
+					phrases: [
+						"Improving your prompt",
+						"Spicing up the scene",
+						"Working on the small details",
+						"Choosing an awesome model",
+						"Enhancing the small details"
+					]
+				}).send(interaction);
 
 				/* If the user's session isn't initialized yet, do that now. */
 				if (!conversation.session.active) await conversation.session.init();

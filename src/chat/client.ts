@@ -14,12 +14,12 @@ import { ChatModel, ModelCapability, ModelType } from "./types/model.js";
 import { ChatTone, TonePromptType } from "../conversation/tone.js";
 import { OpenAIChatMessage } from "../openai/types/chat.js";
 import { handleError } from "../util/moderation/error.js";
+import { LanguageManager } from "../db/types/locale.js";
 import { Session } from "../conversation/session.js";
 import { ClydePromptData } from "./models/clyde.js";
 
 /* List of available model providers */
 import { ChatModels } from "./models/index.js";
-
 
 export interface ChatClientResult {
     input: ChatInput;
@@ -206,8 +206,8 @@ export class ChatClient {
      * Get the current time, formatted for GPT.
      * @returns Current time, formatted for GPT
      */
-	public time(date?: Date): string {
-		const today = date ?? new Date();
+	public time(): string {
+		const today = new Date();
 		return `${String(today.getUTCHours()).padStart(2, "0")}:${String(today.getMinutes()).padStart(2, "0")} UTC`;
 	}
 
@@ -226,11 +226,11 @@ export class ChatClient {
         const result: string = formatter(this.time(), this.date(), conversation, options, data).trim();
 
         /* Language selected by the user */
-        const language: string = localeCode.getLanguageName(this.session.manager.bot.db.settings.get(options.db.user, "language"));
+        const language: string = LanguageManager.modelLanguageName(options.db.user);
         const hasCapability: boolean = options.model.hasCapability(ModelCapability.UserLanguage);
 
-        if (!hasCapability || (hasCapability && language === "en-US")) return result;
-        else return `${result}\n- Additionally, you must prioritize responding to the user in ${language}.`
+        if (!hasCapability || (hasCapability && language === "English")) return result;
+        else return `${result}\n- Additionally, you must prioritize responding to the user in the language "${language}".`
     }
 
     /**
@@ -279,7 +279,7 @@ export class ChatClient {
         do {
             /* Which messages to use */
             let history: ChatInteraction[] = options.conversation.history;
-            if (options.conversation.tone.settings.maxMessages) history = history.slice(undefined, options.conversation.tone.settings.maxMessages);
+            if (options.conversation.tone.settings.maxMessages) history = history.slice(-options.conversation.tone.settings.maxMessages);
 
             /* Try to construct a prompt below the maximum token count & add the initial prompt. */
             messages.Initial = {
@@ -317,9 +317,7 @@ export class ChatClient {
             const currentContextLength: number = getChatMessageLength(messages.Initial!);
 
             /* If the max context length exceeds even the length of the initial prompt itself, account for that too. */
-            if (maxContextLength < currentContextLength) {
-                maxContextLength += currentContextLength;
-            }
+            if (maxContextLength < currentContextLength) maxContextLength += currentContextLength;
 
             /* If a too long user prompt is causing the prompt to be too long, throw an error. */
             if (history.length === 0 && maxContextLength - tokens <= 0) throw new GPTGenerationError({
