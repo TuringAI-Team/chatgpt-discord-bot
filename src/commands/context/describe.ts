@@ -15,8 +15,8 @@ export default class DescribeImageContextMenuCommand extends ContextMenuCommand 
 			.setName("Describe image")
         , {
             cooldown: {
-                Free: 3 * 60 * 1000,
-                Voter: 2 * 60 * 1000,
+                Free: 2.5 * 60 * 1000,
+                Voter: 1.5 * 60 * 1000,
                 GuildPremium: 45 * 1000,
                 UserPremium: 30 * 1000
             }

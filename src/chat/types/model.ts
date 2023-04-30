@@ -102,8 +102,7 @@ export abstract class ChatModel {
             new Promise<void>(async resolve => {
                 /* Additionally, run OCR text recognition, to further improve results. */
                 ocr = await detectText(this.client.session.manager.bot, {
-                    url: options.attachment.url,
-                    engine: 5
+                    url: options.attachment.url, engine: 5
                 }).catch(() => null);
 
                 resolve();

@@ -1,7 +1,7 @@
 import { ActionRowBuilder, Attachment, AttachmentBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle, ChannelType, ComponentEmojiResolvable, ComponentType, DiscordAPIError, DMChannel, EmbedBuilder, EmojiIdentifierResolvable, Guild, InteractionReplyOptions, Message, MessageCreateOptions, MessageEditOptions, PermissionsString, Role, TextChannel, User } from "discord.js";
 
+import { ChatNoticeMessage, MessageType, ResponseMessage } from "../chat/types/message.js";
 import { check as moderate, ModerationResult } from "./moderation/moderation.js";
-import { ChatNoticeMessage, ResponseMessage } from "../chat/types/message.js";
 import { DatabaseInfo, DatabaseUserInfraction } from "../db/managers/user.js";
 import { ChatGeneratedInteraction, Conversation } from "./conversation.js";
 import { reactToMessage, removeReaction } from "./utils/reaction.js";
@@ -415,7 +415,7 @@ export class Generator {
 
 		/* If the user mentioned the role instead of the user, and the message doesn't have any content,
 		   show the user a small notice message telling them to ping the bot instead. */
-		if (mentions === "role" && content.length === 0) {
+		   if (mentions === "role" && content.length === 0) {
 			return void await new Response()
 				.addEmbed(builder => builder
 					.setTitle("Hey there... 👋")
@@ -427,12 +427,6 @@ export class Generator {
 
 		/* If the user mentioned the bot somewhere in the message (and not at the beginning), react with a nice emoji. */
 		if (mentions === "inMessage") return void await reactToMessage(this.bot, message, "👋").catch(() => {});
-
-		/* If the user sen't an empty message, respond with the introduction message. */
-		if (content.length === 0) {
-			const page: Response = await buildIntroductionPage(this.bot, author);
-			return void await page.send(options.message).catch(() => {});
-		}
 
 		/* Get the user & guild data from the database, if available. */
 		let db = await this.bot.db.users.fetchData(author, guild);
@@ -546,6 +540,15 @@ export class Generator {
 				).send(message).catch(() => {});
 		}
 
+		/* Whether the user attached any images to their message */
+		const attachedImages: boolean = conversation.session.client.findMessageAttachments(message).length > 0;
+
+		/* If the user sen't an empty message, respond with the introduction message. */
+		if (content.length === 0 && !attachedImages) {
+			const page: Response = await buildIntroductionPage(this.bot, author);
+			return void await page.send(options.message).catch(() => {});
+		}
+
 		if (conversation.generating) return void await new Response()
 			.addEmbed(builder => builder
 				.setDescription("You already have a request running in your conversation, *wait for it to finish* 😔")
@@ -588,9 +591,6 @@ export class Generator {
 
 		/* Model to use for chat generation, as specified by the user's configured tone */
 		const model: ChatModel = conversation.session.client.modelForTone(conversation.tone);
-
-		/* Whether the user attached any images to their message */
-		const attachedImages: boolean = conversation.session.client.findMessageAttachments(message).length > 0;
 
 		/* If the user attached images to their messages, but doesn't have Premium access, ignore their request. */
 		if (attachedImages && !premium) return void await new Response()
@@ -831,7 +831,7 @@ export class Generator {
 			/* If the output is empty for some reason, set a placeholder message. */
 			if (final.output.text.length === 0) {
 				(final.output as ChatNoticeMessage).text = `**${this.bot.client.user!.username}**'s response was empty for this prompt, *please try again* 😔`;
-				final.output.type = "Notice";
+				final.output.type = MessageType.ChatNotice;
 			}
 
 			/* Gemerate a nicely formatted embed. */

@@ -1,11 +1,12 @@
 import { EmbedBuilder, Message, User } from "discord.js";
+import chalk from "chalk";
 
 import { DatabaseConversation, DatabaseInfo, DatabaseResponseMessage, RawDatabaseConversation } from "../db/managers/user.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
+import { MessageType, ResponseMessage } from "../chat/types/message.js";
 import { ChatInputImage, ImageBuffer } from "../chat/types/image.js";
 import { check, ModerationResult } from "./moderation/moderation.js";
 import { Cooldown, CooldownModifier } from "./utils/cooldown.js";
-import { ResponseMessage } from "../chat/types/message.js";
 import { GenerationOptions, Session } from "./session.js";
 import { ChatClientResult } from "../chat/client.js";
 import { ConversationManager } from "./manager.js";
@@ -14,7 +15,6 @@ import { GeneratorOptions } from "./generator.js";
 import { BotDiscordClient } from "../bot/bot.js";
 import { ChatTone, ChatTones } from "./tone.js";
 import { Utils } from "../util/utils.js";
-import chalk from "chalk";
 
 export interface ChatInput {
 	/* The input message itself; always given */
@@ -360,7 +360,7 @@ export class Conversation {
 
 					/* Display a notice message to the user on Discord. */
 					options.onProgress({
-						id: "", raw: null, type: "Notice",
+						id: "", raw: null, type: MessageType.ChatNotice,
 						text: `Something went wrong while processing your message, retrying [ **${tries}**/**${CONVERSATION_ERROR_RETRY_MAX_TRIES}** ]`
 					});
 				}
@@ -459,7 +459,7 @@ export class Conversation {
 		const cooldown: number = this.cooldownTime(options.db, this.tone);
 
 		/* Activate the cool-down. */
-		/*if (!this.manager.bot.app.config.discord.owner.includes(this.user.id))*/ this.cooldown.use(cooldown);
+		if (!this.manager.bot.app.config.discord.owner.includes(this.user.id)) this.cooldown.use(cooldown);
 
 		return {
 			...result,

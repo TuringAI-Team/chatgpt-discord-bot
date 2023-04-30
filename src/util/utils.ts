@@ -113,6 +113,10 @@ export abstract class Utils {
 		return content.endsWith(trailing) ? content.slice(undefined, -trailing.length) : content;
 	}
 
+	public static fileExtension(name: string): string {
+		return name.split(".").reverse()[0];
+	}
+
 	public static inviteLink(bot: Bot): string {
 		return `https://discord.com/api/oauth2/authorize?client_id=${bot.app.config.discord.id}&permissions=277025769536&scope=bot`;
 	}

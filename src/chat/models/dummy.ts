@@ -1,8 +1,7 @@
-import { setTimeout } from "timers/promises";
-
+import { GPTImageAnalyzeOptions, ModelGenerationOptions } from "../types/options.js";
 import { ChatModel, ModelCapability, ModelType } from "../types/model.js";
-import { ModelGenerationOptions } from "../types/options.js";
 import { PartialResponseMessage } from "../types/message.js";
+import { ChatAnalyzedImage } from "../types/image.js";
 import { ChatClient } from "../client.js";
 
 export class DummyModel extends ChatModel {
@@ -11,18 +10,22 @@ export class DummyModel extends ChatModel {
             name: "Dummy",
             type: ModelType.Dummy,
 
-            capabilities: [ ModelCapability.GuildOnly ]
+            capabilities: [ ModelCapability.GuildOnly, ModelCapability.ImageViewing ]
         });
     }
 
+    public async analyze(options: GPTImageAnalyzeOptions): Promise<ChatAnalyzedImage> {
+        return {
+            text: "cool thing text OCR yeah",
+            description: "cool description"
+        };
+    }
+
     public async complete(options: ModelGenerationOptions): Promise<PartialResponseMessage> {
-        for (let i = 0; i < 5; i++) {
-            options.progress({ text: i.toString() });
-            await setTimeout(3000);
-        }
+        const p = await this.client.buildPrompt(options, "ChatGPT");
 
         return {
-            text: `${options.guild?.guild.name} = guild, ${options.guild?.member.nickname} = nickname`
+            text: options.images.map(i => `${i.name}, ${i.description}, ${i.text}, ${i.type}`).join("\n") + `\n\n${p.parts.Initial.content}\n\n${p.parts.Other?.content}`
         };
     }
 }

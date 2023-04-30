@@ -9,8 +9,6 @@ export default class MessageCreateEvent extends Event {
 	}
 
 	public async run(message: Message): Promise<void> {
-		if (message.content.length === 0 && message.attachments.size === 0) return;
-
 		try {
 			/* Pass over the message to Generator#handle(). */
 			await this.bot.conversation.generator.handle({

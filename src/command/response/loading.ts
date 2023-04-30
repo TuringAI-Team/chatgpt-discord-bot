@@ -19,7 +19,7 @@ export class LoadingResponse extends Response {
         const phrases: string[] = [ ...BasePhrases, ...options.phrases ?? [] ];
 
         this.addEmbed(builder => builder
-            .setDescription(`${Utils.random(phrases)} **...** 🤖`) 
+            .setTitle(`${Utils.random(phrases)} **...** 🤖`) 
             .setColor("Aqua")
         );
     }

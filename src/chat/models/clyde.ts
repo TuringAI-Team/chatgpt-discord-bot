@@ -182,10 +182,10 @@ const ClydeFormatters: ClydeFormatterPair[] = [
                 const username: string = input.replace("<a:", "").replace(">", "");
     
                 const user: GuildMember | null = guild.members.cache.find(m => m.user.username === username) ?? null;
-                if (user === null) return null;
+                if (user === null) return "*no avatar*";
 
                 const buffer: ImageBuffer | null = await Utils.fetchBuffer(user.displayAvatarURL());
-                if (buffer === null) return null;
+                if (buffer === null) return "*failed to load avatar*";
 
                 return {
                     text: `<@${user.id}>`,

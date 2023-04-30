@@ -1,15 +1,14 @@
-import { Attachment, ChannelType, Collection, ForumChannel, GuildChannel, GuildEmoji, Message, StageChannel, TextChannel, VoiceChannel } from "discord.js";
+import { ChannelType, Collection, ForumChannel, GuildChannel, GuildEmoji, Message, StageChannel, TextChannel, VoiceChannel } from "discord.js";
 import { setTimeout } from "timers/promises";
-import localeCode from "locale-code";
 import { randomUUID } from "crypto";
 import chalk from "chalk";
 
 import { GPT_MAX_CONTEXT_LENGTH, GPT_MAX_GENERATION_LENGTH, countChatMessageTokens, getChatMessageLength, isPromptLengthAcceptable } from "../conversation/utils/length.js";
-import { ChatAnalyzedImage, ChatBaseImage, ChatImageType, ChatInputImage, ImageBuffer } from "./types/image.js";
+import { ChatAnalyzedImage, ChatAttachment, ChatAttachmentExtractors, ChatBaseImage, ChatImageType, ChatInputImage } from "./types/image.js";
 import { ChatInput, ChatInteraction, Conversation } from "../conversation/conversation.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
 import { ChatGenerationOptions, ModelGenerationOptions } from "./types/options.js";
-import { PartialResponseMessage, ResponseMessage } from "./types/message.js";
+import { MessageType, PartialResponseMessage, ResponseMessage } from "./types/message.js";
 import { ChatModel, ModelCapability, ModelType } from "./types/model.js";
 import { ChatTone, TonePromptType } from "../conversation/tone.js";
 import { OpenAIChatMessage } from "../openai/types/chat.js";
@@ -17,6 +16,7 @@ import { handleError } from "../util/moderation/error.js";
 import { LanguageManager } from "../db/types/locale.js";
 import { Session } from "../conversation/session.js";
 import { ClydePromptData } from "./models/clyde.js";
+import { Utils } from "../util/utils.js";
 
 /* List of available model providers */
 import { ChatModels } from "./models/index.js";
@@ -125,6 +125,8 @@ ${channels.map(c => {
 Information about my environment:
  - The server I am in is called: ${options.guild!.guild.name}
  - The server is owned by: <u:${options.guild!.owner.user.username}>
+ - The server has ${options.guild!.guild.memberCount} members${options.guild!.guild.approximatePresenceCount ? `, ${options.guild!.guild.approximatePresenceCount} members of them are online` : ""}.
+${options.guild!.guild.description ? `- The server has the description: "${options.guild!.guild.description}"` : ""}
  - The channel I am in is called: <c:${options.guild!.channel.name}>
 
 I can use this information about the chat participants in the conversation in your replies. Use this information to answer questions, or add flavor to your responses.
@@ -159,9 +161,9 @@ export const OtherPrompts = {
     /* This prompt is added if the user attaches an image to the message, in order to make it easier for the model to understand */
     ImageAttachments:
 `
-When sending a message, users can attach images using the format '[Image #<index> = <file name>: "<brief description of the image>". [optional: "Detected text: "<OCR-detected text in the image"]]'.
-Pretend you can view the images based on their descriptions. Refer to them as "attached image" and prioritize any detected text from the image. Fix any typos in the OCR results.
-Use logic and common sense to understand the image. You must act as if you can see the images.
+To attach images, users may use the format: '[<image type> #<index> = <file name>: "<image description>". [optional: "Detected text: "<corrected OCR text>"]]'.
+You must treat images as if you can see, view and read them, referring to them as attached image/emoji/sticker/etc.
+Prioritize detected text from the image, fix OCR errors, and use logic and common sense to understand the image. Don't ask the user about the description.
 `.trim(),
 
     /* This prompt continues a cut-off message */
@@ -273,7 +275,7 @@ export class ChatClient {
 
         /* Build the image attachment prompt. */
         const imagesPrompt = (images?: ChatInputImage[]) => images && images.length > 0
-            ? `\n${images.map((image, index) => `[Image #${index + 1} = ${image.name}: "${image.description}"${image.text ? `. Detected text: "${image.text}"` : ""}]`).join("\n")}`
+            ? `\n${images.map((image, index) => `[${Utils.titleCase(image.type)} #${index + 1} = ${image.name}: "${image.description}"${image.text ? `, detected text: "${image.text}"` : ""}]`).join("\n")}`
             : "";
 
         do {
@@ -296,7 +298,7 @@ export class ChatClient {
             }
 
             /* If the user attached images to the message, add another pre-prompt. */
-            if (options.images.length > 0) messages.Other = {
+            if (options.images.length > 0 || history.some(e => e.input.images ? e.input.images.length > 0 : false)) messages.Other = {
                 content: OtherPrompts.ImageAttachments,
                 role: "system"
             };
@@ -351,27 +353,27 @@ export class ChatClient {
      * Get all usable Discord image attachments.
      * @returns Usable Discord Image attachments
      */
-    public findMessageAttachments(message: Message): Attachment[] {
-        return Array.from(message.attachments.values())
-            .filter(a => {
-                const allowed: string[] = [ "png", "jpg", "jpeg", "webp", "gif" ];
-                const extension: string = a.name.split(".").pop()!;
+    public findMessageAttachments(message: Message): ChatAttachment[] {
+        /* All extracted images */
+        const total: ChatAttachment[] = [];
 
-                return allowed.includes(extension);
-            })
-            .slice(undefined, 2);
+        for (const extractor of ChatAttachmentExtractors) {
+            const condition: boolean = extractor.condition(message);
+            if (!condition) continue;
+
+            total.push(...(extractor.extract(message) ?? []).map(extracted => ({
+                ...extracted, type: extractor.type
+            })));
+        }
+
+        return total;
     }
 
-    private async messageAttachments(message: Message): Promise<ChatBaseImage[]> {
-        return Promise.all(this.findMessageAttachments(message)
+    private async messageImages(attachments: ChatAttachment[]): Promise<ChatBaseImage[]> {
+        return Promise.all(attachments
             .map(async attachment => {
-                const [ _, extension ] = attachment.name.split(".");
-
-                return {
-                    name: attachment.name, type: extension as ChatImageType,
-                    data: ImageBuffer.from(await (await fetch(attachment.url)).arrayBuffer()),
-                    url: attachment.url
-                };
+                const data = await Utils.fetchBuffer(attachment.url);
+                return { ...attachment, data: data! };
             }));
     }
 
@@ -389,7 +391,7 @@ export class ChatClient {
         for (const attachment of options.attachments) {
             /* Show a notice to the Discord user. */
             if (options.progress) options.progress({
-                id: "", raw: null, type: "Notice",
+                id: "", raw: null, type: MessageType.Notice,
                 text: `Looking at **\`${attachment.name}\`**`
             });
 
@@ -407,7 +409,7 @@ export class ChatClient {
             } catch (error) {
                 /* Show a notice to the Discord user. */
                 if (options.progress) options.progress({
-                    id: "", raw: null, type: "Notice",
+                    id: "", raw: null, type: MessageType.Notice,
                     text: `Failed to look at **\`${attachment.name}\`**, continuing`
                 });
 
@@ -436,7 +438,9 @@ export class ChatClient {
         const id: string = randomUUID();
 
         /* First off, gather all applicable Discord image attachments. */
-        const attachments: ChatBaseImage[] = await this.messageAttachments(options.trigger);
+        const attachments: ChatBaseImage[] = await this.messageImages(
+            this.findMessageAttachments(options.trigger)
+        );
 
         /* List of analyzed images, if any */
         let images: ChatInputImage[] = [];
@@ -445,8 +449,7 @@ export class ChatClient {
         if (attachments.length > 0) {
             /* Analyze all the attached images. */
             images = await this.analyzeImages({
-                ...options,
-                attachments, model
+                ...options, attachments, model
             });
         }
 
@@ -456,7 +459,7 @@ export class ChatClient {
                 ...message, id,
                 raw: null, images: message.images ?? [],
 
-                type: message.type ?? "Chat",
+                type: message.type ?? MessageType.Chat,
                 text: this.clean(message.text)
             });
         }
@@ -478,7 +481,7 @@ export class ChatClient {
                 raw: result.raw ?? null,
                 images: result.images ?? undefined,
     
-                type: result.type ?? "Chat",
+                type: result.type ?? MessageType.Chat,
                 text: this.clean(result.text)
             }
         };

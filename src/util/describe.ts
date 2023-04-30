@@ -2,17 +2,12 @@ import { Attachment, MessageContextMenuCommandInteraction, ChatInputCommandInter
 import chalk from "chalk";
 
 import { ModerationResult, checkDescribeResult } from "../conversation/moderation/moderation.js";
+import { ALLOWED_FILE_EXTENSIONS } from "../chat/types/image.js";
 import { LoadingResponse } from "../command/response/loading.js";
 import { Conversation } from "../conversation/conversation.js";
 import { NoticeResponse } from "../command/response/notice.js";
 import { DatabaseInfo } from "../db/managers/user.js";
 import { Response } from "../command/response.js";
-
-const HAS_EMOJI_REGEX = /<a?:.+:\d+>/gm
-const NORMAL_EMOJI_REGEX = /<:.+:(\d+)>/gm
-const ANIMATED_EMOJI_REGEX = /<a:.+:(\d+)>/gm
-
-const ALLOWED_FILE_EXTENSIONS: string[] = [ "webp", "png", "jpeg", "jpg", "gif" ]
 
 interface DescribeAttachment {
     /* Type of the attachment */
@@ -40,52 +35,8 @@ export const runDescribeAction = async (conversation: Conversation, db: Database
         attachment = { url: chosen.proxyURL, type: "image" };
 
     } else if (interaction instanceof MessageContextMenuCommandInteraction) {
-        const message: Message = interaction.targetMessage;
-
-        const attachments: Attachment[] = Array.from(message.attachments.filter(a => {
-            const suffix: string = a.name.split(".").pop()!;
-            return ALLOWED_FILE_EXTENSIONS.includes(suffix);
-        }).values());
-
-        /* If no attachments were directly attached to the image, try searching for ones in the embeds. */
-        if (attachments.length === 0) {
-            /* Find all usable embeds. */
-            const embeds: Embed[] = message.embeds.filter(e => (e.image && e.image.url) || (e.data.type === "image" && e.data.url));
-
-            /* If there are also no usable embeds, try searching for usable stickers instead. */
-            if (embeds.length === 0) {
-                /* Find all usable stickers. */
-                const stickers: Sticker[] = Array.from(
-                    (message.stickers ?? []).filter(s => s.format !== StickerFormatType.Lottie).values()
-                );
-
-                /* If there are also no usable stickers, try searching for usable custom emojis instead. */
-                if (stickers.length === 0) {
-                    /* Find all usable emojis, animated or normal. */
-                    if (!message.content.match(HAS_EMOJI_REGEX)) attachment = null!;
-                    else {
-                        const matches = NORMAL_EMOJI_REGEX.exec(message.content) ?? ANIMATED_EMOJI_REGEX.exec(message.content)!;
-                        const type = message.content.includes("<a:") ? "gif" : "png";
-
-                        if (matches === null) attachment = null!;
-                        else attachment = { url: `https://cdn.discordapp.com/emojis/${matches[1]}.${type}?v=1`, type: "emoji" };
-                    }
-                    
-                } else {
-                    const chosen: Sticker = stickers[0];
-                    attachment = { url: chosen.url, type: "sticker", name: chosen.name };
-                }
-
-            } else {
-                const chosen: Embed = embeds[0];
-                attachment = { url: chosen.image ? chosen.image.url : chosen.data.url!, type: "image" };
-            }
-        
-        /* Otherwise, use the fitting attachment. */
-        } else {
-            const chosen: Attachment = attachments[0];
-            attachment = { url: chosen.proxyURL, type: "image" };
-        }
+        const results = conversation.session.client.findMessageAttachments(interaction.targetMessage);
+        if (results.length > 0) attachment = results[0];
     }
 
     /* If no usable attachments could be found, show a notice message. */

@@ -1,7 +1,13 @@
 import { ChatOutputImage } from "./image.js";
 
-export type MessageType = "Notice" | "ChatNotice" | "Chat" | "Suggestion";
-export type MessageStopReason = "maxLength" | "stop";
+export enum MessageType {
+	Notice = "Notice",
+	ChatNotice = "ChatNotice",
+	Chat = "Chat",
+	Suggestion = "Suggestion"
+}
+
+export type MessageStopReason = "maxLength" | "stop"
 
 export interface MessageDataUsage {
 	completion: number;
@@ -23,6 +29,7 @@ export interface BaseMessage {
 	/* Raw output message; or the message to display if `displayText` is not set */
 	text: string;
 
+	/* Type of the message */
 	type: MessageType;
 }
 
@@ -38,7 +45,7 @@ export type ResponseMessage = BaseMessage & {
 }
 
 export type ChatNoticeMessage = ResponseMessage & {
-	type: "ChatNotice";
+	type: MessageType.ChatNotice;
 	notice: string;
 }
 
