@@ -50,6 +50,6 @@ export class ErrorResponse extends Response {
     public async send(interaction: MessageComponentInteraction<CacheType> | CommandInteraction<CacheType> | Message<boolean> | TextChannel | DMChannel | ThreadChannel<boolean>): Promise<Message<boolean> | InteractionResponse<boolean> | null> {
         /* Remove the cool-down from the executed command. */
         await this.options.command.removeCooldown(this.options.interaction);
-        return this.send(interaction);
+        return super.send(interaction);
     }
 }

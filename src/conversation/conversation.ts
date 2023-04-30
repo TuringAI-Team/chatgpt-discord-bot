@@ -524,7 +524,7 @@ export class Conversation {
 		if (entry) this.history.push(entry);
 
 		/* Then, broadcast the change to all other clusters. */
-		/*await this.manager.bot.client.cluster.broadcastEval(((client: BotDiscordClient, context: { id: string; history: ChatInteraction[]; cluster: number }) => {
+		await this.manager.bot.client.cluster.broadcastEval(((client: BotDiscordClient, context: { id: string; history: ChatInteraction[]; cluster: number }) => {
 			if (client.bot.data.id !== context.cluster) {
 				const c: Conversation | null = client.bot.conversation.get(context.id);
 
@@ -539,7 +539,7 @@ export class Conversation {
 				history: this.history.map(e => ({ ...e, trigger: null, reply: null })),
 				cluster: this.manager.bot.data.id
 			}
-		});*/
+		});
 	}
 
 	/* Previous message sent in the conversation */

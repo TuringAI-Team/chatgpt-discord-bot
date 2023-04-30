@@ -721,8 +721,8 @@ export class UserManager {
         const queuedUpdates: DatabaseAll | null = this.updates[type].get(id) ?? null;
         let updated: DatabaseAll;
 
-        if (typeof obj === "string") updated = updates as T;
-        else updated = { ...obj, ...queuedUpdates !== null ? queuedUpdates : {}, ...updates as T };
+        if (typeof obj === "string") updated = { ...queuedUpdates, ...updates as T };
+        else updated = { ...obj, ...updates as T };
 
         this.updates[type].set(id, updated as any);
     }
