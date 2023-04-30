@@ -66,6 +66,9 @@ export default class SettingsCommand extends Command {
 		/* Get the user's conversation. */
 		const conversation: Conversation = await this.bot.conversation.create(interaction.user);
 
+		/* Whether the user has their own Premium subscription */
+		const premium: boolean = this.bot.db.users.subscriptionType({ user }) === "UserPremium";
+
 		/* If the conversation is currently busy, don't reset it. */
 		if (conversation.generating || conversation.generatingImage) return new Response()
 			.addEmbed(builder => builder
@@ -87,7 +90,7 @@ export default class SettingsCommand extends Command {
 				/* Chosen choice from the list */
 				const chosen = option.data.choices.find(c => c.value === param.value)!;
 			
-				if (chosen.premium) return new Response()
+				if (chosen.premium && !premium) return new Response()
 					.addEmbed(builder => builder
 						.setDescription(`✨ The choice **${chosen.name}** for \`${option.data.name}\` is restricted to **Premium** users.\n**Premium** *also includes further benefits, view \`/premium info\` for more*. ✨`)
 						.setColor("Orange")
