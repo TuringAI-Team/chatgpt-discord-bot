@@ -170,7 +170,7 @@ export class Conversation {
 				});
 			}
 
-			await this.pushToClusters();
+			await this.pushToHistory();
 		}
 	}
 
@@ -427,7 +427,7 @@ export class Conversation {
 		};
 
 		/* Add the response to the history. */
-		await this.pushToClusters(result);
+		await this.pushToHistory(result);
 
 		/* Also update the last-updated time and message count in the database for this conversation. */
 		await this.manager.bot.db.users.updateConversation(this, {
@@ -519,12 +519,12 @@ export class Conversation {
 		];
 	}
 
-	public async pushToClusters(entry?: ChatInteraction): Promise<void> {
+	public async pushToHistory(entry?: ChatInteraction): Promise<void> {
 		/* Add the entry to this cluster first. */
 		if (entry) this.history.push(entry);
 
 		/* Then, broadcast the change to all other clusters. */
-		await this.manager.bot.client.cluster.broadcastEval(((client: BotDiscordClient, context: { id: string; history: ChatInteraction[]; cluster: number }) => {
+		/*await this.manager.bot.client.cluster.broadcastEval(((client: BotDiscordClient, context: { id: string; history: ChatInteraction[]; cluster: number }) => {
 			if (client.bot.data.id !== context.cluster) {
 				const c: Conversation | null = client.bot.conversation.get(context.id);
 
@@ -539,7 +539,7 @@ export class Conversation {
 				history: this.history.map(e => ({ ...e, trigger: null, reply: null })),
 				cluster: this.manager.bot.data.id
 			}
-		});
+		});*/
 	}
 
 	/* Previous message sent in the conversation */
