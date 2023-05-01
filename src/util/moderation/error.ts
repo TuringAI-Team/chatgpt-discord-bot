@@ -58,6 +58,8 @@ const sendErrorMessage = async (bot: Bot, { error, title }: Omit<ErrorHandlingOp
         .addEmbed(builder => builder
             .setTitle("An error occurred ⚠️")
             .setDescription(`${title !== undefined ? `*${title}*\n\n` : ""}\`\`\`\n${Utils.truncate(error.toString(), 300)}\n\n${error.stack!.split("\n").slice(1).join("\n")}\n\`\`\``)
+            .setFooter({ text: `Cluster #${bot.data.id + 1}` })
+            .setTimestamp()
             .setColor("Red")
         );
 

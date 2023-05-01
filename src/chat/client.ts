@@ -228,7 +228,7 @@ export class ChatClient {
         const result: string = formatter(this.time(), this.date(), conversation, options, data).trim();
 
         /* Language selected by the user */
-        const language: string = LanguageManager.modelLanguageName(options.db.user);
+        const language: string = LanguageManager.modelLanguageName(conversation.manager.bot, options.db.user);
         const hasCapability: boolean = options.model.hasCapability(ModelCapability.UserLanguage);
 
         if (!hasCapability || (hasCapability && language === "English")) return result;
@@ -270,7 +270,7 @@ export class ChatClient {
 
         const tags: { [key: string]: (interaction: ChatInteraction | null) => string } = {
             Assistant: () => "Assistant:",
-            User: () => `${options.conversation.user.username}:`
+            User: () => `User:`
         };
 
         /* Build the image attachment prompt. */

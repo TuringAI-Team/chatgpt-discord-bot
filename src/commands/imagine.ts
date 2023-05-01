@@ -1,4 +1,4 @@
-import { ActionRowBuilder, AttachmentBuilder, AutocompleteInteraction, ButtonBuilder, ButtonInteraction, ButtonStyle, ChannelType, ChatInputCommandInteraction, EmbedBuilder, EmbedField, InteractionReplyOptions, SlashCommandBuilder } from "discord.js";
+import { ActionRowBuilder, AttachmentBuilder, AutocompleteInteraction, ButtonBuilder, ButtonInteraction, ButtonStyle, ChatInputCommandInteraction, EmbedBuilder, EmbedField, InteractionReplyOptions, SlashCommandBuilder } from "discord.js";
 
 import { Command, CommandInteraction, CommandOptionChoice, CommandResponse } from "../command/command.js";
 import { Response } from "../command/response.js";
@@ -74,7 +74,7 @@ const DEFAULT_GEN_OPTIONS: Partial<ImageGenerationOptions> = {
 		sampler_name: "k_euler",
 		height: 512,
 		width: 512,
-		steps: 35,
+		steps: 30,
 		n: 2
 	}
 };

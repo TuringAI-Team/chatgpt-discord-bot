@@ -22,21 +22,21 @@ const messages: StatusMessage[] = [
         type: ActivityType.Playing,
         name: "Playing with ChatGPT",
 
-        template: () => `with ChatGPT`
+        template: () => "with ChatGPT"
     },
 
     {
         type: ActivityType.Playing,
         name: "Playing with language models",
 
-        template: () => `with LLMs`
+        template: () => "with LLMs"
     },
 
     {
         type: ActivityType.Playing,
         name: "Playing with Premium perks",
 
-        template: () => `with Premium perks`
+        template: () => "with Premium perks"
     },
 
     {

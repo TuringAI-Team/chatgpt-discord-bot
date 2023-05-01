@@ -1,17 +1,16 @@
 import { APIApplicationCommandOptionChoice, ApplicationCommandOptionBase, AutocompleteInteraction, CacheType, SlashCommandBuilder } from "discord.js";
-import LocaleCodes from "locale-code";
 import chalk from "chalk";
 
+import { LoadingIndicatorManager, LoadingIndicators } from "../types/indicator.js";
 import { GENERATION_SIZES, getAspectRatio } from "../../commands/imagine.js";
 import { DatabaseUser, RawDatabaseUser, UserSettings } from "./user.js";
 import { CommandOptionChoice } from "../../command/command.js";
 import { StableHordeModel } from "../../image/types/model.js";
+import { Languages, UserLanguage } from "../types/locale.js";
 import { ToneEmoji } from "../../conversation/tone.js";
 import { DatabaseManager } from "../manager.js";
 import { Utils } from "../../util/utils.js";
 import { Bot } from "../../bot/bot.js";
-import { Languages, UserLanguage } from "../types/locale.js";
-
 
 export enum SettingsOptionType {
     /* Simple true-false value */
@@ -50,7 +49,7 @@ interface BaseSettingsOptionData<T = any> {
     default: T;
 }
 
-type SettingOptionsData<T = any> = Omit<BaseSettingsOptionData, "type">
+type SettingOptionsData<T = any> = Omit<BaseSettingsOptionData<T>, "type">
 
 export abstract class SettingsOption<T = string | number | boolean, U extends BaseSettingsOptionData<T> = BaseSettingsOptionData<T>> {
     public readonly data: U;
@@ -119,10 +118,16 @@ export class IntegerSettingsOption extends SettingsOption<number, BaseSettingsOp
     }
 }
 
+type ChoiceSettingOptionChoice = APIApplicationCommandOptionChoice<string> & {
+    /* Overwrite for the actual name; what to display in the settings menu */
+    display?: string;
+
+    /* Whether this option is restricted to Premium users */
+    premium: boolean;
+}
+
 interface ChoiceSettingOptionData {
-    choices: (APIApplicationCommandOptionChoice<string> & {
-        premium: boolean;
-    })[];
+    choices: ChoiceSettingOptionChoice[];
 }
 
 export class ChoiceSettingsOption extends SettingsOption<string, BaseSettingsOptionData & ChoiceSettingOptionData> {
@@ -142,13 +147,13 @@ export class ChoiceSettingsOption extends SettingsOption<string, BaseSettingsOpt
         );
     }
 
-    public displayForID(id: string): APIApplicationCommandOptionChoice {
+    public displayForID(id: string): ChoiceSettingOptionChoice {
         return this.data.choices.find(c => c.value === id)!;
     }
 
     public display(bot: Bot, value: string): string {
-        const choice: APIApplicationCommandOptionChoice = this.displayForID(value);
-        return choice.name;
+        const choice: ChoiceSettingOptionChoice = this.displayForID(value);
+        return choice.display ?? choice.name;
     }
 }
 
@@ -220,7 +225,7 @@ export class LanguageAutocompleteSettingsOption extends AutocompleteChoiceSettin
         });
     }
 
-    public complete(bot: Bot): CommandOptionChoice<string>[] {
+    public complete(): CommandOptionChoice<string>[] {
 		return Languages.map(locale => {
             return {
     			name: `${locale.name} (${locale.id})`,
@@ -242,7 +247,7 @@ export class LanguageAutocompleteSettingsOption extends AutocompleteChoiceSettin
 }
 
 export type GetSettingsTypeParameter<T> = T extends SettingsOption<infer R> ? R : never
-export type SettingsName = "image_count" | "image_steps" | "image_model" | "image_size" | "partial_messages" | "language"
+export type SettingsName = "image_count" | "image_steps" | "image_model" | "image_size" | "partial_messages" | "loading_indicator" | "language"
 
 export const SettingOptions: Record<SettingsName, SettingsOption> = {
     image_count: new IntegerSettingsOption({
@@ -285,6 +290,21 @@ export const SettingOptions: Record<SettingsName, SettingsOption> = {
         emoji: { fallback: "⏳" },
         description: "Whether messages by the bot should be shown while they're being generated",
         default: true
+    }),
+
+    loading_indicator: new ChoiceSettingsOption({
+        key: "loading_indicator",
+        name: "Loading indicator",
+        emoji: { display: "<a:loading:1051419341914132554>", fallback: "🔃" },
+        description: "Which loading indicator to use throughout the bot, and for partial messages",
+        default: LoadingIndicators[0].emoji.id,
+
+        choices: LoadingIndicators.map(indicator => ({
+            display: `${indicator.name} ${LoadingIndicatorManager.toString(indicator)}`,
+            name: indicator.name,
+            value: indicator.emoji.id,
+            premium: false
+        }))
     }),
 
     language: new LanguageAutocompleteSettingsOption()

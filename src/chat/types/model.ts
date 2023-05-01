@@ -25,7 +25,7 @@ export enum ModelType {
     /** Replicate text inference */
     Replicate,
 
-    /** Nat Playground website */
+    /** OpenPlayground website */
     Nat,
 
     /** Replication of Discord's Clyde AI */

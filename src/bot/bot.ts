@@ -227,9 +227,7 @@ export class Bot extends EventEmitter {
             /* Wait for a message to get sent to the process. */
             this.client.cluster.on("message", ((message: IPCMessage & { _type: messageType }) => {
                 if (message._type !== 2) return;
-
-                if (!message.content) return;
-                if ((message.content as BotData).id == undefined) return;
+                if (!message.content || (message.content as BotData).id == undefined) return;
 
                 /* As this is the only data ever sent to the process, simply parse everything as stripped app data. */
                 const data: BotData = message.content as BotData;

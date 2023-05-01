@@ -1,6 +1,7 @@
 import { ActionRowBuilder, Attachment, AttachmentBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle, ChannelType, ComponentEmojiResolvable, ComponentType, DiscordAPIError, DMChannel, EmbedBuilder, EmojiIdentifierResolvable, Guild, InteractionReplyOptions, Message, MessageCreateOptions, MessageEditOptions, PermissionsString, Role, TextChannel, User } from "discord.js";
 
 import { ChatNoticeMessage, MessageType, ResponseMessage } from "../chat/types/message.js";
+import { LoadingIndicator, LoadingIndicatorManager } from "../db/types/indicator.js";
 import { check as moderate, ModerationResult } from "./moderation/moderation.js";
 import { DatabaseInfo, DatabaseUserInfraction } from "../db/managers/user.js";
 import { ChatGeneratedInteraction, Conversation } from "./conversation.js";
@@ -74,6 +75,11 @@ export class Generator {
 		/* Formatted generated response */
 		let content: string = format(data.displayText ?? data.text).trim();
 
+		/* Which loading emoji to use */
+		const loadingEmoji: string = LoadingIndicatorManager.toString(
+			LoadingIndicatorManager.getFromUser(conversation.manager.bot, db.user)
+		);
+
 		/* If the received data includes generated images, display them. */
 		if (data.images && data.images.length > 0) {
 			for (const [ index, image ] of data.images.entries()) {
@@ -98,7 +104,7 @@ export class Generator {
 			response
 				.setContent(null)
 				.addEmbed(builder => builder
-					.setDescription(`${data.text} ${pending ? `**...** <a:${BOT_GENERATING_EMOJI}>` : ""}`)
+					.setDescription(`${data.text} ${pending ? `**...** ${loadingEmoji}` : ""}`)
 					.setColor("Orange")
 				);
 
@@ -109,7 +115,7 @@ export class Generator {
 		/* If the received data is a chat notice request, simply add the notice to the formatted message. */
 		if (data.type === "ChatNotice") {
 			embeds.push(new EmbedBuilder()
-				.setDescription(`${(data as ChatNoticeMessage).notice} ${pending ? `**...** <a:${BOT_GENERATING_EMOJI}>` : ""}`)
+				.setDescription(`${(data as ChatNoticeMessage).notice} ${pending ? `**...** ${loadingEmoji}` : ""}`)
 				.setColor("Orange")
 			);
 
@@ -178,7 +184,7 @@ export class Generator {
 		}
 
 		/* Generated response, with the pending indicator */
-		const formatted: string = `${content} **...** <a:${BOT_GENERATING_EMOJI}>`;
+		const formatted: string = `${content} **...** ${loadingEmoji}`;
 
 		/* If the message would be too long, send it as an attachment. */
 		if (formatted.length > 2000) {
@@ -186,7 +192,7 @@ export class Generator {
 				.setName("output.txt")
 			);
 
-			response.setContent(pending ? `<a:${BOT_GENERATING_EMOJI}>` : "_ _");
+			response.setContent(pending ? loadingEmoji : "_ _");
 		} else {
 			/* Finally, set the actual content of the message. */
 			response.setContent(pending ? formatted : content);
@@ -736,9 +742,13 @@ export class Generator {
 			? await this.guildData(message, author, mentions)
 			: null;
 
+		/* Which loading emoji to use */
+		const loadingIndicator: LoadingIndicator = LoadingIndicatorManager.getFromUser(conversation.manager.bot, db.user);
+		const loadingEmoji: string = `${loadingIndicator.emoji.name}:${loadingIndicator.emoji.id}`;
+
 		/* Start the generation process. */
 		try {
-			if (mentions !== "dm") reactToMessage(this.bot, message, BOT_GENERATING_EMOJI);
+			if (mentions !== "dm") reactToMessage(this.bot, message, loadingEmoji);
 			await message.channel.sendTyping();
 
 			/* Send the request to the selected chat model. */
@@ -820,7 +830,7 @@ export class Generator {
 			if (typingTimer !== null) clearInterval(typingTimer);
 			clearInterval(updateTimer);
 
-			if (mentions !== "dm") await removeReaction(this.bot, message, BOT_GENERATING_EMOJI);
+			if (mentions !== "dm") await removeReaction(this.bot, message, loadingEmoji);
 		}
 
 		/* Try to send the response & generate a nice embed for the message. */

@@ -1,4 +1,5 @@
 import { DatabaseUser } from "../managers/user.js";
+import { Bot } from "../../bot/bot.js";
 
 export interface UserLanguage {
     /* Name of the language */
@@ -55,9 +56,9 @@ export const Languages: UserLanguage[] = [
 type LanguageIdentifier = string | DatabaseUser
 
 export class LanguageManager {
-    public static language(id: LanguageIdentifier): UserLanguage {
+    public static get(bot: Bot, id: LanguageIdentifier): UserLanguage {
         const fields: (keyof UserLanguage)[] = [ "emoji", "id", "modelName", "name" ];
-        const value: string = typeof id === "object" ? id.settings.language as string : id;
+        const value: string = typeof id === "object" ? bot.db.settings.get(id, "language") : id;
 
         /* Try to find the language based on one of the fields. */
         return Languages.find(language => {
@@ -65,19 +66,21 @@ export class LanguageManager {
                 if (language[field] === value) return true;
                 else continue;
             }
-        })!;
+
+            return false;
+        }) ?? Languages.find(l => l.id === "en-US")!;
     }
 
-    public static languageName(id: LanguageIdentifier): string {
-        return this.language(id).name;
+    public static languageName(bot: Bot, id: LanguageIdentifier): string {
+        return this.get(bot, id).name;
     }
 
-    public static modelLanguageName(id: LanguageIdentifier): string {
-        const language = this.language(id);
+    public static modelLanguageName(bot: Bot, id: LanguageIdentifier): string {
+        const language = this.get(bot, id);
         return language.modelName ?? language.name;
     }
 
-    public static languageEmoji(id: LanguageIdentifier): string {
-        return this.language(id).emoji;
+    public static languageEmoji(bot: Bot, id: LanguageIdentifier): string {
+        return this.get(bot, id).emoji;
     }
 }

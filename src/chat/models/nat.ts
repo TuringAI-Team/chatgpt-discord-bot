@@ -11,7 +11,7 @@ export class NatPlaygroundModel extends ChatModel {
             name: "Nat Playground",
             type: ModelType.Nat,
 
-            capabilities: [ ModelCapability.ImageViewing ]
+            capabilities: [ ModelCapability.ImageViewing, ModelCapability.UserLanguage ]
         });
     }
 

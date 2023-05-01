@@ -346,9 +346,8 @@ export class CommandManager {
 				);
 
 			await handleError(this.bot, {
-				title: `Error while executing command \`/${command.builder.name}\``,
-				error: error as Error,
-				reply: false
+				title: `Error while executing command \`${command.builder instanceof SlashCommandBuilder ? "/" : ""}${command.builder.name}\``,
+				error: error as Error, reply: false
 			});
 		}
 

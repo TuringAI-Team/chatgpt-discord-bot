@@ -2,17 +2,19 @@ import { setTimeout } from "timers/promises";
 import { Prediction } from "replicate";
 
 import { GPTGenerationError, GPTGenerationErrorType } from "../../error/gpt/generation.js";
+import { ChatModel, ModelCapability, ModelType } from "../types/model.js";
 import { ReplicateChatTone } from "../../conversation/tone.js";
 import { ModelGenerationOptions } from "../types/options.js";
 import { PartialResponseMessage } from "../types/message.js";
-import { ChatModel, ModelType } from "../types/model.js";
 import { ChatClient } from "../client.js";
 
 export class ReplicateModel extends ChatModel {
     constructor(client: ChatClient) {
         super(client, {
             name: "Replicate",
-            type: ModelType.Replicate
+            type: ModelType.Replicate,
+
+            capabilities: [ ModelCapability.UserLanguage ]
         });
     }
 
