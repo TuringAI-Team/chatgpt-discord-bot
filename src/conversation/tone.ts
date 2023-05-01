@@ -255,11 +255,29 @@ export const ChatTones: ChatTone[] = [
     }),
 
     new ChatTone({
+        name: "FastChat",
+        emoji: { display: "<:google:1102619904185733272>", fallback: "🔤" },
+        description: "Open-source chat bot trained by fine-tuning FLAN-T5 XL on ShareGPT conversations",
+        settings: { model: ModelType.Turing, displayName: "FLAN-T5 XL" },
+        model: { model: "fastchat" },
+        prompt: "I am FastChat, a fine-tuned language model based on FLAN-T5 XL created by Google, trained on conversations between ChatGPT and users collected from ShareGPT."
+    }),
+
+    new ChatTone({
+        name: "Koala",
+        emoji: { display: "<:koala:1102622567845593209>", fallback: "🐨" },
+        description: "A chatbot trained by fine-tuning Meta's LLaMA on data collected from the internet",
+        settings: { model: ModelType.Turing, displayName: "LLaMA 13B" },
+        model: { model: "koala" },
+        prompt: "I am Koala, a fine-tuned language model based on LLaMA 13B, trained on data collected from the internet."
+    }),
+
+    new ChatTone({
         name: "Clyde",
         emoji: { display: "<a:clyde:1100453636414378125>", fallback: "🤖" },
         description: "Recreation of Discord's AI chatbot",
         prompt: null,
-        settings: { model: ModelType.Clyde, premium: true, cooldown: { time: 40 * 1000 } },
+        settings: { model: ModelType.Clyde, premium: true, cooldown: { time: 35 * 1000 } },
         model: { }
     }),
 

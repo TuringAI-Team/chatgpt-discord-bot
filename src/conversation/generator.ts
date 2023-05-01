@@ -23,9 +23,6 @@ import { handleError } from "../util/moderation/error.js";
 import { GPTAPIError } from "../error/gpt/api.js";
 import { OtherPrompts } from "../chat/client.js";
 
-/* Emoji to indicate that a generation is running */
-const BOT_GENERATING_EMOJI: string = "loading:1051419341914132554"
-
 /* Permissions required by the bot to function correctly */
 const BOT_REQUIRED_PERMISSIONS: { [key: string]: PermissionsString } = {
 	"Add Reactions": "AddReactions",
@@ -796,16 +793,14 @@ export class Generator {
 
 			if (error instanceof GPTAPIError && error.isServerSide()) {
 				await handleError(this.bot, {
-					message,
-					error,
-					reply: false,
+					message, error, reply: false,
 					title: "Server-side error"
 				});
 
 				return await sendError(new Response()
 					.addEmbed(builder => builder
 						.setTitle("Uh-oh... 😬")
-						.setDescription(`**${model.settings.name}** ${conversation.tone.emoji.display ?? conversation.tone.emoji.fallback} is currently experiencing *server-side* issues.`)
+						.setDescription(`**${conversation.tone.name}** ${conversation.tone.emoji.display ?? conversation.tone.emoji.fallback} is currently experiencing *server-side* issues.`)
 						.setColor("Red")
 					)
 				);
@@ -813,9 +808,7 @@ export class Generator {
 
 			/* Try to handle the error & log the error message. */
 			await handleError(this.bot, {
-				message,
-				error,
-				reply: false
+				message, error, reply: false
 			});
 
 			return await sendError(new Response()
@@ -840,8 +833,8 @@ export class Generator {
 
 			/* If the output is empty for some reason, set a placeholder message. */
 			if (final.output.text.length === 0) {
-				(final.output as ChatNoticeMessage).text = `**${this.bot.client.user!.username}**'s response was empty for this prompt, *please try again* 😔`;
-				final.output.type = MessageType.ChatNotice;
+				final.output.text = `**${this.bot.client.user!.username}**'s response was empty for this prompt, *please try again* 😔`;
+				final.output.type = MessageType.Notice;
 			}
 
 			/* Gemerate a nicely formatted embed. */

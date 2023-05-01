@@ -174,7 +174,8 @@ export const checkImagePrompt = async ({ conversation, db, content, nsfw, model 
     });
 
     /* Turing API results */
-    const turing = await conversation.manager.bot.turing.filter(content, model);
+    const turing = await conversation.manager.bot.turing.filter(content, model).catch(() => null);
+    if (turing === null) return result;
 
     if (turing.isNsfw && !nsfw) return {
         ...result, flagged: true

@@ -1,12 +1,26 @@
 import { GPTAPIError } from "../error/gpt/api.js";
 import { Bot } from "../bot/bot.js";
 
-type TuringAPIPath = `cache/${string}` | "imgs/filter"
+type TuringAPIPath = `cache/${string}` | "imgs/filter" | `text/${string}`
 
 interface TuringAPIFilterResult {
     isNsfw: boolean;
     isYoung: boolean;
     isCP: boolean;
+}
+
+interface TuringChatOptions {
+    /* Which model to use */
+    model: string;
+
+    /* Prompt to pass to the model */
+    prompt: string;
+}
+
+type TuringAPIChatBody = Pick<TuringChatOptions, "prompt">
+
+export interface TuringChatResult {
+    response: string;
 }
 
 export class TuringAPI {
@@ -31,6 +45,20 @@ export class TuringAPI {
         });
     }
 
+    public async chat(options: TuringChatOptions): Promise<TuringChatResult> {
+        /* API request body */
+        const body: TuringAPIChatBody = {
+            prompt: options.prompt
+        };
+
+        /* Response data from the API */
+        const data = await this.request<TuringChatResult>(`text/${options.model}`, "POST", body);
+
+        return {
+            response: data.response.trim()
+        };
+    }
+
     private async request<T>(path: TuringAPIPath, method: "GET" | "POST" | "DELETE" = "GET", data?: { [key: string]: any }): Promise<T> {
         /* Make the actual request. */
         const response = await fetch(this.url(path), {
@@ -41,7 +69,7 @@ export class TuringAPI {
         });
 
         /* If the request wasn't successful, throw an error. */
-        if (!response.status.toString().startsWith("2")) await this.error(response, path);
+        if (!response.status.toString().startsWith("2") || (await response.clone().json()).error) await this.error(response, path);
 
         /* Get the response body. */
         const body: T = await response.json() as T;

@@ -31,6 +31,9 @@ export enum ModelType {
     /** Replication of Discord's Clyde AI */
     Clyde,
 
+    /** Turing API */
+    Turing,
+
     /** Debug model provider */
     Dummy
 }

@@ -360,9 +360,9 @@ export class Conversation {
 
 					/* Display a notice message to the user on Discord. */
 					options.onProgress({
-						id: "", raw: null, type: MessageType.ChatNotice,
+						id: "", raw: null, type: MessageType.Notice,
 						text: `Something went wrong while processing your message, retrying [ **${tries}**/**${CONVERSATION_ERROR_RETRY_MAX_TRIES}** ]`
-					});
+					});	
 				}
 
 				/* If the request failed, due to the current session running out of credit or the account being terminated, throw an error. */

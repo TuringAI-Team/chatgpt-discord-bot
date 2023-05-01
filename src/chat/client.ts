@@ -151,7 +151,7 @@ Knowledge cut-off: September 2021, like ChatGPT
 
     Custom: (time, date, conversation) =>
 `
-${conversation.tone.prompt!}
+${conversation.tone.prompt ?? "I am a chat assistant, I must provide engaging & entertaining responses."}
 
 Current date & time: ${time}, ${date}
 `

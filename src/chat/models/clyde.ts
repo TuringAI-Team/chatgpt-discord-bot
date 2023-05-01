@@ -161,9 +161,9 @@ const ClydeFormatters: ClydeFormatterPair[] = [
                     );
 
                     /* Pick a random invite; or generate a new one. */
-                    const invite: Invite = invites.length > 0
+                    const invite: Invite | null = invites.length > 0
                         ? Utils.random(invites)
-                        : await guild.invites.create(channel as TextChannel);
+                        : await guild.invites.create(channel as TextChannel).catch(() => null);
 
                     return invite ? `https://discord.gg/${invite.code}` : null;
                     

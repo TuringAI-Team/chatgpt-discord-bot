@@ -38,6 +38,13 @@ export const LoadingIndicators: LoadingIndicator[] = [
         emoji: {
             name: "rabbit", id: "1078943805316812850", animated: true
         }
+    },
+
+    {
+        name: "Spinning Skull",
+        emoji: {
+            name: "spinning_skull", id: "1102635532258906224", animated: true
+        }
     }
 ]
 

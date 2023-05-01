@@ -18,15 +18,15 @@ import { Bot } from "../../bot/bot.js";
 /* ChatGPT prompt used to translate the given input text */
 const generateTranslatorPrompt = (target: string): string =>
 `
-Your task is to translate the given input text by the user to ${target}, and guess the input language too. Follow all instructions closely.
+Your task is to translate the given input text by the user to "${target}", and guess the input language too. Follow all instructions closely.
 
 You will only output the resulting translated text, and detected input language in a minified JSON object on a single line, structured like so:
 "content": Translate the input text input into the language "${target}", and put it into this value. Make sure to translate it verbatim, keep the meaning, slang, slurs & typos all the same, just translate it all into ${target}. Keep the same writing style consistently.
-"input": Display name of the detected input language (guess it, e.g. "English" or "German")
+"input": Display name of the detected input language (guess it from the input, e.g. "English", "German" or "Russian")
 
-You must translate the given text by the user to ${target}.
+You must translate the given text by the user to the language "${target}".
 The user will now give you a message to translate, your goal is to apply the above rules and output a minified JSON object on a single line, without additional explanations or text. Do not add any other properties to the JSON object.
-If there is nothing to translate (e.g. if the input text is already the same language as ${target}), simply reply with "null" verbatim, without the quotes.
+You must attempt to translate the message into "${target}".
 `.trim();
 
 interface ChatTranslationResult {
