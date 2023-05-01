@@ -286,7 +286,7 @@ export class ChatClient {
             images.map((image, index) => `[${Utils.titleCase(image.type)} #${index + 1} = ${image.name}: "${image.description}"${image.text ? `, detected text: "${image.text}"` : ""}]`).join("\n");
 
         const documentsPrompt = (documents: ChatDocument[]) => 
-            documents.map((document, index) => `[Document "${Utils.titleCase(document.type)}" #${index + 1} = ${document.name}: """\n${document.content}\n"""]`).join("\n");
+            documents.map((document, index) => `[${Utils.titleCase(document.type)} document #${index + 1} = name "${document.name}": """\n${document.content}\n"""]`).join("\n");
 
         interface MessageBuildOptions {
             prompt: string;
@@ -297,12 +297,12 @@ export class ChatClient {
 
         const buildMessage = ({ prompt, output, images, documents }: MessageBuildOptions) => {
             let final: string = "";
-
             final += `${tags.User()}\n`;
-            if (prompt.length > 0) final += `${prompt}\n`;
 
             if (images && images.length > 0) final += `${imagesPrompt(images)}\n`;
             if (documents && documents.length > 0) final += `${documentsPrompt(documents)}\n`;
+
+            if (prompt.length > 0) final += `${prompt}\n`;
 
             final += "\n";
             final += `${tags.Assistant()}\n`;
