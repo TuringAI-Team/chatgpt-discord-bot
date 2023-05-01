@@ -389,36 +389,9 @@ export class Generator {
 		/* Clean up the message's content. */
 		let content: string = Utils.cleanContent(this.bot, messageContent);
 
-		/* Text attachments for the message */
-		const textAttachments: Attachment[] = Array.from(message.attachments.values())
-			.filter(attachment =>
-				attachment.name
-				&& (attachment.name.endsWith(".txt") || attachment.name.endsWith(".rtf") || attachment.name.endsWith(".c") || attachment.name.endsWith(".js") || attachment.name.endsWith(".py"))
-			);
-
-		/* If the user attached a text file, read it and concatenate it to the original prompt. */
-		if (textAttachments.length > 0) {
-			/* Get the first available text attachment to fetch. */
-			const first: Attachment = textAttachments[0];
-
-			try {
-				/* Try to fetch the text attachment. */
-				const response = await fetch(first.url);
-				if (response.status !== 200) throw new Error("Failed");
-
-				/* Response data */
-				const data: string = await response.text();
-
-				if (content.length > 0) content = `${content}\n\nI have attached a file to my message, you must read this. Content of the attached file called '${first.name}':\n"""\n${data}\n"""`;
-				else content = data;
-
-			/* Stub */
-			} catch (_) {}
-		}
-
 		/* If the user mentioned the role instead of the user, and the message doesn't have any content,
 		   show the user a small notice message telling them to ping the bot instead. */
-		   if (mentions === "role" && content.length === 0) {
+		if (mentions === "role" && content.length === 0) {
 			return void await new Response()
 				.addEmbed(builder => builder
 					.setTitle("Hey there... 👋")
@@ -543,13 +516,13 @@ export class Generator {
 				).send(message).catch(() => {});
 		}
 
-		/* Whether the user attached any images to their message */
-		const attachedImages: boolean = conversation.session.client.findMessageAttachments(message).length > 0;
+		const attachedImages: boolean = conversation.session.client.findMessageImageAttachments(message).length > 0;
+		const attachedDocuments: boolean = conversation.session.client.hasMessageDocuments(message);
 
 		/* If the user sen't an empty message, respond with the introduction message. */
-		if (content.length === 0 && !attachedImages) {
+		if (content.length === 0 && !attachedImages && !attachedDocuments) {
 			const page: Response = await buildIntroductionPage(this.bot, author);
-			return void await page.send(options.message).catch(() => {});
+			return void await page.send(options.message);
 		}
 
 		if (conversation.generating) return void await new Response()
@@ -598,33 +571,22 @@ export class Generator {
 		/* If the user attached images to their messages, but doesn't have Premium access, ignore their request. */
 		if (attachedImages && !premium) return void await new Response()
 			.addEmbed(builder => builder
-				.setDescription(`✨ **${this.bot.client.user!.username}** will be able to view your images, with **Premium**. 🖼️\n**Premium** *also includes further benefits, view \`/premium info\` for more*. ✨`)
+				.setDescription(`🖼️ **${this.bot.client.user!.username}** will be able to view your images with **Premium**.\n**Premium** *also includes further benefits, view \`/premium info\` for more*. ✨`)
 				.setColor("Orange")
 			).send(message);
 
 		/* If the user attached images to their message, and is currently on a model that doesn't support image attachments, show them a notice. */
 		if (!model.hasCapability(ModelCapability.ImageViewing) && attachedImages) return void await new Response()
 			.addEmbed(builder => builder
-				.setDescription(`The selected tone **${conversation.tone.name}** ${conversation.tone.emoji.display ?? conversation.tone.emoji.fallback} doesn't support images 😔`)
+				.setDescription(`The selected tone **${conversation.tone.name}** ${conversation.tone.emoji.display ?? conversation.tone.emoji.fallback} cannot view images 😔`)
 				.setColor("Red")
 			).send(message);
 
 		if (model.hasCapability(ModelCapability.GuildOnly) && !message.guild) return void await new Response()
 			.addEmbed(builder => builder
-				.setDescription(`The selected tone **${conversation.tone.name}** ${conversation.tone.emoji.display ?? conversation.tone.emoji.fallback} only works on servers, not in DMs 😔`)
+				.setDescription(`The selected tone **${conversation.tone.name}** ${conversation.tone.emoji.display ?? conversation.tone.emoji.fallback} only works on servers, and not in direct messages 😔`)
 				.setColor("Red")
 			).send(message);
-
-		/* Run the bot detection. */
-		/*const botResults: BotDetectionResult | null = await executeBotDetection(this.bot, { user: author, db });
-
-		if (botResults === null || botResults.blocked) return void await new Response()
-			.addEmbed(builder => builder
-				.setTitle("Uh-oh... 🤖")
-				.setDescription("Our automated filters have flagged your account as possibly suspicious or automated, *try your request again later*. 😔")
-				.setFooter({ text: "We automatically block new Discord accounts from using the bot, to prevent abuse." })
-				.setColor("Red")
-			).send(message).catch(() => {});*/
 
 		conversation.generating = true;
 

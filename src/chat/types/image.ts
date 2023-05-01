@@ -1,9 +1,11 @@
 import { Attachment, Message, Sticker, StickerFormatType } from "discord.js";
 import { Utils } from "../../util/utils.js";
 
-export type ChatImageType = "image" | "sticker" | "emoji"
+export type ChatImageType = "image" | "sticker" | "emoji" | "Discord attachment link"
 
 export const ALLOWED_FILE_EXTENSIONS: string[] = [ "webp", "png", "jpeg", "jpg", "gif" ]
+
+const DISCORD_CDN_REGEX = /https:\/\/media\.discordapp\.net\/attachments\/\d+\/\d+\/\S+\.(gif|png|jpe?g|webp)/ig
 const EMOJI_REGEX = /<(a?)?:[\w-]+:(\d{18,19})?>/gu
 
 export class ImageBuffer {
@@ -39,7 +41,7 @@ export class ImageBuffer {
     }
 }
 
-export interface ChatAttachment {
+export interface ChatImageAttachment {
     /* Name of the attachment */
     name: string;
 
@@ -50,20 +52,20 @@ export interface ChatAttachment {
     url: string;
 }
 
-export type ChatExtractedAttachment = Pick<ChatAttachment, "name" | "url">
+export type ChatExtractedImageAttachment = Pick<ChatImageAttachment, "name" | "url">
 
-export interface ChatAttachmentExtractor {
+export interface ChatImageAttachmentExtractor {
     /* Type of the attachment */
     type: ChatImageType;
 
     /* Whether the message contains this type of attachment */
     condition: (message: Message) => boolean;
 
-    /* Whether the message contains this type of attachment */
-    extract: (message: Message) => ChatExtractedAttachment[] | null;
+    /* Callback, to extract the attachments from the message */
+    extract: (message: Message) => ChatExtractedImageAttachment[] | null;
 }
 
-export const ChatAttachmentExtractors: ChatAttachmentExtractor[] = [
+export const ChatImageAttachmentExtractors: ChatImageAttachmentExtractor[] = [
     {
         type: "image",
 
@@ -115,6 +117,20 @@ export const ChatAttachmentExtractors: ChatAttachmentExtractor[] = [
                 url: `https://cdn.discordapp.com/emojis/${id}.${type}?v=1`,
                 name: name
             } ];
+        }
+    },
+
+    {
+        type: "Discord attachment link",
+        condition: message => message.content.match(DISCORD_CDN_REGEX) !== null,
+
+        extract: message => {
+            const matches = message.content.match(DISCORD_CDN_REGEX);
+            if (matches === null || matches.length === 0) return null;
+
+            return matches.map(url => ({
+                name: url.split("/").reverse()[0], url
+            }));
         }
     }
 ]

@@ -4,16 +4,17 @@ import { randomUUID } from "crypto";
 import chalk from "chalk";
 
 import { GPT_MAX_CONTEXT_LENGTH, GPT_MAX_GENERATION_LENGTH, countChatMessageTokens, getChatMessageLength, isPromptLengthAcceptable } from "../conversation/utils/length.js";
-import { ChatAnalyzedImage, ChatAttachment, ChatAttachmentExtractors, ChatBaseImage, ChatImageType, ChatInputImage } from "./types/image.js";
+import { ChatAnalyzedImage, ChatImageAttachment, ChatImageAttachmentExtractors, ChatBaseImage, ChatInputImage } from "./types/image.js";
 import { ChatInput, ChatInteraction, Conversation } from "../conversation/conversation.js";
+import { MessageType, PartialResponseMessage, ResponseMessage } from "./types/message.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
 import { ChatGenerationOptions, ModelGenerationOptions } from "./types/options.js";
-import { MessageType, PartialResponseMessage, ResponseMessage } from "./types/message.js";
 import { ChatModel, ModelCapability, ModelType } from "./types/model.js";
 import { ChatTone, TonePromptType } from "../conversation/tone.js";
 import { OpenAIChatMessage } from "../openai/types/chat.js";
 import { handleError } from "../util/moderation/error.js";
 import { LanguageManager } from "../db/types/locale.js";
+import { ChatDocument, ChatDocumentExtractors, ChatDocumentType, ChatExtractedDocument } from "./types/document.js";
 import { Session } from "../conversation/session.js";
 import { ClydePromptData } from "./models/clyde.js";
 import { Utils } from "../util/utils.js";
@@ -166,8 +167,16 @@ You must treat images as if you can see, view and read them, referring to them a
 Prioritize detected text from the image, fix OCR errors, and use logic and common sense to understand the image. Don't ask the user about the description.
 `.trim(),
 
+    /* This prompt is added if the user attaches a text document, e.g. file or HasteBin link */
+    Documents:
+`
+To attach text documents, users may use the format: '[Document <document type> #<index> = <file name>: """<file content>"""]'.
+You must incorporate the content of the attached documents as if the user directly included them in their message, but you may answer follow-up questions about the document appropriately.
+You must pretend to "view" these text attachments, do not talk about the format used.
+`.trim(),
+
     /* This prompt continues a cut-off message */
-    Continue: "Continue the message where you left off."
+    Continue: "Continue the message where you left off, don't add any additional explanations or repeat anything you said before."
 }
 
 
@@ -268,15 +277,39 @@ export class ChatClient {
         /* Initial, formatted prompt */
         const initial: string = options.conversation.session.client.initialPrompt(options.conversation, options, type, data);
 
-        const tags: { [key: string]: (interaction: ChatInteraction | null) => string } = {
+        const tags: Record<"Assistant" | "User", () => string> = {
             Assistant: () => "Assistant:",
-            User: () => `User:`
+            User: () => "User:"
         };
 
-        /* Build the image attachment prompt. */
-        const imagesPrompt = (images?: ChatInputImage[]) => images && images.length > 0
-            ? `\n${images.map((image, index) => `[${Utils.titleCase(image.type)} #${index + 1} = ${image.name}: "${image.description}"${image.text ? `, detected text: "${image.text}"` : ""}]`).join("\n")}`
-            : "";
+        const imagesPrompt = (images: ChatInputImage[]) =>
+            images.map((image, index) => `[${Utils.titleCase(image.type)} #${index + 1} = ${image.name}: "${image.description}"${image.text ? `, detected text: "${image.text}"` : ""}]`).join("\n");
+
+        const documentsPrompt = (documents: ChatDocument[]) => 
+            documents.map((document, index) => `[Document "${Utils.titleCase(document.type)}" #${index + 1} = ${document.name}: """\n${document.content}\n"""]`).join("\n");
+
+        interface MessageBuildOptions {
+            prompt: string;
+            output?: string;
+            images?: ChatInputImage[];
+            documents?: ChatDocument[];
+        }
+
+        const buildMessage = ({ prompt, output, images, documents }: MessageBuildOptions) => {
+            let final: string = "";
+
+            final += `${tags.User()}\n`;
+            if (prompt.length > 0) final += `${prompt}\n`;
+
+            if (images && images.length > 0) final += `${imagesPrompt(images)}\n`;
+            if (documents && documents.length > 0) final += `${documentsPrompt(documents)}\n`;
+
+            final += "\n";
+            final += `${tags.Assistant()}\n`;
+
+            if (output) final += output;
+            return final;
+        }
 
         do {
             /* Which messages to use */
@@ -297,9 +330,15 @@ export class ChatClient {
                 };
             }
 
+            /* Additional prompts to include */
+            let additional: string[] = [];
+
+            if (options.images.length > 0 || history.some(e => e.input.images && e.input.images.length > 0)) additional.push(OtherPrompts.ImageAttachments);
+            if (options.documents.length > 0 || history.some(e => e.input.documents && e.input.documents.length > 0)) additional.push(OtherPrompts.Documents);
+
             /* If the user attached images to the message, add another pre-prompt. */
-            if (options.images.length > 0 || history.some(e => e.input.images ? e.input.images.length > 0 : false)) messages.Other = {
-                content: OtherPrompts.ImageAttachments,
+            if (additional.length > 0) messages.Other = {
+                content: additional.join("\n\n"),
                 role: "system"
             };
 
@@ -308,9 +347,11 @@ export class ChatClient {
                 role: "system",
 
                 content: `${history.map(entry =>
-                    `${tags.User(entry)}\n${entry.input.content}${imagesPrompt(entry.input.images)}\n\n${tags.Assistant(entry)}\n${entry.output.text}`
-                ).join("\n\n")}${history.length > 0 ? "\n\n" : ""}${tags.User(null)}\n${options.prompt}${imagesPrompt(options.images)}\n\n${tags.Assistant(null)}\n`
+                    buildMessage({ prompt: entry.input.content, output: entry.output.text, images: entry.input.images, documents: entry.input.documents })
+                ).join("\n\n")}${history.length > 0 ? "\n\n" : ""}${buildMessage({ prompt: options.prompt, images: options.images, documents: options.documents })}`
             };
+
+            console.log(messages.Context.content)
 
             /* Calculate the amount of used tokens. */
             tokens = countChatMessageTokens(Object.values(messages));
@@ -353,11 +394,10 @@ export class ChatClient {
      * Get all usable Discord image attachments.
      * @returns Usable Discord Image attachments
      */
-    public findMessageAttachments(message: Message): ChatAttachment[] {
-        /* All extracted images */
-        const total: ChatAttachment[] = [];
+    public findMessageImageAttachments(message: Message): ChatImageAttachment[] {
+        const total: ChatImageAttachment[] = [];
 
-        for (const extractor of ChatAttachmentExtractors) {
+        for (const extractor of ChatImageAttachmentExtractors) {
             const condition: boolean = extractor.condition(message);
             if (!condition) continue;
 
@@ -369,7 +409,7 @@ export class ChatClient {
         return total;
     }
 
-    private async messageImages(attachments: ChatAttachment[]): Promise<ChatBaseImage[]> {
+    private async messageImages(attachments: ChatImageAttachment[]): Promise<ChatBaseImage[]> {
         return Promise.all(attachments
             .map(async attachment => {
                 const data = await Utils.fetchBuffer(attachment.url);
@@ -407,7 +447,6 @@ export class ChatClient {
                 });
 
             } catch (error) {
-                /* Show a notice to the Discord user. */
                 if (options.progress) options.progress({
                     id: "", raw: null, type: MessageType.Notice,
                     text: `Failed to look at **\`${attachment.name}\`**, continuing`
@@ -415,8 +454,7 @@ export class ChatClient {
 
                 await handleError(this.session.manager.bot, {
                     title: "Failed to analyze image",
-                    error: error as Error,
-                    reply: false
+                    error: error as Error, reply: false
                 });
                 
                 await setTimeout(5000);
@@ -430,6 +468,54 @@ export class ChatClient {
         return results;
     }
 
+    /**
+     * Fetch all possible documents attached to a message.
+     * @param message Message to analyze
+     * 
+     * @returns All found message documents
+     */
+    private async messageDocuments(options: ChatGenerationOptions): Promise<ChatDocument[]> {
+		const total: ChatDocument[] = [];
+
+        for (const extractor of ChatDocumentExtractors) {
+            const condition: boolean = extractor.condition(options.trigger);
+            if (!condition) continue;
+
+            try {
+                const result: ChatExtractedDocument[] | null = await extractor.extract(options.trigger);
+                if (result === null || result.length === 0) continue;
+
+                total.push(...result.map(extracted => ({
+                    ...extracted, type: extractor.type
+                })));
+
+            } catch (error) {
+                if (options.progress) options.progress({
+                    id: "", raw: null, type: MessageType.Notice,
+                    text: `Failed to fetch a text document, continuing`
+                });
+
+                await handleError(this.session.manager.bot, {
+                    title: "Failed to fetch a text document",
+                    error: error as Error, reply: false
+                });
+                
+                await setTimeout(5000);
+            }
+        }
+
+        return total;
+    }
+
+    public hasMessageDocuments(message: Message): boolean {
+        for (const extractor of ChatDocumentExtractors) {
+            if (extractor.condition(message)) return true;
+            else continue;
+        }
+
+        return false;
+    }
+
     public async ask(options: ChatGenerationOptions): Promise<ChatClientResult> {
         /* Model provider to use */
         const model = this.modelForTone(options.conversation.tone);
@@ -438,20 +524,16 @@ export class ChatClient {
         const id: string = randomUUID();
 
         /* First off, gather all applicable Discord image attachments. */
-        const attachments: ChatBaseImage[] = await this.messageImages(
-            this.findMessageAttachments(options.trigger)
-        );
-
-        /* List of analyzed images, if any */
+        const attachments: ChatBaseImage[] = await this.messageImages(this.findMessageImageAttachments(options.trigger));
         let images: ChatInputImage[] = [];
 
         /* Try to analyze all images passed as attachments. */
-        if (attachments.length > 0) {
-            /* Analyze all the attached images. */
-            images = await this.analyzeImages({
-                ...options, attachments, model
-            });
-        }
+        if (attachments.length > 0) images = await this.analyzeImages({
+            ...options, attachments, model
+        });
+
+        /* Then, try to fetch all possible text documents in the message. */
+        const documents: ChatDocument[] = await this.messageDocuments(options);
 
         /* Middle-man progress handler, to clean up the partial responses */
         const progress = async (message: PartialResponseMessage | ResponseMessage) => {
@@ -466,13 +548,15 @@ export class ChatClient {
 
         /* Execute the corresponding handler. */
         const result = await model.complete({
-            ...options, progress, images, model
+            ...options, progress, images, model, documents
         });
 
         return {
             input: {
                 content: options.prompt,
-                images: images.length > 0 ? images : undefined
+                
+                images: images.length > 0 ? images : undefined,
+                documents: documents.length > 0 ? documents : undefined
             },
 
             output: {

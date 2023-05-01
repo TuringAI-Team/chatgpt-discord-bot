@@ -4,6 +4,7 @@ import { ChatNoticeMessage, PartialResponseMessage, ResponseMessage } from "./me
 import { Conversation } from "../../conversation/conversation.js";
 import { ChatBaseImage, ChatInputImage } from "./image.js";
 import { DatabaseInfo } from "../../db/managers/user.js";
+import { ChatDocument } from "./document.js";
 import { ChatModel } from "./model.js";
 
 export type ModelGenerationOptions = Pick<ChatGenerationOptions, "conversation" | "trigger" | "db" | "prompt" | "guild"> & {
@@ -15,6 +16,9 @@ export type ModelGenerationOptions = Pick<ChatGenerationOptions, "conversation" 
 
     /* List of attached images */
     images: ChatInputImage[];
+
+    /* List of attached text documents */
+    documents: ChatDocument[];
 }
 
 export interface ChatGuildData {

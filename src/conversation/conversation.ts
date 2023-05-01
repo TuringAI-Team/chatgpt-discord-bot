@@ -8,6 +8,7 @@ import { ChatInputImage, ImageBuffer } from "../chat/types/image.js";
 import { check, ModerationResult } from "./moderation/moderation.js";
 import { Cooldown, CooldownModifier } from "./utils/cooldown.js";
 import { GenerationOptions, Session } from "./session.js";
+import { ChatDocument } from "../chat/types/document.js";
 import { ChatClientResult } from "../chat/client.js";
 import { ConversationManager } from "./manager.js";
 import { GPTAPIError } from "../error/gpt/api.js";
@@ -19,6 +20,9 @@ import { Utils } from "../util/utils.js";
 export interface ChatInput {
 	/* The input message itself; always given */
 	content: string;
+
+	/* Additional text documents attached to the message */
+	documents?: ChatDocument[];
 
 	/* Additional input images */
 	images?: ChatInputImage[];

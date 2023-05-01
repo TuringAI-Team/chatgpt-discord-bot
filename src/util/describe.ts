@@ -1,8 +1,8 @@
-import { Attachment, MessageContextMenuCommandInteraction, ChatInputCommandInteraction, Message, Embed, StickerFormatType, Sticker } from "discord.js";
+import { Attachment, MessageContextMenuCommandInteraction, ChatInputCommandInteraction } from "discord.js";
 import chalk from "chalk";
 
 import { ModerationResult, checkDescribeResult } from "../conversation/moderation/moderation.js";
-import { ALLOWED_FILE_EXTENSIONS } from "../chat/types/image.js";
+import { ALLOWED_FILE_EXTENSIONS, ChatImageType } from "../chat/types/image.js";
 import { LoadingResponse } from "../command/response/loading.js";
 import { Conversation } from "../conversation/conversation.js";
 import { NoticeResponse } from "../command/response/notice.js";
@@ -11,7 +11,7 @@ import { Response } from "../command/response.js";
 
 interface DescribeAttachment {
     /* Type of the attachment */
-    type: "sticker" | "image" | "emoji";
+    type: ChatImageType;
 
     /* Name of the attachment */
     name?: string;
@@ -35,7 +35,7 @@ export const runDescribeAction = async (conversation: Conversation, db: Database
         attachment = { url: chosen.proxyURL, type: "image" };
 
     } else if (interaction instanceof MessageContextMenuCommandInteraction) {
-        const results = conversation.session.client.findMessageAttachments(interaction.targetMessage);
+        const results = conversation.session.client.findMessageImageAttachments(interaction.targetMessage);
         if (results.length > 0) attachment = results[0];
     }
 
