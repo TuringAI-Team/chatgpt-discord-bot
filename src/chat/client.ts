@@ -351,8 +351,6 @@ export class ChatClient {
                 ).join("\n\n")}${history.length > 0 ? "\n\n" : ""}${buildMessage({ prompt: options.prompt, images: options.images, documents: options.documents })}`
             };
 
-            console.log(messages.Context.content)
-
             /* Calculate the amount of used tokens. */
             tokens = countChatMessageTokens(Object.values(messages));
 
