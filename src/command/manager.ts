@@ -57,7 +57,7 @@ export class CommandManager {
         if (this.commands.size === 0) throw new Error("Commands have not been loaded yet");
 
 		/* Information about each application command, as JSON */
-		const commandList: RESTPostAPIApplicationCommandsJSONBody[] = this.commands.filter(cmd => cmd.options.private == undefined).map(cmd =>
+		const commandList: RESTPostAPIApplicationCommandsJSONBody[] = this.commands.filter(cmd => cmd.options.private == undefined && cmd.options.private != CommandPrivateType.PremiumOnly).map(cmd =>
 			(cmd.builder as SlashCommandBuilder).setDefaultPermission(true).toJSON()
 		);
 
@@ -67,7 +67,7 @@ export class CommandManager {
 		return new Promise(async (resolve, reject) => {
 			/* Register the serialized list of moderation-specific commands to Discord. */
 			await client.put(Routes.applicationGuildCommands(this.bot.app.config.discord.id, this.bot.app.config.channels.moderation.guild), {
-				body: this.commands.filter(cmd => cmd.options.private != undefined).map(cmd =>
+				body: this.commands.filter(cmd => cmd.options.private != undefined && cmd.options.private != CommandPrivateType.PremiumOnly).map(cmd =>
 					(cmd.builder as SlashCommandBuilder).setDefaultPermission(true).toJSON()
 				)
 			});

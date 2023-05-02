@@ -86,11 +86,9 @@ export class TuringAPI {
 
         /* Generate the images using the API. */
         const data: { result: { response: { data: { url: string }[] } } }
-            = await this.request("imgs/dalle", "POST", options);
+            = await this.request("imgs/dalle", "POST", { prompt: options.prompt, n: options.count });
 
         const buffers: ImageBuffer[] = [];
-
-        console.log(data)
 
         for (const attachment of data.result.response.data) {
             const buffer = await Utils.fetchBuffer(attachment.url);
