@@ -1,16 +1,16 @@
 import { AttachmentBuilder, SlashCommandBuilder } from "discord.js";
 
+import { Command, CommandInteraction, CommandPrivateType, CommandResponse } from "../command/command.js";
 import { ModerationResult, checkVideoPrompt } from "../conversation/moderation/moderation.js";
 import { TuringVideoModel, TuringVideoModels, TuringVideoOptions } from "../turing/api.js";
-import { Command, CommandInteraction, CommandPrivateType, CommandResponse } from "../command/command.js";
 import { ErrorResponse, ErrorType } from "../command/response/error.js";
 import { Conversation } from "../conversation/conversation.js";
 import { handleError } from "../util/moderation/error.js";
 import { DatabaseInfo } from "../db/managers/user.js";
 import { ImageBuffer } from "../chat/types/image.js";
 import { Response } from "../command/response.js";
-import { Bot } from "../bot/bot.js";
 import { Utils } from "../util/utils.js";
+import { Bot } from "../bot/bot.js";
 
 const MAX_VIDEO_PROMPT_LENGTH: number = 200
 

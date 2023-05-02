@@ -259,7 +259,7 @@ export class CommandManager {
 		}
 
 		/* If the command is marked as private, do some checks to make sure only privileged users are able to execute this command. */
-		if (command.options.private != undefined) {
+		if (command.options.private != undefined && command.options.private !== CommandPrivateType.PremiumOnly) {
 			/* If the command was executed on the wrong guild, silently ignore it. */
 			if (interaction.guildId === null || interaction.guildId !== this.bot.app.config.channels.moderation.guild) return;
 
