@@ -20,9 +20,16 @@ type LoadingIdentifier = string
 
 export const LoadingIndicators: LoadingIndicator[] = [
     {
-        name: "Discord Loading",
+        name: "Discord Loading #1",
         emoji: {
             name: "loading", id: "1051419341914132554", animated: true
+        }
+    },
+
+    {
+        name: "Discord Loading #2",
+        emoji: {
+            name: "discord_loading", id: "1103039423806976021", animated: true
         }
     },
 
@@ -44,6 +51,20 @@ export const LoadingIndicators: LoadingIndicator[] = [
         name: "Spinning Skull",
         emoji: {
             name: "spinning_skull", id: "1102635532258906224", animated: true
+        }
+    }, 
+
+    {
+        name: "Spinning Tux",
+        emoji: {
+            name: "tux_spin", id: "1103014814135099573", animated: true
+        }
+    },
+
+    {
+        name: "Discord Typing",
+        emoji: {
+            name: "discord_typing", id: "1103039408728445071", animated: true
         }
     }
 ]

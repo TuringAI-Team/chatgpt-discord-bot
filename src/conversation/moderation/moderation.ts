@@ -13,20 +13,29 @@ interface OpenAIModerationScore {
     value: number;
 }
 
-interface ModerationOptions {
-    conversation: Conversation;
-    db: DatabaseInfo;
-    content: string;
-    reply?: boolean;
-    message?: Message;
-    source: ModerationSource;
-    filter?: (action?: AutoModerationFilter, moderation?: OpenAIModerationScore) => boolean;
-}
+interface AdditionalModerationOptions {
+    /* Which Stable Diffusion model was used */
+    model?: string;
 
-type ImagePromptModerationOptions = Pick<ModerationOptions, "conversation" | "db" | "content"> & {
-    model: string;
+    /* Whether NSFW content is allowed */
     nsfw: boolean;
 }
+
+interface ModerationOptions {
+    conversation: Conversation;
+    message?: Message;
+    reply?: boolean;
+
+    source: ModerationSource;
+    db: DatabaseInfo;
+    content: string;
+
+    /* Other data */
+    filter?: (action: AutoModerationFilter) => boolean;
+    additional?: AdditionalModerationOptions;
+}
+
+type ImagePromptModerationOptions = Pick<ModerationOptions, "conversation" | "db" | "content"> & AdditionalModerationOptions
 
 type TranslationModerationOptions = Pick<ModerationOptions, "conversation" | "db" | "content"> & {
     source: "translationPrompt" | "translationResult";
@@ -77,38 +86,41 @@ export type SerializedModerationResult = ModerationResult
  * @param options Generation options
  * @returns Moderation results
  */
-export const check = async ({ conversation, db, content, reply, message, source, filter }: ModerationOptions): Promise<ModerationResult> => {
+export const check = async ({ conversation, db, content, reply, message, source, filter, additional }: ModerationOptions): Promise<ModerationResult> => {
     /* Run the AutoMod filter on the message. */
-    const auto: AutoModerationActionData | null = await executeModerationFilters({ conversation, content, db, source, filterCallback: filter ? (data, action) => filter(action) : undefined }); 
+    const auto: AutoModerationActionData | null = await executeModerationFilters({
+        conversation, content, db, source,
+        filterCallback: filter ? (_, action) => filter(action) : undefined
+    }); 
 
-    /* Send the request to the /moderations endpoint. */
-    const result: OpenAIModerationsData | null = Math.random() > 0 ? null : await conversation.manager.bot.ai.moderate(content).catch(() => null);
-
-    const sorted: OpenAIModerationScore[] = result !== null ? Object.entries(result.results[0].category_scores)
-        .map(([ key, value ]) => ({ key, value: value as number } as OpenAIModerationScore))
-        .sort((a, b) => { return b.value - a.value }) : [];
-
-    /* Which type of moderation flag was given the highest confidence */
-    const highest: OpenAIModerationScore | null = sorted[0] ?? null;
-
-    /* Whether the moderation results should be skipped/ignored */
-    const skip: boolean = filter && highest ? filter(undefined, highest) : false;
+    /* If this moderation request is related to image generation, run the Turing API filter too. */
+    const turing = (source === "image" || source === "video") && additional
+        ? await conversation.manager.bot.turing.filter(content, additional.model).catch(() => null)
+        : null;
 
     /* Whether the message should be completely blocked */
-    let blocked: boolean = auto !== null && auto.type !== "flag" || highest !== null && highest.value > 0.9;
+    let blocked: boolean = auto !== null && auto.type !== "flag";
 
     /* Whether the message has been flagged as inappropriate */
-    let flagged: boolean = blocked || auto !== null && auto.type === "flag" || highest !== null && highest.value > 0.7;
+    let flagged: boolean = blocked || auto !== null && auto.type === "flag";
 
+    /* If the Turing filter was used, do the additional checks. */
+    if (additional && turing) {
+        if (turing.isNsfw && !additional.nsfw) flagged = true;
+    
+        if (turing.isCP || (turing.isYoung && additional.nsfw)) {
+            blocked = true;
+            flagged = true;
+        }
+    }
+
+    /* Final moderation result */
     const data: ModerationResult = {
         source,
         auto: auto ?? undefined,
 
-        flagged: skip ? false : flagged,
-        blocked: skip ? false : blocked,
-
-        data: result ?? undefined,
-        highest: highest ?? undefined
+        flagged: flagged,
+        blocked: blocked
     };
 
     /* If the message was flagged, send the notice message to the user. */
@@ -161,31 +173,26 @@ export const check = async ({ conversation, db, content, reply, message, source,
 }
 
 export const checkImagePrompt = async ({ conversation, db, content, nsfw, model }: ImagePromptModerationOptions): Promise<ModerationResult | null> => {
-    const result = await check({
-        conversation, db, content, source: "image",
+    let result = await check({
+        conversation, db, content,
+        source: "image",
 
         /* Check for all possibly flags, *expect* for `sexual` flags to give people some freedom with their stupid prompts. */ 
-        filter: nsfw ? (action, moderation) => {
+        filter: nsfw ? (action) => {
             if (action && action.description === "Block sexual words") return true;
-            if (moderation && moderation.key === "sexual") return true;
-
             return false;
-        } : undefined
+        } : undefined,
+
+        additional: { model, nsfw }
     });
 
-    /* Turing API results */
-    const turing = await conversation.manager.bot.turing.filter(content, model).catch(() => null);
-    if (turing === null) return result;
-
-    if (turing.isNsfw && !nsfw) return {
-        ...result, flagged: true
-    };
-
-    if (turing.isCP || turing.isYoung) return {
-        ...result, blocked: true, flagged: true
-    };
-
     return result;
+}
+
+export const checkVideoPrompt = async ({ conversation, db, content }: DescribeModerationOptions): Promise<ModerationResult | null> => {
+    return check({
+        conversation, db, content, source: "video"
+    });
 }
 
 export const checkTranslationPrompt = async ({ conversation, db, content, source }: TranslationModerationOptions): Promise<ModerationResult | null> => {

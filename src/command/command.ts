@@ -18,6 +18,9 @@ export type CommandOptionChoice<T = string | number> = APIApplicationCommandOpti
 export type CommandResponse = Promise<Response | undefined>
 
 export enum CommandPrivateType {
+	/* The command can only be used by Premium subscribers; both guild & user Premium */
+	PremiumOnly = "premium",
+
 	/* The command can only be used by moderators & the owner; it is restricted to the development server */
 	ModeratorOnly = "mod",
 

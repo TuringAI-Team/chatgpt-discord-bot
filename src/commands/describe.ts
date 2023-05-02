@@ -29,17 +29,7 @@ export default class ResetCommand extends Command {
     }
 
     public async run(interaction: CommandInteraction, db: DatabaseInfo): CommandResponse {
-		/* Get the user's conversation. */
 		const conversation: Conversation = await this.bot.conversation.create(interaction.user);
-
-		/* If the conversation is currently busy, don't reset it. */
-		if (conversation.generating) return new Response()
-			.addEmbed(builder => builder
-				.setDescription("You have a request running in your conversation, *wait for it to finish* 😔")
-				.setColor("Red")
-			)
-			.setEphemeral(true);
-
-		await runDescribeAction(conversation, db, interaction);
+		return void await runDescribeAction(conversation, db, interaction);
     }
 }

@@ -5,10 +5,10 @@ import { OpenAIChatMessage } from "../../openai/types/chat.js";
 
 /* Maximum context history length in total */
 export const GPT_MAX_CONTEXT_LENGTH = {
-    Free: 525,
-    Voter: 575,
-    GuildPremium: 650,
-    UserPremium: 800
+    Free: 725,
+    Voter: 790,
+    GuildPremium: 900,
+    UserPremium: 1000
 }
 
 /* Maximum generation length in total */

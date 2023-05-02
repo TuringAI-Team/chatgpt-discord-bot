@@ -192,6 +192,7 @@ export interface DatabaseInteractionStatistics {
     resets: number;
     votes: number;
     cooldown_messages: number;
+    videos: number;
 }
 
 export interface DatabaseInfo {
@@ -322,7 +323,7 @@ export class UserManager {
             created: Date.now(),
             infractions: [],
             interactions: {
-                commands: 0, messages: 0, images: 0, resets: 0, translations: 0, votes: 0, image_descriptions: 0, cooldown_messages: 0
+                commands: 0, messages: 0, images: 0, resets: 0, translations: 0, votes: 0, image_descriptions: 0, cooldown_messages: 0, videos: 0
             },
             moderator: this.db.bot.app.config.discord.owner.includes(user.id),
             subscription: null,
@@ -333,7 +334,7 @@ export class UserManager {
     }
 
     private async rawToUser(raw: RawDatabaseUser): Promise<DatabaseUser> {
-        const keys: (keyof DatabaseInteractionStatistics)[] = [ "commands", "images", "messages", "resets", "translations", "votes", "image_descriptions", "cooldown_messages" ];
+        const keys: (keyof DatabaseInteractionStatistics)[] = [ "commands", "images", "messages", "resets", "translations", "votes", "image_descriptions", "cooldown_messages", "videos" ];
         const interactions: Partial<DatabaseInteractionStatistics> = {};
 
         for (const key of keys) {
@@ -549,7 +550,9 @@ export class UserManager {
         });
     }
 
-    public subscriptionIcon({ user, guild }: DatabaseInfo): "✨" | "💫" | "📩" | "👤" {
+    public subscriptionIcon({ user, guild }: DatabaseInfo): "⚒️" | "✨" | "💫" | "📩" | "👤" {
+        if (user.moderator) return "⚒️";
+        
         if (user.subscription !== null) return "✨";
         if (guild && guild.subscription !== null) return "💫";
 

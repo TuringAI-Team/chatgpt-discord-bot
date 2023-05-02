@@ -9,6 +9,7 @@ import { Bot, BotStatus } from "../bot/bot.js";
 import { CooldownData } from "./cooldown.js";
 import { Response } from "./response.js";
 import { Utils } from "../util/utils.js";
+import { PremiumUpsellResponse, PremiumUpsellType } from "./response/premium.js";
 
 export class CommandManager {
 	protected readonly bot: Bot;
@@ -158,6 +159,10 @@ export class CommandManager {
 		/* Get the command, by its name. */
 		const command: Command = this.commands.get(interaction.commandName)!;
 		if (!command) return;
+		
+		if (command.options.waitForStart && !this.bot.started) return void await interaction.respond([
+			{ name: "The bot is currently reloading... ⏳", value: "" }
+		]).catch(() => {});
 
 		/* Try to complete the options. */
 		try {
@@ -204,6 +209,18 @@ export class CommandManager {
 		/* Get the database entry of the user. */
 		let db: DatabaseInfo = await this.bot.db.users.fetchData(interaction.user, interaction.guild);
 		const subscription = this.bot.db.users.subscriptionType(db);
+
+		/* If this command is Premium-only and the user doesn't have a subscription, ... */
+		if (command.options.private === CommandPrivateType.PremiumOnly && !subscription.includes("Premium")) {
+			const response = new Response()
+				.addEmbed(builder => builder
+					.setDescription(`The ${interaction instanceof MessageContextMenuCommandInteraction ? `context menu action \`${command.builder.name}\`` : `command \`/${command.builder.name}\``} is only available to **Premium** users. **Premium 🌟** also includes many additional benefits; view \`/premium info\` for more.`)
+					.setColor("Orange")
+				)
+				.setEphemeral(true);
+
+			return void await response.send(interaction);
+		}
 
 		/* If the user is currently on cool-down for this command, ... */
 		if (command.options.cooldown !== null && cooldown !== null) {

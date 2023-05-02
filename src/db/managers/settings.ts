@@ -11,6 +11,7 @@ import { ToneEmoji } from "../../conversation/tone.js";
 import { DatabaseManager } from "../manager.js";
 import { Utils } from "../../util/utils.js";
 import { Bot } from "../../bot/bot.js";
+import { TuringVideoModels } from "../../turing/api.js";
 
 export enum SettingsOptionType {
     /* Simple true-false value */
@@ -247,7 +248,7 @@ export class LanguageAutocompleteSettingsOption extends AutocompleteChoiceSettin
 }
 
 export type GetSettingsTypeParameter<T> = T extends SettingsOption<infer R> ? R : never
-export type SettingsName = "image_count" | "image_steps" | "image_model" | "image_size" | "partial_messages" | "loading_indicator" | "language"
+export type SettingsName = "image_count" | "image_steps" | "image_model" | "image_size" | "partial_messages" | "loading_indicator" | "video_model" | "language"
 
 export const SettingOptions: Record<SettingsName, SettingsOption> = {
     image_count: new IntegerSettingsOption({
@@ -303,6 +304,20 @@ export const SettingOptions: Record<SettingsName, SettingsOption> = {
             display: `${indicator.name} ${LoadingIndicatorManager.toString(indicator)}`,
             name: indicator.name,
             value: indicator.emoji.id,
+            premium: false
+        }))
+    }),
+
+    video_model: new ChoiceSettingsOption({
+        key: "video_model",
+        name: "Video model",
+        emoji: { fallback: "📸" },
+        description: "Which video generation model to use",
+        default: TuringVideoModels[0].id,
+
+        choices: TuringVideoModels.map(model => ({
+            name: model.name,
+            value: model.id,
             premium: false
         }))
     }),

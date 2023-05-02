@@ -39,7 +39,7 @@ export class ErrorResponse extends Response {
         };
 
         this.addEmbed(builder => builder
-            .setTitle(this.options.type === ErrorType.Error ? "Uh-oh..." : null)
+            .setTitle(this.options.type === ErrorType.Error ? "Uh-oh... 😬" : null)
             .setDescription(`${options.message}${this.options.emoji !== null && this.options.type !== ErrorType.Error ? ` ${options.emoji ?? "❌"}` : ""}${this.options.type === ErrorType.Error ? "\n*The developers have been notified*." : ""}`) 
             .setColor(options.color ?? "Red")
         );

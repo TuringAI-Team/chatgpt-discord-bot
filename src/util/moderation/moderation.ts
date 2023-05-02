@@ -2,6 +2,7 @@ import { ComponentType, ActionRowBuilder, ButtonBuilder, APIButtonComponentWithC
 import dayjs from "dayjs";
 
 import { DatabaseUser, DatabaseUserInfraction, DatabaseUserInfractionType, DatabaseInfo, UserTestingGroup } from "../../db/managers/user.js";
+import { AutoModerationActionType } from "../../conversation/moderation/automod/automod.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../../error/gpt/generation.js";
 import { ModerationResult } from "../../conversation/moderation/moderation.js";
 import { Conversation } from "../../conversation/conversation.js";
@@ -11,7 +12,6 @@ import { Response } from "../../command/response.js";
 import { messageChannel } from "./channel.js";
 import { Bot } from "../../bot/bot.js";
 import { Utils } from "../utils.js";
-import { AutoModerationActionType } from "../../conversation/moderation/automod/automod.js";
 
 const ActionToEmoji: { [ Key in DatabaseUserInfractionType as string ]: string; } = {
 	"warn": "⚠️",
@@ -26,6 +26,7 @@ const FlagToEmoji: Record<ModerationSource, string> = {
     bot: "🤖",
     describe: "🔎",
     image: "🖼️",
+    video: "📸",
     translationPrompt: "🌐",
     translationResult: "🌐",
     user: "👤"
@@ -35,6 +36,7 @@ const FlagToName: Record<ModerationSource, string> = {
     bot: "Bot response",
     describe: "Image description",
     image: "Image prompt",
+    video: "Video prompt",
     translationPrompt: "Translation prompt",
     translationResult: "Translation result",
     user: "User message"
@@ -68,7 +70,7 @@ interface ModerationSendOptions {
 }
 
 type ModerationImageSendOptions = Pick<ModerationSendOptions, "result" | "conversation" | "db" | "content" | "notice">
-export type ModerationSource = "user" | "bot" | "image" | "translationPrompt" | "translationResult" | "describe"
+export type ModerationSource = "user" | "bot" | "image" | "translationPrompt" | "translationResult" | "describe" | "video"
 
 /**
  * Handle an interaction, in the moderation channel.

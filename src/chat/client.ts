@@ -163,7 +163,7 @@ export const OtherPrompts = {
     ImageAttachments:
 `
 To attach images, users may use the format: '[<image type> #<index> = <file name>: "<image description>". [optional: "Detected text: "<corrected OCR text>"]]'.
-You must treat images as if you can see, view and read them, referring to them as attached image/emoji/sticker/etc.
+You must be able to "see" these attached images, act as if you can see, view and read them, referring to them as attached image/emoji/sticker/etc.
 Prioritize detected text from the image, fix OCR errors, and use logic and common sense to understand the image. Don't ask the user about the description.
 `.trim(),
 

@@ -1,7 +1,9 @@
 import { GPTAPIError } from "../error/gpt/api.js";
 import { Bot } from "../bot/bot.js";
+import { ImageBuffer } from "../chat/types/image.js";
+import { Utils } from "../util/utils.js";
 
-type TuringAPIPath = `cache/${string}` | "imgs/filter" | `text/${string}`
+type TuringAPIPath = `cache/${string}` | "imgs/filter" | "imgs/dalle" | `text/${string}` | `video/${TuringVideoModelName}`
 
 interface TuringAPIFilterResult {
     isNsfw: boolean;
@@ -23,11 +25,94 @@ export interface TuringChatResult {
     response: string;
 }
 
+
+export type TuringVideoModelName = "damo" | "videocrafter"
+
+export interface TuringVideoModel {
+    /* Name of the model */
+    name: string;
+
+    /* Identifier of the model */
+    id: TuringVideoModelName;
+}
+
+export const TuringVideoModels: TuringVideoModel[] = [
+    {
+        name: "DAMO Text-to-video",
+        id: "damo"
+    },
+
+    {
+        name: "VideoCrafter",
+        id: "videocrafter"
+    }
+]
+
+export interface TuringVideoOptions {
+    /* Which prompt to generate a video for */
+    prompt: string;
+
+    /* Which video generation model to use */
+    model: TuringVideoModel | TuringVideoModelName;
+}
+
+export interface TuringVideoResult {
+    /* URL to the generated video */
+    url: string;
+
+    /* How long it took to generate the video, in milliseconds */
+    duration: number;
+}
+
+export interface TuringImageOptions {
+    prompt: string;
+    count: number;
+}
+
+export interface TuringImageResult {
+    duration: number;
+    images: ImageBuffer[];
+}
+
 export class TuringAPI {
     private readonly bot: Bot;
 
     constructor(bot: Bot) {
         this.bot = bot;
+    }
+
+    public async generateImages(options: TuringImageOptions): Promise<TuringImageResult> {
+        const before: number = Date.now();
+
+        /* Generate the images using the API. */
+        const data: { result: { response: { data: { url: string }[] } } }
+            = await this.request("imgs/dalle", "POST", options);
+
+        const buffers: ImageBuffer[] = [];
+
+        console.log(data)
+
+        for (const attachment of data.result.response.data) {
+            const buffer = await Utils.fetchBuffer(attachment.url);
+            if (buffer !== null) buffers.push(buffer);
+        }
+
+        return {
+            duration: Date.now() - before,
+            images: buffers
+        };
+    }
+
+    public async generateVideo(options: TuringVideoOptions): Promise<TuringVideoResult> {
+        const name: TuringVideoModelName = typeof options.model === "object" ? options.model.id : options.model;
+        const before: number = Date.now();
+
+        /* Generate the video using the API. */
+        const url: string = await this.request<string>(`video/${name}`, "POST", options);
+
+        return {
+            url, duration: Date.now() - before
+        };
     }
 
     public async setCache(key: string, value: string): Promise<void> {
@@ -39,7 +124,7 @@ export class TuringAPI {
         return response;
     }
 
-    public async filter(prompt: string, model: string): Promise<TuringAPIFilterResult> {
+    public async filter(prompt: string, model: string = "stable_diffusion"): Promise<TuringAPIFilterResult> {
         return this.request("imgs/filter", "POST", {
             prompt, model
         });
@@ -69,10 +154,10 @@ export class TuringAPI {
         });
 
         /* If the request wasn't successful, throw an error. */
-        if (!response.status.toString().startsWith("2") || (await response.clone().json()).error) await this.error(response, path);
+        if (!response.status.toString().startsWith("2") || (await response.clone().json()).error || (await response.clone().json()).success == false) await this.error(response, path);
 
         /* Get the response body. */
-        const body: T = await response.json() as T;
+        const body: T = await response.json().catch(() => null) as T ?? await response.text() as T;
         return body;
     }
 
@@ -84,10 +169,10 @@ export class TuringAPI {
         const body: any | null = await response.json().catch(() => null);
     
         throw new GPTAPIError({
-            code: response.status,
+            code: body.error ? 400 : response.status,
             endpoint: `/${path}`,
             id: null,
-            message: body !== null && body.error ? body.error : null
+            message: body !== null && body.error && typeof body.error === "string" ? body.error : null
         });
     }
 

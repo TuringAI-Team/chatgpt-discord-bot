@@ -60,12 +60,12 @@ const CONVERSATION_ERROR_RETRY_MAX_TRIES: number = 10
 export const CONVERSATION_COOLDOWN_MODIFIER = {
 	Free: 1,
 	Voter: 0.5,
-	GuildPremium: 0.14,
-	UserPremium: 0.075
+	GuildPremium: 0.15,
+	UserPremium: 0.09
 }
 
 export const CONVERSATION_DEFAULT_COOLDOWN: CooldownModifier = {
-	time: 140 * 1000
+	time: 110 * 1000
 }
 
 export declare interface Conversation {
@@ -98,9 +98,6 @@ export class Conversation {
 	/* Tone & personality for this conversation */
 	public tone: ChatTone;
 
-	/* Whether the conversation is currently generating an image */
-	public generatingImage: boolean;
-
 	/* Cool-down manager */
 	public cooldown: Cooldown;
 
@@ -126,7 +123,6 @@ export class Conversation {
 		this.session = session;
 
 		/* Set up the conversation data. */
-		this.generatingImage = false;
 		this.history = [];
 
 		/* Set the default tone. */
@@ -270,24 +266,6 @@ export class Conversation {
 
 		/* Update the database entry too. */
         if (apply) await this.manager.bot.db.users.updateConversation(this, { tone: this.tone.id });
-		this.applyResetTimer();
-	}
-
-	public async setImageGenerationStatus(status: boolean): Promise<void> {
-		if (this.generatingImage === status) return;
-		this.generatingImage = status;
-
-		/* Change the status for all other clusters. */
-		await this.manager.bot.client.cluster.broadcastEval(((client: BotDiscordClient, context: { id: string; status: boolean }) => {
-			const c: Conversation | null = client.bot.conversation.get(context.id);
-			if (c !== null) c.generatingImage = status;
-		}) as any, {
-			context: {
-				id: this.id,
-				status: this.generatingImage
-			}
-		}).catch(() => {});
-
 		this.applyResetTimer();
 	}
 

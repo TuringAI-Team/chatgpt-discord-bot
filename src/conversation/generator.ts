@@ -136,7 +136,7 @@ export class Generator {
 			const buttons: ButtonBuilder[] = [];
 
 			/* If the message got cut off, add a Continue button. */
-			if (data.raw && data.raw.finishReason === "maxLength") buttons.push(
+			if (data.raw && data.raw.finishReason === "maxLength" && conversation.tone.name !== "GPT-4") buttons.push(
 				new ButtonBuilder()
 					.setCustomId(`continue:${conversation.id}`)
 					.setStyle(ButtonStyle.Success)
@@ -168,7 +168,7 @@ export class Generator {
 		/* If the generated message finished due to reaching the token limit, show a notice. */
 		if (!pending && data.raw && data.raw.finishReason === "maxLength") {
 			embeds.push(new EmbedBuilder()
-				.setDescription(`This message reached the length limit, and was not fully generated.${!this.bot.db.users.canUsePremiumFeatures(db) ? "\n✨ _**Premium** removes the length limit **entirely**, and grants you exclusive features - view \`/premium info\` for more_." : ""}`)
+				.setDescription(`This message reached the length limit, and was not fully generated.${!this.bot.db.users.canUsePremiumFeatures(db) ? "\n✨ _**Premium** heavily increases the length limit, and grants you exclusive features - view \`/premium info\` for more_." : ""}`)
 				.setColor("Yellow")
 			);
 
@@ -688,7 +688,7 @@ export class Generator {
 
 			try {
 				clearInterval(updateTimer);
-				if (notice) response.embeds[0].setDescription(`${response.embeds[0].data.description}\n_If you continue to experience issues, join our **[support server](${Utils.supportInvite(this.bot)})**_.`);
+				if (notice) response.embeds[0].setDescription(`${response.embeds[0].data.description}\n_If you continue to experience issues, join the **[support server](${Utils.supportInvite(this.bot)})**_.`);
 
 				if (reply === null) await response.send(message);
 				else await reply.edit(response.get() as MessageEditOptions);

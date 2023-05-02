@@ -69,14 +69,6 @@ export default class SettingsCommand extends Command {
 		/* Whether the user has their own Premium subscription */
 		const premium: boolean = this.bot.db.users.subscriptionType({ user }) === "UserPremium";
 
-		/* If the conversation is currently busy, don't reset it. */
-		if (conversation.generating || conversation.generatingImage) return new Response()
-			.addEmbed(builder => builder
-				.setDescription("You have a request running in your conversation, *wait for it to finish* 😔")
-				.setColor("Red")
-			)
-			.setEphemeral(true);
-
 		/* All changes done by the user */
 		const changes: Partial<Record<SettingsName, any>> = {};
 

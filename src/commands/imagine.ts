@@ -13,6 +13,7 @@ import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generat
 import { sendImageModerationMessage } from "../util/moderation/moderation.js";
 import { ErrorResponse, ErrorType } from "../command/response/error.js";
 import { renderIntoSingleImage } from "../image/utils/renderer.js";
+import { LoadingIndicatorManager } from "../db/types/indicator.js";
 import { StableHordeAPIError } from "../error/gpt/stablehorde.js";
 import { LoadingResponse } from "../command/response/loading.js";
 import { Conversation } from "../conversation/conversation.js";
@@ -27,7 +28,6 @@ import { Bot } from "../bot/bot.js";
 interface ImageGenerationProcessOptions {
 	interaction: CommandInteraction;
 	conversation: Conversation;
-	premium: boolean;
 	filter: StableHordeGenerationFilter | null;
 	model: StableHordeModel;
 	guidance: number;
@@ -42,11 +42,8 @@ interface ImageGenerationProcessOptions {
 	nsfw: boolean;
 }
 
-/* List of loading indicator emojis */
-const LOADING_INDICATOR_EMOJI: string[] = [ "🕐", "🕑", "🕒", "🕓", "🕔", "🕕", "🕖", "🕗", "🕘", "🕙", "🕚", "🕛" ];
-
 /* How long an image prompt can be, max. */
-const MAX_IMAGE_PROMPT_LENGTH: number = 600;
+export const MAX_IMAGE_PROMPT_LENGTH: number = 600
 
 interface ImageGenerationSize {
 	width: number;
@@ -287,11 +284,15 @@ export default class ImagineCommand extends Command {
 		/* Whether images are currently being generated */
 		const busy: boolean = data.wait_time === 0;
 
+		/* The user's loading indicator */
+		const loadingEmoji: string = LoadingIndicatorManager.toString(
+			LoadingIndicatorManager.getFromUser(conversation.manager.bot, db.user)
+		);
+
 		const response = new Response()
 			.addEmbed(builder => builder
-				.setTitle(`${this.bot.image.displayPrompt(options.prompt)} ${LOADING_INDICATOR_EMOJI[index % LOADING_INDICATOR_EMOJI.length]}`)
-				.setDescription(`${data.wait_time > 0 ? `**${data.wait_time}**s` : "**Generating**"} ...`)
-				.setColor("Aqua")
+				.setDescription(`${data.wait_time > 0 ? `**${data.wait_time}**s` : "**Generating**"} ... ${loadingEmoji}`)
+				.setColor(conversation.manager.bot.branding.color)
 			);
 
 		if (moderation !== null && moderation.flagged) response.addEmbed(builder => builder
@@ -317,7 +318,7 @@ export default class ImagineCommand extends Command {
 			.addEmbed(builder => builder
 				.setTitle(`${this.bot.image.displayPrompt(image.options.prompt, 95)} 🔍`)
 				.setImage(storage.url)
-				.setColor("Purple")
+				.setColor(conversation.manager.bot.branding.color)
 			)
 			.setEphemeral(!self);
 
@@ -341,7 +342,7 @@ export default class ImagineCommand extends Command {
 				.setImage(`attachment://${result.id}.png`)
 				.setFooter({ text: `${(result.duration / 1000).toFixed(1)}s • powered by Stable Horde` })
 				.setFields(this.formatFields(conversation, options, result))
-				.setColor("Purple")
+				.setColor(conversation.manager.bot.branding.color)
 			)
 			.addAttachment(new AttachmentBuilder(buffer).setName(`${result.id}.png`));
 
@@ -527,7 +528,7 @@ export default class ImagineCommand extends Command {
 		}
 	}
 
-	public async startGenerationProcess({ interaction, filter, guidance, model, premium, sampler, seed, size, conversation, count, steps, db, moderation, nsfw, prompt }: ImageGenerationProcessOptions): CommandResponse {
+	public async startImageGeneration({ interaction, filter, guidance, model, sampler, seed, size, conversation, count, steps, db, moderation, nsfw, prompt }: ImageGenerationProcessOptions): CommandResponse {
 		/* Generation index, used for the loading indicator */
 		let index: number = 0;
 
@@ -583,10 +584,7 @@ export default class ImagineCommand extends Command {
 
 		/* Cancel this generation request. */
 		const cancel = async (reason: "button" | "timeOut") => {
-			if (!conversation.generatingImage) return;
-
 			cancelled = true;
-			await conversation.setImageGenerationStatus(false);
 
 			if (reason === "button") return await new Response()
 				.addEmbed(builder => builder
@@ -625,8 +623,6 @@ export default class ImagineCommand extends Command {
 		}, 5 * 60 * 1000);
 
 		try {
-			await conversation.setImageGenerationStatus(true);
-
 			/* Generate the image. */
 			const result = await this.bot.image.generate(options, onProgress);
 			clearTimeout(idleTimer);
@@ -647,8 +643,6 @@ export default class ImagineCommand extends Command {
 			await this.bot.db.users.incrementInteractions(db.user, "images");
 
 			if (!usable) {
-				await conversation.setImageGenerationStatus(false);
-
 				return new ErrorResponse({
 					interaction, command: this, emoji: null,
 					message: "All of the generated images were deemed as **not safe for work**. 🔞\n_Try changing your prompt or using the bot in a channel marked as **NSFW**_."
@@ -694,7 +688,6 @@ export default class ImagineCommand extends Command {
 			});
 				
 		} finally {
-			await conversation.setImageGenerationStatus(false);
 			clearTimeout(idleTimer);
 		}
 	}
@@ -718,12 +711,6 @@ export default class ImagineCommand extends Command {
 
 		/* Which sub-command to run */
 		const action: "generate" | "ai" | "models" = interaction.options.getSubcommand(true) as any;
-
-		if ((action === "generate" || action === "ai") && (conversation.generatingImage || conversation.generating)) return new ErrorResponse({
-			interaction, command: this,
-			message: `You still have ${conversation.generatingImage ? "an image generation" : "a chat"} request running, *wait for it to finish*`,
-			emoji: "😔"
-		});
 
 		if (action === "ai" && !canUsePremiumFeatures) return new PremiumUpsellResponse({
 			type: PremiumUpsellType.SDChatGPT
@@ -769,7 +756,7 @@ export default class ImagineCommand extends Command {
 
 			if (prompt.length > MAX_IMAGE_PROMPT_LENGTH || (negativePrompt ?? "").length > MAX_IMAGE_PROMPT_LENGTH) return new ErrorResponse({
 				interaction, command: this,
-				message: `Your specified image prompt is **too long**, it can't be longer than **${MAX_IMAGE_PROMPT_LENGTH}** characters ❌`,
+				message: `The specified prompt is **too long**, it can't be longer than **${MAX_IMAGE_PROMPT_LENGTH}** characters`
 			});
 
 			if (action === "generate") {
@@ -787,16 +774,15 @@ export default class ImagineCommand extends Command {
 
 				if (model === null) return new ErrorResponse({
 					interaction, command: this,
-					message: "You specified an invalid **Stable Diffusion** model",
+					message: "You specified an invalid **Stable Diffusion** model"
 				});
 
 				/* Whether the model should be shown */
 				const show: boolean = this.bot.image.shouldShowModel(interaction, model);
 
 				if (!show) return new ErrorResponse({
-					interaction, command: this,
-					message: "This **Stable Diffusion** model can only be used in **NSFW** channels",
-					emoji: "🔞"
+					interaction, command: this, emoji: "🔞",
+					message: "This **Stable Diffusion** model can only be used in **NSFW** channels"
 				});
 
 				/* Defer the reply, as this might take a while. */
@@ -813,10 +799,8 @@ export default class ImagineCommand extends Command {
 					color: "Orange", emoji: null
 				});
 
-				return this.startGenerationProcess({
+				return this.startImageGeneration({
 					interaction, guidance, model, conversation, count, moderation, nsfw, sampler, seed, size, steps, db,
-
-					premium: canUsePremiumFeatures,
 					filter: filter,
 					
 					prompt: {
@@ -899,10 +883,8 @@ export default class ImagineCommand extends Command {
 				let model: StableHordeModel | null = data.model ? this.bot.image.models.get(data.model) ?? null : null;
 				if (model === null) model = this.bot.image.getModels().find(m => m.name === "stable_diffusion")!;
 
-				return this.startGenerationProcess({
+				return this.startImageGeneration({
 					interaction, guidance, model, conversation, count, moderation, nsfw, sampler, size, steps, db,
-
-					premium: canUsePremiumFeatures,
 					filter: null, seed: null,
 					
 					prompt: {

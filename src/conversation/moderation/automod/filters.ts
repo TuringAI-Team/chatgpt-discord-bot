@@ -118,7 +118,7 @@ export const AutoModerationFilters: AutoModerationFilter[] = [
 
         blocked: [
             { words: [ "child porn", "i love cp", "send cp", "i love child porn", "where can i get child porn", "get child porn", "love child porn", "love cp", "watching child porn", "pornografia infantil", "children porn", "infant porn", "children sex", "child sex", "infant sex", "childporn", "childsex", "childrensex" ] },
-            { words: [ "loli " ], action: { type: "warn", reason: "Possibly sexual content involving underage characters" } }
+            { words: [ "loli"     ], action: { reason: "Content involving underage characters", type: "block" } }
         ]
     }),
 
@@ -128,7 +128,6 @@ export const AutoModerationFilters: AutoModerationFilter[] = [
 
         blocked: [
             { words: [ "incest"   ], action: { reason: "Incest-related content", type: "warn"  } },
-            { words: [ "loli"     ], action: { reason: "Content involving underage characters" } },
             { words: [ "futanari" ], action: { reason: "Weird content", type: "block" }          }
         ]
     }),
@@ -138,7 +137,7 @@ export const AutoModerationFilters: AutoModerationFilter[] = [
         action: { reason: "Racist content", type: "block" },
 
         blocked: [
-            { words: [ "nigger", "black african monkey", "african monkey", "chink", "kike", "raghead", "wetback", "zipperhead", "slant eye", "porch monkey", "camel jockey", "sand nigger", "pickaninny", "jungle bunny", "tar baby" ] }
+            { words: [ "nigger", "n i g g e r", "black african monkey", "african monkey", "chink", "kike", "raghead", "wetback", "zipperhead", "slant eye", "porch monkey", "camel jockey", "sand nigger", "pickaninny", "jungle bunny", "tar baby" ] }
         ]
     }),
 
