@@ -57,7 +57,7 @@ export class CommandManager {
         if (this.commands.size === 0) throw new Error("Commands have not been loaded yet");
 
 		/* Information about each application command, as JSON */
-		const commandList: RESTPostAPIApplicationCommandsJSONBody[] = this.commands.filter(cmd => cmd.options.private == undefined && cmd.options.private != CommandPrivateType.PremiumOnly).map(cmd =>
+		const commandList: RESTPostAPIApplicationCommandsJSONBody[] = this.commands.filter(cmd => cmd.options.private == undefined || cmd.options.private === CommandPrivateType.PremiumOnly).map(cmd =>
 			(cmd.builder as SlashCommandBuilder).setDefaultPermission(true).toJSON()
 		);
 
