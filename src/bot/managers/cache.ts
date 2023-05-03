@@ -35,7 +35,6 @@ export class CacheManager {
         key: string,
         value: CacheValue,
     ): Promise<void> {
-        /* Update the cache for this cluster directly. */
         this.cache.set(
             this.keyName(collection, key), value,
             CacheDuration[collection] ?? DATABASE_CACHE_TTL
@@ -56,7 +55,6 @@ export class CacheManager {
         collection: CacheType,
         key: string
     ): Promise<void> {
-        /* Delete the cache for this cluster directly. */
         this.cache.del(this.keyName(collection, key));
     }
 

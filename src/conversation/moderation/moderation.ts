@@ -108,7 +108,7 @@ export const check = async ({ conversation, db, content, reply, message, source,
     if (additional && turing) {
         if (turing.isNsfw && !additional.nsfw) flagged = true;
     
-        if (turing.isCP || (turing.isYoung && turing.isNsfw)) {
+        if (turing.isCP) {
             blocked = true;
             flagged = true;
         }

@@ -74,7 +74,7 @@ export class CacheManager {
                     await manager.bot.app.cache.delete(context.collection, context.key);
                 }
             }) as any, {
-                timeout: 5 * 1000,
+                timeout: 15 * 1000,
                 context: {
                     action, collection, key, value
                 }
