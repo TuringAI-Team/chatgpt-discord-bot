@@ -51,7 +51,7 @@ export declare interface BotManager {
 }
 
 export class BotManager extends EventEmitter {
-    private readonly app: App;
+    public readonly app: App;
 
     /* Discord cluster sharding manager */
     private manager: BotClusterManager | null;

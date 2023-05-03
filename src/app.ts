@@ -3,6 +3,7 @@ import chalk from "chalk";
 import { BotManager } from "./bot/manager.js";
 import { Logger } from "./util/logger.js";
 import { Config } from "./config.js";
+import { CacheManager } from "./bot/managers/cache.js";
 
 enum AppState {
 	/* The app is not initialized yet */
@@ -28,6 +29,9 @@ export class App {
 	/* Manager, in charge of managing the Discord bot & their shards */
 	public readonly manager: BotManager;
 
+	/* Global cache manager */
+	public readonly cache: CacheManager;
+
 	/* Configuration data */
 	public config: Config;
 
@@ -39,6 +43,7 @@ export class App {
 
 		/* Set up various managers & services. */
 		this.manager = new BotManager(this);
+		this.cache = new CacheManager(this);
 
         /* Assign a temporary value to the config, while we wait for the application start.
            Other parts shouldn't access the configuration during this time. */

@@ -284,7 +284,7 @@ export class Generator {
 		const remaining: number = (conversation.cooldown.state.startedAt! + conversation.cooldown.state.expiresIn!) - Date.now();
 
 		/* If the command is on cool-down, don't run the request. */
-		if (conversation.cooldown.active && remaining > Math.max(conversation.cooldown.state.expiresIn! / 2, 10 * 1000)) {
+		if (conversation.cooldown.active && remaining > Math.min(conversation.cooldown.state.expiresIn! / 2, 10 * 1000)) {
 			const reply = await button.reply({
 				embeds: conversation.cooldownMessage(db),
 				ephemeral: true

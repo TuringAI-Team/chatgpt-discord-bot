@@ -59,16 +59,8 @@ export default class DeveloperCommand extends Command {
 			const runningRequests: number = (await this.bot.client.cluster.broadcastEval(() => this.bot.conversation.conversations.filter(c => c.generating).size))
 				.reduce((value, count) => value + count, 0);
 
-			const cache: NodeCache.Stats = ((await this.bot.client.cluster.broadcastEval(() => this.bot.db.cache.cache.stats)) as NodeCache.Stats[])
-				.reduce((value, stats) => ({
-					hits: value.hits + stats.hits,
-					keys: value.keys + stats.keys,
-					ksize: value.ksize + stats.ksize,
-					misses: value.misses + stats.misses,
-					vsize: value.vsize + stats.vsize
-				}), {
-					hits: 0, keys: 0, ksize: 0, misses: 0, vsize: 0
-				});
+			const cache: NodeCache.Stats =
+				await this.bot.client.cluster.evalOnManager("this.bot.app.cache.cache.stats") as unknown as NodeCache.Stats;
 
 			const guilds: number[] = (await this.bot.client.cluster.fetchClientValues("guilds.cache.size")) as number[];
 			const running: boolean[] = (await this.bot.client.cluster.fetchClientValues("bot.started")) as boolean[];

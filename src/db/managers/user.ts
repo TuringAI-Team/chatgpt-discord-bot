@@ -788,7 +788,7 @@ export class UserManager {
             const entries: [ string, DatabaseAll ][] = Array.from(collection.entries());
 
             /* Entries to work on */
-            const changes: DatabaseAll[] = entries.map(([ id, update ]) => update);
+            const changes: DatabaseAll[] = entries.map(([ _, update ]) => update);
             if (changes.length === 0) continue;
 
             /* Apply the changes to the database. */
@@ -811,7 +811,7 @@ export class UserManager {
                 /* If the request worked, remove it from the queued changes collection.
 
                    We only actually remove the changes from the database if they don't fail,
-                   otherwise the database and cache won't match up anymore, which will cause data loss. */
+                   otherwise the database and cache won't match up anymore, which will eventually lead to data loss. */
                 } else if (error === null) {
                     if (this.db.bot.dev) this.db.bot.logger.debug(
                         chalk.bold("Database update"),

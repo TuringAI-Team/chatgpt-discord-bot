@@ -1,61 +1,32 @@
-import NodeCache from "node-cache";
+import chalk from "chalk";
 
-import { BotDiscordClient } from "../../bot/bot.js";
+import { CacheType, CacheValue } from "../../bot/managers/cache.js";
+import { BotClusterManager } from "../../bot/manager.js";
 import { DatabaseCollectionType } from "./user.js";
 import { DatabaseManager } from "../manager.js";
 
-/* How long to cache database entries for */
-const DATABASE_CACHE_TTL: number = 30 * 60 * 1000
-
-export type CacheType = DatabaseCollectionType | "cooldown"
-export type CacheValue = any[] | { [key: string]: any }
-
-const CacheDuration: Partial<Record<CacheType, number>> = {
-    conversations: 5 * 60 * 1000,
-    interactions: 5 * 60 * 1000,
-    guilds: 60 * 60 * 1000,
-    users: 60 * 60 * 1000
-}
+type CacheEvalAction = "get" | "delete" | "set"
 
 export class CacheManager {
     private db: DatabaseManager;
-    public readonly cache: NodeCache;
 
     constructor(db: DatabaseManager) {
         this.db = db;
-        
-        /* Initialize the cache. */
-        this.cache = new NodeCache({
-            deleteOnExpire: true,
-            checkperiod: 5 * 60
-        });
     }
 
     public async set(
         collection: CacheType,
         key: string,
-        value: CacheValue,
-        direct: boolean = false
+        value: CacheValue
     ): Promise<void> {
-        /* Update the cache for this cluster directly. */
-        this.cache.set(
-            this.keyName(collection, key), value,
-            CacheDuration[collection] ?? DATABASE_CACHE_TTL
-        );
-
-        /* Set the cache for every cluster. */
-        if (!direct) this.db.bot.client.cluster.broadcastEval((async (client: BotDiscordClient, context: { collection: DatabaseCollectionType; key: string; value: any; from: number }) => {
-            if (client.bot.data.id !== context.from) await client.bot.db.cache.set(context.collection, context.key, context.value, true);
-        }) as any, {
-            context: { key, value, collection, from: this.db.bot.data.id }
-        });
+        await this.eval("set", collection, key, value);
     }
 
     public async get<T>(
         collection: CacheType,
         key: string
     ): Promise<T | null> {
-        const raw: T | null = await this.cache.get(this.keyName(collection, key)) ?? null;
+        const raw: T | null = await this.eval("get", collection, key) ?? null;
         if (raw === null) return null;
 
         return raw as T;
@@ -63,18 +34,61 @@ export class CacheManager {
 
     public async delete(
         collection: CacheType,
-        key: string,
-        direct: boolean = false
+        key: string
     ): Promise<void> {
-        /* Delete the cache for this cluster directly. */
-        this.cache.del(this.keyName(collection, key));
+        await this.eval("delete", collection, key);
+    }
 
-        /* Delete the cache for every cluster. */
-        if (!direct) this.db.bot.client.cluster.broadcastEval((async (client: BotDiscordClient, context: { collection: DatabaseCollectionType; key: string; from: number }) => {
-            if (client.bot.data.id !== context.from) await client.bot.db.cache.delete(context.collection, context.key, true);
-        }) as any, {
-            context: { key, collection, from: this.db.bot.data.id }
-        });
+    public async eval<T>(
+        action: "get", collection: CacheType, key: string
+    ): Promise<T>;
+
+    public async eval(
+        action: "delete", collection: CacheType, key: string
+    ): Promise<void>;
+
+    public async eval(
+        action: "set", collection: CacheType, key: string, value: CacheValue
+    ): Promise<void>;
+
+    public async eval<T = any>(
+        action: CacheEvalAction,
+        collection: CacheType,
+        key: string,
+        value?: CacheValue
+    ): Promise<T | void> {
+        if (this.db.bot.dev) this.db.bot.logger.debug(
+            `${chalk.bold(action)} in cache collection ${chalk.bold(collection)} & key ${chalk.bold(key)}`
+        );
+
+        /* Try to perform the specified action on the cache, on the bot manager. */
+        try {
+            const data: any | void = await this.db.bot.client.cluster.evalOnManager((async (manager: BotClusterManager, context: {
+                action: CacheEvalAction; collection: DatabaseCollectionType; key: string; value?: CacheValue;
+            }) => {
+                if (context.action === "set") {
+                    await manager.bot.app.cache.set(context.collection, context.key, context.value!);
+                } else if (context.action === "get") {
+                    return await manager.bot.app.cache.get(context.collection, context.key);
+                } else if (context.action === "delete") {
+                    await manager.bot.app.cache.delete(context.collection, context.key);
+                }
+            }) as any, {
+                timeout: 5 * 1000,
+                context: {
+                    action, collection, key, value
+                }
+            });
+
+            /* If the specified action was `get`, return the received value. */
+            if (typeof data === "object") return data as T;
+            else return;
+
+        } catch (error) {
+            this.db.bot.logger.error(
+                `Failed to ${chalk.bold(action)} in cache collection ${chalk.bold(collection)} & key ${chalk.bold(key)} ->`, error
+            );
+        }
     }
 
     private keyName(collection: CacheType, key: string): string {
