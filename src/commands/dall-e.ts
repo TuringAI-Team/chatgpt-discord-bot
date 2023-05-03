@@ -1,16 +1,16 @@
 import { AttachmentBuilder, SlashCommandBuilder } from "discord.js";
 
-import { ModerationResult, checkImagePrompt, checkVideoPrompt } from "../conversation/moderation/moderation.js";
-import { TuringImageOptions, TuringVideoModel, TuringVideoModels } from "../turing/api.js";
+import { ModerationResult, checkImagePrompt } from "../conversation/moderation/moderation.js";
 import { Command, CommandInteraction, CommandResponse } from "../command/command.js";
 import { ErrorResponse, ErrorType } from "../command/response/error.js";
 import { Conversation } from "../conversation/conversation.js";
 import { handleError } from "../util/moderation/error.js";
 import { MAX_IMAGE_PROMPT_LENGTH } from "./imagine.js";
 import { DatabaseInfo } from "../db/managers/user.js";
+import { TuringImageOptions } from "../turing/api.js";
 import { Response } from "../command/response.js";
-import { Bot } from "../bot/bot.js";
 import { GPTAPIError } from "../error/gpt/api.js";
+import { Bot } from "../bot/bot.js";
 
 export default class DallECommand extends Command {
 	constructor(bot: Bot) {
@@ -36,8 +36,8 @@ export default class DallECommand extends Command {
 			cooldown: {
 				Free: 3 * 60 * 100,
 				Voter: 2 * 60 * 100,
-				GuildPremium: 40 * 1000,
-				UserPremium: 30 * 1000
+				GuildPremium: 1 * 60 * 1000,
+				UserPremium: 45 * 1000
 			}
 		});
 	}

@@ -2,9 +2,9 @@ import { ComponentType, ActionRowBuilder, ButtonBuilder, APIButtonComponentWithC
 import dayjs from "dayjs";
 
 import { DatabaseUser, DatabaseUserInfraction, DatabaseUserInfractionType, DatabaseInfo, UserTestingGroup } from "../../db/managers/user.js";
+import { ModerationOptions, ModerationResult } from "../../conversation/moderation/moderation.js";
 import { AutoModerationActionType } from "../../conversation/moderation/automod/automod.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../../error/gpt/generation.js";
-import { ModerationResult } from "../../conversation/moderation/moderation.js";
 import { Conversation } from "../../conversation/conversation.js";
 import { OpenAIChatMessage } from "../../openai/types/chat.js";
 import { ChatTones } from "../../conversation/tone.js";
@@ -66,6 +66,7 @@ interface ModerationSendOptions {
     db: DatabaseInfo;
     content: string;
     type: ModerationSource;
+    options: ModerationOptions;
     notice?: string;
 }
 
@@ -565,7 +566,7 @@ export const buildModerationToolbar = (user: User, result: ModerationResult): Ac
  * 
  * @param options Moderation send options
  */
-export const sendModerationMessage = async ({ result, conversation, db, content, type, notice }: ModerationSendOptions) => {
+export const sendModerationMessage = async ({ result, conversation, db, content, type, notice, options }: ModerationSendOptions) => {
     /* Get the moderation channel. */
     const channel = await messageChannel(conversation.manager.bot, "moderation");
 
@@ -628,13 +629,13 @@ export const sendModerationMessage = async ({ result, conversation, db, content,
             value: `\`${result.highest.key}\` (**${Math.floor(result.highest.value * 100)}**%)`,
             inline: true
         });
-
-        if (result.source === "user") reply.embeds[0].addFields({
-            name: "Blocked ⛔",
-            value: result.blocked ? "✅" : "❌",
-            inline: true
-        });
     }
+    
+    if (!result.auto) reply.embeds[0].addFields({
+        name: "Blocked ⛔",
+        value: result.blocked ? "✅" : "❌",
+        inline: true
+    });
 
     if (result.source === "bot" && conversation.tone.id !== ChatTones[0].id) reply.embeds[0].addFields({
         name: "Tone 😊",
@@ -642,12 +643,28 @@ export const sendModerationMessage = async ({ result, conversation, db, content,
         inline: true
     });
 
+    if (result.source === "image" && options.additional && options.additional.model) reply.embeds[0].addFields(
+        {
+            name: "Model 😊",
+            value: `\`${options.additional.model}\``,
+            inline: true
+        },
+
+        {
+            name: "NSFW 🔞",
+            value: options.additional.nsfw ? "✅" : "❌",
+            inline: true
+        }
+    );
+
     await channel.send(reply.get() as any);
 }
 
 export const sendImageModerationMessage = async (options: ModerationImageSendOptions): Promise<void> => {
     return sendModerationMessage({
         ...options,
+        
+        options: { ...options, source: "image" },
         type: "image"
     });
 }

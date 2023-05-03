@@ -21,7 +21,7 @@ interface AdditionalModerationOptions {
     nsfw: boolean;
 }
 
-interface ModerationOptions {
+export interface ModerationOptions {
     conversation: Conversation;
     message?: Message;
     reply?: boolean;
@@ -108,7 +108,7 @@ export const check = async ({ conversation, db, content, reply, message, source,
     if (additional && turing) {
         if (turing.isNsfw && !additional.nsfw) flagged = true;
     
-        if (turing.isCP || (turing.isYoung && additional.nsfw)) {
+        if (turing.isCP || (turing.isYoung && turing.isNsfw)) {
             blocked = true;
             flagged = true;
         }
@@ -152,6 +152,7 @@ export const check = async ({ conversation, db, content, reply, message, source,
     /* Send the moderation message to the private channel. */
     if (flagged || blocked) await sendModerationMessage({
         content, conversation, db,
+        options: { conversation, db, content, reply, message, source, filter, additional },
 
         type: source,
         result: data

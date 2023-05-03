@@ -129,7 +129,7 @@ export class CommandManager {
 	 */
 	public async applyCooldown(interaction: ChatInputCommandInteraction, db: DatabaseInfo, command: Command): Promise<void> {
 		/* If the command doesn't have a cool-down time set, abort. */
-		if (!command.options.cooldown || this.bot.app.config.discord.owner.includes(interaction.user.id)) return;
+		if (command.options.cooldown == undefined || this.bot.app.config.discord.owner.includes(interaction.user.id)) return;
 		const name: string = this.commandName(interaction, command);
 		
 		/* How long the cool-down should last */
@@ -245,6 +245,7 @@ export class CommandManager {
 
 			/* How long until the cool-down expires */
 			const delay: number = (cooldown.createdAt + cooldown.duration) - Date.now() - 1000;
+			await this.bot.db.users.incrementInteractions(db.user, "cooldown_messages");
 
 			/* Send the notice message. */
 			return await response.send(interaction)
@@ -345,6 +346,15 @@ export class CommandManager {
 			db.user = await this.bot.db.users.fetchUser(interaction.user);
 		}
 
+		/* If the user doesn't have a cool-down set for the command yet, ... */
+		if (command.options.cooldown !== null && cooldown === null) {
+			await this.applyCooldown(interaction, db, command);
+		
+		/* If the user's cooldown already expired, ... */
+		} else if (command.options.cooldown !== null && cooldown !== null && cooldown.duration < Date.now()) {
+			await this.applyCooldown(interaction, db, command);
+		}
+
 		/* Reply to the original interaction */
 		let response: Response | undefined;
 
@@ -366,15 +376,6 @@ export class CommandManager {
 				title: `Error while executing command \`${command.builder instanceof SlashCommandBuilder ? "/" : ""}${command.builder.name}\``,
 				error: error as Error, reply: false
 			});
-		}
-
-		/* If the user doesn't have a cool-down set for the command yet, ... */
-		if (command.options.cooldown !== null && cooldown === null) {
-			await this.applyCooldown(interaction, db, command);
-		
-		/* If the user's cooldown already expired, ... */
-		} else if (command.options.cooldown !== null && cooldown !== null && cooldown.duration < Date.now()) {
-			await this.applyCooldown(interaction, db, command);
 		}
 
 		/* Reply with the response, if one was given. */

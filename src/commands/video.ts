@@ -56,7 +56,7 @@ export default class VideoCommand extends Command {
 
 		if (prompt.length > MAX_VIDEO_PROMPT_LENGTH) return new ErrorResponse({
 			interaction, command: this,
-			message: `The specified prompt is **too long**, it can't be longer than **${MAX_VIDEO_PROMPT_LENGTH}** characters`,
+			message: `The specified prompt is **too long**, it can't be longer than **${MAX_VIDEO_PROMPT_LENGTH}** characters`
 		});
 
 		/* Which generation model to use; otherwise pick the default one */
