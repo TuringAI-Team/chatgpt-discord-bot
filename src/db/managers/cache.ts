@@ -58,7 +58,7 @@ export class CacheManager {
         value?: CacheValue
     ): Promise<T | void> {
         if (this.db.bot.dev) this.db.bot.logger.debug(
-            `${chalk.bold(action)} in cache collection ${chalk.bold(collection)} & key ${chalk.bold(key)}`
+            `${chalk.bold(action)} in cache collection ${chalk.bold(collection)} for key ${chalk.bold(key)}`
         );
 
         /* Try to perform the specified action on the cache, on the bot manager. */
@@ -86,7 +86,7 @@ export class CacheManager {
 
         } catch (error) {
             this.db.bot.logger.error(
-                `Failed to ${chalk.bold(action)} in cache collection ${chalk.bold(collection)} & key ${chalk.bold(key)} ->`, error
+                `Failed to ${chalk.bold(action)} in cache collection ${chalk.bold(collection)} for key ${chalk.bold(key)} ->`, error
             );
         }
     }

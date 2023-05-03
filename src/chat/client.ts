@@ -459,7 +459,7 @@ export class ChatClient {
             }
         }
 
-        this.session.manager.bot.logger.debug(
+        if (this.session.manager.bot.dev) this.session.manager.bot.logger.debug(
             `Analyzed ${chalk.bold(results.length)} image${results.length > 1 ? "s" : ""}, attached by ${chalk.bold(options.conversation.user.tag)}, using model ${chalk.bold(ModelType[options.model.settings.type])} in ${chalk.bold(`${Date.now() - start}ms`)}.`
         );
 

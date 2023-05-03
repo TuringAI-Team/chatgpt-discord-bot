@@ -33,7 +33,7 @@ export class VoteManager {
             voted: new Date().toISOString()
         });
 
-        this.bot.logger.debug(`User ${chalk.bold(user.tag)} has voted for the bot!`);
+        if (this.bot.dev) this.bot.logger.debug(`User ${chalk.bold(user.tag)} has voted for the bot!`);
         await this.bot.db.users.incrementInteractions(db, "votes");
         
         return true;

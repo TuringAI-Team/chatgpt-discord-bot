@@ -1,4 +1,4 @@
-import { CacheType, ColorResolvable, ContextMenuCommandInteraction, DMChannel, InteractionResponse, Message, MessageComponentInteraction, TextChannel, ThreadChannel } from "discord.js";
+import { CacheType, ColorResolvable, DMChannel, InteractionResponse, Message, MessageComponentInteraction, RepliableInteraction, TextChannel, ThreadChannel } from "discord.js";
 
 import { Command, CommandInteraction } from "../command.js";
 import { Response } from "../response.js";
@@ -9,10 +9,10 @@ export enum ErrorType {
 
 interface ErrorResponseOptions {
     /* Interaction to reply to */
-    interaction: CommandInteraction;
+    interaction: RepliableInteraction;
 
     /* Command to reply to */
-    command: Command<any>;
+    command?: Command<any>;
 
     /* Message to display */
     message: string;
@@ -40,7 +40,7 @@ export class ErrorResponse extends Response {
 
         this.addEmbed(builder => builder
             .setTitle(this.options.type === ErrorType.Error ? "Uh-oh... 😬" : null)
-            .setDescription(`${options.message}${this.options.emoji !== null && this.options.type !== ErrorType.Error ? ` ${options.emoji ?? "❌"}` : ""}${this.options.type === ErrorType.Error ? "\n*The developers have been notified*." : ""}`) 
+            .setDescription(`${options.message}${this.options.emoji !== null && this.options.type !== ErrorType.Error ? ` ${options.emoji ?? "❌"}` : ""}${this.options.type === ErrorType.Error ? " *The developers have been notified*." : ""}`) 
             .setColor(options.color ?? "Red")
         );
 
@@ -48,8 +48,9 @@ export class ErrorResponse extends Response {
     }
 
     public async send(interaction: CommandInteraction | MessageComponentInteraction<CacheType> | Message<boolean> | TextChannel | DMChannel | ThreadChannel<boolean>): Promise<Message<boolean> | InteractionResponse<boolean> | null> {
-        /* Remove the cool-down from the executed command. */
-        await this.options.command.removeCooldown(this.options.interaction as any);
+        /* Remove the cool-down from the executed command, if applicable. */
+        if (this.options.command) await this.options.command.removeCooldown(this.options.interaction as any);
+
         return super.send(interaction);
     }
 }

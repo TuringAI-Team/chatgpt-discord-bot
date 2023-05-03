@@ -87,7 +87,7 @@ export const runDescribeAction = async (conversation: Conversation, db: Database
 
         const duration: number = Date.now() - start;
 
-        conversation.manager.bot.logger.debug(
+        if (conversation.manager.bot.dev) conversation.manager.bot.logger.debug(
             `User ${chalk.bold(interaction.user.tag)} described ${attachment.type} ${chalk.bold(attachment.url)} within ${chalk.bold(duration)}ms.`
         );
 

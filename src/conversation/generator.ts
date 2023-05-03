@@ -22,6 +22,7 @@ import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generat
 import { handleError } from "../util/moderation/error.js";
 import { GPTAPIError } from "../error/gpt/api.js";
 import { OtherPrompts } from "../chat/client.js";
+import { ErrorResponse, ErrorType } from "../command/response/error.js";
 
 /* Permissions required by the bot to function correctly */
 const BOT_REQUIRED_PERMISSIONS: { [key: string]: PermissionsString } = {
@@ -256,28 +257,36 @@ export class Generator {
 				.get() as InteractionReplyOptions
 			);
 
-			/* Check whether the user voted for the bot using the top.gg API. */
-			const voted: boolean = await this.bot.vote.voted(button.user, db.user);
+			await button.deferReply({
+				ephemeral: true
+			});
 
-			if (!voted) return void await button.reply(
-				new Response()
-					.addEmbed(builder => builder
-						.setDescription(`You haven't voted for the bot yet 😕`)
-						.setColor("Red")
-					)
-					.setEphemeral(true)
-				.get() as InteractionReplyOptions
-			);
+			try {
+				/* Try to check whether the user voted for the bot using the top.gg API. */
+				const voted: boolean = await this.bot.vote.voted(button.user, db.user);
 
-			return void await button.reply(
-				new Response()
+				if (!voted) return void new ErrorResponse({
+					interaction: button, message: "You haven't voted for the bot yet", emoji: "😕"
+				}).send(button);
+				
+
+				return void await new Response()
 					.addEmbed(builder => builder
 						.setDescription(`Thank you for voting for the bot! 🎉`)
 						.setColor(this.bot.branding.color)
 					)
 					.setEphemeral(true)
-				.get() as InteractionReplyOptions
-			);
+				.send(button);
+
+			} catch (error) {
+				await handleError(this.bot, {
+					error: error as Error, reply: false, title: "Failed to check whether the user has voted"
+				});
+
+				return void new ErrorResponse({
+					interaction: button, type: ErrorType.Error, message: "It seems like something went wrong while trying to check whether you've voted for the bot."
+				}).send(button);
+			}
 		}
 
 		/* Remaining cool-down time */
