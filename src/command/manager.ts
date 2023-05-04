@@ -150,6 +150,10 @@ export class CommandManager {
 		await this.bot.db.cache.delete("cooldown", name);
 	}
 
+	public hasCooldownExpired(cooldown: CooldownData): boolean {
+		return cooldown.createdAt + cooldown.duration < Date.now();
+	}
+
 	/**
      * Handle an auto-complete interaction.
      * @param interaction Auto-completion interaction to handle 
@@ -237,7 +241,7 @@ export class CommandManager {
 		}
 
 		/* If the user is currently on cool-down for this command, ... */
-		if (command.options.cooldown !== null && cooldown !== null) {
+		if (command.options.cooldown !== null && cooldown !== null && cooldown.createdAt) {
 			/* Send an informative message about the cool-down. */
 			const response: Response = new Response()
 				.addEmbed(builder => builder

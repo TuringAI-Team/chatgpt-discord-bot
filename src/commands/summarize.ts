@@ -259,7 +259,7 @@ export default class SummarizeCommand extends Command {
 					interaction: selection, command: this, type: ErrorType.Error, message: "The video's subtitles are too large to summarize", emoji: "😕"
 				});
 
-				if (error instanceof YoutubeTranscriptError) return new ErrorResponse({
+				if (error instanceof YoutubeTranscriptError || (error as Error).message.includes("YoutubeTranscript")) return new ErrorResponse({
 					interaction: selection, command: this, message: `The video **${video.title}** doesn't have subtitles`, emoji: "😕"
 				});
 

@@ -53,7 +53,7 @@ const BOT_TASKS: BotTask[] = [
                 .reduce((value, count) => value + count, 0);
 
             /* Total Discord user count */
-            const discordUsers: number = ((await bot.client.cluster.broadcastEval(client => client.guilds.cache.reduce((value, guild) => value + (isNaN(guild.memberCount) ? 0 : guild.memberCount), 0)).catch(() => [])) as number[])
+            const discordUsers: number = (await bot.client.cluster.fetchClientValues("guilds.cache.reduce((value, guild) => value + guild.memberCount, 0)") as number[])
                 .reduce((value, count) => value + count, 0);
 
             /* Total database user count */
