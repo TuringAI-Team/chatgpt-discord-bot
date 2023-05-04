@@ -1,4 +1,4 @@
-import { APIApplicationCommandOptionChoice, ApplicationCommandOptionBase, AutocompleteInteraction, CacheType, SlashCommandBuilder } from "discord.js";
+import { APIApplicationCommandOptionChoice, ApplicationCommandOptionBase, AutocompleteInteraction, CacheType, SlashCommandBuilder, SlashCommandSubcommandBuilder } from "discord.js";
 import chalk from "chalk";
 
 import { LoadingIndicatorManager, LoadingIndicators } from "../types/indicator.js";
@@ -7,11 +7,52 @@ import { DatabaseUser, RawDatabaseUser, UserSettings } from "./user.js";
 import { CommandOptionChoice } from "../../command/command.js";
 import { StableHordeModel } from "../../image/types/model.js";
 import { Languages, UserLanguage } from "../types/locale.js";
+import { TuringVideoModels } from "../../turing/api.js";
 import { ToneEmoji } from "../../conversation/tone.js";
 import { DatabaseManager } from "../manager.js";
 import { Utils } from "../../util/utils.js";
 import { Bot } from "../../bot/bot.js";
-import { TuringVideoModels } from "../../turing/api.js";
+
+
+export interface SettingsCategory {
+    /* Type of the category */
+    type: SettingsCategoryName;
+
+    /* Display name of the category */
+    name: string;
+
+    /* Emoji for this category */
+    emoji: ToneEmoji;
+}
+
+export type SettingsCategoryName = "general" | "image" | "video" | "text"
+export type SettingKeyAndCategory = `${SettingsCategoryName}:${SettingsName}`
+
+export const SettingCategories: SettingsCategory[] = [
+    {
+        name: "General",
+        type: "general",
+        emoji: { fallback: "🧭" }
+    },
+
+    {
+        name: "Image",
+        type: "image",
+        emoji: { fallback: "⛰️" }
+    },
+
+    {
+        name: "Video",
+        type: "video",
+        emoji: { fallback: "📷" }
+    },
+
+    {
+        name: "Text",
+        type: "text",
+        emoji: { fallback: "📜" }
+    }
+]
 
 export enum SettingsOptionType {
     /* Simple true-false value */
@@ -37,6 +78,9 @@ interface BaseSettingsOptionData<T = any> {
     /* Display name of the settings option */
     name: string;
 
+    /* Category of this settings option */
+    category: SettingsCategoryName;
+
     /* Emoji for the settings option */
     emoji: ToneEmoji;
 
@@ -59,7 +103,7 @@ export abstract class SettingsOption<T = string | number | boolean, U extends Ba
         this.data = data;
     }
 
-    public abstract addToCommand(bot: Bot, builder: SlashCommandBuilder): void;
+    public abstract addToCommand(bot: Bot, builder: SlashCommandSubcommandBuilder): void;
     public abstract display(bot: Bot, value: T): string;
 
     protected applyBase<T extends ApplicationCommandOptionBase = ApplicationCommandOptionBase>(builder: T): T {
@@ -74,6 +118,10 @@ export abstract class SettingsOption<T = string | number | boolean, U extends Ba
     public get key(): SettingsName {
         return this.data.key;
     }
+
+    public get category(): SettingsCategoryName {
+        return this.data.category;
+    }
 }
 
 export class BooleanSettingsOption extends SettingsOption<boolean> {
@@ -84,7 +132,7 @@ export class BooleanSettingsOption extends SettingsOption<boolean> {
         });
     }
 
-    public addToCommand(bot: Bot, builder: SlashCommandBuilder): void {
+    public addToCommand(bot: Bot, builder: SlashCommandSubcommandBuilder): void {
         builder.addBooleanOption(builder => this.applyBase(builder));
     }
 
@@ -107,7 +155,7 @@ export class IntegerSettingsOption extends SettingsOption<number, BaseSettingsOp
         });
     }
 
-    public addToCommand(bot: Bot, builder: SlashCommandBuilder): void {
+    public addToCommand(bot: Bot, builder: SlashCommandSubcommandBuilder): void {
         builder.addIntegerOption(builder => this.applyBase(builder)
             .setMinValue(this.data.min)
             .setMaxValue(this.data.max)
@@ -139,7 +187,7 @@ export class ChoiceSettingsOption extends SettingsOption<string, BaseSettingsOpt
         });
     }
 
-    public addToCommand(bot: Bot, builder: SlashCommandBuilder): void {
+    public addToCommand(bot: Bot, builder: SlashCommandSubcommandBuilder): void {
         builder.addStringOption(builder => this.applyBase(builder)
             .addChoices(...this.data.choices.map(({ name, premium, value }) => ({
                 name: premium ? `${name} ✨` : name,
@@ -166,7 +214,7 @@ export abstract class AutocompleteChoiceSettingsOption extends SettingsOption<st
         });
     }
 
-    public addToCommand(bot: Bot, builder: SlashCommandBuilder): void {
+    public addToCommand(bot: Bot, builder: SlashCommandSubcommandBuilder): void {
         builder.addStringOption(builder => this.applyBase(builder)
             .setAutocomplete(true)
         );
@@ -184,8 +232,9 @@ export abstract class AutocompleteChoiceSettingsOption extends SettingsOption<st
 export class ImagineModelAutocompleteSettingsOption extends AutocompleteChoiceSettingsOption {
     constructor() {
         super({
-            key: "image_model",
+            key: "model",
             name: "/imagine model",
+            category: "image",
             emoji: { fallback: "💨" },
             description: "Which Stable Diffusion model to use",
             default: "stable_diffusion"
@@ -220,6 +269,7 @@ export class LanguageAutocompleteSettingsOption extends AutocompleteChoiceSettin
         super({
             key: "language",
             name: "Language",
+            category: "general",
             emoji: { fallback: "🌐" },
             description: "Primary language to use for the bot",
             default: "en-US"
@@ -248,54 +298,59 @@ export class LanguageAutocompleteSettingsOption extends AutocompleteChoiceSettin
 }
 
 export type GetSettingsTypeParameter<T> = T extends SettingsOption<infer R> ? R : never
-export type SettingsName = "image_count" | "image_steps" | "image_model" | "image_size" | "partial_messages" | "loading_indicator" | "video_model" | "language"
+export type SettingsName = string
 
-export const SettingOptions: Record<SettingsName, SettingsOption> = {
-    image_count: new IntegerSettingsOption({
-        key: "image_count",
+export const SettingOptions: SettingsOption[] = [
+    new IntegerSettingsOption({
+        key: "count",
         name: "/imagine image count",
+        category: "image",
         emoji: { fallback: "🔢" },
         description: "How many images to generate",
         max: 4, min: 1, suffix: "image",
         default: 2
     }),
 
-    image_steps: new IntegerSettingsOption({
-        key: "image_steps",
+    new IntegerSettingsOption({
+        key: "steps",
         name: "/imagine generations steps",
+        category: "image",
         emoji: { fallback: "🖼️" },
         description: "How many steps to generate with",
         max: 50, min: 5, suffix: "step",
         default: 30
     }),
 
-    image_model: new ImagineModelAutocompleteSettingsOption(),
+    new ImagineModelAutocompleteSettingsOption(),
 
-    image_size: new ChoiceSettingsOption({
+    new ChoiceSettingsOption({
         choices: GENERATION_SIZES.map(({ width, height, premium }) => ({
             name: `${width}x${height} (${getAspectRatio(width, height)})`,
             value: `${width}:${height}:${premium}`,
             premium: premium
         })),
 
-        key: "image_size",
+        key: "size",
         name: "/imagine image resolution/size",
+        category: "image",
         emoji: { fallback: "📸" },
         description: "How big the generated images should be",
         default: "512:512:false"
     }),
 
-    partial_messages: new BooleanSettingsOption({
+    new BooleanSettingsOption({
         key: "partial_messages",
         name: "Partial messages",
+        category: "text",
         emoji: { fallback: "⏳" },
         description: "Whether messages by the bot should be shown while they're being generated",
         default: true
     }),
 
-    loading_indicator: new ChoiceSettingsOption({
+    new ChoiceSettingsOption({
         key: "loading_indicator",
         name: "Loading indicator",
+        category: "general",
         emoji: { display: "<a:loading:1051419341914132554>", fallback: "🔃" },
         description: "Which loading indicator to use throughout the bot, and for partial messages",
         default: LoadingIndicators[0].emoji.id,
@@ -308,9 +363,10 @@ export const SettingOptions: Record<SettingsName, SettingsOption> = {
         }))
     }),
 
-    video_model: new ChoiceSettingsOption({
-        key: "video_model",
+    new ChoiceSettingsOption({
+        key: "model",
         name: "Video model",
+        category: "video",
         emoji: { fallback: "📸" },
         description: "Which video generation model to use",
         default: TuringVideoModels[0].id,
@@ -322,8 +378,8 @@ export const SettingOptions: Record<SettingsName, SettingsOption> = {
         }))
     }),
 
-    language: new LanguageAutocompleteSettingsOption()
-}
+    new LanguageAutocompleteSettingsOption()
+]
 
 export class UserSettingsManager {
     private readonly db: DatabaseManager;
@@ -332,36 +388,69 @@ export class UserSettingsManager {
         this.db = db;
     }
 
-    public options(): SettingsOption[] {
-        return Object.values(SettingOptions);
+    public options(category?: SettingsCategory): SettingsOption[] {
+        return Object.values(SettingOptions)
+            .filter(s => category ? s.category === category.type : true);
+    }
+
+    public categories(): SettingsCategory[] {
+        return Object.values(SettingCategories);
     }
 
     public template(): UserSettings {
         const settings: Partial<UserSettings> = {};
 
-        for (const [key, option] of Object.entries(SettingOptions)) {
-            settings[key as SettingsName] = option.data.default;
+        for (const option of SettingOptions) {
+            settings[this.settingsString(option)] = option.data.default;
         }
 
         return settings as UserSettings;
     }
 
     public load(raw: DatabaseUser | RawDatabaseUser): UserSettings {
-        const get = (key: SettingsName) => raw.settings[key] ?? this.template()[key];
+        const get = (option: SettingsOption) => raw.settings[this.settingsString(option)] ?? this.template()[this.settingsString(option)];
         const settings: Partial<UserSettings> = {};
 
-        for (const key of Object.keys(SettingOptions)) {
-            settings[key as SettingsName] = get(key as SettingsName);
+        for (const option of SettingOptions) {
+            settings[this.settingsString(option)] = get(option);
         }
 
         return settings as UserSettings;
     }
 
-    public get<T extends string | number | boolean>(user: DatabaseUser, option: SettingsOption | SettingsName): T {
-        return user.settings[typeof option === "string" ? option : option.key] as T;
+    public settingsString(option: SettingsOption | SettingKeyAndCategory): SettingKeyAndCategory {
+        return typeof option === "object"
+            ? `${option.category}:${option.key}`
+            : option;
     }
 
-    public async apply(user: DatabaseUser, changes: Partial<Record<SettingsName, any>>): Promise<void> {
+    public settingsCategoryAndKey(option: SettingsOption | SettingKeyAndCategory): { category: SettingsCategory, key: string } | null {
+        const categoryName: string = typeof option === "string" ? option.split(":").shift()! : option.category;
+        const key: string = typeof option === "string" ? option.split(":").pop()! : option.key;
+
+        const category: SettingsCategory | null = SettingCategories.find(c => c.type === categoryName) ?? null;
+        if (category === null) return null;
+
+        return {
+            category, key
+        };
+    }
+
+    public settingsOption(key: SettingKeyAndCategory | ReturnType<InstanceType<typeof UserSettingsManager>["settingsCategoryAndKey"]>): SettingsOption | null {
+        /* Extract the key & category from the specified option. */
+        const data = typeof key === "string" ? this.settingsCategoryAndKey(key) : key;
+        if (data === null) return null;
+
+        return SettingOptions.find(s =>
+            s.key === data.key && s.category === data.category.type
+        ) ?? null;
+    }
+
+    public get<T extends string | number | boolean>(user: DatabaseUser, option: SettingsOption | SettingKeyAndCategory): T {
+        return user.settings[this.settingsString(option)] as T;
+    }
+
+    public async apply(user: DatabaseUser, changes: Partial<Record<SettingKeyAndCategory, any>>): Promise<void> {
         if (this.db.bot.dev) this.db.bot.logger.debug("Apply settings ->", chalk.bold(user.id), "->", `${chalk.bold(Object.values(changes).length)} changes`);
 
         const final: UserSettings = {

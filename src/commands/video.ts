@@ -60,7 +60,7 @@ export default class VideoCommand extends Command {
 		});
 
 		/* Which generation model to use; otherwise pick the default one */
-		const modelName: string = interaction.options.getString("model") ?? this.bot.db.settings.get<string>(db.user, "video_model");
+		const modelName: string = interaction.options.getString("model") ?? this.bot.db.settings.get<string>(db.user, "video:model");
 
 		/* Try to get the video generation model. */
 		const model: TuringVideoModel | null = TuringVideoModels.find(m => m.id === modelName) ?? null;

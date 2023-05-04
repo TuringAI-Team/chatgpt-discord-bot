@@ -1,11 +1,12 @@
-import { SlashCommandBuilder, EmbedBuilder, AutocompleteInteraction, CacheType, CommandInteractionOption } from "discord.js";
+import { SlashCommandBuilder, EmbedBuilder, AutocompleteInteraction, CacheType, CommandInteractionOption, SlashCommandSubcommandBuilder } from "discord.js";
 
 import { Command, CommandInteraction, CommandOptionChoice, CommandResponse } from "../command/command.js";
 import { Response } from "../command/response.js";
 
-import { AutocompleteChoiceSettingsOption, ChoiceSettingsOption, SettingsName, SettingsOptionType } from "../db/managers/settings.js";
+import { AutocompleteChoiceSettingsOption, ChoiceSettingsOption, SettingKeyAndCategory, SettingsCategory, SettingsCategoryName, SettingsName, SettingsOptionType } from "../db/managers/settings.js";
 import { DatabaseInfo, DatabaseUser } from "../db/managers/user.js";
 import { Conversation } from "../conversation/conversation.js";
+import { SettingsOption } from "../db/managers/settings.js";
 import { Bot } from "../bot/bot.js";
 
 export default class SettingsCommand extends Command {
@@ -15,25 +16,35 @@ export default class SettingsCommand extends Command {
 				.setName("settings")
 				.setDescription("Customize the bot to your liking");
 
-		for (const option of bot.db.settings.options()) {
-			/* Add the options' parameter to the /settings command. */
-			option.addToCommand(bot, builder);
+		for (const category of bot.db.settings.categories()) {
+			/* All options for this category */
+			const options: SettingsOption[] = bot.db.settings.options(category);
+
+			const sub: SlashCommandSubcommandBuilder = new SlashCommandSubcommandBuilder()
+				.setName(category.type)
+				.setDescription(`${category.name} ${category.emoji.fallback}`);
+
+			/* Add the options to the /settings sub-command. */
+			options.forEach(o => o.addToCommand(bot, sub));
+			builder.addSubcommand(sub);
 		}
 
         super(bot, builder, { cooldown: 5 * 1000 });
     }
 
-	public format(db: DatabaseUser, conversation: Conversation, changes: Partial<Record<SettingsName, any>>): Response {
+	public format(db: DatabaseUser, category: SettingsCategory, changes: Partial<Record<SettingsName, any>>): Response {
 		const embed: EmbedBuilder = new EmbedBuilder()
 			.setTitle("Settings ⚙️")
 			.setColor(Object.values(changes).length > 0 ? "Orange" : this.bot.branding.color);
 
-		for (const option of this.bot.db.settings.options()) {
+		for (const option of this.bot.db.settings.options(category)) {
+			const key = this.bot.db.settings.settingsString(option);
+
 			/* Whether this option was modified */
-			const wasModified: boolean = changes[option.key] != undefined;
+			const wasModified: boolean = changes[key] != undefined;
 
 			const original = this.bot.db.settings.get(db, option);
-			const modified = changes[option.key];
+			const modified = changes[key];
 
 			embed.addFields({
 				name: `${option.data.name} ${option.data.emoji.display ?? option.data.emoji.fallback} · *${option.data.description}*`,
@@ -46,16 +57,18 @@ export default class SettingsCommand extends Command {
 	}
 
 	public async complete(interaction: AutocompleteInteraction<CacheType>): Promise<CommandOptionChoice<string | number>[]> {
-		const param: CommandInteractionOption | null = interaction.options.data.filter(o => o.focused)[0] ?? null;
+		const param: CommandInteractionOption | null = interaction.options.data[0]?.options?.filter(o => o.focused)[0] ?? null;
 		if (param === null) return [];
 
-		/* Name of the argument */
-		const key: SettingsName = param.name as SettingsName;
+		/* Category of this setting */
+		const categoryName: SettingsCategoryName = interaction.options.getSubcommand(true) as SettingsCategoryName;
+
+		/* Value of the specified argument */
 		const value: string = param.value as string;
 
 		/* Find the corresponding settings option. */
 		const option: AutocompleteChoiceSettingsOption | null =
-			this.bot.db.settings.options().find(s => s.key === key && s.data.type === SettingsOptionType.AutoComplete) as AutocompleteChoiceSettingsOption
+			this.bot.db.settings.settingsOption(`${categoryName}:${param.name}`) as AutocompleteChoiceSettingsOption
 			?? null;
 
 		/* Try to complete this request. */
@@ -63,14 +76,15 @@ export default class SettingsCommand extends Command {
 	}
 
     public async run(interaction: CommandInteraction, { user }: DatabaseInfo): CommandResponse {
-		/* Get the user's conversation. */
-		const conversation: Conversation = await this.bot.conversation.create(interaction.user);
-
 		/* Whether the user has their own Premium subscription */
 		const premium: boolean = this.bot.db.users.subscriptionType({ user }) === "UserPremium";
 
+		/* Category of this setting */
+		const categoryName: SettingsCategoryName = interaction.options.getSubcommand(true) as SettingsCategoryName;
+		const category: SettingsCategory = this.bot.db.settings.categories().find(c => c.type === categoryName)!;
+
 		/* All changes done by the user */
-		const changes: Partial<Record<SettingsName, any>> = {};
+		const changes: Partial<Record<SettingKeyAndCategory, any>> = {};
 
 		for (const option of this.bot.db.settings.options()) {
 			/* Get the value specified by the user. */
@@ -90,12 +104,12 @@ export default class SettingsCommand extends Command {
 					.setEphemeral(true);
 			}
 
-			if (user.settings[option.key] != param.value) changes[option.key] = param.value;
+			if (user.settings[option.key] != param.value) changes[`${option.category}:${option.key}`] = param.value;
 		}
 
 		/* Apply the modified settings, if any were actually changed. */
 		if (Object.values(changes).length > 0) await this.bot.db.settings.apply(user, changes);
 
-		return this.format(user, conversation, changes).setEphemeral(true);
+		return this.format(user, category, changes).setEphemeral(true);
     }
 }

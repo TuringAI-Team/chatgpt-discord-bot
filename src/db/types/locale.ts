@@ -58,7 +58,7 @@ type LanguageIdentifier = string | DatabaseUser
 export class LanguageManager {
     public static get(bot: Bot, id: LanguageIdentifier): UserLanguage {
         const fields: (keyof UserLanguage)[] = [ "emoji", "id", "modelName", "name" ];
-        const value: string = typeof id === "object" ? bot.db.settings.get(id, "language") : id;
+        const value: string = typeof id === "object" ? bot.db.settings.get(id, "general:language") : id;
 
         /* Try to find the language based on one of the fields. */
         return Languages.find(language => {

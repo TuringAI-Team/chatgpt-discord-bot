@@ -1,8 +1,9 @@
 import { ActionRowBuilder, ButtonBuilder, EmbedBuilder, SlashCommandBuilder } from "discord.js";
 
 import { Command, CommandInteraction, CommandResponse } from "../command/command.js";
-import { Response, ResponseType } from "../command/response.js";
 import { introductionButtons } from "../util/introduction.js";
+import { getInfo } from "discord-hybrid-sharding";
+import { Response } from "../command/response.js";
 import { Bot } from "../bot/bot.js";
 
 export default class StatisticsCommand extends Command {
@@ -23,7 +24,7 @@ export default class StatisticsCommand extends Command {
 
 			{
 				key: interaction.guild !== null ? "Cluster & Shard 💎" : "Cluster 💎",
-				value: interaction.guild !== null ? `\`${this.bot.data.id + 1}\`/\`${this.bot.client.cluster.count}\` — \`${interaction.guild.shardId}\`` : `\`${this.bot.data.id + 1}\`/\`${this.bot.client.cluster.count}\``
+				value: `\`${this.bot.data.id + 1}\`/\`${this.bot.client.cluster.count}\`${interaction.guild !== null ? `— \`${interaction.guild.shardId + 1}\`/\`${getInfo().TOTAL_SHARDS}\`` : ""}`
 			},
 
 			{

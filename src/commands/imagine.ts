@@ -720,12 +720,12 @@ export default class ImagineCommand extends Command {
 			/* How many images to generate */
 			const count: number = 
 				interaction.options.getInteger("count")
-				?? this.bot.db.settings.get<number>(db.user, "image_count");
+				?? this.bot.db.settings.get<number>(db.user, "image:count");
 
 			/* How many steps to generate the images with */
 			const steps: number =
 				interaction.options.getInteger("steps")
-				?? this.bot.db.settings.get<number>(db.user, "image_steps");
+				?? this.bot.db.settings.get<number>(db.user, "image:steps");
 
 			/* To which scale the AI should follow the prompt; higher values mean that the AI will respect the prompt more */
 			const guidance: number = Math.round(interaction.options.getNumber("guidance") ?? DEFAULT_GEN_OPTIONS.params!.cfg_scale!);
@@ -739,7 +739,7 @@ export default class ImagineCommand extends Command {
 			});
 
 			/* Size the images should be */
-			const rawSize: string[] = interaction.options.getString("size") ? interaction.options.getString("size", true).split(":") : this.bot.db.settings.get<string>(db.user, "image_size").split(":");
+			const rawSize: string[] = interaction.options.getString("size") ? interaction.options.getString("size", true).split(":") : this.bot.db.settings.get<string>(db.user, "image:size").split(":");
 			const size: ImageGenerationSize = { width: parseInt(rawSize[0]), height: parseInt(rawSize[1]), premium: rawSize[2] == "true" };
 
 			/* If the user is trying to generate an image with more steps than possible for a normal user, send them a notice. */
@@ -767,7 +767,7 @@ export default class ImagineCommand extends Command {
 				const filter: StableHordeGenerationFilter | null = interaction.options.getString("filter") ? STABLE_HORDE_FILTERS.find(f => f.name === interaction.options.getString("filter", true))! : null;
 
 				/* Which generation model to use; otherwise pick the default one */
-				const modelName: string = interaction.options.getString("model") ?? this.bot.db.settings.get<string>(db.user, "image_model");
+				const modelName: string = interaction.options.getString("model") ?? this.bot.db.settings.get<string>(db.user, "image:model");
 
 				/* Try to get the Stable Horde model. */
 				const model: StableHordeModel | null = this.bot.image.models.get(modelName) ?? null;
