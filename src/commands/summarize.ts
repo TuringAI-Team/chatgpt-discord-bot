@@ -36,13 +36,13 @@ export const SummaryTypes: SummaryType[] = [
 	{
 		name: "Long",
 		description: "Longer summary, going in-depth and into detail",
-		prompt: "a pretty long text summary that's very detailed and going in-depth"
+		prompt: "a pretty long text summary that's very detailed and going in-depth, keep it around 4-6 sentences long"
 	},
 
 	{
 		name: "Medium",
 		description: "An average summary, only keeping important things and some details",
-		prompt: "a bit smaller text summary, only keeping important things & some details"
+		prompt: "a bit smaller text summary, only keeping important things & some details, 2-4 sentences long"
 	},
 
 	{
@@ -66,6 +66,7 @@ export default class SummarizeCommand extends Command {
 			.addStringOption(builder => builder
 				.setName("query")
 				.setDescription("Which video to summarize")
+				.setRequired(true)
 				.setMaxLength(100)
 			)
 			.addStringOption(builder => builder
