@@ -74,8 +74,9 @@ export class LoadingIndicatorManager {
         return LoadingIndicators.find(indicator => indicator.emoji.id === id)!;
     }
 
-    public static getFromUser(bot: Bot, user: DatabaseUser) {
-        return LoadingIndicators.find(indicator => indicator.emoji.id === bot.db.settings.get(user, "loading_indicator"))!;
+    public static getFromUser(bot: Bot, user: DatabaseUser): LoadingIndicator {
+        const id: string = bot.db.settings.get(user, "loading_indicator");
+        return LoadingIndicators.find(indicator => indicator.emoji.id === id)!;
     }
 
     public static toString(id: LoadingIdentifier | LoadingIndicator): string {

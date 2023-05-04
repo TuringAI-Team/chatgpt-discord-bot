@@ -38,21 +38,19 @@ export default class TranslateContentContextMenuCommand extends ContextMenuComma
 	constructor(bot: Bot) {
 		super(bot, new ContextMenuCommandBuilder()
 			.setName("Translate")
-        );
+        , {
+            cooldown: {
+                Free: 90 * 1000,
+                Voter: 70 * 1000,
+                GuildPremium: 20 * 1000,
+                UserPremium: 10 * 1000
+            }
+        });
 	}
 
     public async run(interaction: MessageContextMenuCommandInteraction, db: DatabaseInfo): CommandResponse {
         /* The user's conversation */
         const conversation: Conversation = await this.bot.conversation.create(interaction.user);
-
-        if (conversation.generating) return new NoticeResponse({
-			message: "You have a request running in your conversation, *wait for it to finish* 😔",
-			color: "Red"
-		});
-
-        if (conversation.cooldown.active) return new Response()
-            .addEmbeds(conversation.cooldownMessage(db))
-            .setEphemeral(true);
 
         /* Target language to translate to */
         const target: UserLanguage = LanguageManager.get(this.bot ,db.user);
@@ -110,9 +108,6 @@ export default class TranslateContentContextMenuCommand extends ContextMenuComma
             messages, model: "gpt-3.5-turbo", stream: true,
             temperature: 0.7, max_tokens: 300
         });
-
-        /* Activate the cool-down for the user's conversation. */
-        conversation.cooldown.use(conversation.cooldownTime(db, ChatTones[0]));
 
         const data: ChatTranslationResult | null = (content => {
             try {

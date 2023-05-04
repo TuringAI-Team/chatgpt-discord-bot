@@ -207,3 +207,9 @@ export const checkDescribeResult = async ({ conversation, db, content }: Describ
         conversation, db, content, source: "describe"
     });
 }
+
+export const checkYouTubeQuery = async ({ conversation, db, content }: DescribeModerationOptions): Promise<ModerationResult | null> => {
+    return check({
+        conversation, db, content, source: "youTubeQuery"
+    });
+}

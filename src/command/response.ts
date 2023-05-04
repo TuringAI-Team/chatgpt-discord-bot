@@ -91,38 +91,29 @@ export class Response {
 
 	/* Edit the original interaction reply. */
 	public async send(interaction: MessageComponentInteraction | CommandInteraction | Message | TextChannel | DMChannel | ThreadChannel): Promise<InteractionResponse | Message | null> {
-		if (interaction instanceof MessageComponentInteraction || interaction instanceof CommandInteraction || interaction instanceof ButtonInteraction) {
-			/* If the interaction token has expired, don't try to edit the message. */
-			if (Date.now() - interaction.createdTimestamp > 10 * 60 * 1000) return null;
+		try {
+			if (interaction instanceof MessageComponentInteraction || interaction instanceof CommandInteraction || interaction instanceof ButtonInteraction) {
+				/* If the interaction token has expired, don't try to edit the message. */
+				if (Date.now() - interaction.createdTimestamp > 10 * 60 * 1000) return null;
 
-			/* Whether the interaction has already been replied to */
-			const replied: boolean = interaction.replied || interaction.deferred;
+				/* Whether the interaction has already been replied to */
+				const replied: boolean = interaction.replied || interaction.deferred;
 
-			/* Edit the original reply. */
-			try {
+				/* Edit the original reply. */
 				if (this.type === ResponseType.Send && !replied) return await interaction.reply(this.get() as InteractionReplyOptions);
 				else if (this.type === ResponseType.Edit || replied) return await interaction.editReply(this.get() as InteractionReplyOptions);
 				else if (this.type === ResponseType.FollowUp) return await interaction.followUp(this.get() as InteractionReplyOptions);
-				
-			} catch (_) {
-				return null;
-			}
 
-		} else if (interaction instanceof TextChannel || interaction instanceof DMChannel || interaction instanceof ThreadChannel) {
-			/* Send the message to the channel. */
-			try {
+			} else if (interaction instanceof TextChannel || interaction instanceof DMChannel || interaction instanceof ThreadChannel) {
+				/* Send the message to the channel. */
 				return await interaction.send(this.get() as MessageCreateOptions);
-			} catch (_) {
-				return null;
-			}
 
-		} else if (interaction instanceof Message) {
-			/* Send the reply to the message. */
-			try {
+			} else if (interaction instanceof Message) {
+				/* Send the reply to the message. */
 				return interaction.reply(this.get() as MessageCreateOptions);
-			} catch (_) {
-				return null;
 			}
+		} catch (_) {
+			console.log(_)
 		}
 
 		return null;

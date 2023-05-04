@@ -84,7 +84,7 @@ export class Command<U extends ContextMenuCommandInteraction | ChatInputCommandI
 	/**
 	 * Respond to auto-completion requests.
 	 */
-	public async complete(interaction: AutocompleteInteraction): Promise<CommandOptionChoice[]> {
+	public async complete(interaction: AutocompleteInteraction, db: DatabaseInfo): Promise<CommandOptionChoice[]> {
 		return [];
 	}
 

@@ -29,6 +29,7 @@ const FlagToEmoji: Record<ModerationSource, string> = {
     video: "📸",
     translationPrompt: "🌐",
     translationResult: "🌐",
+    youTubeQuery: "▶️",
     user: "👤"
 }
 
@@ -39,6 +40,7 @@ const FlagToName: Record<ModerationSource, string> = {
     video: "Video prompt",
     translationPrompt: "Translation prompt",
     translationResult: "Translation result",
+    youTubeQuery: "YouTube search query",
     user: "User message"
 }
 
@@ -71,7 +73,7 @@ interface ModerationSendOptions {
 }
 
 type ModerationImageSendOptions = Pick<ModerationSendOptions, "result" | "conversation" | "db" | "content" | "notice">
-export type ModerationSource = "user" | "bot" | "image" | "translationPrompt" | "translationResult" | "describe" | "video"
+export type ModerationSource = "user" | "bot" | "image" | "translationPrompt" | "translationResult" | "describe" | "video" | "youTubeQuery"
 
 /**
  * Handle an interaction, in the moderation channel.

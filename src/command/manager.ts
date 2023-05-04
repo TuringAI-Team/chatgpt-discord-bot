@@ -164,15 +164,30 @@ export class CommandManager {
 			{ name: "The bot is currently reloading... ⏳", value: "" }
 		]).catch(() => {});
 
+		/* Get the database entry of the user. */
+		let db: DatabaseInfo = await this.bot.db.users.fetchData(interaction.user, interaction.guild);
+		const subscription = this.bot.db.users.subscriptionType(db);
+
+		/* If this command is Premium-only and the user doesn't have a subscription, ... */
+		if (command.options.private === CommandPrivateType.PremiumOnly && !subscription.includes("Premium")) {
+			return await interaction.respond([
+				{ name: `The command /${command.builder.name} is only available to Premium users.`, value: "" },
+				{ name: `Premium 🌟 also includes many additional benefits; view /premium info for more.`, value: "" }
+			]).catch(() => {});
+		}
 		/* Try to complete the options. */
 		try {
-			const data: CommandOptionChoice[] = await command.complete(interaction);
+			const data: CommandOptionChoice[] = await command.complete(interaction, db);
 			await interaction.respond(data);
 
-		} catch (error: any) {
+		} catch (error) {
+			await handleError(this.bot, {
+				error: error as Error, reply: false, title: "Failed to auto-complete interaction"
+			});
+
 			/* Respond to the interaction with an error message. */
 			await interaction.respond([
-				{ name: "An error occured during auto-completion - report this to the developers.", value: "" }
+				{ name: "An error occured during auto-completion; the developers have been notified.", value: "" }
 			]).catch(() => {});
 		}
 	}
