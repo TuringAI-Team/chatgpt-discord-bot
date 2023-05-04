@@ -252,13 +252,6 @@ export class Bot extends EventEmitter {
         /* If the bot was started in maintenance mode, wait until the `ready` event gets fired. */
         if (this.client.cluster.maintenance && this.dev) this.logger.debug("Started in maintenance mode.");
 
-        /* Wait for all application data first. */
-        await this.waitForData()
-            .catch(() => this.stop(1));
-
-        /* Wait for the bot to fully start. */
-        this.waitForDone();
-
         this.client.cluster.on("ready", async () => {
             const steps: BotSetupStep[] = [
                 {
@@ -354,6 +347,13 @@ export class Bot extends EventEmitter {
                 }
             }
         });
+
+        /* Wait for all application data first. */
+        await this.waitForData()
+            .catch(() => this.stop(1));
+
+        /* Wait for the bot to fully start. */
+        this.waitForDone();
 
         /* Finally, log into Discord with the bot. */
         await this.client.login(this.app.config.discord.token)
