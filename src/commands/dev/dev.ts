@@ -124,15 +124,6 @@ export default class DeveloperCommand extends Command {
 				)
 				.addEmbed(builder => builder
 					.setColor(this.bot.branding.color)
-					.setTitle("Guilds 💻")
-					.setDescription(!running.every(Boolean) ? "*Reloading* ..." : null)
-					.addFields(...this.bot.statistics.guilds.map((guild, index) => ({
-						name: `${index + 1}. — ${guild.name}`,
-						value: `**${guild.members}** members`
-					})))
-				)
-				.addEmbed(builder => builder
-					.setColor(this.bot.branding.color)
 					.setTitle("Cache ⚙️")
 					.addFields(
 						{ name: "Entries", value: `${cache.keys}`, inline: true },

@@ -44,7 +44,7 @@ const BOT_TASKS: BotTask[] = [
     {
         name: "Get bot statistics",
         type: BotTaskType.RunOnStart,
-        interval: 5 * 60 * 1000,
+        interval: 1 * 1000,
 
         callback: async bot => {
             /* Total guild count */
@@ -62,26 +62,13 @@ const BOT_TASKS: BotTask[] = [
             const conversations: number = ((await bot.client.cluster.fetchClientValues("bot.conversation.conversations.size")) as number[])
                 .reduce((value, count) => value + count, 0);
 
-            /* Simplified array of guilds, sorted by member count */
-            const guilds: BotStatisticsGuild[] = ((await bot.client.cluster.broadcastEval(client => client.guilds.cache.map(guild => ({
-                name: guild.name,
-                members: guild.memberCount
-            })))))
-                .reduce((value, arr) => {
-                    arr.push(...value);
-                    return arr;
-                }, [])
-                .sort((a, b) => b.members - a.members)
-                .slice(undefined, 10) as BotStatisticsGuild[];
-
             const data: BotStatistics = {
                 conversations: conversations,
                 discordPing: bot.client.ws.ping,
                 memoryUsage: process.memoryUsage().heapUsed,
                 guildCount: guildCount,
                 discordUsers: discordUsers,
-                databaseUsers: databaseUsers,
-                guilds: guilds
+                databaseUsers: databaseUsers
             };
             
             bot.statistics = data;

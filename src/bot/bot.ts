@@ -40,9 +40,6 @@ export interface BotStatistics {
     /* Total amount of servers the bot is on */
     guildCount: number;
 
-    /* List of guilds, sorted by member count */
-    guilds: BotStatisticsGuild[];
-
     /* Total amount of users in the database */
     databaseUsers: number;
 
@@ -157,8 +154,7 @@ export class Bot extends EventEmitter {
             memoryUsage: 0,
             guildCount: 0,
             discordUsers: 0,
-            databaseUsers: 0,
-            guilds: []
+            databaseUsers: 0
         };
 
         /* Set up various classes & services. */
