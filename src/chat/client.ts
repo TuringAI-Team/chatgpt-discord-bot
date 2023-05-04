@@ -275,7 +275,7 @@ export class ChatClient {
         });
 
         /* Initial, formatted prompt */
-        const initial: string = options.conversation.session.client.initialPrompt(options.conversation, options, type, data);
+        const initial: string = options.conversation.manager.session.client.initialPrompt(options.conversation, options, type, data);
 
         const tags: Record<"Assistant" | "User", () => string> = {
             Assistant: () => "Assistant:",

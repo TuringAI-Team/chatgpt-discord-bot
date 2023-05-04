@@ -80,9 +80,6 @@ export class Conversation {
 	/* Discord user, which created the conversation */
 	public readonly user: User;
 
-	/* Session, in charge of generating responses to prompts */
-	public session: Session;
-
 	/* Whether the conversation is active & ready */
 	public active: boolean;
 
@@ -118,9 +115,6 @@ export class Conversation {
 		this.db = null;
 
 		this.user = user;
-
-		/* Set up the session. */
-		this.session = session;
 
 		/* Set up the conversation data. */
 		this.history = [];
@@ -320,7 +314,7 @@ export class Conversation {
 		do {
 			/* Try to generate the response using the chat model. */
 			try {
-				data = await this.session.generate(options);
+				data = await this.manager.session.generate(options);
 
 			} catch (error) {
 				tries++;
@@ -338,7 +332,7 @@ export class Conversation {
 						});
 					}
 				} else {
-					this.session.manager.bot.logger.warn(`Request by ${chalk.bold(options.conversation.user.tag)} failed, retrying [ ${chalk.bold(tries)}/${chalk.bold(CONVERSATION_ERROR_RETRY_MAX_TRIES)} ] ->`, error);
+					this.manager.bot.logger.warn(`Request by ${chalk.bold(options.conversation.user.tag)} failed, retrying [ ${chalk.bold(tries)}/${chalk.bold(CONVERSATION_ERROR_RETRY_MAX_TRIES)} ] ->`, error);
 
 					/* Display a notice message to the user on Discord. */
 					options.onProgress({

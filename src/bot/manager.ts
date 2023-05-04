@@ -184,7 +184,8 @@ export class BotManager extends EventEmitter {
      */
     public async restart(): Promise<void> {
         await this.manager!.recluster!.start({
-            restartMode: "gracefulSwitch"
+            restartMode: "gracefulSwitch",
+            delay: 7 * 1000
         });
     }
 
@@ -211,12 +212,7 @@ export class BotManager extends EventEmitter {
             token: this.app.config.discord.token,
             
             mode: "worker",
-            respawn: true,
-
-            restarts: {
-                interval: 60 * 60 * 1000,
-                max: 50
-            }
+            respawn: true
         }) as BotClusterManager;
 
         this.manager.extend(

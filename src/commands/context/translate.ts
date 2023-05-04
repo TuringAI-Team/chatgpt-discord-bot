@@ -101,10 +101,10 @@ export default class TranslateContentContextMenuCommand extends ContextMenuComma
         }).send(interaction);
 
         /* If the user's session isn't initialized yet, do that now. */
-        if (!conversation.session.active) await conversation.session.init();
+        if (!conversation.manager.session.active) await conversation.manager.session.init();
 
         /* Generate the translation result using ChatGPT. */
-        const raw = await conversation.session.ai.chat({
+        const raw = await conversation.manager.session.ai.chat({
             messages, model: "gpt-3.5-turbo", stream: true,
             temperature: 0.7, max_tokens: 300
         });

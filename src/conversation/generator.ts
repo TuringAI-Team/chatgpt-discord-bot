@@ -479,15 +479,15 @@ export class Generator {
 			if (conversation === null) conversation = await this.bot.conversation.create(author);
 		
 			/* If the conversation's session is locked at this point - meaning that is either initializing or refreshing - notify the user. */
-			if (conversation.session.locked) return void await new Response()
+			if (conversation.manager.session.locked) return void await new Response()
 				.addEmbed(builder => builder
 					.setDescription("Your assigned session is currently starting up ⏳")
 					.setColor("Yellow")
 			).send(message).catch(() => {});
 
 			/* If the session hasn't been initialized yet, set it up on-demand. */
-			if (!conversation.session.active) {
-				await conversation.session.init()
+			if (!conversation.manager.session.active) {
+				await conversation.manager.session.init()
 					.catch(async (error: Error) => {
 						throw error;
 					});
@@ -525,8 +525,8 @@ export class Generator {
 				).send(message).catch(() => {});
 		}
 
-		const attachedImages: boolean = conversation.session.client.findMessageImageAttachments(message).length > 0;
-		const attachedDocuments: boolean = conversation.session.client.hasMessageDocuments(message);
+		const attachedImages: boolean = conversation.manager.session.client.findMessageImageAttachments(message).length > 0;
+		const attachedDocuments: boolean = conversation.manager.session.client.hasMessageDocuments(message);
 
 		/* If the user sen't an empty message, respond with the introduction message. */
 		if (content.length === 0 && !attachedImages && !attachedDocuments) {
@@ -575,7 +575,7 @@ export class Generator {
 		if (conversation.tone.settings.premium && !this.bot.db.users.canUsePremiumFeatures(db)) await conversation.changeTone(ChatTones[0]);
 
 		/* Model to use for chat generation, as specified by the user's configured tone */
-		const model: ChatModel = conversation.session.client.modelForTone(conversation.tone);
+		const model: ChatModel = conversation.manager.session.client.modelForTone(conversation.tone);
 
 		/* If the user attached images to their messages, but doesn't have Premium access, ignore their request. */
 		if (attachedImages && !premium) return void await new Response()

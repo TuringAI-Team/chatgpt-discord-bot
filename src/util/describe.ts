@@ -35,7 +35,7 @@ export const runDescribeAction = async (conversation: Conversation, db: Database
         attachment = { url: chosen.proxyURL, type: "image" };
 
     } else if (interaction instanceof MessageContextMenuCommandInteraction) {
-        const results = conversation.session.client.findMessageImageAttachments(interaction.targetMessage);
+        const results = conversation.manager.session.client.findMessageImageAttachments(interaction.targetMessage);
         if (results.length > 0) attachment = results[0];
     }
 

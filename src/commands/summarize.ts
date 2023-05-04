@@ -245,10 +245,10 @@ export default class SummarizeCommand extends Command {
 				this.statusUpdateResponse(db, video, "Summarizing").send(interaction);
 
 				/* If the user's session isn't initialized yet, do that now. */
-				if (!conversation.session.active) await conversation.session.init();
+				if (!conversation.manager.session.active) await conversation.manager.session.init();
 
 				/* Generate the summarization result using ChatGPT. */
-				const raw = await conversation.session.ai.chat({
+				const raw = await conversation.manager.session.ai.chat({
 					messages, model: "gpt-3.5-turbo", stream: true,
 					temperature: 0.6, max_tokens: 400
 				});

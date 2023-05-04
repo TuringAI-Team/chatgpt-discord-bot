@@ -45,6 +45,8 @@ export class ConversationManager {
             type: "openai"
         });
 
+        /* Try to initialize the session. */
+        await this.session.init();
         this.active = true;
     }
 

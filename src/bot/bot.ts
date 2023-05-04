@@ -253,30 +253,7 @@ export class Bot extends EventEmitter {
         if (this.client.cluster.maintenance && this.dev) this.logger.debug("Started in maintenance mode.");
 
         this.client.cluster.on("ready", async () => {
-            const steps: BotSetupStep[] = [
-                {
-                    name: "Load Discord events",
-                    execute: () => Utils.search("./build/events", "js")
-                        .then(files => files.forEach(path => {
-                            /* Name of the event */
-                            const name: string = basename(path).split(".")[0];
-    
-                            import(path)
-                                .then((data: { [key: string]: Event }) => {
-                                    const event: Event = new (data.default as any)(this);
-                                    
-                                    this.client.on(event.name, (...args: any[]) => {
-                                        try {
-                                            event.run(...args);
-                                        } catch (error) {
-                                            this.logger.error(`Failed to call event ${chalk.bold(name)} ->`, error)
-                                        }
-                                    });
-                                })
-                                .catch(error => this.logger.warn(`Failed to load event ${chalk.bold(name)} ->`, error));
-                        }))
-                },
-    
+            const steps: BotSetupStep[] = [    
                 {
                     name: "Load Discord commands",
                     execute: async () => this.command.loadAll()
@@ -328,6 +305,29 @@ export class Bot extends EventEmitter {
                 {
                     name: "Scheduled tasks",
                     execute: () => this.task.setup()
+                },
+
+                {
+                    name: "Load Discord events",
+                    execute: () => Utils.search("./build/events", "js")
+                        .then(files => files.forEach(path => {
+                            /* Name of the event */
+                            const name: string = basename(path).split(".")[0];
+    
+                            import(path)
+                                .then((data: { [key: string]: Event }) => {
+                                    const event: Event = new (data.default as any)(this);
+                                    
+                                    this.client.on(event.name, (...args: any[]) => {
+                                        try {
+                                            event.run(...args);
+                                        } catch (error) {
+                                            this.logger.error(`Failed to call event ${chalk.bold(name)} ->`, error)
+                                        }
+                                    });
+                                })
+                                .catch(error => this.logger.warn(`Failed to load event ${chalk.bold(name)} ->`, error));
+                        }))
                 }
             ];
     

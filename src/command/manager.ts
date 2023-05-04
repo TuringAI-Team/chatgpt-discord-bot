@@ -9,7 +9,6 @@ import { Bot, BotStatus } from "../bot/bot.js";
 import { CooldownData } from "./cooldown.js";
 import { Response } from "./response.js";
 import { Utils } from "../util/utils.js";
-import { PremiumUpsellResponse, PremiumUpsellType } from "./response/premium.js";
 
 export class CommandManager {
 	protected readonly bot: Bot;
@@ -201,7 +200,7 @@ export class CommandManager {
 		const command: Command | null = this.commands.get(interaction.commandName) ?? null;
 		if (command === null) return;
 
-		if (command.options.waitForStart && !this.bot.started) return void await new Response()
+		if (command.options.waitForStart && (!this.bot.started || this.bot.statistics.memoryUsage === 0)) return void await new Response()
 			.addEmbed(builder => builder
 				.setTitle("The bot is currently reloading**...** ⏳")
 				.setColor("Orange")
