@@ -8,6 +8,7 @@ import { ConversationManager } from "../conversation/manager.js";
 import { ReplicateManager } from "../chat/other/replicate.js";
 import { StatusIncidentType } from "../util/statuspage.js";
 import { BotClusterManager, BotData } from "./manager.js";
+import { chooseStatusMessage } from "../util/status.js";
 import { CommandManager } from "../command/manager.js";
 import { OpenAIManager } from "../openai/openai.js";
 import { DatabaseManager } from "../db/manager.js";
@@ -268,6 +269,29 @@ export class Bot extends EventEmitter {
         this.client.cluster.on("ready", async () => {
             const steps: BotSetupStep[] = [
                 {
+                    name: "Load Discord events",
+                    execute: () => Utils.search("./build/events", "js")
+                        .then(files => files.forEach(path => {
+                            /* Name of the event */
+                            const name: string = basename(path).split(".")[0];
+    
+                            import(path)
+                                .then((data: { [key: string]: Event }) => {
+                                    const event: Event = new (data.default as any)(this);
+                                    
+                                    this.client.on(event.name, (...args: any[]) => {
+                                        try {
+                                            event.run(...args);
+                                        } catch (error) {
+                                            this.logger.error(`Failed to call event ${chalk.bold(name)} ->`, error)
+                                        }
+                                    });
+                                })
+                                .catch(error => this.logger.warn(`Failed to load event ${chalk.bold(name)} ->`, error));
+                        }))
+                },
+    
+                {
                     name: "Load Discord commands",
                     execute: async () => this.command.loadAll()
                 },
@@ -338,33 +362,25 @@ export class Bot extends EventEmitter {
             }
         });
 
-        /* Load all Discord events beforehand, so that events like `ready` will still get fired. */
-        await Utils.search("./build/events", "js")
-            .then(files => files.forEach(path => {
-                /* Name of the event */
-                const name: string = basename(path).split(".")[0];
-
-                import(path)
-                    .then((data: { [key: string]: Event }) => {
-                        const event: Event = new (data.default as any)(this);
-                        
-                        this.client.on(event.name, (...args: any[]) => {
-                            try {
-                                event.run(...args);
-                            } catch (error) {
-                                this.logger.error(`Failed to call event ${chalk.bold(name)} ->`, error)
-                            }
-                        });
-                    })
-                    .catch(error => this.logger.warn(`Failed to load event ${chalk.bold(name)} ->`, error));
-            }));
-
         /* Finally, log into Discord with the bot. */
         await this.client.login(this.app.config.discord.token)
             .catch(error => {
                 this.logger.error(`Failed to log into to Discord ->`, error);
                 this.stop(1);
             });
+
+        this.logger.info(`Started on ${chalk.bold(this.client.user!.tag)}.`);
+
+        if (!this.started) {
+            this.once("done", () => {
+                setInterval(() => chooseStatusMessage(this), 3 * 60 * 1000);
+                chooseStatusMessage(this);
+            });
+
+        } else {
+            setInterval(() => chooseStatusMessage(this), 3 * 60 * 1000);
+            chooseStatusMessage(this);
+        }
     }
 
     public async stop(code: number = 0): Promise<never> {

@@ -112,9 +112,7 @@ export class Response {
 				/* Send the reply to the message. */
 				return interaction.reply(this.get() as MessageCreateOptions);
 			}
-		} catch (_) {
-			console.log(_)
-		}
+		} catch (_) {}
 
 		return null;
 	}
