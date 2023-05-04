@@ -485,14 +485,6 @@ export class Generator {
 					.setColor("Yellow")
 			).send(message).catch(() => {});
 
-			/* If the session hasn't been initialized yet, set it up on-demand. */
-			if (!conversation.manager.session.active) {
-				await conversation.manager.session.init()
-					.catch(async (error: Error) => {
-						throw error;
-					});
-			}
-
 			/* Initialize the user's conversation, if not done already. */
 			if (!conversation.active) await conversation.init();
 

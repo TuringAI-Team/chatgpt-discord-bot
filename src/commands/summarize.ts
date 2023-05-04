@@ -244,9 +244,6 @@ export default class SummarizeCommand extends Command {
 				const messages: OpenAIChatMessage[] = this.buildSummarizerPrompt(db, video, subtitles, type);
 				this.statusUpdateResponse(db, video, "Summarizing").send(interaction);
 
-				/* If the user's session isn't initialized yet, do that now. */
-				if (!conversation.manager.session.active) await conversation.manager.session.init();
-
 				/* Generate the summarization result using ChatGPT. */
 				const raw = await conversation.manager.session.ai.chat({
 					messages, model: "gpt-3.5-turbo", stream: true,

@@ -853,9 +853,6 @@ export default class ImagineCommand extends Command {
 					]
 				}).send(interaction);
 
-				/* If the user's session isn't initialized yet, do that now. */
-				if (!conversation.manager.session.active) await conversation.manager.session.init();
-
 				/* Generate the response from ChatGPT. */
 				const raw = await conversation.manager.session.ai.chat({
 					messages, model: "gpt-3.5-turbo", stream: true,

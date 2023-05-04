@@ -100,9 +100,6 @@ export default class TranslateContentContextMenuCommand extends ContextMenuComma
             ]
         }).send(interaction);
 
-        /* If the user's session isn't initialized yet, do that now. */
-        if (!conversation.manager.session.active) await conversation.manager.session.init();
-
         /* Generate the translation result using ChatGPT. */
         const raw = await conversation.manager.session.ai.chat({
             messages, model: "gpt-3.5-turbo", stream: true,
