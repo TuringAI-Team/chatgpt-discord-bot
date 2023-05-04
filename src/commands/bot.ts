@@ -22,13 +22,13 @@ export default class StatisticsCommand extends Command {
 			},
 
 			{
-				key: "Latency 🏓",
-				value: `**\`${this.bot.statistics.discordPing.toFixed(1)}\`** ms`
+				key: interaction.guild !== null ? "Cluster & Shard 💎" : "Cluster 💎",
+				value: interaction.guild !== null ? `\`${this.bot.data.id + 1}\`/\`${this.bot.client.cluster.count}\` — \`${interaction.guild.shardId}\`` : `\`${this.bot.data.id + 1}\`/\`${this.bot.client.cluster.count}\``
 			},
 
 			{
-				key: interaction.guild !== null ? "Cluster & Shard 💎" : "Cluster 💎",
-				value: interaction.guild !== null ? `\`${this.bot.data.id + 1}\`/\`${this.bot.client.cluster.count}\` — \`${interaction.guild.shardId}\`` : `\`${this.bot.data.id + 1}\`/\`${this.bot.client.cluster.count}\``
+				key: "Latency 🏓",
+				value: `**\`${this.bot.statistics.discordPing.toFixed(1)}\`** ms`
 			},
 
 			{
@@ -37,14 +37,14 @@ export default class StatisticsCommand extends Command {
 			},
 
 			{
-				key: "Conversations 💬",
-				value: this.bot.statistics.conversations
+				key: "RAM 🖨️",
+				value: `**\`${(this.bot.statistics.memoryUsage / 1024 / 1024).toFixed(2)}\`** MB`
 			},
 
 			{
-				key: "RAM 🖨️",
-				value: `**\`${(this.bot.statistics.memoryUsage / 1024 / 1024).toFixed(2)}\`** MB`
-			}
+				key: "Version 🔃",
+				value: this.bot.statistics.commit !== null ? `[\`${this.bot.statistics.commit.hash.slice(undefined, 8)}\`](https://github.com/TuringAI-Team/chatgpt-discord-bot/commit/${this.bot.statistics.commit.hash})` : "❓"
+			},
 		];
 
 		const builder: EmbedBuilder = new EmbedBuilder()

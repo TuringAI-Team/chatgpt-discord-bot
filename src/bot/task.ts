@@ -2,7 +2,8 @@ import { Awaitable } from "discord.js";
 import chalk from "chalk";
 
 import { DB_CACHE_INTERVAL } from "../db/managers/user.js";
-import { Bot, BotStatistics, BotStatisticsGuild } from "./bot.js";
+import { Git, GitCommit } from "../util/git.js";
+import { Bot, BotStatistics } from "./bot.js";
 
 enum BotTaskType {
     RunOnStart
@@ -44,7 +45,7 @@ const BOT_TASKS: BotTask[] = [
     {
         name: "Get bot statistics",
         type: BotTaskType.RunOnStart,
-        interval: 1 * 1000,
+        interval: 5 * 60 * 1000,
 
         callback: async bot => {
             /* Total guild count */
@@ -62,13 +63,17 @@ const BOT_TASKS: BotTask[] = [
             const conversations: number = ((await bot.client.cluster.fetchClientValues("bot.conversation.conversations.size")) as number[])
                 .reduce((value, count) => value + count, 0);
 
+            /* Latest Git commit in the repository */
+            const commit: GitCommit = await Git.latestCommit();
+
             const data: BotStatistics = {
                 conversations: conversations,
                 discordPing: bot.client.ws.ping,
                 memoryUsage: process.memoryUsage().heapUsed,
                 guildCount: guildCount,
                 discordUsers: discordUsers,
-                databaseUsers: databaseUsers
+                databaseUsers: databaseUsers,
+                commit: commit
             };
             
             bot.statistics = data;

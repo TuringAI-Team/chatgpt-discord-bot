@@ -18,6 +18,7 @@ import { ConfigBranding } from "../config.js";
 import { VoteManager } from "../util/vote.js";
 import { NatAI } from "../chat/other/nat.js";
 import { TuringAPI } from "../turing/api.js";
+import { GitCommit } from "../util/git.js";
 import { Event } from "../event/event.js";
 import { Utils } from "../util/utils.js";
 import { StrippedApp } from "../app.js";
@@ -54,14 +55,9 @@ export interface BotStatistics {
 
     /* Discord ping, in milliseconds */
     discordPing: number;
-}
 
-export interface BotStatisticsGuild {
-    /* Name of the guild */
-    name: string;
-    
-    /* How many members the guild has */
-    members: number;
+    /* Latest Git commit */
+    commit: GitCommit | null;
 }
 
 interface BotSetupStep {
@@ -154,7 +150,8 @@ export class Bot extends EventEmitter {
             memoryUsage: 0,
             guildCount: 0,
             discordUsers: 0,
-            databaseUsers: 0
+            databaseUsers: 0,
+            commit: null
         };
 
         /* Set up various classes & services. */

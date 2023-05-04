@@ -190,7 +190,7 @@ export const introductionButtons = (bot: Bot): ActionRowBuilder<ButtonBuilder> =
                     .setStyle(ButtonStyle.Link),
 
 				new ButtonBuilder()	
-					.setURL("https://github.com/TuringAI-Team/chatgpt-discord-bot")
+					.setURL("https://github.com/TuringAI-Team/chatgpt-discord-bot/tree/merge")
 					.setEmoji("<:github:1097828013871222865>")
 					.setStyle(ButtonStyle.Link),
 

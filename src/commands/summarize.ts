@@ -1,4 +1,5 @@
 import { APIEmbedField, ActionRowBuilder, EmbedBuilder, InteractionResponse, SlashCommandBuilder, StringSelectMenuBuilder } from "discord.js";
+import { YoutubeTranscriptError } from "youtube-transcript";
 
 import { ModerationResult, checkYouTubeQuery } from "../conversation/moderation/moderation.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
@@ -259,6 +260,10 @@ export default class SummarizeCommand extends Command {
 			} catch (error) {
 				if (error instanceof GPTGenerationError && error.options.data.type === GPTGenerationErrorType.Length) return new ErrorResponse({
 					interaction: selection, command: this, type: ErrorType.Error, message: "The video's subtitles are too large to summarize", emoji: "😕"
+				});
+
+				if (error instanceof YoutubeTranscriptError) return new ErrorResponse({
+					interaction: selection, command: this, message: `The video **${video.title}** doesn't have subtitles`, emoji: "😕"
 				});
 
 				await handleError(this.bot, {
