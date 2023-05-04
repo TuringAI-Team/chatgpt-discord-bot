@@ -41,12 +41,16 @@ export default class DeveloperCommand extends Command {
 					.setMinValue(1)
 				)
 			)
+			.addSubcommand(builder => builder
+				.setName("full-restart")
+				.setDescription("Restart all clusters using zero-downtime reclustering")
+			)
 		, { long: true, private: CommandPrivateType.OwnerOnly });
 	}
 
     public async run(interaction: CommandInteraction): CommandResponse {
 		/* Which sub-command to execute */
-		const action: "debug" | "restart" | "flush" | "premium-roles" = interaction.options.getSubcommand(true) as any;
+		const action: "debug" | "restart" | "flush" | "premium-roles" | "full-restart" = interaction.options.getSubcommand(true) as any;
 
 		/* View debug information */
 		if (action === "debug") {
@@ -67,7 +71,7 @@ export default class DeveloperCommand extends Command {
 
 			/* Find the smallest starting time out of all clusters, to calculate the bot uptime. */
 			const uptimes: number[] = (await this.bot.client.cluster.fetchClientValues("bot.since")) as number[];
-			const uptime: number = Math.min(...uptimes);
+			const uptime: number = Math.max(...uptimes);
 
 			const fields = [
 				{
@@ -164,6 +168,21 @@ export default class DeveloperCommand extends Command {
 			/* Broadcast a stop to the specific cluster. */
 			else await this.bot.client.cluster.broadcastEval(((client: BotDiscordClient) => client.bot.stop(0)) as any, { cluster: index });
 
+		/* Restart all clusters using zero-downtime reclustering */
+		} else if (action === "full-restart") {
+			await interaction.editReply(new Response()
+				.addEmbed(builder => builder
+					.setDescription("Restarting all clusters **...** 🫡")
+					.setColor("Yellow")
+				)
+			.get());
+
+			/* First, save all queued database changes. */
+			await this.bot.client.cluster.broadcastEval(((client: BotDiscordClient) => client.bot.db.users.workOnQueue()) as any);
+
+			/* Initiate the restart. */
+			await this.bot.client.cluster.evalOnManager("this.bot.restart()");
+
 		/* Give all Premium members the corresponding role on the support server */
 		} else if (action === "premium-roles") {
 			/* Fetch all Premium users from the database. */
@@ -225,14 +244,14 @@ export default class DeveloperCommand extends Command {
 			if (members.length === 0) {
 				return new Response()
 					.addEmbed(builder => builder
-						.setDescription("All Premium members already have the corresponding role 🎉")
+						.setDescription("All Premium members already have the role 🎉")
 						.setColor("Green")
 					);
 
 			} else {
 				return new Response()
 					.addEmbed(builder => builder
-						.setDescription(`**${current}** Premium members have received the corresponding role 🎉`)
+						.setDescription(`**${current}** Premium members have received the role 🎉`)
 						.setColor("Green")
 					);
 			}

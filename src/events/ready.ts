@@ -22,8 +22,5 @@ export default class ReadyEvent extends Event {
 			setInterval(() => chooseStatusMessage(this.bot), 3 * 60 * 1000);
 			chooseStatusMessage(this.bot);
 		}
-
-		/* Mark this cluster as ready. */
-		this.bot.client.cluster.triggerReady();
 	}
 }

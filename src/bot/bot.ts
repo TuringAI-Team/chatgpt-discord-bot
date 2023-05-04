@@ -251,6 +251,12 @@ export class Bot extends EventEmitter {
         }) as any);
     }
 
+    private async waitForReady(): Promise<void> {
+        return new Promise<void>(resolve => {
+            this.client.cluster.once("ready", () => resolve());
+        });
+    }
+
     /**
      * Set up the Discord client & all related services.
      */
@@ -261,6 +267,14 @@ export class Bot extends EventEmitter {
 
         /* Wait for the bot to fully start. */
         this.waitForDone();
+
+        /* If the bot was started in maintenance mode, wait until the `ready` event gets fired. */
+        if (this.client.cluster.maintenance) {
+            if (this.dev) this.logger.debug("Started in maintenance mode.");
+
+            this.client.cluster.triggerReady();
+            await this.waitForReady();
+        }
 
         const steps: BotSetupStep[] = [
             {
@@ -394,7 +408,10 @@ export class Bot extends EventEmitter {
      * Current status of the bot
      */
     public async status(): Promise<BotStatus> {
-        const status: BotStatus = (await this.client.cluster.evalOnManager(((manager: BotClusterManager) => manager.bot.status) as any)) as unknown as BotStatus;
+        const status: BotStatus = (await this.client.cluster.evalOnManager(
+            ((manager: BotClusterManager) => manager.bot.status) as any)
+        ) as unknown as BotStatus;
+        
         return status;
     }
 

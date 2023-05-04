@@ -1,5 +1,5 @@
 import { Collection, ColorResolvable, EmbedBuilder, REST, Routes } from "discord.js";
-import { Cluster, ClusterManager } from "discord-hybrid-sharding";
+import { Cluster, ClusterManager, ReClusterManager } from "discord-hybrid-sharding";
 import { EventEmitter } from "node:events";
 import chalk from "chalk";
 
@@ -180,6 +180,15 @@ export class BotManager extends EventEmitter {
     }
 
     /**
+     * Initiate a zero-downtime restart.
+     */
+    public async restart(): Promise<void> {
+        await this.manager!.recluster!.start({
+            restartMode: "gracefulSwitch"
+        });
+    }
+
+    /**
      * Set up the cluster sharding manager.
      */
     public async setup(): Promise<void> {
@@ -210,11 +219,16 @@ export class BotManager extends EventEmitter {
             }
         }) as BotClusterManager;
 
+        this.manager.extend(
+            new ReClusterManager()
+        );
+
         /* Add this manager instance to the cluster manager. */
         this.manager.bot = this;
 
         /* Set up event handling. */
         this.manager.on("clusterCreate", cluster => this.onCreate(cluster));
+        if (this.app.config.dev) this.manager.on("debug", line => this.app.logger.debug(line));
 
         /* Launch the actual sharding manager. */
         await this.manager.spawn({
