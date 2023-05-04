@@ -8,6 +8,7 @@ import { DatabaseInfo, DatabaseUser } from "../db/managers/user.js";
 import { Conversation } from "../conversation/conversation.js";
 import { SettingsOption } from "../db/managers/settings.js";
 import { Bot } from "../bot/bot.js";
+import { ErrorResponse } from "../command/response/error.js";
 
 export default class SettingsCommand extends Command {
     constructor(bot: Bot) {
@@ -94,7 +95,11 @@ export default class SettingsCommand extends Command {
 			/* If the chosen option is Premium-only, show a notice to the user. */
 			if (option instanceof ChoiceSettingsOption) {
 				/* Chosen choice from the list */
-				const chosen = option.data.choices.find(c => c.value === param.value)!;
+				const chosen = option.data.choices.find(c => c.value === param.value) ?? null;
+
+				if (chosen === null) return new ErrorResponse({
+					interaction, message: `You specified an invalid option for setting **${option.data.name}**`, emoji: (option.data.emoji.display ?? option.data.emoji.fallback).toString()
+				})
 			
 				if (chosen.premium && !premium) return new Response()
 					.addEmbed(builder => builder
