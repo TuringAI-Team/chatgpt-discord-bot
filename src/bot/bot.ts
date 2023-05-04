@@ -77,7 +77,7 @@ export type BotDiscordClient = Client & {
 }
 
 export declare interface Bot {
-    on(event: "done", listener: () => void): this;
+    on(event: "started", listener: () => void): this;
 }
 
 export class Bot extends EventEmitter {
@@ -240,7 +240,7 @@ export class Bot extends EventEmitter {
                 this.since = Date.now();
                 this.started = true;
 
-                this.emit("done");
+                this.emit("started");
             }
         }) as any);
     }
@@ -365,7 +365,7 @@ export class Bot extends EventEmitter {
         this.logger.info(`Started on ${chalk.bold(this.client.user!.tag)}.`);
 
         if (!this.started) {
-            this.once("done", () => {
+            this.once("started", () => {
                 setInterval(() => chooseStatusMessage(this), 3 * 60 * 1000);
                 chooseStatusMessage(this);
             });

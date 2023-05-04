@@ -3,7 +3,7 @@ import chalk from "chalk";
 
 import { DB_CACHE_INTERVAL } from "../db/managers/user.js";
 import { Git, GitCommit } from "../util/git.js";
-import { Bot, BotStatistics } from "./bot.js";
+import { Bot, BotDiscordClient, BotStatistics } from "./bot.js";
 
 enum BotTaskType {
     RunOnStart
@@ -45,6 +45,8 @@ const BOT_TASKS: BotTask[] = [
     {
         name: "Get bot statistics",
         type: BotTaskType.RunOnStart,
+
+        condition: bot => bot.data.id === 0,
         interval: 5 * 60 * 1000,
 
         callback: async bot => {
@@ -76,6 +78,12 @@ const BOT_TASKS: BotTask[] = [
                 commit: commit
             };
             
+            await bot.client.cluster.broadcastEval(((client: BotDiscordClient, context: BotStatistics) => {
+                client.bot.statistics = context;
+            }) as any, {
+                context: data
+            })
+
             bot.statistics = data;
         }
     }
@@ -94,7 +102,7 @@ export class TaskManager {
     public setup(): void {
         BOT_TASKS.forEach(task => {
             if (task.type === BotTaskType.RunOnStart) {
-                if (!this.bot.started) this.bot.on("done", () => this.executeTask(task));
+                if (!this.bot.started) this.bot.on("started", () => this.executeTask(task));
                 else this.executeTask(task);
             }
             

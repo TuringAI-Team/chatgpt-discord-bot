@@ -1,9 +1,9 @@
 import chalk from "chalk";
 
+import { CacheManager } from "./bot/managers/cache.js";
 import { BotManager } from "./bot/manager.js";
 import { Logger } from "./util/logger.js";
 import { Config } from "./config.js";
-import { CacheManager } from "./bot/managers/cache.js";
 
 enum AppState {
 	/* The app is not initialized yet */
