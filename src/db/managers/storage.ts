@@ -56,8 +56,7 @@ export class StorageManager {
             .from("images")
             .getPublicUrl(`${image.id}.png`);
 
-        if (data === null) throw new Error(`Image result ${image.id} doesn't exist in storage bucket`);
-        return { url: data.publicUrl};
+        return { url: data.publicUrl };
     }
 
     public async uploadImage(image: ImageGenerationResult, data: Buffer): Promise<StorageImage> {

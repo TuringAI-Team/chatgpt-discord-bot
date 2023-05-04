@@ -21,6 +21,9 @@ enum DiscordWebhookAnnounceType {
     /** The bot crashed */
     CrashBot,
 
+    /** The bot was reloaded */
+    ReloadBot,
+
     /** A cluster was started successfully */
     StartCluster,
 
@@ -31,6 +34,7 @@ enum DiscordWebhookAnnounceType {
 const DiscordWebhookAnnounceTypeMap: { [key: number]: string } = {
     [DiscordWebhookAnnounceType.StartBot]: "Bot is online 🟢",
     [DiscordWebhookAnnounceType.CrashBot]: "Bot has crashed 🔴",
+    [DiscordWebhookAnnounceType.ReloadBot]: "Bot has been reloaded ⏳",
     [DiscordWebhookAnnounceType.StartCluster]: "Cluster #% has started 🟢",
     [DiscordWebhookAnnounceType.StopCluster]: "Cluster #% has stopped 🔴"
 }
@@ -38,6 +42,7 @@ const DiscordWebhookAnnounceTypeMap: { [key: number]: string } = {
 const DiscordWebhookAnnounceColorMap: { [key: number]: ColorResolvable } = {
     [DiscordWebhookAnnounceType.StartBot]: "Green",
     [DiscordWebhookAnnounceType.CrashBot]: "Red",
+    [DiscordWebhookAnnounceType.ReloadBot]: "Yellow",
     [DiscordWebhookAnnounceType.StartCluster]: "Green",
     [DiscordWebhookAnnounceType.StopCluster]: "Red"
 }
@@ -187,6 +192,8 @@ export class BotManager extends EventEmitter {
             restartMode: "gracefulSwitch",
             delay: 7 * 1000
         });
+
+        this.announce(DiscordWebhookAnnounceType.ReloadBot);
     }
 
     /**
