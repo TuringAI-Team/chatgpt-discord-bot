@@ -17,16 +17,16 @@ export default class EvaluateCommand extends Command {
         , { private: CommandPrivateType.OwnerOnly });
     }
 
-	private async clean(text: Awaitable<any>): Promise<string> {
-		let content: string = text;
+	private async clean(result: Awaitable<any>): Promise<string> {
+		let content: string = result;
 		
 		/* If our input is a promise, await it before continuing. */
-		if (text && text instanceof Promise) content = await text;
+		if (result && result instanceof Promise) content = await result;
 		
 		/* If the response isn't a string, `util.inspect()`
 		   is used to 'stringify' the code in a safe way that
 		   won't error out on objects with circular references. */
-		if (typeof text !== "string") content = inspect(text, { depth: 1 });
+		if (typeof result !== "string") content = inspect(result, { depth: 1 });
 		
 		/* Replace symbols with character code alternatives. */
 		content = content

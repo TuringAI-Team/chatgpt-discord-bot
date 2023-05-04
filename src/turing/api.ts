@@ -167,10 +167,10 @@ export class TuringAPI {
         const body: any | null = await response.json().catch(() => null);
     
         throw new GPTAPIError({
-            code: body.error ? 400 : response.status,
+            code: body && body.error ? 400 : response.status,
             endpoint: `/${path}`,
             id: null,
-            message: body !== null && body.error && typeof body.error === "string" ? body.error : null
+            message: body && body.error && typeof body.error === "string" ? body.error : null
         });
     }
 

@@ -1,4 +1,4 @@
-import { ComponentType, ActionRowBuilder, ButtonBuilder, APIButtonComponentWithCustomId, ButtonInteraction, ButtonStyle, EmbedBuilder, Interaction, InteractionReplyOptions, Message, MessageEditOptions, ModalActionRowComponentBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, User, StringSelectMenuBuilder, StringSelectMenuInteraction } from "discord.js";
+import { ComponentType, ActionRowBuilder, ButtonBuilder, APIButtonComponentWithCustomId, ButtonInteraction, ButtonStyle, EmbedBuilder, Interaction, InteractionReplyOptions, Message, MessageEditOptions, ModalActionRowComponentBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, User, StringSelectMenuBuilder, StringSelectMenuInteraction, Collection, Snowflake } from "discord.js";
 import dayjs from "dayjs";
 
 import { DatabaseUser, DatabaseUserInfraction, DatabaseUserInfractionType, DatabaseInfo, UserTestingGroup } from "../../db/managers/user.js";
@@ -413,8 +413,19 @@ export const buildUserOverview = async (bot: Bot, target: User, db: DatabaseUser
     const infractions: DatabaseUserInfraction[] = db.infractions.filter(i => i.type !== "moderation");
     let description: string | null = null;
 
+    /* List of moderators for the infractions */
+    const moderators: Collection<Snowflake, User> = new Collection();
+
+    for (const infraction of infractions) {
+        if (!infraction.by || moderators.has(infraction.by)) continue;
+
+        /* Fetch the moderator, who took this action. */
+        const user: User = await bot.client.users.fetch(infraction.by);
+        moderators.set(user.id, user);
+    }
+
     if (infractions.length > 0) description = infractions
-        .map(i => `${ActionToEmoji[i.type]} \`${i.type}\` @ <t:${Math.round(i.when / 1000)}:f>${i.seen !== undefined ? i.seen ? " ✅" : " ❌" : ""}${i.reason ? ` » *\`${i.reason}\`*` : ""}${i.automatic ? " 🤖" : " 👤"}`)
+        .map(i => `${ActionToEmoji[i.type]} \`${i.type}\`${i.by ? ` by **${moderators.get(i.by)!.tag}**` : ""} @ <t:${Math.round(i.when / 1000)}:f>${i.seen !== undefined ? i.seen ? " ✅" : " ❌" : ""}${i.reason ? ` » *\`${i.reason}\`*` : ""}${i.automatic ? " 🤖" : " 👤"}`)
         .join("\n");
 
     if (infractions.length > 0) description = `__**${infractions.length}** infractions__\n\n${description}`;
@@ -431,7 +442,7 @@ export const buildUserOverview = async (bot: Bot, target: User, db: DatabaseUser
     let interactionsDescription: string = "";
 
     for (const [ category, count ] of Object.entries(db.interactions)) {
-        interactionsDescription = `${interactionsDescription}\n${Utils.titleCase(category)} ▶️ **${count}** times`
+        interactionsDescription = `${interactionsDescription}\n${Utils.titleCase(category)} ▶️ **${count}** times`;
     }
 
     const response = new Response()
