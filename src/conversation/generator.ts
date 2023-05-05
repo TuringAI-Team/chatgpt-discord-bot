@@ -1,9 +1,10 @@
-import { ActionRowBuilder, Attachment, AttachmentBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle, ChannelType, ComponentEmojiResolvable, ComponentType, DiscordAPIError, DMChannel, EmbedBuilder, EmojiIdentifierResolvable, Guild, InteractionReplyOptions, Message, MessageCreateOptions, MessageEditOptions, PermissionsString, Role, TextChannel, User } from "discord.js";
+import { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle, ChannelType, ComponentEmojiResolvable, ComponentType, DiscordAPIError, DMChannel, EmbedBuilder, Guild, InteractionReplyOptions, Message, MessageCreateOptions, MessageEditOptions, PermissionsString, Role, TextChannel, User } from "discord.js";
 
 import { ChatNoticeMessage, MessageType, ResponseMessage } from "../chat/types/message.js";
 import { LoadingIndicator, LoadingIndicatorManager } from "../db/types/indicator.js";
 import { check as moderate, ModerationResult } from "./moderation/moderation.js";
 import { DatabaseInfo, DatabaseUserInfraction } from "../db/managers/user.js";
+import { ChatSettingsModel, ChatSettingsModels } from "./settings/model.js";
 import { ChatGeneratedInteraction, Conversation } from "./conversation.js";
 import { reactToMessage, removeReaction } from "./utils/reaction.js";
 import { ChatModel, ModelCapability } from "../chat/types/model.js";
@@ -13,16 +14,17 @@ import { ChatGuildData } from "../chat/types/options.js";
 import ImagineCommand from "../commands/imagine.js";
 import { format } from "../chat/utils/formatter.js";
 import { Response } from "../command/response.js";
+import { OtherPrompts } from "../chat/client.js";
 import { Bot, BotStatus } from "../bot/bot.js";
-import ToneCommand from "../commands/tone.js";
 import { Utils } from "../util/utils.js";
-import { ChatTones } from "./tone.js";
+import { Emoji } from "../util/emoji.js";
 
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
+import { ErrorResponse, ErrorType } from "../command/response/error.js";
 import { handleError } from "../util/moderation/error.js";
 import { GPTAPIError } from "../error/gpt/api.js";
-import { OtherPrompts } from "../chat/client.js";
-import { ErrorResponse, ErrorType } from "../command/response/error.js";
+import { ChatSettingsTones } from "./settings/tone.js";
+import { SwitcherBuilder } from "./settings/switcher.js";
 
 /* Permissions required by the bot to function correctly */
 const BOT_REQUIRED_PERMISSIONS: { [key: string]: PermissionsString } = {
@@ -69,6 +71,10 @@ export class Generator {
 		/* Embeds to display in the message */
 		const embeds: EmbedBuilder[] = [];
 		const response: Response = new Response();
+
+		/* User's configured chat model */
+		const model = conversation.model(db);
+		const tone = conversation.tone(db);
 
 		/* Formatted generated response */
 		let content: string = format(data.displayText ?? data.text).trim();
@@ -137,7 +143,7 @@ export class Generator {
 			const buttons: ButtonBuilder[] = [];
 
 			/* If the message got cut off, add a Continue button. */
-			if (data.raw && data.raw.finishReason === "maxLength" && conversation.tone.name !== "GPT-4") buttons.push(
+			if (data.raw && data.raw.finishReason === "maxLength" && model.options.name !== "GPT-4") buttons.push(
 				new ButtonBuilder()
 					.setCustomId(`continue:${conversation.id}`)
 					.setStyle(ButtonStyle.Success)
@@ -147,11 +153,21 @@ export class Generator {
 
 			buttons.push(
 				new ButtonBuilder()
-					.setCustomId(`tone:${conversation.id}`)
-					.setEmoji(conversation.tone.emoji.display as ComponentEmojiResolvable ?? conversation.tone.emoji.fallback)
-					.setLabel(conversation.tone.name)
-					.setStyle(ButtonStyle.Secondary),
+					.setCustomId(`model:${conversation.id}`)
+					.setLabel(model.options.name)
+					.setEmoji(Emoji.display(model.options.emoji, true) as ComponentEmojiResolvable)
+					.setStyle(ButtonStyle.Secondary)
+			);
 
+			if (tone.id !== ChatSettingsTones[0].id) buttons.push(
+				new ButtonBuilder()
+					.setCustomId(`tone:${conversation.id}`)
+					.setLabel(tone.options.name)
+					.setEmoji(Emoji.display(tone.options.emoji, true) as ComponentEmojiResolvable)
+					.setStyle(ButtonStyle.Secondary)
+			);
+
+			buttons.push(
 				new ButtonBuilder()
 					.setCustomId(`user:${conversation.id}`)
 					.setDisabled(true)
@@ -218,7 +234,7 @@ export class Generator {
 		const id: string = parts[1];
 
 		if (id !== "-1" && id !== button.user.id && !action.startsWith("i-view")) return void await button.deferUpdate();
-		if (action !== "tone" && action !== "delete" && action !== "check-vote" && action !== "continue" && !action.startsWith("i-")) return;
+		if (action !== "model" && action !== "tone" && action !== "delete" && action !== "check-vote" && action !== "continue" && !action.startsWith("i-")) return;
 
 		/* Get the user's conversation. */
 		const conversation: Conversation = await this.bot.conversation.create(button.user);
@@ -226,13 +242,9 @@ export class Generator {
 		/* Get the user's database entry. */
 		const db: DatabaseInfo = await this.bot.db.users.fetchData(button.user, button.guild);
 
-		/* If the user requested the tone selector, ... */
-		if (action === "tone") {
-			/* Generate the selector message. */
-			const response: Response = this.bot.command.get<ToneCommand>("tone").format(conversation);
-			response.setEphemeral(true);
-
-			return void await button.reply(response.get() as InteractionReplyOptions);
+		/* If the user requested the model selector, ... */
+		if (action === "model" || action === "tone") {
+			return void SwitcherBuilder.build(conversation, db, action).send(button);
 
 		/* If the user interacted generated image, ... */
 		} else if (action.startsWith("i-")) {
@@ -563,11 +575,18 @@ export class Generator {
 			conversation.generating = false;
 		}
 
-		/* If the user is trying to use a Premium-only tone, while not having access to one anymore, simply set it back to the default. */
-		if (conversation.tone.settings.premium && !this.bot.db.users.canUsePremiumFeatures(db)) await conversation.changeTone(ChatTones[0]);
+		/* User's configured chat model */
+		const settingsModel: ChatSettingsModel = conversation.model(db);
 
-		/* Model to use for chat generation, as specified by the user's configured tone */
-		const model: ChatModel = conversation.manager.session.client.modelForTone(conversation.tone);
+		/* Model to use for chat generation, as specified by the user's configured model */
+		const model: ChatModel = conversation.manager.session.client.modelForSetting(settingsModel);
+		
+		/* If the user is trying to use a Premium-only model, while not having access to one anymore, simply set it back to the default. */
+		if (settingsModel.options.premium && !this.bot.db.users.canUsePremiumFeatures(db)) {
+			await this.bot.db.settings.apply(db.user, {
+				"chat:model": ChatSettingsModels[0].id
+			});
+		}
 
 		/* If the user attached images to their messages, but doesn't have Premium access, ignore their request. */
 		if (attachedImages && !premium) return void await new Response()
@@ -579,13 +598,13 @@ export class Generator {
 		/* If the user attached images to their message, and is currently on a model that doesn't support image attachments, show them a notice. */
 		if (!model.hasCapability(ModelCapability.ImageViewing) && attachedImages) return void await new Response()
 			.addEmbed(builder => builder
-				.setDescription(`The selected tone **${conversation.tone.name}** ${conversation.tone.emoji.display ?? conversation.tone.emoji.fallback} cannot view images 😔`)
+				.setDescription(`The selected model **${settingsModel.options.name}** ${Emoji.display(settingsModel.options.emoji, true)} cannot view images 😔`)
 				.setColor("Red")
 			).send(message);
 
 		if (model.hasCapability(ModelCapability.GuildOnly) && !message.guild) return void await new Response()
 			.addEmbed(builder => builder
-				.setDescription(`The selected tone **${conversation.tone.name}** ${conversation.tone.emoji.display ?? conversation.tone.emoji.fallback} only works on servers, and not in direct messages 😔`)
+				.setDescription(`The selected model **${settingsModel.options.name}** ${Emoji.display(settingsModel.options.emoji, true)} only works on servers, and not in direct messages 😔`)
 				.setColor("Red")
 			).send(message);
 
@@ -611,7 +630,7 @@ export class Generator {
 		let queued: boolean = false;
 
 		/* Whether partial results should be shown, and how often they should be updated */
-		const partial: boolean = this.bot.db.settings.get(db.user, "text:partial_messages");
+		const partial: boolean = this.bot.db.settings.get(db.user, "chat:partial_messages");
 		const updateTime: number = this.bot.db.users.canUsePremiumFeatures(db) ? 2500 : 5500;
 
 		let typingTimer: NodeJS.Timer | null = setInterval(async () => {
@@ -738,13 +757,13 @@ export class Generator {
 
 			if (error instanceof GPTGenerationError && error.options.data.type === GPTGenerationErrorType.Empty) return await sendError(new Response()
 				.addEmbed(builder => builder
-					.setDescription(`**${this.bot.client.user!.username}**'s response was empty for this prompt, *try again* 😔`)
+					.setDescription(`**${this.bot.client.user!.username}**'s response was empty for this prompt, *please try again* 😔`)
 					.setColor("Red")
 				), false);
 
 			if (error instanceof GPTGenerationError && error.options.data.type === GPTGenerationErrorType.Length) return await sendError(new Response()
 				.addEmbed(builder => builder
-					.setDescription(`Your message is too long for **${conversation.tone.name}**. ${conversation.tone.emoji.display ?? conversation.tone.emoji.fallback}\n\n*Try resetting your conversation, and sending shorter messages to the bot, in order to avoid reaching the limit*.`)
+					.setDescription(`Your message is too long for **${settingsModel.options.name}**. ${Emoji.display(settingsModel.options.emoji, true)}\n\n*Try resetting your conversation, and sending shorter messages to the bot, in order to avoid reaching the limit*.`)
 					.setColor("Red")
 				), false);
 
@@ -763,7 +782,7 @@ export class Generator {
 				return await sendError(new Response()
 					.addEmbed(builder => builder
 						.setTitle("Uh-oh... 😬")
-						.setDescription(`**${conversation.tone.name}** ${conversation.tone.emoji.display ?? conversation.tone.emoji.fallback} is currently experiencing *server-side* issues.`)
+						.setDescription(`**${settingsModel.options.name}** ${Emoji.display(settingsModel.options.emoji, true)} is currently experiencing *server-side* issues.`)
 						.setColor("Red")
 					)
 				);

@@ -1,6 +1,6 @@
 import { Guild, GuildMember, SlashCommandBuilder } from "discord.js";
+import { setTimeout as delay } from "timers/promises";
 import { getInfo } from "discord-hybrid-sharding";
-import { setTimeout } from "timers/promises";
 import prettyBytes from "pretty-bytes";
 import NodeCache from "node-cache";
 import chalk from "chalk";
@@ -42,15 +42,19 @@ export default class DeveloperCommand extends Command {
 				)
 			)
 			.addSubcommand(builder => builder
-				.setName("full-restart")
+				.setName("reload")
 				.setDescription("Restart all clusters using zero-downtime reclustering")
+			)
+			.addSubcommand(builder => builder
+				.setName("crash")
+				.setDescription("Crash the cluster")
 			)
 		, { long: true, private: CommandPrivateType.OwnerOnly });
 	}
 
     public async run(interaction: CommandInteraction): CommandResponse {
 		/* Which sub-command to execute */
-		const action: "debug" | "restart" | "flush" | "premium-roles" | "full-restart" = interaction.options.getSubcommand(true) as any;
+		const action: "debug" | "restart" | "flush" | "premium-roles" | "reload" | "crash" = interaction.options.getSubcommand(true) as any;
 
 		/* View debug information */
 		if (action === "debug") {
@@ -160,7 +164,7 @@ export default class DeveloperCommand extends Command {
 			else await this.bot.client.cluster.broadcastEval(((client: BotDiscordClient) => client.bot.stop(0)) as any, { cluster: index });
 
 		/* Restart all clusters using zero-downtime reclustering */
-		} else if (action === "full-restart") {
+		} else if (action === "reload") {
 			await interaction.editReply(new Response()
 				.addEmbed(builder => builder
 					.setDescription("Restarting all clusters **...** 🫡")
@@ -173,6 +177,19 @@ export default class DeveloperCommand extends Command {
 
 			/* Initiate the restart. */
 			await this.bot.client.cluster.evalOnManager("this.bot.restart()");
+
+		/* Crash the cluster */
+		} else if (action === "crash") {
+			await interaction.editReply(new Response()
+				.addEmbed(builder => builder
+					.setDescription("Crashing the bot **...** 🫡")
+					.setColor("Red")
+				)
+			.get());
+
+			setTimeout(() => {
+				eval(".");
+			});
 
 		/* Give all Premium members the corresponding role on the support server */
 		} else if (action === "premium-roles") {
@@ -225,7 +242,7 @@ export default class DeveloperCommand extends Command {
 					/* Give the user their Premium role. */
 					await member.roles.add(PREMIUM_ROLE_ID);
 
-					await setTimeout(500);
+					await delay(500);
 					members.push(member);
 				} else {
 					continue;

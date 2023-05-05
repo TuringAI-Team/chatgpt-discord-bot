@@ -34,7 +34,7 @@ export const format = (content: string): string => {
             const output: string | null = formatter.execute(final);
             if (output !== null) final = output;
         } catch (error) {
-            throw new Error(`Failed to format content using formatter ${formatter.name} -> ${error}`);
+            throw new Error(`Failed to format content using formatter ${formatter.name} -> ${(error as Error).toString()}`);
         }
     }
 

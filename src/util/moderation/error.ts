@@ -26,9 +26,6 @@ interface ErrorHandlingOptions {
 export const handleError = async (bot: Bot, { message, error, title, reply }: ErrorHandlingOptions) => {
     if (error instanceof DiscordAPIError && error.toString().includes("Missing Permissions")) return;
 
-    /* Log the errror to the console. */
-    //bot.logger.error("An error occurred while processing a request ->", error);
-
     /* Send the error message as a reply. */
     if (!!reply && message) {
         const embed: EmbedBuilder = new EmbedBuilder()

@@ -123,8 +123,6 @@ export class BotManager extends EventEmitter {
         this.app.logger.error(`Cluster ${chalk.bold(`#${cluster.id + 1}`)} experienced an error, attempting to restart.`);
         this.announce(DiscordWebhookAnnounceType.StopCluster, cluster);
 
-        this.manager!.queue.next();
-
         /* Try to respawn the dead cluster, and then mark it as initialized again. */
         await this.onCreate(cluster).then(() => this.sendDone([ cluster ]));
         
@@ -219,7 +217,12 @@ export class BotManager extends EventEmitter {
             token: this.app.config.discord.token,
             
             mode: "worker",
-            respawn: true
+            respawn: true,
+
+            restarts: {
+                interval: 60 * 60 * 1000,
+                max: 99
+            }
         }) as BotClusterManager;
 
         this.manager.extend(
@@ -255,13 +258,5 @@ export class BotManager extends EventEmitter {
 
         if (!this.app.config.dev) await this.announce(DiscordWebhookAnnounceType.StartBot);
         this.started = true;
-
-        setInterval(() => {
-            /* If a new cluster spawn was queued, work on it immediately. */
-            if (this.manager!.queue.queue.length > 0) {
-                this.manager!.queue.resume();
-                this.manager!.queue.next();
-            }
-        }, 5000);
     }
 }

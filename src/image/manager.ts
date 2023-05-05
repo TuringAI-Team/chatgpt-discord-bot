@@ -5,7 +5,7 @@ import { Agent } from "https";
 
 import { DatabaseImage, ImageGenerationCheckData, ImageGenerationOptions, ImageGenerationPrompt, ImageGenerationResult, ImageGenerationStatusData, RawImageGenerationResult, StableHordeGenerationResult } from "./types/image.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
-import { StableHordeModel, STABLE_HORDE_AVAILABLE_MODELS } from "./types/model.js";
+import { StableHordeModel, STABLE_HORDE_AVAILABLE_MODELS, StableHordeConfigModel } from "./types/model.js";
 import { StableHordeAPIError } from "../error/gpt/stablehorde.js";
 import { StorageImage } from "../db/managers/storage.js";
 import { Utils } from "../util/utils.js";
@@ -98,6 +98,27 @@ export class ImageManager extends EventEmitter {
 
         this.bot = bot;
         this.models = new Collection();
+    }
+
+    public get(id: string): StableHordeModel | null {
+        if (!STABLE_HORDE_AVAILABLE_MODELS.find(m => m.name === id)) return null;
+
+        const matches: ((model: StableHordeModel, config: StableHordeConfigModel) => boolean)[] = [
+            model => model.name === id,
+            (_, config) => config.name === "a",
+            model => model.description.includes(id)
+        ]
+
+        for (const model of this.models.values()) {
+            const config: StableHordeConfigModel = STABLE_HORDE_AVAILABLE_MODELS.find(m => m.name === id)!;
+            
+            for (const match of matches) {
+                if (match(model, config)) return model;
+                else continue;
+            }
+        }
+
+        return null;
     }
 
     /**

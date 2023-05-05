@@ -24,13 +24,13 @@ export class ChatGPTModel extends ChatModel {
      */
     protected async chat(options: ModelGenerationOptions, prompt: PromptData, progress?: (response: OpenAIPartialCompletionsJSON) => Promise<void> | void): Promise<OpenAIChatCompletionsData> {
         const data: OpenAIChatCompletionsData = await this.client.session.ai.chat({
-            model: options.conversation.tone.model.model ?? "gpt-3.5-turbo",
+            model: options.settings.options.settings.model ?? "gpt-3.5-turbo",
             stop: "User:",
             stream: true,
 
             user: options.conversation.userIdentifier,
 
-            temperature: options.conversation.tone.model.temperature ?? 0.5,
+            temperature: options.settings.options.settings.temperature ?? 0.5,
             max_tokens: isFinite(prompt.max) ? prompt.max : undefined,
             messages: Object.values(prompt.parts),
         }, progress);
@@ -40,7 +40,7 @@ export class ChatGPTModel extends ChatModel {
     }
 
     public async complete(options: ModelGenerationOptions): Promise<PartialResponseMessage> {
-        const prompt: PromptData = await this.client.buildPrompt(options, "ChatGPT");
+        const prompt: PromptData = await this.client.buildPrompt(options);
         const data: OpenAIChatCompletionsData = await this.chat(options, prompt, response => options.progress({ text: response.choices[0].delta.content! }));
 
         return {

@@ -11,8 +11,6 @@ import { ChatOutputImage } from "../../chat/types/image.js";
 import { DatabaseImage } from "../../image/types/image.js";
 import { GPTDatabaseError } from "../../error/gpt/db.js";
 import { DatabaseManager } from "../manager.js";
-import { SettingsName } from "./settings.js";
-
 
 /* Type of moderation action */
 export type DatabaseUserInfractionType = "ban" | "unban" | "warn" | "moderation"
@@ -21,7 +19,6 @@ export interface RawDatabaseConversation {
     created: string;
     id: string;
     active: boolean;
-    tone: string;
     history: DatabaseConversationMessage[] | null;
 }
 
@@ -219,7 +216,6 @@ export interface DatabaseConversation {
     created: number;
     id: string;
     active: boolean;
-    tone: string;
     history: DatabaseConversationMessage[] | null;
 }
 
@@ -535,7 +531,7 @@ export class UserManager {
         const updated: DatabaseInteractionStatistics = user.interactions;
         updated[key] = updated[key] + increment;
 
-        return this.updateUser(user, { interactions: updated });
+        return this.updateUser(user.id, { interactions: updated });
     }
 
     public async updateModeratorStatus(user: DatabaseUser, status: boolean): Promise<void> {
@@ -730,7 +726,7 @@ export class UserManager {
         this.updates[type].set(id, updated as any);
     }
 
-    public async updateUser(user: DatabaseUser, updates: Partial<DatabaseUser>): Promise<void> {
+    public async updateUser(user: DatabaseUser | string, updates: Partial<DatabaseUser>): Promise<void> {
         await Promise.all([
             this.setCache("users", user, updates),
             this.update("users", user, updates)

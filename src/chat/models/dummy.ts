@@ -22,7 +22,7 @@ export class DummyModel extends ChatModel {
     }
 
     public async complete(options: ModelGenerationOptions): Promise<PartialResponseMessage> {
-        const p = await this.client.buildPrompt(options, "ChatGPT");
+        const p = await this.client.buildPrompt(options);
 
         return {
             text: options.images.map(i => `${i.name}, ${i.description}, ${i.text}, ${i.type}`).join("\n") + `\n\n${p.parts.Initial.content}\n\n${p.parts.Other?.content}`

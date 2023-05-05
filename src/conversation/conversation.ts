@@ -1,8 +1,9 @@
 import { EmbedBuilder, Message, User } from "discord.js";
 import chalk from "chalk";
 
-import { DatabaseConversation, DatabaseInfo, DatabaseResponseMessage, RawDatabaseConversation } from "../db/managers/user.js";
+import { DatabaseConversation, DatabaseInfo, DatabaseResponseMessage, DatabaseUser, RawDatabaseConversation } from "../db/managers/user.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
+import { ChatSettingsModel, ChatSettingsModels } from "./settings/model.js";
 import { MessageType, ResponseMessage } from "../chat/types/message.js";
 import { ChatInputImage, ImageBuffer } from "../chat/types/image.js";
 import { check, ModerationResult } from "./moderation/moderation.js";
@@ -14,8 +15,8 @@ import { ConversationManager } from "./manager.js";
 import { GPTAPIError } from "../error/gpt/api.js";
 import { GeneratorOptions } from "./generator.js";
 import { BotDiscordClient } from "../bot/bot.js";
-import { ChatTone, ChatTones } from "./tone.js";
 import { Utils } from "../util/utils.js";
+import { ChatSettingsTone, ChatSettingsTones } from "./settings/tone.js";
 
 export interface ChatInput {
 	/* The input message itself; always given */
@@ -92,9 +93,6 @@ export class Conversation {
 	/* Last interaction with this conversation */
 	public updatedAt: number | null;
 
-	/* Tone & personality for this conversation */
-	public tone: ChatTone;
-
 	/* Cool-down manager */
 	public cooldown: Cooldown;
 
@@ -119,13 +117,17 @@ export class Conversation {
 		/* Set up the conversation data. */
 		this.history = [];
 
-		/* Set the default tone. */
-		this.tone = ChatTones[0];
-
 		/* Set up some default values. */
 		this.updatedAt = null;
 		this.active = false;
 		this.generating = false;
+	}
+
+	/**
+	 * Cached database user instance
+	 */
+	public async databaseUser(): Promise<DatabaseUser> {
+		return this.manager.bot.db.users.fetchUser(this.user);
 	}
 
 	/**
@@ -145,10 +147,6 @@ export class Conversation {
 	 * Try to initialize an existing conversation, using data from the database.
 	 */
 	private async loadFromDatabase(data: DatabaseConversation): Promise<void> {
-		/* Try to assign the saved tone in the database. */
-		const tone: ChatTone | null = ChatTones.find(t => t.id === data.tone) ?? null;
-		if (tone !== null) await this.changeTone(tone, false);
-
 		/* If the saved conversation has any message history, try to load it. */
 		if (data.history && data.history !== null && (data.history as any).forEach) {
 			for (const entry of data.history) {
@@ -180,6 +178,37 @@ export class Conversation {
 		await this.init();
 	}
 
+	public async changeSetting<T extends ChatSettingsModel | ChatSettingsTone>(type: "model" | "tone", db: DatabaseUser, updated: T): Promise<void> {
+		/* Reset the conversation first, as the models might get confused otherwise. */
+		await this.reset();
+
+		await this.manager.bot.db.settings.apply(db, {
+			[`chat:${type}`]: updated.id
+		});
+	}
+
+	public setting<T extends ChatSettingsModel | ChatSettingsTone>(type: "model" | "tone", arr: T[], db: DatabaseUser | DatabaseInfo): T {
+		/* The database user instance */
+		const user: DatabaseUser =
+			(db as DatabaseInfo).user
+				? (db as DatabaseInfo).user
+				: db as DatabaseUser;
+
+		/* Model identifier */
+		const id: string = this.manager.bot.db.settings.get(user, `chat:${type}`);
+		const model: T | null = arr.find(m => m.id === id) ?? null;
+
+		return model ?? arr[0];
+	}
+
+	public model(db: DatabaseUser | DatabaseInfo): ChatSettingsModel {
+		return this.setting<ChatSettingsModel>("model", ChatSettingsModels, db);
+	}
+
+	public tone(db: DatabaseUser | DatabaseInfo): ChatSettingsTone {
+		return this.setting<ChatSettingsTone>("tone", ChatSettingsTones, db);
+	}
+
 	/**
 	 * Initialize the conversation.
 	 * This also gets called after each "reset", in order to maintain the creation time & future data.
@@ -190,12 +219,8 @@ export class Conversation {
 
         /* Update the conversation entry in the database. */
         if (this.history.length === 0) await this.manager.bot.db.users.updateConversation(this, {
-                created: Date.now(),
-                id: this.id,
-                active: true,
-				
-				tone: this.tone.id,
-				history: null
+                created: Date.now(),id: this.id,
+                active: true, history: null
             });
 
 		this.applyResetTimer();
@@ -222,45 +247,6 @@ export class Conversation {
 			this.timer = null;
 			this.manager.delete(this);
 		}, this.getResetTime(true));
-	}
-
-	/**
-	 * Set the current conversation tone, by identifier.
-	 * *Used by clusters to set the tone globally*.
-	 * 
-	 * @param id Identifier of the tone
-	 */
-	public setTone(id: string): void {
-		const tone: ChatTone | null = ChatTones.find(t => t.id === id) ?? null;
-		if (tone !== null) this.tone = tone;
-	}
-
-	/**
-	 * Change the tone for this conversation.
-	 * @param tone Tone to switch to
-	 */
-	public async changeTone(tone: ChatTone, apply: boolean = true): Promise<void> {
-		/* If the specified tone is already set, ignore this. */
-		if (this.tone.id === tone.id) return;
-
-		/* Reset the conversation history first, as this will get rid of issues related to memory. */
-		await this.reset(false);
-		this.tone = tone;
-
-		/* Change the tone of all other clusters. */
-		await this.manager.bot.client.cluster.broadcastEval(((client: BotDiscordClient, context: { id: string; tone: string }) => {
-			const c: Conversation | null = client.bot.conversation.get(context.id);
-			if (c !== null) c.setTone(context.tone);
-		}) as any, {
-			context: {
-				id: this.id,
-				tone: this.tone.id
-			}
-		}).catch(() => {});
-
-		/* Update the database entry too. */
-        if (apply) await this.manager.bot.db.users.updateConversation(this, { tone: this.tone.id });
-		this.applyResetTimer();
 	}
 
 	/**
@@ -427,12 +413,12 @@ export class Conversation {
 				input: result.input,
 				output: this.responseMessageToDatabase(result.output),
 
-				tone: this.tone.id
+				tone: this.model(options.db).id
 			}
 		);
 
 		/* How long to apply the cool-down for */
-		const cooldown: number = this.cooldownTime(options.db, this.tone);
+		const cooldown: number = this.cooldownTime(options.db, this.model(options.db));
 
 		/* Activate the cool-down. */
 		if (!this.manager.bot.app.config.discord.owner.includes(this.user.id)) this.cooldown.use(cooldown);
@@ -443,19 +429,19 @@ export class Conversation {
 		};
 	}
 
-	public cooldownTime(db: DatabaseInfo, tone: ChatTone): number {
+	public cooldownTime(db: DatabaseInfo, model: ChatSettingsModel): number {
 		/* Cool-down duration & modifier */
-		const baseModifier: number = tone.settings.cooldown && tone.settings.cooldown.time && tone.settings.premium
+		const baseModifier: number = model.options.cooldown && model.options.cooldown.time && model.options.premium
 			? 1
 			: CONVERSATION_COOLDOWN_MODIFIER[this.manager.bot.db.users.subscriptionType(db)];
 
 		/* Cool-down modifier, set by the tone */
-		const toneModifier: number = tone.settings.cooldown && tone.settings.cooldown.multiplier
-			? tone.settings.cooldown.multiplier
+		const toneModifier: number = model.options.cooldown && model.options.cooldown.multiplier
+			? model.options.cooldown.multiplier
 			: 1;
 
-		const baseDuration: number = tone.settings.cooldown && tone.settings.cooldown.time && tone.settings.premium
-			? tone.settings.cooldown.time
+		const baseDuration: number = model.options.cooldown && model.options.cooldown.time && model.options.premium
+			? model.options.cooldown.time
 			: this.cooldown.options.time;
 
 		const finalDuration: number = baseDuration * baseModifier * toneModifier;

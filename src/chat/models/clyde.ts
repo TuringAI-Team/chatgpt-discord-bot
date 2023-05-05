@@ -9,12 +9,15 @@ import { PartialResponseMessage } from "../types/message.js";
 import { ChatClient, PromptData } from "../client.js";
 import { ChatGPTModel } from "./chatgpt.js";
 import { Utils } from "../../util/utils.js";
+import { DatabaseUser } from "../../db/managers/user.js";
 
-interface ClydeUser {
+export interface ClydeUser {
     name: string;
     suffix: string | null;
     "joined discord at": string;
     "joined the server at": string;
+    "has premium subscription": boolean;
+    "has voted for the bot": boolean;
     nickname: string | null;
     roles: string | null;
 }
@@ -212,7 +215,7 @@ export class ClydeModel extends ChatGPTModel {
     /**
      * Display the presence & activity status of a guild member. 
      */
-    private toClydeUser(conversation: Conversation, member: GuildMember): ClydeUser {
+    private toClydeUser(conversation: Conversation, member: GuildMember, db: DatabaseUser): ClydeUser {
         /* Roles of the member */
         const roles = Array.from(member.roles.cache.values());
 
@@ -221,6 +224,9 @@ export class ClydeModel extends ChatGPTModel {
 
         final.name = member.user.username;
         if (conversation.user.id === member.id) final.suffix = "user I'm talking to";
+
+        final["has premium subscription"] = this.client.session.manager.bot.db.users.subscriptionType({ user: db }) === "UserPremium";
+        final["has voted for the bot"] = this.client.session.manager.bot.db.users.voted(db) !== null;
 
         final["joined discord at"] = member.user.createdAt.toISOString();
         if (member.joinedAt) final["joined the server at"] = member.joinedAt.toISOString();
@@ -277,10 +283,10 @@ export class ClydeModel extends ChatGPTModel {
 
         /* All users to include in the prompt */
         const users: ClydeUser[] = [
-            this.toClydeUser(options.conversation, options.guild!.member)
+            this.toClydeUser(options.conversation, options.guild!.member, options.db.user)
         ];
 
-        const prompt: PromptData = await this.client.buildPrompt<ClydePromptData>(options, "Clyde", { users });
+        const prompt: PromptData = await this.client.buildPrompt<ClydePromptData>(options, { users });
         const data: OpenAIChatCompletionsData = await this.chat(options, prompt, progress);
 
         /* Apply the final replacements to the message, e.g. for embedding GIFs and mentiong users correctly. */

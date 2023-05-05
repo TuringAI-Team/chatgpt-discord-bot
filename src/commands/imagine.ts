@@ -651,7 +651,7 @@ export default class ImagineCommand extends Command {
 
 			/* Generate the final message, showing the generated results. */
 			const final: Response = await this.formatResultResponse(conversation, db, options, result, moderation, censored);
-			await interaction.editReply(final.get());
+			await final.send(interaction);
 
 		} catch (error) {
 			/* If the image generation was blocked by Stable Horde itself, show a notice to the user. */
@@ -770,7 +770,7 @@ export default class ImagineCommand extends Command {
 				const modelName: string = interaction.options.getString("model") ?? this.bot.db.settings.get<string>(db.user, "image:model");
 
 				/* Try to get the Stable Horde model. */
-				const model: StableHordeModel | null = this.bot.image.models.get(modelName) ?? null;
+				const model: StableHordeModel | null = this.bot.image.get(modelName);
 
 				if (model === null) return new ErrorResponse({
 					interaction, command: this,
@@ -786,7 +786,7 @@ export default class ImagineCommand extends Command {
 				});
 
 				/* Defer the reply, as this might take a while. */
-				await interaction.deferReply().catch(() => {});
+				await interaction.deferReply()
 
 				const moderation: ModerationResult | null = await checkImagePrompt({
 					conversation, db, content: prompt, nsfw, model: model.name
@@ -812,7 +812,7 @@ export default class ImagineCommand extends Command {
 
 			} else if (action === "ai") {
 				/* Defer the reply, as this might take a while. */
-				await interaction.deferReply().catch(() => {});
+				await interaction.deferReply();
 
 				/* If the message content was not provided by another source, check it for profanity & ask the user if they want to execute the request anyways. */
 				const moderation: ModerationResult | null = await checkImagePrompt({
@@ -877,7 +877,7 @@ export default class ImagineCommand extends Command {
 				});
 
 				/* Try to get the Stable Horde model. */
-				let model: StableHordeModel | null = data.model ? this.bot.image.models.get(data.model) ?? null : null;
+				let model: StableHordeModel | null = data.model ? this.bot.image.get(data.model) : null;
 				if (model === null) model = this.bot.image.getModels().find(m => m.name === "stable_diffusion")!;
 
 				return this.startImageGeneration({

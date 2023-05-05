@@ -7,7 +7,6 @@ import { AutoModerationActionType } from "../../conversation/moderation/automod/
 import { GPTGenerationError, GPTGenerationErrorType } from "../../error/gpt/generation.js";
 import { Conversation } from "../../conversation/conversation.js";
 import { OpenAIChatMessage } from "../../openai/types/chat.js";
-import { ChatTones } from "../../conversation/tone.js";
 import { Response } from "../../command/response.js";
 import { messageChannel } from "./channel.js";
 import { Bot } from "../../bot/bot.js";
@@ -647,12 +646,6 @@ export const sendModerationMessage = async ({ result, conversation, db, content,
     if (!result.auto) reply.embeds[0].addFields({
         name: "Blocked ⛔",
         value: result.blocked ? "✅" : "❌",
-        inline: true
-    });
-
-    if (result.source === "bot" && conversation.tone.id !== ChatTones[0].id) reply.embeds[0].addFields({
-        name: "Tone 😊",
-        value: `${conversation.tone.name} ${conversation.tone.emoji.display ?? conversation.tone.emoji.fallback}`,
         inline: true
     });
 

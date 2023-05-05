@@ -9,7 +9,6 @@ import { Conversation } from "../../conversation/conversation.js";
 import { OpenAIChatMessage } from "../../openai/types/chat.js";
 import { CommandResponse } from "../../command/command.js";
 import { DatabaseInfo } from "../../db/managers/user.js";
-import { ChatTones } from "../../conversation/tone.js";
 import { Response } from "../../command/response.js";
 import { Utils } from "../../util/utils.js";
 import { Bot } from "../../bot/bot.js";

@@ -8,7 +8,7 @@ import { NatModel } from "../other/nat.js";
 export class NatPlaygroundModel extends ChatModel {
     constructor(client: ChatClient) {
         super(client, {
-            name: "Nat Playground",
+            name: "Open Playground",
             type: ModelType.Nat,
 
             capabilities: [ ModelCapability.ImageViewing, ModelCapability.UserLanguage ]
@@ -16,16 +16,16 @@ export class NatPlaygroundModel extends ChatModel {
     }
 
     public async complete(options: ModelGenerationOptions): Promise<PartialResponseMessage> {
-        const model: NatModel = this.client.session.manager.bot.nat.model(options.conversation.tone.model.model!);
-        const formattedPrompt: PromptData = await this.client.buildPrompt(options, "Nat");
+        const model: NatModel = this.client.session.manager.bot.nat.model(options.settings.options.settings.model!);
+        const formattedPrompt: PromptData = await this.client.buildPrompt(options);
 
         const result = await this.client.session.manager.bot.nat.generate({
             prompt: formattedPrompt.prompt,
             model: model,
             
             parameters: {
-                temperature: options.conversation.tone.model.temperature ?? 0.5,
-                topP: options.conversation.tone.model.top_p ?? 1,
+                temperature: options.settings.options.settings.temperature ?? 0.5,
+                topP: options.settings.options.settings.top_p ?? 1,
                 stopSequences: [ "User:" ]
             },
             

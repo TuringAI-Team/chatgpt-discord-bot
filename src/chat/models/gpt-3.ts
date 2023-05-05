@@ -24,16 +24,16 @@ export class GPT3Model extends ChatModel {
      * @returns Generated response
      */
     private async generate(options: ModelGenerationOptions, progress?: (response: OpenAICompletionsJSON) => Promise<void> | void): Promise<OpenAICompletionsData | null> {
-        const prompt: PromptData = await this.client.buildPrompt(options, "GPT3");
+        const prompt: PromptData = await this.client.buildPrompt(options);
 
         const data: OpenAICompletionsData = await this.client.session.ai.complete({
-            model: options.conversation.tone.model.model ?? "text-davinci-003",
+            model: options.settings.options.settings.model ?? "text-davinci-003",
             stop: "Human:",
             stream: true,
 
             user: options.conversation.userIdentifier,
 
-            temperature: options.conversation.tone.model.temperature ?? 0.5,
+            temperature: options.settings.options.settings.temperature ?? 0.5,
             max_tokens: isFinite(prompt.max) ? prompt.max : undefined,
             prompt: prompt.prompt
         }, progress);

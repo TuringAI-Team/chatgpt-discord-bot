@@ -60,5 +60,4 @@ export const STABLE_HORDE_AVAILABLE_MODELS: StableHordeConfigModel[] = [
     { name: "ChromaV5", tags: [ "ChromaV5", "award winning photography", "extremely detailed", "artstation", "8k", "incredible art" ], summary: "Metallic/chrome images" },
     { name: "Microworlds", description: "Micro-world image generator", tags: [ "microworld render style" ], summary: "Microworld NFT art" },
     { name: "Arcane Diffusion", tags: [ "arcane style" ], summary: "Arcane TV show" },
-    // { name: "PortraitPlus", displayName: "Portrait Plus", description: "SD model specialized in close-up portraits", tags: [ "portrait" ], summary: "Close-up portraits of humans, not for scenes or animals" }
 ]

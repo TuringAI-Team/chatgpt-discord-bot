@@ -3,7 +3,7 @@ import { Prediction } from "replicate";
 
 import { GPTGenerationError, GPTGenerationErrorType } from "../../error/gpt/generation.js";
 import { ChatModel, ModelCapability, ModelType } from "../types/model.js";
-import { ReplicateChatTone } from "../../conversation/tone.js";
+import { ReplicateChatSettingsModel } from "../../conversation/settings/model.js";
 import { ModelGenerationOptions } from "../types/options.js";
 import { PartialResponseMessage } from "../types/message.js";
 import { ChatClient } from "../client.js";
@@ -20,18 +20,18 @@ export class ReplicateModel extends ChatModel {
 
     public async complete(options: ModelGenerationOptions): Promise<PartialResponseMessage> {
         /* If the tone class for some reason doesn't match as it should, throw an error. */
-        if (!(options.conversation.tone instanceof ReplicateChatTone)) throw new Error("Wrong tone class for Replicate; must be ReplicateChatTone");
-        const tone: ReplicateChatTone = options.conversation.tone;
+        if (!(options.settings instanceof ReplicateChatSettingsModel)) throw new Error("Wrong tone class for Replicate; must be ReplicateChatTone");
+        const tone: ReplicateChatSettingsModel = options.settings as ReplicateChatSettingsModel;
 
         /* Name of the model, split into two parts */
-        const [ modelOwner, modelName ] = tone.model.model!.split("/");
+        const [ modelOwner, modelName ] = tone.options.settings.model!.split("/");
 
         /* Replicate model for the tone */
         const model = await this.client.session.manager.bot.replicate.api.models.get(modelOwner, modelName);
 
         const format = (output: string[] | null): string | null => {
             if (output === null) return null;
-            if (tone.formatter) return tone.formatter(tone, output);
+            if (tone.formatter) return tone.formatter(output);
 
             /* Concatenate the output tokens together. */
             const concatenated: string = typeof output === "string" ? output : output.join("");

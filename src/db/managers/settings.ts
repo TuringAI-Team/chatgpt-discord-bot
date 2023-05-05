@@ -1,18 +1,19 @@
-import { APIApplicationCommandOptionChoice, ApplicationCommandOptionBase, AutocompleteInteraction, CacheType, SlashCommandBuilder, SlashCommandSubcommandBuilder } from "discord.js";
+import { APIApplicationCommandOptionChoice, ApplicationCommandOptionBase, AutocompleteInteraction, CacheType, SlashCommandSubcommandBuilder } from "discord.js";
 import chalk from "chalk";
 
 import { LoadingIndicatorManager, LoadingIndicators } from "../types/indicator.js";
 import { GENERATION_SIZES, getAspectRatio } from "../../commands/imagine.js";
+import { ChatSettingsModels } from "../../conversation/settings/model.js";
 import { DatabaseUser, RawDatabaseUser, UserSettings } from "./user.js";
+import { ChatSettingsTones } from "../../conversation/settings/tone.js";
 import { CommandOptionChoice } from "../../command/command.js";
 import { StableHordeModel } from "../../image/types/model.js";
 import { Languages, UserLanguage } from "../types/locale.js";
+import { DisplayEmoji, Emoji } from "../../util/emoji.js";
 import { TuringVideoModels } from "../../turing/api.js";
-import { ToneEmoji } from "../../conversation/tone.js";
 import { DatabaseManager } from "../manager.js";
 import { Utils } from "../../util/utils.js";
 import { Bot } from "../../bot/bot.js";
-
 
 export interface SettingsCategory {
     /* Type of the category */
@@ -22,10 +23,10 @@ export interface SettingsCategory {
     name: string;
 
     /* Emoji for this category */
-    emoji: ToneEmoji;
+    emoji: DisplayEmoji;
 }
 
-export type SettingsCategoryName = "general" | "image" | "video" | "text"
+export type SettingsCategoryName = "general" | "image" | "video" | "chat"
 export type SettingKeyAndCategory = `${SettingsCategoryName}:${SettingsName}`
 
 export const SettingCategories: SettingsCategory[] = [
@@ -48,9 +49,9 @@ export const SettingCategories: SettingsCategory[] = [
     },
 
     {
-        name: "Text",
-        type: "text",
-        emoji: { fallback: "📜" }
+        name: "Chat",
+        type: "chat",
+        emoji: { fallback: "🗨️" }
     }
 ]
 
@@ -82,7 +83,7 @@ interface BaseSettingsOptionData<T = any> {
     category: SettingsCategoryName;
 
     /* Emoji for the settings option */
-    emoji: ToneEmoji;
+    emoji: DisplayEmoji;
 
     /* Description of the settings option */
     description: string;
@@ -190,7 +191,7 @@ export class ChoiceSettingsOption extends SettingsOption<string, BaseSettingsOpt
     public addToCommand(bot: Bot, builder: SlashCommandSubcommandBuilder): void {
         builder.addStringOption(builder => this.applyBase(builder)
             .addChoices(...this.data.choices.map(({ name, premium, value }) => ({
-                name: premium ? `${name} ✨` : name,
+                name: premium ? `${name} (premium-only ✨)` : name,
                 value
             })))
         );
@@ -341,10 +342,42 @@ export const SettingOptions: SettingsOption[] = [
     new BooleanSettingsOption({
         key: "partial_messages",
         name: "Partial messages",
-        category: "text",
+        category: "chat",
         emoji: { fallback: "⏳" },
-        description: "Whether messages by the bot should be shown while they're being generated",
+        description: "Whether chat messages by the bot should be shown while they're being generated",
         default: true
+    }),
+
+    new ChoiceSettingsOption({
+        key: "model",
+        name: "Model",
+        category: "chat",
+        emoji: { fallback: "🤖" },
+        description: "Which language model to use for chatting",
+        default: "chatgpt",
+
+        choices: ChatSettingsModels.map(model => ({
+            display: `**${model.options.name}** ${Emoji.display(model.options.emoji, true)} • ${model.options.description}`,
+            name: `${model.options.name} ${model.options.emoji.fallback} • ${model.options.description}`,
+            premium: model.options.premium,
+            value: model.id
+        }))
+    }),
+
+    new ChoiceSettingsOption({
+        key: "tone",
+        name: "Tone",
+        category: "chat",
+        emoji: { fallback: "🗣️" },
+        description: "Which tone to use for chatting",
+        default: "neutral",
+
+        choices: ChatSettingsTones.map(tone => ({
+            display: `**${tone.options.name}** ${Emoji.display(tone.options.emoji, true)} • ${tone.options.description}`,
+            name: `${tone.options.name} ${tone.options.emoji.fallback} • ${tone.options.description}`,
+            premium: tone.options.premium,
+            value: tone.id
+        }))
     }),
 
     new ChoiceSettingsOption({
@@ -389,12 +422,12 @@ export class UserSettingsManager {
     }
 
     public options(category?: SettingsCategory): SettingsOption[] {
-        return Object.values(SettingOptions)
+        return SettingOptions
             .filter(s => category ? s.category === category.type : true);
     }
 
     public categories(): SettingsCategory[] {
-        return Object.values(SettingCategories);
+        return SettingCategories;
     }
 
     public template(): UserSettings {

@@ -49,7 +49,9 @@ export interface ModelOptions {
     capabilities: ModelCapability[];
 }
 
-export type ConstructorModelOptions = Pick<ModelOptions, "name" | "type"> & { capabilities?: ModelCapability[]; };
+export type ConstructorModelOptions = Pick<ModelOptions, "name" | "type"> & {
+    capabilities?: ModelCapability[];
+}
 
 export abstract class ChatModel {
     protected readonly client: ChatClient;

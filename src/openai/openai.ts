@@ -62,7 +62,7 @@ export class OpenAIManager {
             const abortTimer: NodeJS.Timeout = setTimeout(() => {
                 controller.abort();
                 reject(new TypeError("Request timed out"));
-            }, 10 * 1000);
+            }, 15 * 1000);
 
             try {
                 await fetchEventSource(this.url("chat/completions"), {
@@ -200,7 +200,7 @@ export class OpenAIManager {
             const abortTimer: NodeJS.Timeout = setTimeout(() => {
                 controller.abort();
                 reject(new TypeError("Request timed out"));
-            }, 10 * 1000);
+            }, 15 * 1000);
 
             try {
                 fetchEventSource(this.url("completions"), {

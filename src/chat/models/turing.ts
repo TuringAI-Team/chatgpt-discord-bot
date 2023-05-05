@@ -16,11 +16,11 @@ export class TuringModel extends ChatModel {
 
     public async complete(options: ModelGenerationOptions): Promise<PartialResponseMessage> {
         /* Build the formatted prompt. */
-        const prompt: PromptData = await this.client.buildPrompt(options, "Custom");
+        const prompt: PromptData = await this.client.buildPrompt(options);
 
         /* Generate a response for the user's prompt using the Turing API. */
         const result: TuringChatResult = await this.client.session.manager.bot.turing.chat({
-            model: options.conversation.tone.model.model!,
+            model: options.settings.options.settings.model!,
             prompt: prompt.prompt
         });
 

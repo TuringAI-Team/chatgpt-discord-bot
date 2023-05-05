@@ -3,12 +3,12 @@ import { SlashCommandBuilder, EmbedBuilder, AutocompleteInteraction, CacheType, 
 import { Command, CommandInteraction, CommandOptionChoice, CommandResponse } from "../command/command.js";
 import { Response } from "../command/response.js";
 
-import { AutocompleteChoiceSettingsOption, ChoiceSettingsOption, SettingKeyAndCategory, SettingsCategory, SettingsCategoryName, SettingsName, SettingsOptionType } from "../db/managers/settings.js";
+import { AutocompleteChoiceSettingsOption, ChoiceSettingsOption, SettingKeyAndCategory, SettingsCategory, SettingsCategoryName, SettingsName } from "../db/managers/settings.js";
 import { DatabaseInfo, DatabaseUser } from "../db/managers/user.js";
-import { Conversation } from "../conversation/conversation.js";
-import { SettingsOption } from "../db/managers/settings.js";
-import { Bot } from "../bot/bot.js";
 import { ErrorResponse } from "../command/response/error.js";
+import { SettingsOption } from "../db/managers/settings.js";
+import { Emoji } from "../util/emoji.js";
+import { Bot } from "../bot/bot.js";
 
 export default class SettingsCommand extends Command {
     constructor(bot: Bot) {
@@ -23,7 +23,7 @@ export default class SettingsCommand extends Command {
 
 			const sub: SlashCommandSubcommandBuilder = new SlashCommandSubcommandBuilder()
 				.setName(category.type)
-				.setDescription(`${category.name} ${category.emoji.fallback}`);
+				.setDescription(`Change or view ${category.name.toString()} settings ${category.emoji.fallback}`);
 
 			/* Add the options to the /settings sub-command. */
 			options.forEach(o => o.addToCommand(bot, sub));
@@ -48,8 +48,8 @@ export default class SettingsCommand extends Command {
 			const modified = changes[key];
 
 			embed.addFields({
-				name: `${option.data.name} ${option.data.emoji.display ?? option.data.emoji.fallback} · *${option.data.description}*`,
-				value: wasModified ? `*${option.display(this.bot, original)}* » ${option.display(this.bot, modified)}` : option.display(this.bot, original)
+				name: `${option.data.name} ${Emoji.display(option.data.emoji, true)} · *${option.data.description}*`,
+				value: wasModified ? `*${option.display(this.bot, modified)}*` : option.display(this.bot, original)
 			});
 		}
 
@@ -76,9 +76,9 @@ export default class SettingsCommand extends Command {
 		return option.complete(this.bot, interaction, value);
 	}
 
-    public async run(interaction: CommandInteraction, { user }: DatabaseInfo): CommandResponse {
+    public async run(interaction: CommandInteraction, { user, guild }: DatabaseInfo): CommandResponse {
 		/* Whether the user has their own Premium subscription */
-		const premium: boolean = this.bot.db.users.subscriptionType({ user }) === "UserPremium";
+		const premium: boolean = this.bot.db.users.canUsePremiumFeatures({ user, guild });
 
 		/* Category of this setting */
 		const categoryName: SettingsCategoryName = interaction.options.getSubcommand(true) as SettingsCategoryName;
@@ -87,7 +87,7 @@ export default class SettingsCommand extends Command {
 		/* All changes done by the user */
 		const changes: Partial<Record<SettingKeyAndCategory, any>> = {};
 
-		for (const option of this.bot.db.settings.options()) {
+		for (const option of this.bot.db.settings.options(category)) {
 			/* Get the value specified by the user. */
 			const param = interaction.options.get(option.key, false);
 			if (param == undefined || param.value == undefined) continue;
@@ -98,8 +98,8 @@ export default class SettingsCommand extends Command {
 				const chosen = option.data.choices.find(c => c.value === param.value) ?? null;
 
 				if (chosen === null) return new ErrorResponse({
-					interaction, message: `You specified an invalid option for setting **${option.data.name}**`, emoji: (option.data.emoji.display ?? option.data.emoji.fallback).toString()
-				})
+					interaction, message: `You specified an invalid option for setting **${option.data.name}**`, emoji: Emoji.display(option.data.emoji, true).toString()
+				});
 			
 				if (chosen.premium && !premium) return new Response()
 					.addEmbed(builder => builder
@@ -107,9 +107,18 @@ export default class SettingsCommand extends Command {
 						.setColor("Orange")
 					)
 					.setEphemeral(true);
+				
+			} else if (option instanceof AutocompleteChoiceSettingsOption) {
+				/* Whether the choice for the command is actually valid */
+				const valid: boolean = option.valid(this.bot, param.value as string);
+
+				if (!valid) return new ErrorResponse({
+					interaction, message: `You specified an invalid option for setting **${option.data.name}**`, emoji: Emoji.display(option.data.emoji, true).toString()
+				});
 			}
 
-			if (user.settings[option.key] != param.value) changes[`${option.category}:${option.key}`] = param.value;
+			const key = this.bot.db.settings.settingsString(option);
+			if (this.bot.db.settings.get(user, key) != param.value) changes[key] = param.value;
 		}
 
 		/* Apply the modified settings, if any were actually changed. */
