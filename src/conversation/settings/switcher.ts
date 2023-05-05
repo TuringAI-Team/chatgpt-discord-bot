@@ -26,7 +26,7 @@ export class SwitcherBuilder {
 		const row = new ActionRowBuilder<StringSelectMenuBuilder>()
 			.addComponents(
 				new StringSelectMenuBuilder()
-					.setCustomId(`${type}-selector:${conversation.id}`)
+					.setCustomId(`${type}-switcher:${conversation.id}`)
 					.setPlaceholder(`Choose a ${type}`)
 					.addOptions(...array.map(e => ({
 						label: `${e.options.name}${e.options.premium ? " (premium-only ✨)" : ""}`,
@@ -56,11 +56,11 @@ export class SwitcherBuilder {
 
     public static async handleInteraction(bot: Bot, interaction: StringSelectMenuInteraction): Promise<void> {
 		if (interaction.message.author.id !== bot.client.user!.id) return;
-		if (!interaction.customId.includes("selector")) return;
+		if (!interaction.customId.includes("switcher")) return;
 
         const data = interaction.customId.split(":");
 
-        const type: "tone" | "model" = data[0].replaceAll("-selector", "") as any;
+        const type: "tone" | "model" = data[0].replaceAll("-switcher", "") as any;
         const id: string = data[1];
 
         const arr: (ChatSettingsModel | ChatSettingsTone)[] = SwitcherArrays[type];

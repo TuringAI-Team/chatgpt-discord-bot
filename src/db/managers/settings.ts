@@ -441,7 +441,7 @@ export class UserSettingsManager {
     }
 
     public load(raw: DatabaseUser | RawDatabaseUser): UserSettings {
-        const get = (option: SettingsOption) => raw.settings[this.settingsString(option)] ?? this.template()[this.settingsString(option)];
+        const get = (option: SettingsOption) => raw.settings ? raw.settings[this.settingsString(option)] : undefined ?? this.template()[this.settingsString(option)];
         const settings: Partial<UserSettings> = {};
 
         for (const option of SettingOptions) {
