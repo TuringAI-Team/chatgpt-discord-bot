@@ -1,6 +1,6 @@
 {
   "name": "turing",
-  "module": "src/main.js",
+  "module": "build/main.js",
   "type": "module",
   "scripts": {
     "start": "npm run build && npm run run",
