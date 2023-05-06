@@ -23,8 +23,6 @@ import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generat
 import { ErrorResponse, ErrorType } from "../command/response/error.js";
 import { handleError } from "../util/moderation/error.js";
 import { GPTAPIError } from "../error/gpt/api.js";
-import { ChatSettingsTones } from "./settings/tone.js";
-import { SwitcherBuilder } from "./settings/switcher.js";
 
 /* Permissions required by the bot to function correctly */
 const BOT_REQUIRED_PERMISSIONS: { [key: string]: PermissionsString } = {
@@ -225,7 +223,7 @@ export class Generator {
 		const id: string = parts[1];
 
 		if (id !== "-1" && id !== button.user.id && !action.startsWith("i-view")) return void await button.deferUpdate();
-		if (action !== "model" && action !== "tone" && action !== "delete" && action !== "check-vote" && action !== "continue" && !action.startsWith("i-")) return;
+		if (action !== "delete" && action !== "check-vote" && action !== "continue" && !action.startsWith("i-")) return;
 
 		/* Get the user's conversation. */
 		const conversation: Conversation = await this.bot.conversation.create(button.user);
@@ -233,12 +231,8 @@ export class Generator {
 		/* Get the user's database entry. */
 		const db: DatabaseInfo = await this.bot.db.users.fetchData(button.user, button.guild);
 
-		/* If the user requested the model selector, ... */
-		if (action === "model" || action === "tone") {
-			return void SwitcherBuilder.build(conversation, db, action).send(button);
-
 		/* If the user interacted generated image, ... */
-		} else if (action.startsWith("i-")) {
+		if (action.startsWith("i-")) {
 			return await (this.bot.command.get<ImagineCommand>("imagine")).handleButtonInteraction(button, conversation, action.replace("i-", ""), parts);
 
 		/* If the user requsted to delete this interaction response, ... */

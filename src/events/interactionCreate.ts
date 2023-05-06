@@ -2,7 +2,6 @@ import { Interaction, ChatInputCommandInteraction, ButtonInteraction, Autocomple
 
 import { handleModerationInteraction } from "../util/moderation/moderation.js";
 import { handleIntroductionPageSwitch } from "../util/introduction.js";
-import { SwitcherBuilder } from "../conversation/settings/switcher.js";
 import { handleError } from "../util/moderation/error.js";
 import { Event } from "../event/event.js";
 import { Bot } from "../bot/bot.js";
@@ -30,7 +29,6 @@ export default class InteractionCreateEvent extends Event {
 			} else if (interaction.isStringSelectMenu()) {
 				await handleIntroductionPageSwitch(this.bot, interaction);
 				await handleModerationInteraction(this.bot, interaction);
-				await SwitcherBuilder.handleInteraction(this.bot, interaction);
 
 			} else if (interaction.isButton()) {
 				await this.bot.conversation.generator.handleButtonInteraction(interaction as ButtonInteraction);
