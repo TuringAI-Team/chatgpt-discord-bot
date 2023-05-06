@@ -564,7 +564,7 @@ export class UserManager {
     }
 
     public canUsePremiumFeatures({ user, guild }: DatabaseInfo): boolean {
-        return (guild && guild.subscription !== null) || user.subscription !== null;
+        return (guild && this.subscription(guild) !== null) || this.subscription(user) !== null;
     }
 
     public voted(user: DatabaseUser): number | null {

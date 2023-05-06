@@ -559,6 +559,7 @@ export class UserSettingsManager {
 
         /* Database instances, guild & user */
         const db: DatabaseInfo = await this.db.users.fetchData(interaction.user, interaction.guild);
+        const premium: boolean = this.db.users.canUsePremiumFeatures(db);
 
         if (type === "menu") {
             /* Category name & the actual category */
@@ -624,6 +625,20 @@ export class UserSettingsManager {
 
             } else if (option instanceof ChoiceSettingsOption && interaction instanceof StringSelectMenuInteraction) {
                 const newValueName: string = interaction.values[0];
+
+                const choice: ChoiceSettingOptionChoice | null = option.data.choices.find(c => c.value === newValueName) ?? null;
+                if (choice === null) return;
+
+                if (choice.premium && !premium) {
+                    return void await new Response()
+                        .addEmbed(builder => builder
+                            .setDescription(`✨ The choice **${choice.name}**${choice.emoji ? ` ${typeof choice.emoji === "object" ? Emoji.display(choice.emoji, true) : choice.emoji}` : ""} is restricted to **Premium** users.\n**Premium** *also includes further benefits, view \`/premium info\` for more*. ✨`)
+                            .setColor("Orange")
+                        )
+                        .setEphemeral(true)
+                    .send(interaction);
+                }
+
                 changes[key] = newValueName;
 
             } else if (option instanceof IntegerSettingsOption || option instanceof StringSettingsOption) {
