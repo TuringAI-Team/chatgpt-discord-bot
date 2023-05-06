@@ -1,7 +1,9 @@
-import { GPTAPIError } from "../error/gpt/api.js";
-import { Bot } from "../bot/bot.js";
+import { inspect } from "util";
+
 import { ImageBuffer } from "../chat/types/image.js";
+import { GPTAPIError } from "../error/gpt/api.js";
 import { Utils } from "../util/utils.js";
+import { Bot } from "../bot/bot.js";
 
 type TuringAPIPath = `cache/${string}` | "imgs/filter" | "imgs/dalle" | `text/${string}` | `video/${TuringVideoModelName}`
 
@@ -167,10 +169,10 @@ export class TuringAPI {
         const body: any | null = await response.json().catch(() => null);
     
         throw new GPTAPIError({
-            code: response.status,
+            code: body && body.error && path === "imgs/dalle" ? 400 : response.status,
+            message: body && body.error ? inspect(body.error.toString(), { depth: 1 }) : null,
             endpoint: `/${path}`,
-            id: null,
-            message: body && body.error ? body.error.toString() : null
+            id: null
         });
     }
 
