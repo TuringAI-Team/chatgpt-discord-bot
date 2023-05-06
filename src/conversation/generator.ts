@@ -156,10 +156,8 @@ export class Generator {
 					.setCustomId(`model:${conversation.id}`)
 					.setLabel(model.options.name)
 					.setEmoji(Emoji.display(model.options.emoji, true) as ComponentEmojiResolvable)
-					.setStyle(ButtonStyle.Secondary)
-			);
+					.setStyle(ButtonStyle.Secondary),
 
-			if (tone.id !== ChatSettingsTones[0].id) buttons.push(
 				new ButtonBuilder()
 					.setCustomId(`tone:${conversation.id}`)
 					.setLabel(tone.options.name)
