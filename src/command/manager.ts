@@ -388,7 +388,8 @@ export class CommandManager {
 					builder.setTitle("An error occurred ⚠️")
 					    .setDescription(`It seems like something went wrong while trying to run this command.\nIf you continue to experience issues, join our **[support server](${Utils.supportInvite(this.bot)})**.`)
 						.setColor("Red")
-				);
+				)
+				.setEphemeral(true);
 
 			await handleError(this.bot, {
 				title: `Error while executing command \`${command.builder instanceof SlashCommandBuilder ? "/" : ""}${command.builder.name}\``,

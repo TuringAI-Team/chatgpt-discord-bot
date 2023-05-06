@@ -1,4 +1,4 @@
-import { EmbedBuilder, ComponentBuilder, Message, InteractionReplyOptions, TextChannel, AttachmentBuilder, MessageCreateOptions, CommandInteraction, MessageComponentInteraction, DMChannel, InteractionResponse, ThreadChannel, MessageEditOptions, InteractionUpdateOptions, ButtonInteraction } from "discord.js";
+import { EmbedBuilder, ComponentBuilder, Message, InteractionReplyOptions, TextChannel, AttachmentBuilder, MessageCreateOptions, CommandInteraction, MessageComponentInteraction, DMChannel, InteractionResponse, ThreadChannel, MessageEditOptions, InteractionUpdateOptions, ButtonInteraction, ModalSubmitInteraction } from "discord.js";
 import { APIActionRowComponent, APIActionRowComponentTypes } from "discord-api-types/v10";
 
 type Component = APIActionRowComponentTypes | APIActionRowComponent<APIActionRowComponentTypes>;
@@ -90,9 +90,9 @@ export class Response {
 	}
 
 	/* Edit the original interaction reply. */
-	public async send(interaction: MessageComponentInteraction | CommandInteraction | Message | TextChannel | DMChannel | ThreadChannel): Promise<InteractionResponse | Message | null> {
+	public async send(interaction: MessageComponentInteraction | CommandInteraction | ModalSubmitInteraction | Message | TextChannel | DMChannel | ThreadChannel): Promise<InteractionResponse | Message | null> {
 		try {
-			if (interaction instanceof MessageComponentInteraction || interaction instanceof CommandInteraction || interaction instanceof ButtonInteraction) {
+			if (interaction instanceof MessageComponentInteraction || interaction instanceof CommandInteraction || interaction instanceof ButtonInteraction || interaction instanceof ModalSubmitInteraction) {
 				/* If the interaction token has expired, don't try to edit the message. */
 				if (Date.now() - interaction.createdTimestamp > 10 * 60 * 1000) return null;
 

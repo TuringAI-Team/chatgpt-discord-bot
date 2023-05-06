@@ -1,4 +1,4 @@
-import { CacheType, ColorResolvable, DMChannel, InteractionResponse, Message, MessageComponentInteraction, RepliableInteraction, TextChannel, ThreadChannel } from "discord.js";
+import { CacheType, ColorResolvable, DMChannel, InteractionResponse, Message, MessageComponentInteraction, ModalSubmitInteraction, RepliableInteraction, TextChannel, ThreadChannel } from "discord.js";
 
 import { Command, CommandInteraction } from "../command.js";
 import { Response } from "../response.js";
@@ -47,7 +47,7 @@ export class ErrorResponse extends Response {
         this.setEphemeral(true);
     }
 
-    public async send(interaction: CommandInteraction | MessageComponentInteraction<CacheType> | Message<boolean> | TextChannel | DMChannel | ThreadChannel<boolean>): Promise<Message<boolean> | InteractionResponse<boolean> | null> {
+    public async send(interaction: CommandInteraction | MessageComponentInteraction<CacheType> | ModalSubmitInteraction | Message<boolean> | TextChannel | DMChannel | ThreadChannel<boolean>): Promise<Message<boolean> | InteractionResponse<boolean> | null> {
         /* Remove the cool-down from the executed command, if applicable. */
         if (this.options.command) await this.options.command.removeCooldown(this.options.interaction as any);
 

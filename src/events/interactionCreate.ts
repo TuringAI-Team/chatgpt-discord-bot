@@ -17,6 +17,10 @@ export default class InteractionCreateEvent extends Event {
 		if (Date.now() - (interaction.createdTimestamp + 3000) >= 3000) return;
 
 		try {
+			if (interaction.isButton() || interaction.isStringSelectMenu() && interaction.customId.startsWith("settings:")) {
+				return await this.bot.db.settings.handleInteraction(interaction);
+			}
+
 			if (interaction.isChatInputCommand() || interaction.isMessageContextMenuCommand()) {
 				await this.bot.command.handleCommand(interaction as ChatInputCommandInteraction);
 

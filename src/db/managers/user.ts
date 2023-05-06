@@ -515,7 +515,7 @@ export class UserManager {
             i => marked.find(m => m.when === i.when) !== undefined ? { ...i, seen: true } : i
         );
 
-        return this.updateUser(user, { infractions: arr });
+        return void await this.updateUser(user, { infractions: arr });
     }
 
     public unread(user: DatabaseUser): DatabaseUserInfraction[] {
@@ -530,17 +530,17 @@ export class UserManager {
         const updated: DatabaseInteractionStatistics = user.interactions;
         updated[key] = updated[key] + increment;
 
-        return this.updateUser(user, { interactions: updated });
+        return void await this.updateUser(user, { interactions: updated });
     }
 
     public async updateModeratorStatus(user: DatabaseUser, status: boolean): Promise<void> {
-        return await this.updateUser(user, {
+        return void await this.updateUser(user, {
             moderator: status
         });
     }
 
     public async updateTesterStatus(user: DatabaseUser, status: UserTestingGroup): Promise<void> {
-        return await this.updateUser(user, {
+        return void await this.updateUser(user, {
             tester: status
         });
     }
@@ -613,8 +613,8 @@ export class UserManager {
 
         if (type === "guild") (updated as DatabaseGuildSubscription).by = by!;
 
-        if (type === "user") return this.updateUser(user as DatabaseUser, { subscription: updated });
-        else if (type === "guild") return this.updateGuild(user as DatabaseGuild, { subscription: updated as DatabaseGuildSubscription });
+        if (type === "user") return void await this.updateUser(user as DatabaseUser, { subscription: updated });
+        else if (type === "guild") return await this.updateGuild(user as DatabaseGuild, { subscription: updated as DatabaseGuildSubscription });
     }
 
     /**
@@ -622,8 +622,8 @@ export class UserManager {
      * @param user User to revoke subscription
      */
     public async revokeSubscription(user: DatabaseUser | DatabaseGuild, type: DatabaseSubscriptionType): Promise<void> {
-        if (type === "user") return this.updateUser(user as DatabaseUser, { subscription: null });
-        else if (type === "guild") return this.updateGuild(user as DatabaseGuild, { subscription: null });
+        if (type === "user") return void await this.updateUser(user as DatabaseUser, { subscription: null });
+        else if (type === "guild") return await this.updateGuild(user as DatabaseGuild, { subscription: null });
     }
 
     private rawToSubscriptionKey(key: RawDatabaseSubscriptionKey): DatabaseSubscriptionKey {
@@ -713,23 +713,22 @@ export class UserManager {
     }
 
 
-    private async update<T extends DatabaseAll = DatabaseAll>(type: keyof typeof this.updates, obj: T | Snowflake, updates: Partial<T>): Promise<void> {
+    private async update<T extends DatabaseAll = DatabaseAll>(type: keyof typeof this.updates, obj: T | Snowflake, updates: Partial<T>): Promise<T> {
         const id: Snowflake = typeof obj === "string" ? obj : obj.id;
 
-        const queuedUpdates: DatabaseAll | null = this.updates[type].get(id) ?? null;
-        let updated: DatabaseAll;
+        const queuedUpdates: T | null = this.updates[type].get(id) as T ?? null;
+        let updated: T;
 
         if (typeof obj === "string") updated = { ...queuedUpdates, ...updates as T };
         else updated = { ...obj, ...queuedUpdates, ...updates as T };
 
         this.updates[type].set(id, updated as any);
+        return updated;
     }
 
-    public async updateUser(user: DatabaseUser | string, updates: Partial<DatabaseUser>): Promise<void> {
-        await Promise.all([
-            this.setCache("users", user, updates),
-            this.update("users", user, updates)
-        ]);
+    public async updateUser(user: DatabaseUser | string, updates: Partial<DatabaseUser>): Promise<DatabaseUser> {
+        await this.setCache("users", user, updates);
+        return await this.update("users", user, updates);
     }
 
     public async updateGuild(guild: DatabaseGuild, updates: Partial<DatabaseGuild>): Promise<void> {

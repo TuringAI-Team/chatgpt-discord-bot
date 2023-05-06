@@ -268,14 +268,14 @@ export default class ImagineCommand extends Command {
 					)
 				)
 
-				.addSubcommand(builder => builder
+				/*.addSubcommand(builder => builder
 					.setName("models")
 					.setDescription("View a list of all available Stable Diffusion models")
-				)
+				)*/
 		, { cooldown: {
 			Free: 60 * 1000,
 			Voter: 40 * 1000,
-			GuildPremium: 25 * 1000,
+			GuildPremium: 20 * 1000,
 			UserPremium: 10 * 1000
 		} });
     }

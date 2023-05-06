@@ -1,18 +1,18 @@
-import { APIApplicationCommandOptionChoice, ApplicationCommandOptionBase, AutocompleteInteraction, CacheType, SlashCommandSubcommandBuilder } from "discord.js";
+import { APIApplicationCommandOptionChoice, ActionRow, ActionRowBuilder, AnyComponentBuilder, ButtonBuilder, ButtonComponent, ButtonInteraction, ButtonStyle, ComponentEmojiResolvable, Interaction, InteractionReplyOptions, InteractionUpdateOptions, ModalBuilder, SelectMenuComponentOptionData, StringSelectMenuBuilder, StringSelectMenuInteraction, TextInputBuilder, TextInputStyle } from "discord.js";
 import chalk from "chalk";
 
 import { LoadingIndicatorManager, LoadingIndicators } from "../types/indicator.js";
 import { GENERATION_SIZES, getAspectRatio } from "../../commands/imagine.js";
+import { STABLE_HORDE_AVAILABLE_MODELS } from "../../image/types/model.js";
 import { ChatSettingsModels } from "../../conversation/settings/model.js";
-import { DatabaseUser, RawDatabaseUser, UserSettings } from "./user.js";
 import { ChatSettingsTones } from "../../conversation/settings/tone.js";
-import { CommandOptionChoice } from "../../command/command.js";
-import { StableHordeModel } from "../../image/types/model.js";
-import { Languages, UserLanguage } from "../types/locale.js";
+import { DatabaseInfo, DatabaseUser, UserSettings } from "./user.js";
+import { ErrorResponse } from "../../command/response/error.js";
 import { DisplayEmoji, Emoji } from "../../util/emoji.js";
 import { TuringVideoModels } from "../../turing/api.js";
+import { Response } from "../../command/response.js";
 import { DatabaseManager } from "../manager.js";
-import { Utils } from "../../util/utils.js";
+import { Languages } from "../types/locale.js";
 import { Bot } from "../../bot/bot.js";
 
 export interface SettingsCategory {
@@ -37,21 +37,21 @@ export const SettingCategories: SettingsCategory[] = [
     },
 
     {
+        name: "Chat",
+        type: "chat",
+        emoji: { fallback: "🗨️" }
+    },
+
+    {
         name: "Image",
         type: "image",
-        emoji: { fallback: "⛰️" }
+        emoji: { fallback: "🖼️" }
     },
 
     {
         name: "Video",
         type: "video",
         emoji: { fallback: "📷" }
-    },
-
-    {
-        name: "Chat",
-        type: "chat",
-        emoji: { fallback: "🗨️" }
     }
 ]
 
@@ -96,24 +96,34 @@ interface BaseSettingsOptionData<T = any> {
 }
 
 type SettingOptionsData<T = any> = Omit<BaseSettingsOptionData<T>, "type">
+type SettingsInteractionBuilder = AnyComponentBuilder
 
-export abstract class SettingsOption<T = string | number | boolean, U extends BaseSettingsOptionData<T> = BaseSettingsOptionData<T>> {
+export abstract class SettingsOption<T extends string | number | boolean = string | number | boolean, U extends BaseSettingsOptionData<T> = BaseSettingsOptionData<T>> {
     public readonly data: U;
 
     constructor(data: U) {
         this.data = data;
     }
 
-    public abstract addToCommand(bot: Bot, builder: SlashCommandSubcommandBuilder): void;
-    public abstract display(bot: Bot, value: T): string;
+    public abstract add<U extends SettingsInteractionBuilder = ButtonBuilder>(
+        bot: Bot, builder: ActionRowBuilder, current: T
+    ): ActionRowBuilder;
 
-    protected applyBase<T extends ApplicationCommandOptionBase = ApplicationCommandOptionBase>(builder: T): T {
-        builder
-            .setName(this.key)
-            .setDescription(`${this.data.name} ${this.data.emoji.fallback}`)
-            .setRequired(false);
+    protected applyBase(builder: ActionRowBuilder): ActionRowBuilder {
+        builder.addComponents(
+            new ButtonBuilder()
+                .setLabel(this.data.name)
+                .setEmoji(Emoji.display(this.data.emoji, true) as ComponentEmojiResolvable)
+                .setStyle(ButtonStyle.Secondary)
+                .setCustomId(this.customID(this.data.name))
+                .setDisabled(true)
+        );
         
         return builder;
+    }
+
+    protected customID(value?: string | number | boolean): string {
+        return `settings:change:${this.key}${value != undefined ? `:${value}` : ""}`;
     }
 
     public get key(): SettingsName {
@@ -133,12 +143,19 @@ export class BooleanSettingsOption extends SettingsOption<boolean> {
         });
     }
 
-    public addToCommand(bot: Bot, builder: SlashCommandSubcommandBuilder): void {
-        builder.addBooleanOption(builder => this.applyBase(builder));
-    }
+    public add(bot: Bot, builder: ActionRowBuilder, current: boolean): ActionRowBuilder {
+        return this.applyBase(builder)
+            .addComponents([
+                new ButtonBuilder()
+                    .setCustomId(this.customID(true))
+                    .setStyle(current ? ButtonStyle.Success : ButtonStyle.Secondary)
+                    .setEmoji("👍"),
 
-    public display(bot: Bot, value: boolean): string {
-        return value ? "Enabled ✅" : "Disabled ❌";
+                new ButtonBuilder()
+                    .setCustomId(this.customID(false))
+                    .setStyle(!current ? ButtonStyle.Success : ButtonStyle.Secondary)
+                    .setEmoji("👎")
+            ]);
     }
 }
 
@@ -156,24 +173,52 @@ export class IntegerSettingsOption extends SettingsOption<number, BaseSettingsOp
         });
     }
 
-    public addToCommand(bot: Bot, builder: SlashCommandSubcommandBuilder): void {
-        builder.addIntegerOption(builder => this.applyBase(builder)
-            .setMinValue(this.data.min)
-            .setMaxValue(this.data.max)
-        );
-    }
-
-    public display(bot: Bot, value: number): string {
-        return `\`${value}\`${this.data.suffix ? ` ${this.data.suffix}${value > 1 || value === 0 ? "s" : ""}` : ""}`;
+    public add(bot: Bot, builder: ActionRowBuilder, current: number): ActionRowBuilder {
+        return this.applyBase(builder)
+            .addComponents([
+                new ButtonBuilder()
+                    .setCustomId(this.customID())
+                    .setStyle(ButtonStyle.Secondary)
+                    .setLabel(`${current}${this.data.suffix ? ` ${this.data.suffix}${current > 1 || current === 0 ? "s" : ""}` : ""}`)
+                    .setEmoji("📝")
+            ]);
     }
 }
 
-type ChoiceSettingOptionChoice = APIApplicationCommandOptionChoice<string> & {
-    /* Overwrite for the actual name; what to display in the settings menu */
-    display?: string;
+interface StringSettingOptionData {
+    min: number;
+    max: number;
+}
+
+export class StringSettingsOption extends SettingsOption<string, BaseSettingsOptionData & IntegerSettingOptionData> {
+    constructor(data: SettingOptionsData & StringSettingOptionData) {
+        super({
+            ...data,
+            type: SettingsOptionType.String
+        });
+    }
+
+    public add(bot: Bot, builder: ActionRowBuilder, current: string): ActionRowBuilder {
+        return this.applyBase(builder)
+            .addComponents([
+                new ButtonBuilder()
+                    .setCustomId(this.customID())
+                    .setStyle(ButtonStyle.Secondary)
+                    .setLabel(current)
+                    .setEmoji("📝")
+            ]);
+    }
+}
+
+type ChoiceSettingOptionChoice = Pick<APIApplicationCommandOptionChoice<string>, "name" | "value"> & {
+    /* Description for this choice */
+    description?: string;
+
+    /* Emoji for this choice */
+    emoji?: DisplayEmoji | string;
 
     /* Whether this option is restricted to Premium users */
-    premium: boolean;
+    premium?: boolean;
 }
 
 interface ChoiceSettingOptionData {
@@ -188,113 +233,19 @@ export class ChoiceSettingsOption extends SettingsOption<string, BaseSettingsOpt
         });
     }
 
-    public addToCommand(bot: Bot, builder: SlashCommandSubcommandBuilder): void {
-        builder.addStringOption(builder => this.applyBase(builder)
-            .addChoices(...this.data.choices.map(({ name, premium, value }) => ({
-                name: premium ? `${name} (premium-only ✨)` : name,
-                value
-            })))
-        );
-    }
-
-    public displayForID(id: string): ChoiceSettingOptionChoice {
-        return this.data.choices.find(c => c.value === id)!;
-    }
-
-    public display(bot: Bot, value: string): string {
-        const choice: ChoiceSettingOptionChoice = this.displayForID(value);
-        return choice.display ?? choice.name;
-    }
-}
-
-export abstract class AutocompleteChoiceSettingsOption extends SettingsOption<string, BaseSettingsOptionData> {
-    constructor(data: SettingOptionsData) {
-        super({
-            ...data,
-            type: SettingsOptionType.AutoComplete
-        });
-    }
-
-    public addToCommand(bot: Bot, builder: SlashCommandSubcommandBuilder): void {
-        builder.addStringOption(builder => this.applyBase(builder)
-            .setAutocomplete(true)
-        );
-    }
-
-    public abstract complete(bot: Bot, interaction: AutocompleteInteraction, value: string): CommandOptionChoice<string>[];
-    public abstract displayForID(bot: Bot, id: string): string | null;
-    public abstract valid(bot: Bot, id: string): boolean;
-
-    public display(bot: Bot, value: string): string {
-        return this.displayForID(bot, value) ?? "❓";
-    }
-}
-
-export class ImagineModelAutocompleteSettingsOption extends AutocompleteChoiceSettingsOption {
-    constructor() {
-        super({
-            key: "model",
-            name: "/imagine model",
-            category: "image",
-            emoji: { fallback: "💨" },
-            description: "Which Stable Diffusion model to use",
-            default: "stable_diffusion"
-        });
-    }
-
-    public complete(bot: Bot, interaction: AutocompleteInteraction<CacheType>, value: string): CommandOptionChoice<string>[] {
-		/* Get all available Stable Diffusion models. */
-		const models: StableHordeModel[] = bot.image.getModels(value.toLowerCase())
-			.filter(model => bot.image.shouldShowModel(interaction, model));
-
-		return models.map(model => ({
-			name: Utils.truncate(`${bot.image.displayNameForModel(model)}${bot.image.isModelNSFW(model) ? " 🔞" : ""} » ${bot.image.descriptionForModel(model)}`, 100),
-			value: model.name
-		}));
-    }
-
-    public displayForID(bot: Bot, id: string): string | null {
-        const model: StableHordeModel | null = bot.image.getModels().find(m => m.name === id) ?? null;
-        if (model === null) return null;
-
-        return `**${bot.image.displayNameForModel(model)}**${bot.image.isModelNSFW(model) ? " 🔞" : ""}`;
-    }
-
-    public valid(bot: Bot, id: string): boolean {
-        return bot.image.getModels().find(m => m.name === id) != undefined;
-    }
-}
-
-export class LanguageAutocompleteSettingsOption extends AutocompleteChoiceSettingsOption {
-    constructor() {
-        super({
-            key: "language",
-            name: "Language",
-            category: "general",
-            emoji: { fallback: "🌐" },
-            description: "Primary language to use for the bot",
-            default: "en-US"
-        });
-    }
-
-    public complete(): CommandOptionChoice<string>[] {
-		return Languages.map(locale => {
-            return {
-    			name: `${locale.name} (${locale.id})`,
-			    value: locale.id
-		    };
-        });
-    }
-
-    public displayForID(bot: Bot, id: string): string | null {
-        const locale: UserLanguage | null = Languages.find(l => l.id === id) ?? null;
-        if (locale === null) return null;
-
-        return `${locale.name} ${locale.emoji}`;
-    }
-
-    public valid(bot: Bot, id: string): boolean {
-        return Languages.find(l => l.id === id) != undefined;
+    public add(bot: Bot, builder: ActionRowBuilder, current: string): ActionRowBuilder {
+        return builder
+            .addComponents(
+                new StringSelectMenuBuilder()
+                    .setCustomId(this.customID())
+                    .setPlaceholder(`${this.data.name} ${Emoji.display(this.data.emoji)}`)
+                    .addOptions(...this.data.choices.map(({ name, value, description, emoji, premium }) => ({
+                        emoji: emoji ? typeof emoji === "string" ? emoji : Emoji.display(emoji, true) : undefined,
+                        description: premium ? `${description ?? ""} (premium-only ✨)` : description,
+                        default: value === current,
+                        label: name, value
+                    }) as SelectMenuComponentOptionData))
+            );
     }
 }
 
@@ -318,11 +269,24 @@ export const SettingOptions: SettingsOption[] = [
         category: "image",
         emoji: { fallback: "🖼️" },
         description: "How many steps to generate with",
-        max: 50, min: 5, suffix: "step",
+        max: 50, min: 20, suffix: "step",
         default: 30
     }),
 
-    new ImagineModelAutocompleteSettingsOption(),
+    new ChoiceSettingsOption({
+        choices: STABLE_HORDE_AVAILABLE_MODELS.map(model => ({
+			name: model.displayName ?? model.name,
+            emoji: model.nsfw ? { fallback: "🔞" } : undefined,
+			value: model.name
+		})),
+
+        key: "model",
+        name: "/imagine model",
+        category: "image",
+        emoji: { fallback: "💨" },
+        description: "Which Stable Diffusion model to use",
+        default: "stable_diffusion"
+    }),
 
     new ChoiceSettingsOption({
         choices: GENERATION_SIZES.map(({ width, height, premium }) => ({
@@ -337,6 +301,21 @@ export const SettingOptions: SettingsOption[] = [
         emoji: { fallback: "📸" },
         description: "How big the generated images should be",
         default: "512:512:false"
+    }),
+
+    new ChoiceSettingsOption({
+        choices: Languages.map(locale => ({
+            name: locale.name,
+            emoji: { fallback: locale.emoji },
+            value: locale.id
+        })),
+
+        key: "language",
+        name: "Language",
+        category: "general",
+        emoji: { fallback: "🌐" },
+        description: "Primary language to use for the bot",
+        default: "en-US"
     }),
 
     new BooleanSettingsOption({
@@ -357,9 +336,10 @@ export const SettingOptions: SettingsOption[] = [
         default: "chatgpt",
 
         choices: ChatSettingsModels.map(model => ({
-            display: `**${model.options.name}** ${Emoji.display(model.options.emoji, true)} • ${model.options.description}`,
-            name: `${model.options.name} ${model.options.emoji.fallback} • ${model.options.description}`,
+            name: model.options.name,
+            description: model.options.description,
             premium: model.options.premium,
+            emoji: model.options.emoji,
             value: model.id
         }))
     }),
@@ -373,9 +353,10 @@ export const SettingOptions: SettingsOption[] = [
         default: "neutral",
 
         choices: ChatSettingsTones.map(tone => ({
-            display: `**${tone.options.name}** ${Emoji.display(tone.options.emoji, true)} • ${tone.options.description}`,
-            name: `${tone.options.name} ${tone.options.emoji.fallback} • ${tone.options.description}`,
+            name: tone.options.name,
+            description: tone.options.description,
             premium: tone.options.premium,
+            emoji: tone.options.emoji,
             value: tone.id
         }))
     }),
@@ -384,14 +365,15 @@ export const SettingOptions: SettingsOption[] = [
         key: "loading_indicator",
         name: "Loading indicator",
         category: "general",
-        emoji: { display: "<a:loading:1051419341914132554>", fallback: "🔃" },
+        emoji: { display: LoadingIndicatorManager.toString(LoadingIndicators[0]), fallback: "🔃" },
         description: "Which loading indicator to use throughout the bot, and for partial messages",
         default: LoadingIndicators[0].emoji.id,
 
         choices: LoadingIndicators.map(indicator => ({
-            display: `${indicator.name} ${LoadingIndicatorManager.toString(indicator)}`,
-            name: indicator.name,
+            display: indicator.name,
+            emoji: LoadingIndicatorManager.toString(indicator),
             value: indicator.emoji.id,
+            name: indicator.name,
             premium: false
         }))
     }),
@@ -409,10 +391,19 @@ export const SettingOptions: SettingsOption[] = [
             value: model.id,
             premium: false
         }))
-    }),
-
-    new LanguageAutocompleteSettingsOption()
+    })
 ]
+
+interface SettingsPageBuilderOptions {
+    /* Database user instance */
+    db: DatabaseInfo;
+
+    /* The actual current settings */
+    current: UserSettings;
+
+    /* Category of the current page */
+    category: SettingsCategory;
+}
 
 export class UserSettingsManager {
     private readonly db: DatabaseManager;
@@ -491,7 +482,7 @@ export class UserSettingsManager {
         return value;
     }
 
-    public async apply(user: DatabaseUser, changes: Partial<Record<SettingKeyAndCategory, any>>): Promise<void> {
+    public async apply(user: DatabaseUser, changes: Partial<Record<SettingKeyAndCategory, any>>): Promise<DatabaseUser> {
         if (this.db.bot.dev) this.db.bot.logger.debug("Apply settings ->", chalk.bold(user.id), "->", `${chalk.bold(Object.values(changes).length)} changes`);
 
         const final: UserSettings = {
@@ -499,9 +490,224 @@ export class UserSettingsManager {
             ...changes
         };
 
-        /* Apply all the changes. */
-        await this.db.users.updateUser(user, {
+        /* Apply all the changes and return the updated database user instance. */
+        return await this.db.users.updateUser(user, {
             settings: final
         });
+    }
+
+    public buildPageSwitcher(current: SettingsCategory): ActionRowBuilder<ButtonBuilder> {
+        /* Current category index */
+        const currentIndex: number = this.categories().findIndex(c => c.type === current.type);
+
+        /* Page switcher row builder */
+        const row = new ActionRowBuilder<ButtonBuilder>();
+
+        row.addComponents(
+            new ButtonBuilder()
+                .setEmoji("◀️").setStyle(ButtonStyle.Secondary)
+                .setCustomId("settings:page:-1")
+                .setDisabled(currentIndex - 1 < 0),
+
+            new ButtonBuilder()
+                .setLabel(current.name)
+                .setEmoji(Emoji.display(current.emoji, true) as ComponentEmojiResolvable)
+                .setCustomId(`settings:current:${current.type}`)
+                .setStyle(ButtonStyle.Success),
+
+            new ButtonBuilder()
+                .setEmoji("▶️").setStyle(ButtonStyle.Secondary)
+                .setCustomId("settings:page:1")
+                .setDisabled(currentIndex + 1 > this.categories().length - 1)
+        );
+
+        return row;
+    }
+
+    public buildPage({ current, db, category }: SettingsPageBuilderOptions): Response {
+        /* Page switcher row */
+        const switcher = this.buildPageSwitcher(category);
+
+        /* Options for this category */
+        const options: SettingsOption[] = this.options(category);
+
+        /* Final response */
+        const response: Response = new Response()
+            .setEphemeral(true);
+
+        for (const option of options) {
+            /* Current value of this option */
+            const key = this.settingsString(option);
+            const current = this.get(db.user, key);
+
+            /* Create the button row. */
+            const row: ActionRowBuilder = option.add(this.db.bot, new ActionRowBuilder(), current);
+            response.addComponent(ActionRowBuilder, row);
+        }
+
+        return response
+            .addComponent(ActionRowBuilder<ButtonBuilder>, switcher);
+    }
+
+    public async handleInteraction(interaction: ButtonInteraction | StringSelectMenuInteraction): Promise<void> {
+        /* Information about the interaction, e.g. update a setting or switch the page */
+        const data: string[] = interaction.customId.split(":");
+        data.shift();
+
+        /* Type of settings action */
+        const type: "page" | "current" | "change" | "menu" = data.shift()! as any;
+
+        /* Database instances, guild & user */
+        const db: DatabaseInfo = await this.db.users.fetchData(interaction.user, interaction.guild);
+
+        if (type === "menu") {
+            /* Category name & the actual category */
+            const name: string = data.shift()!;
+
+            const category: SettingsCategory | null = this.categories().find(c => c.type === name) ?? null;
+            if (category === null) return;
+
+            return void await interaction.reply(this.buildPage({
+                category, db, current: db.user.settings
+            }).get() as InteractionReplyOptions);
+        }
+
+        if (Date.now() - interaction.message.createdTimestamp > 5 * 60 * 1000) {
+            return void await new ErrorResponse({
+                interaction, message: `This settings menu can't be used anymore; run \`/settings\` again to continue`, emoji: "😔"
+            }).send(interaction);
+        }
+
+        const categoryType: string = (interaction.message.components[interaction.message.components.length - 1] as ActionRow<ButtonComponent>)
+            .components[1].customId!.split(":").pop()!;
+
+        /* Current settings category & index */
+        const category: SettingsCategory | null = this.categories().find(c => c.type === categoryType) ?? null;
+        const categoryIndex: number = this.categories().findIndex(c => c.type === categoryType);
+
+        if (category === null) return;
+
+        /* Change the page */
+        if (type === "page") {
+            /* How to switch the pages, either -1 or (+)1 */
+            const delta: number = parseInt(data.shift()!);
+
+            /* New category to switch to */
+            const newCategory: SettingsCategory | null = this.categories().at(categoryIndex + delta) ?? null;
+            if (newCategory === null) return;
+            
+            await interaction.update(this.buildPage({
+                category: newCategory, current: db.user.settings, db
+            }).get() as InteractionUpdateOptions);
+
+        /* Update a setting */
+        } else if (type === "change") {
+            /* Key of the setting */
+            const rawKey: string = data.shift()!;
+            const key: SettingKeyAndCategory = `${category.type}:${rawKey}`;
+
+            /* The settings option itself */
+            const option: SettingsOption | null = this.options(category)
+                .find(o => o.key === rawKey) ?? null;
+
+            if (option === null) return;
+
+            /* New value of this setting, if applicable */
+            const newValue: string | null = data.shift() ?? null;
+            const previous: string | number | boolean = this.get(db.user, key);
+
+            /* Final changes to the settings */
+            let changes: Partial<Record<SettingKeyAndCategory, string | number | boolean>> = {};
+
+            if (option instanceof BooleanSettingsOption) {
+                changes[key] = newValue === "true";
+
+            } else if (option instanceof ChoiceSettingsOption && interaction instanceof StringSelectMenuInteraction) {
+                const newValueName: string = interaction.values[0];
+                changes[key] = newValueName;
+
+            } else if (option instanceof IntegerSettingsOption || option instanceof StringSettingsOption) {
+                const modal: ModalBuilder = new ModalBuilder()
+                    .setCustomId("settings-modal")
+                    .setTitle(`Change the setting 📝`)
+                    .addComponents(
+                        new ActionRowBuilder<TextInputBuilder>()
+                            .addComponents(new TextInputBuilder()
+                                .setCustomId("value")
+                                .setRequired(true)
+                                .setValue(previous.toString())
+                                .setStyle(TextInputStyle.Short)
+                                .setPlaceholder("Enter a new value...")
+                                .setLabel(`${option.data.name} (${option.data.type === SettingsOptionType.String ? `${option.data.min}-${option.data.max} characters` : `${option.data.min}-${option.data.max}`})`)
+                                .setMinLength(option.data.type === SettingsOptionType.String ? option.data.min : 1)
+                                .setMaxLength(option.data.type === SettingsOptionType.String ? option.data.max : 2)
+                            )
+                    );
+
+                /* Show the model to the user, then waiting for their input. */
+                await interaction.showModal(modal);
+
+                /* Wait for the user to submit the modal. */
+                await new Promise<void>(resolve => {
+                    const clean = () => {
+                        this.db.bot.client.off("interactionCreate", listener);
+                        clearTimeout(timer);
+                        resolve();
+                    }
+
+                    const timer = setTimeout(() => {
+                        clean();
+                    }, 30 * 1000);
+
+                    const listener = async (interaction: Interaction) => {
+                        if (!interaction.isModalSubmit() || interaction.user.id !== db.user.id) return;
+
+                        /* Raw, new value */
+                        const raw: string = interaction.fields.getTextInputValue("value");
+
+                        /* Parse the raw value, if needed. */
+                        const change: string | number = option.data.type === SettingsOptionType.Number
+                            ? parseInt(raw) : raw; 
+
+                        if (option.data.type === SettingsOptionType.Number && isNaN(change as number)) {
+                            clean();
+
+                            return void await new ErrorResponse({
+                                interaction, message: `You must specify a valid number between **${option.data.min}** and **${option.data.max}**${option.data.suffix ? ` ${option.data.suffix}s` : ""}`
+                            }).send(interaction);
+                        }
+
+                        if (option.data.type === SettingsOptionType.Number && ((change as number) > option.data.max || (change as number) < option.data.min)) {
+                            clean();
+
+                            return void await new ErrorResponse({
+                                interaction, message: `You must specify a valid number between **${option.data.min}** and **${option.data.max}**${option.data.suffix ? ` ${option.data.suffix}s` : ""}`
+                            }).send(interaction);
+                        }
+
+                        await interaction.deferUpdate().catch(() => {});
+
+                        changes[key] = change;
+                        clean();
+                    };
+
+                    this.db.bot.client.on("interactionCreate", listener);
+                });
+            }
+
+            /* Apply the final changes, also refreshing the settings page. */
+            if (Object.keys(changes).length > 0) {
+                db.user = await this.apply(db.user, changes);
+
+                await interaction.update(this.buildPage({
+                    category, db, current: db.user.settings
+                }).get() as InteractionUpdateOptions);
+            } else {
+                if (!interaction.replied) await interaction.deferUpdate().catch(() => {});
+            }
+
+        } else if (type === "current") {
+            await interaction.deferUpdate();
+        }
     }
 }

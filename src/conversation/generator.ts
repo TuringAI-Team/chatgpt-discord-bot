@@ -74,7 +74,6 @@ export class Generator {
 
 		/* User's configured chat model */
 		const model = conversation.model(db);
-		const tone = conversation.tone(db);
 
 		/* Formatted generated response */
 		let content: string = format(data.displayText ?? data.text).trim();
@@ -153,15 +152,9 @@ export class Generator {
 
 			buttons.push(
 				new ButtonBuilder()
-					.setCustomId(`model:${conversation.id}`)
+					.setCustomId("settings:menu:chat")
 					.setLabel(model.options.name)
 					.setEmoji(Emoji.display(model.options.emoji, true) as ComponentEmojiResolvable)
-					.setStyle(ButtonStyle.Secondary),
-
-				new ButtonBuilder()
-					.setCustomId(`tone:${conversation.id}`)
-					.setLabel(tone.options.name)
-					.setEmoji(Emoji.display(tone.options.emoji, true) as ComponentEmojiResolvable)
 					.setStyle(ButtonStyle.Secondary)
 			);
 

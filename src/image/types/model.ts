@@ -39,7 +39,7 @@ export interface StableHordeConfigModel {
 }
 
 export const STABLE_HORDE_AVAILABLE_MODELS: StableHordeConfigModel[] = [
-    { name: "stable_diffusion", description: "Generalist image generation model, useful for all things", summary: "Generic model, useful for everything" },
+    { name: "stable_diffusion", displayName: "Stable Diffusion", description: "Generalist image generation model, useful for all things", summary: "Generic model, useful for everything" },
     { name: "Epic Diffusion", description: "General-purpose model focused on high-quality outputs with support for various styles", summary: "High quality outputs, various styles" },
     { name: "Dreamlike Photoreal", description: "Photo-realistic image generation model", summary: "Photo-realistic images" },
     { name: "Dreamlike Diffusion", description: "Stable Diffusion 1.5 fine-tuned on high quality art", summary: "Stable Diffusion 1.5 fine-tuned on high quality art, made by dreamlike.art", tags: [ "dreamlikeart" ] },
