@@ -3,14 +3,14 @@ import { setTimeout } from "timers/promises";
 import { randomUUID } from "crypto";
 import chalk from "chalk";
 
-import { GPT_MAX_CONTEXT_LENGTH, GPT_MAX_GENERATION_LENGTH, countChatMessageTokens, getChatMessageLength, isPromptLengthAcceptable } from "../conversation/utils/length.js";
+import { GPT_MAX_CONTEXT_LENGTH, GPT_MAX_GENERATION_LENGTH, countChatMessageTokens, getChatMessageLength, getPromptLength, isPromptLengthAcceptable } from "../conversation/utils/length.js";
 import { ChatAnalyzedImage, ChatImageAttachment, ChatImageAttachmentExtractors, ChatBaseImage, ChatInputImage } from "./types/image.js";
 import { ChatDocument, ChatDocumentExtractors, ChatExtractedDocument } from "./types/document.js";
 import { ChatInput, ChatInteraction, Conversation } from "../conversation/conversation.js";
 import { MessageType, PartialResponseMessage, ResponseMessage } from "./types/message.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
 import { ChatGenerationOptions, ModelGenerationOptions } from "./types/options.js";
-import { ChatSettingsModel, ChatSettingsModelPromptBuilder } from "../conversation/settings/model.js";
+import { ChatSettingsModel, ChatSettingsModelPromptBuilder, ChatSettingsModelPromptType } from "../conversation/settings/model.js";
 import { ChatModel, ModelCapability, ModelType } from "./types/model.js";
 import { OpenAIChatMessage } from "../openai/types/chat.js";
 import { handleError } from "../util/moderation/error.js";
@@ -30,7 +30,7 @@ type PromptParts = {
     Initial: OpenAIChatMessage;
     Personality?: OpenAIChatMessage;
     Other?: OpenAIChatMessage;
-    Context: OpenAIChatMessage;
+    Context?: OpenAIChatMessage;
 }
 
 export interface PromptData {
@@ -186,6 +186,22 @@ export class ChatClient {
 
         /* Initial, formatted prompt */
         const initial: string = await options.conversation.manager.session.client.initialPrompt(options, data);
+
+        /* If the prompt is supposed to be passed verbatim to the model, ... */
+        if (options.settings.options.prompt.type === ChatSettingsModelPromptType.Raw) {
+            return {
+                length: getPromptLength(initial),
+                max: maxGenerationTokens,
+                prompt: initial,
+
+                parts: {
+                    Initial: {
+                        content: initial,
+                        role: "system"
+                    }
+                }
+            };
+        }
 
         const tags: Record<"Assistant" | "User", () => string> = {
             Assistant: () => "Assistant:",

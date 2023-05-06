@@ -17,11 +17,13 @@ export class TuringModel extends ChatModel {
     public async complete(options: ModelGenerationOptions): Promise<PartialResponseMessage> {
         /* Build the formatted prompt. */
         const prompt: PromptData = await this.client.buildPrompt(options);
+        console.log(prompt.prompt)
 
         /* Generate a response for the user's prompt using the Turing API. */
         const result: TuringChatResult = await this.client.session.manager.bot.turing.chat({
             model: options.settings.options.settings.model!,
-            prompt: prompt.prompt
+            prompt: prompt.prompt,
+            raw: true
         });
 
         return {

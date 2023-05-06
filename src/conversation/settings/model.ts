@@ -11,6 +11,14 @@ import { Conversation } from "../conversation.js";
 
 export type ChatSettingsModelPromptBuilder = (context: ChatSettingsModelPromptContext) => Awaitable<string>
 
+export enum ChatSettingsModelPromptType {
+    /** Passing the generated prompt to the model verbatim */
+    Raw,
+
+    /** Build the prompt with history, context & other stuff */
+    Full
+}
+
 export interface ChatSettingsModelPromptContext {
     client: ChatClient;
     conversation: Conversation;
@@ -56,7 +64,10 @@ export declare interface ChatSettingsModelOptions {
     description: string;
 
     /* Pre-prompt builder for the model */
-    prompt: ChatSettingsModelPromptBuilder;
+    prompt: {
+        builder: ChatSettingsModelPromptBuilder;
+        type?: ChatSettingsModelPromptType
+    };
 
     /* Model generation settings */
     settings?: Partial<Pick<OpenAIChatBody, "temperature" | "frequency_penalty" | "presence_penalty" | "model" | "top_p">>;
@@ -92,7 +103,7 @@ export class ChatSettingsModel {
      * @returns Formatted model pre-prompt
      */
     public async format(context: Pick<ChatSettingsModelPromptContext, "conversation" | "options" | "client" | "data">): Promise<string> {
-        return this.options.prompt({
+        return this.options.prompt.builder({
             ...context,
 
             context: context.client.promptContext(),
@@ -122,7 +133,7 @@ export class ReplicateChatSettingsModel extends ChatSettingsModel {
 
     constructor(options: ReplicateChatModelOptions) {
         super({
-            ...options, prompt: () => "",
+            ...options, prompt: { builder: () => "" },
             type: ModelType.Replicate
         });
 
@@ -155,13 +166,15 @@ export const ChatSettingsModels: ChatSettingsModel[] = [
         settings: { temperature: 0.4 },
         type: ModelType.OpenAIChat,
 
-        prompt: ({ context }) => `
+        prompt: {
+            builder: ({ context }) => `
 I am ChatGPT, a large language model trained by OpenAI, released in November 2022.
 I must provide engaging & entertaining responses.
 
 Current date & time: ${context.time}, ${context.date}
 Knowledge cut-off: September 2021
 `
+        }
     }),
 
     new ChatSettingsModel({
@@ -174,13 +187,15 @@ Knowledge cut-off: September 2021
         cooldown: { time: 30 * 1000 },
         premium: true,
         
-        prompt: ({ context }) => `
+        prompt: {
+            builder: ({ context }) => `
 I am GPT-4, a new GPT model by OpenAI released on the 14th March 2023. I am an improved version of GPT-3, and more human-like.
 I must provide engaging & entertaining responses.
 
 Current date & time: ${context.time}, ${context.date}
 Knowledge cut-off: September 2021
 `
+        }
     }),
 
     new ChatSettingsModel({
@@ -193,13 +208,15 @@ Knowledge cut-off: September 2021
         cooldown: { time: 15 * 1000 },
         premium: true,
 
-        prompt: ({ context }) => `
+        prompt: {
+            builder: ({ context }) => `
 I am GPT-3, an autoregressive language model, initially released in 2022 and updated in November 2022, by OpenAI that uses deep learning to produce human-like text.
 I must answer as concisely as possible. I must provide engaging & entertaining responses.
 
 Current date & time: ${context.time}, ${context.date}
 Knowledge cut-off: September 2021
 `
+        }
     }),
 
     new ChatSettingsModel({
@@ -210,10 +227,12 @@ Knowledge cut-off: September 2021
         history: { context: 600, generation: 550 },
         type: ModelType.Nat,
 
-        prompt: ({ context }) => `
+        prompt: {
+            builder: ({ context }) => `
 I am Claude, created by Anthropic, PBC. I am helpful, harmless, and honest using a technique called Constitutional AI.
 Current date & time: ${context.time}, ${context.date}
 `
+        }
     }),
 
     new ChatSettingsModel({
@@ -224,10 +243,12 @@ Current date & time: ${context.time}, ${context.date}
         type: ModelType.Nat,
         history: { context: 800, generation: 750 },
 
-        prompt: ({ context }) => `
+        prompt: {
+            builder: ({ context }) => `
 I am Alpaca, a fine-tuned model specialized in following instructions, based on LLaMA, which was created by Meta. I was created by Stanford researchers.
 Current date & time: ${context.time}, ${context.date}
 `
+        }
     }),
 
     new ReplicateChatSettingsModel({
@@ -238,10 +259,12 @@ Current date & time: ${context.time}, ${context.date}
         history: { generation: 300 },
         cooldown: { multiplier: 1.4 },
 
-        prompt: ({ context }) => `
+        prompt: {
+            builder: ({ context }) => `
 I am Dolly, an open source instruction-tuned large language model, developed by Databricks.
 Current date & time: ${context.time}, ${context.date}
-`,
+`
+        },
 
         builder: ({ model, options }) => ({
             top_k: 50,
@@ -262,10 +285,12 @@ Current date & time: ${context.time}, ${context.date}
         cooldown: { multiplier: 1.4 },
         history: { generation: 300 },
 
-        prompt: ({ context }) => `
+        prompt: {
+            builder: ({ context }) => `
 I am StableLM, a 7 billion parameter version of Stability newly released AI's language model.
 Current date & time: ${context.time}, ${context.date}
-`,
+`
+        },
 
         builder: ({ model, options }) => ({
             prompt: options.prompt,
@@ -284,13 +309,15 @@ Current date & time: ${context.time}, ${context.date}
         settings: { model: "vicuna" },
         type: ModelType.Turing,
 
-        prompt: ({ context }) => `
+        prompt: {
+            builder: ({ context }) => `
 I am Vicuna, a fine-tuned language model based on LLaMA 13B, and was trained on ChatGPT responses.
 I must provide engaging & entertaining responses.
 
 Current date & time: ${context.time}, ${context.date}
 Knowledge cut-off: September 2021, like ChatGPT
 `
+        }
     }),
 
     new ChatSettingsModel({
@@ -300,10 +327,12 @@ Knowledge cut-off: September 2021, like ChatGPT
         settings: { model: "fastchat" },
         type: ModelType.Turing,
 
-        prompt: ({ context }) => `
+        prompt: {
+            builder: ({ context }) => `
 I am FastChat, a fine-tuned language model based on FLAN-T5 XL created by Google, trained on conversations between ChatGPT and users collected from ShareGPT.
 Current date & time: ${context.time}, ${context.date}
 `
+        }
     }),
 
     new ChatSettingsModel({
@@ -313,10 +342,29 @@ Current date & time: ${context.time}, ${context.date}
         settings: { model: "koala" },
         type: ModelType.Turing,
 
-        prompt: ({ context }) => `
+        prompt: {
+            builder: ({ context }) => `
 I am Koala, a fine-tuned language model based on LLaMA 13B, trained on data collected from the internet.
 Current date & time: ${context.time}, ${context.date}
 `
+        }
+    }),
+
+    new ChatSettingsModel({
+        name: "RedPajama",
+        description: "A chatbot trained by fine-tuning Meta's LLaMA on data collected from the internet",
+        emoji: { display: "<:redpajama:1104364561773105243>", fallback: "🏮" },
+        settings: { model: "redpajama" },
+        type: ModelType.Turing,
+
+        prompt: {
+            type: ChatSettingsModelPromptType.Raw,
+
+            builder: ({ options }) => `
+<human>: ${options.prompt}
+<bot>: 
+`
+        }
     }),
 
     new ChatSettingsModel({
@@ -327,21 +375,22 @@ Current date & time: ${context.time}, ${context.date}
         type: ModelType.Clyde,
         premium: true,
 
-        prompt: ({ options, context, data }) => {
-            /* All custom emojis on the guild */
-            const emojis: GuildEmoji[] = Array.from(options.guild!.guild.emojis.cache.values())
-                .slice(undefined, 25);
-
-            /* All text channels on the guild */
-            const channels: GuildChannel[] = Array.from(options.guild!.guild.channels.cache.values())
-                .filter(c => c.type === ChannelType.GuildText || c.type === ChannelType.GuildVoice)
-                .slice(undefined, 15) as GuildChannel[];
-
-            const userList: string = data.users.map((user: ClydeUser) =>
-                `<u:${user.name}>${user.suffix ? ` (${user.suffix})` : ""}\n${Object.entries(user).filter(([ key, value ]) => value !== null && key !== "name" && key !== "suffix").map(([ name, value ]) => ` - ${name}: ${value}`).join("\n")}`
-            ).join("\n\n");
-
-            return `
+        prompt: {
+            builder: ({ options, context, data }) => {
+                /* All custom emojis on the guild */
+                const emojis: GuildEmoji[] = Array.from(options.guild!.guild.emojis.cache.values())
+                    .slice(undefined, 25);
+    
+                /* All text channels on the guild */
+                const channels: GuildChannel[] = Array.from(options.guild!.guild.channels.cache.values())
+                    .filter(c => c.type === ChannelType.GuildText || c.type === ChannelType.GuildVoice)
+                    .slice(undefined, 15) as GuildChannel[];
+    
+                const userList: string = data.users.map((user: ClydeUser) =>
+                    `<u:${user.name}>${user.suffix ? ` (${user.suffix})` : ""}\n${Object.entries(user).filter(([ key, value ]) => value !== null && key !== "name" && key !== "suffix").map(([ name, value ]) => ` - ${name}: ${value}`).join("\n")}`
+                ).join("\n\n");
+    
+                return `
 I am an AI named Clyde - and I am currently chatting in a Discord server.
 I am Discord's AI chat bot, released on the 3rd March, 2023.
 
@@ -369,11 +418,11 @@ ${channels.map(c => {
 }).join("\n")}
 
 Information about my environment:
- - The server I am in is called: ${options.guild!.guild.name}
- - The server is owned by: <u:${options.guild!.owner.user.username}>
- - The server has ${options.guild!.guild.memberCount} members${options.guild!.guild.approximatePresenceCount ? `, ${options.guild!.guild.approximatePresenceCount} members of them are online` : ""}.
+    - The server I am in is called: ${options.guild!.guild.name}
+    - The server is owned by: <u:${options.guild!.owner.user.username}>
+    - The server has ${options.guild!.guild.memberCount} members${options.guild!.guild.approximatePresenceCount ? `, ${options.guild!.guild.approximatePresenceCount} members of them are online` : ""}.
 ${options.guild!.guild.description ? `- The server has the description: "${options.guild!.guild.description}"` : ""}
- - The channel I am in is called: <c:${options.guild!.channel.name}>
+    - The channel I am in is called: <c:${options.guild!.channel.name}>
 
 I can use this information about the chat participants in the conversation in your replies. Use this information to answer questions, or add flavor to your responses.
 
@@ -384,6 +433,7 @@ I am not a personal assistant and cannot complete tasks for people. I cannot acc
 Current date & time: ${context.date}, ${context.time}
 Knowledge cut-off: 2021
 `
+        }
         }
     })
 ]

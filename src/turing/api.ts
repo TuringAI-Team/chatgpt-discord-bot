@@ -19,9 +19,14 @@ interface TuringChatOptions {
 
     /* Prompt to pass to the model */
     prompt: string;
+
+    /* Whether to pass the raw prompt to the model, instead of the API building the prompt */
+    raw?: boolean;
 }
 
-type TuringAPIChatBody = Pick<TuringChatOptions, "prompt">
+type TuringAPIChatBody = Pick<TuringChatOptions, "prompt"> & {
+    chat?: boolean;
+}
 
 export interface TuringChatResult {
     response: string;
@@ -133,7 +138,8 @@ export class TuringAPI {
     public async chat(options: TuringChatOptions): Promise<TuringChatResult> {
         /* API request body */
         const body: TuringAPIChatBody = {
-            prompt: options.prompt
+            prompt: options.prompt,
+            chat: options.raw
         };
 
         /* Response data from the API */

@@ -672,27 +672,29 @@ export class PagesBuilder extends EmbedBuilder {
 
                         embed.setColor(this.endColor);
 
-                        this.editReply({
+                        await this.editReply({
                             embeds,
                             components: []
-                        });
+                        }).catch(() => null);
+
                         break;
                     }
                     case EndMethod.REMOVE_COMPONENTS:
-                        this.editReply({
+                        await this.editReply({
                             components: []
-                        })
-                            .catch(() => null);
+                        }).catch(() => null);
+
                         break;
                     case EndMethod.REMOVE_EMBEDS:
-                        this.editReply({
+                        await this.editReply({
                             embeds: []
-                        })
-                            .catch(() => null);
+                        }).catch(() => null)
+                            
                         break;
                     case EndMethod.DELETE:
                         await this.message.client.rest.delete(Routes.channelMessage(this.message.channelId, this.message.id))
                             .catch(() => null);
+
                         break;
                 }
             });

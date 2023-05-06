@@ -94,6 +94,6 @@ export class SwitcherBuilder {
             this.build(
                 conversation, await bot.db.users.fetchData(interaction.user, interaction.guild), type
             ).get() as InteractionUpdateOptions
-        );
+        ).catch(() => {});
     }
 }
