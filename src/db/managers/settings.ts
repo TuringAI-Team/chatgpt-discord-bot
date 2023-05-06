@@ -699,11 +699,11 @@ export class UserSettingsManager {
             if (Object.keys(changes).length > 0) {
                 db.user = await this.apply(db.user, changes);
 
-                await interaction.update(this.buildPage({
+                if (!interaction.replied) await interaction.update(this.buildPage({
                     category, db, current: db.user.settings
                 }).get() as InteractionUpdateOptions);
             } else {
-                if (!interaction.replied) await interaction.deferUpdate().catch(() => {});
+                if (!interaction.replied) await interaction.deferUpdate();
             }
 
         } else if (type === "current") {

@@ -66,7 +66,28 @@ export const LoadingIndicators: LoadingIndicator[] = [
         emoji: {
             name: "discord_typing", id: "1103039408728445071", animated: true
         }
-    }
+    },
+
+    {
+        name: "Loading Bars",
+        emoji: {
+            name: "loading2", id: "1104458865224990780", animated: true
+        }
+    },
+
+    {
+        name: "Spinning Cat #1",
+        emoji: {
+            name: "spinning_maxwell", id: "1104458871642259506", animated: true
+        }
+    },
+
+    {
+        name: "Spinning Cat #2",
+        emoji: {
+            name: "spinning_cat", id: "1104458868546867424", animated: true
+        }
+    },
 ]
 
 export class LoadingIndicatorManager {
