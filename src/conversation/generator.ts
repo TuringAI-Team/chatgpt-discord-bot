@@ -727,7 +727,7 @@ export class Generator {
 
 		/* Start the generation process. */
 		try {
-			if (mentions !== "dm") reactToMessage(this.bot, message, loadingEmoji);
+			if (mentions !== "dm") await reactToMessage(this.bot, message, loadingEmoji);
 			await message.channel.sendTyping();
 
 			/* Send the request to the selected chat model. */
@@ -744,8 +744,16 @@ export class Generator {
 
 		} catch (err) {
 			/* Figure out the generation error, that actually occurred */
-			const error: GPTGenerationError | GPTAPIError | Error = err as Error;
-			if (err instanceof DiscordAPIError) return;
+			const error: GPTGenerationError | GPTAPIError | DiscordAPIError | Error = err as Error;
+
+			if (error instanceof DiscordAPIError) {
+				await handleError(this.bot, {
+					message, error, reply: false,
+					title: "Discord API error"
+				}); 
+				
+				return;
+			}
 
 			if (error instanceof GPTGenerationError && error.options.data.type === GPTGenerationErrorType.NoFreeSessions) return await sendError(new Response()
 				.addEmbed(builder => builder

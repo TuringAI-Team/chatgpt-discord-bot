@@ -440,8 +440,8 @@ export class UserSettingsManager {
         return settings as UserSettings;
     }
 
-    public load(raw: DatabaseUser | RawDatabaseUser): UserSettings {
-        const get = (option: SettingsOption) => raw.settings ? raw.settings[this.settingsString(option)] : undefined ?? this.template()[this.settingsString(option)];
+    public load(raw: DatabaseUser): UserSettings {
+        const get = (option: SettingsOption) => raw.settings ? this.get(raw, this.settingsString(option)) : undefined ?? this.template()[this.settingsString(option)];
         const settings: Partial<UserSettings> = {};
 
         for (const option of SettingOptions) {
@@ -479,9 +479,16 @@ export class UserSettingsManager {
         ) ?? null;
     }
 
-    public get<T extends string | number | boolean>(user: DatabaseUser, option: SettingsOption | SettingKeyAndCategory): T {
-        const key = this.settingsString(option);
-        return user.settings[key] as T ?? this.template()[key];
+    public get<T extends string | number | boolean>(user: DatabaseUser, key: SettingKeyAndCategory): T {
+        let value: T = user.settings[key] as T ?? this.template()[key];
+        const option = this.settingsOption(key)!;
+
+        if (option instanceof ChoiceSettingsOption) {
+            /* If the current setting value is an invalid choice, reset it to the default again, */
+            if (!option.data.choices.find(c => c.value === value)) value = this.template()[key] as T;
+        }
+
+        return value;
     }
 
     public async apply(user: DatabaseUser, changes: Partial<Record<SettingKeyAndCategory, any>>): Promise<void> {

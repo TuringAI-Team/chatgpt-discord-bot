@@ -45,7 +45,7 @@ export const runDescribeAction = async (conversation: Conversation, db: Database
         color: "Red"
     }).send(interaction);
 
-    new LoadingResponse({
+    await new LoadingResponse({
         phrases: [
             "Looking at the image",
             "Inspecting your image",

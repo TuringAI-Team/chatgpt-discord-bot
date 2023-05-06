@@ -150,7 +150,7 @@ export default class SummarizeCommand extends Command {
 		const tokens: number = countChatMessageTokens(messages);
 
 		/* If the prompt uses too many tokens, re-run the prompt builder with a lower amount of subtitles. */
-		if (tokens > 4000) {
+		if (tokens > 2000) {
 			const arr: YouTubeSubtitle[] = subtitles;
 			arr.pop();
 

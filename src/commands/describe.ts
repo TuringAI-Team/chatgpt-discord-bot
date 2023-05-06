@@ -4,7 +4,6 @@ import { Command, CommandInteraction, CommandResponse } from "../command/command
 import { Conversation } from "../conversation/conversation.js";
 import { runDescribeAction } from "../util/describe.js";
 import { DatabaseInfo } from "../db/managers/user.js";
-import { Response } from "../command/response.js";
 import { Bot } from "../bot/bot.js";
 
 export default class ResetCommand extends Command {

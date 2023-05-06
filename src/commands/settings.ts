@@ -44,7 +44,7 @@ export default class SettingsCommand extends Command {
 			/* Whether this option was modified */
 			const wasModified: boolean = changes[key] != undefined;
 
-			const original = this.bot.db.settings.get(db, option);
+			const original = this.bot.db.settings.get(db, key);
 			const modified = changes[key];
 
 			embed.addFields({
