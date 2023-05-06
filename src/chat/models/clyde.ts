@@ -303,7 +303,7 @@ export class ClydeModel extends ChatGPTModel {
             },
 
             text: data.response.message.content,
-            displayText: final.text,
+            display: final.text,
             images: final.images.length > 0 ? final.images : undefined
         };
     }

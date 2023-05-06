@@ -1,11 +1,17 @@
+import { fetchEventSource } from "@waylaidwanderer/fetch-event-source";
 import { inspect } from "util";
 
+import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
+import { ChoiceSettingOptionChoice } from "../db/managers/settings.js";
+import { Conversation } from "../conversation/conversation.js";
+import { DatabaseUser } from "../db/managers/user.js";
 import { ImageBuffer } from "../chat/types/image.js";
 import { GPTAPIError } from "../error/gpt/api.js";
 import { Utils } from "../util/utils.js";
+import { Awaitable } from "discord.js";
 import { Bot } from "../bot/bot.js";
 
-type TuringAPIPath = `cache/${string}` | "imgs/filter" | "imgs/dalle" | `text/${string}` | `video/${TuringVideoModelName}`
+type TuringAPIPath = `cache/${string}` | "imgs/filter" | "imgs/dalle" | `text/${string}` | `video/${TuringVideoModelName}` | `text/alan/${TuringAlanChatModel}`
 
 interface TuringAPIFilterResult {
     isNsfw: boolean;
@@ -31,7 +37,6 @@ type TuringAPIChatBody = Pick<TuringChatOptions, "prompt"> & {
 export interface TuringChatResult {
     response: string;
 }
-
 
 export type TuringVideoModelName = "damo" | "videocrafter"
 
@@ -77,8 +82,124 @@ export interface TuringImageOptions {
 }
 
 export interface TuringImageResult {
-    duration: number;
     images: ImageBuffer[];
+    duration: number;
+}
+
+export interface TuringAlanOptions {
+    /* Conversation instance, that Alan will use to remember the conversation */
+    conversation: Conversation;
+    user: DatabaseUser;
+
+    /* Progress callback to call when a new token is generated */
+    progress: (result: TuringAlanResult) => Awaitable<void>;
+
+    /* Prompt to pass to Alan */
+    prompt: string;
+}
+
+export type TuringAlanAction = "image" | "video" | "audio" | "mod-img" | "share-link"
+
+export interface TuringAlanResult {
+    /* Whether this is a partial generation result or the final one */
+    done: boolean;
+
+    /* Which action Alan is currently taking */
+    generating: TuringAlanAction | null;
+
+    /* Which action Alan took */
+    generated: TuringAlanAction | null;
+
+    /* Results for the action */
+    results: string[] | null;
+
+    /* Prompt used to generate the results */
+    generationPrompt: string | null;
+
+    /* The response by Alan */
+    result: string;
+}
+
+type TuringAlanParameter = string | "none"
+
+type TuringAlanPluginName = "browsing" | "calculator"
+type TuringAlanChatModel = "chatgpt"
+
+export interface TuringAlanImageGenerator {
+    name: string;
+    type: "dall-e-2" | "kandinsky" | "stable-diffusion" | TuringAlanParameter;
+}
+
+export const TuringAlanImageGenerators: TuringAlanImageGenerator[] = [
+    {
+        name: "DALL·E",
+        type: "dall-e-2"
+    },
+
+    {
+        name: "Kandinsky",
+        type: "kandinsky"
+    },
+
+    {
+        name: "Stable Diffusion",
+        type: "stable-diffusion"
+    }
+]
+
+export interface TuringAlanSearchEngine {
+    name: string;
+    type: "google" | "duckduckgo" | TuringAlanParameter;
+}
+
+export const TuringAlanSearchEngines: TuringAlanSearchEngine[] = [
+    {
+        name: "Google",
+        type: "google"
+    },
+
+    {
+        name: "DuckDuckGo",
+        type: "duckduckgo"
+    }
+]
+
+export interface TuringAlanImageModifier {
+    name: string;
+    type: "normal" | "canny" | "hough" | "hed" | "depth" | "pose" | "seg" | TuringAlanParameter;
+}
+
+export const TuringAlanImageModifiers: TuringAlanImageModifier[] = [
+    { name: "Normal", type: "normal" },
+    { name: "Canny edges", type: "canny" },
+    { name: "Hough", type: "hough" },
+    { name: "HED", type: "hed" },
+    { name: "Depth", type: "depth" },
+    { name: "Pose", type: "pose" },
+    { name: "Segmentation", type: "seg" }
+]
+
+interface TuringAlanBody {
+    userName: string;
+    conversationId: string;
+    searchEngine: TuringAlanSearchEngine["type"];
+    imageGenerator: TuringAlanImageGenerator["type"];
+    imageModificator: TuringAlanImageModifier["type"];
+    videoGenerator: TuringAlanParameter;
+    pluginList: TuringAlanPluginName[];
+    message: string;
+}
+
+export const alanOptions = <T extends TuringAlanImageModifier | TuringAlanSearchEngine | TuringAlanImageGenerator>(arr: T[]): ChoiceSettingOptionChoice[] => {
+    arr.push({
+        name: "None",
+        type: "none"
+    } as any);
+    
+    return arr.map(entry => ({
+        name: entry.name,
+        value: entry.type
+    }));
 }
 
 export class TuringAPI {
@@ -86,6 +207,101 @@ export class TuringAPI {
 
     constructor(bot: Bot) {
         this.bot = bot;
+    }
+
+    public async alan({ prompt, conversation, user, progress }: TuringAlanOptions): Promise<TuringAlanResult> {
+        /* Latest message of the stream */
+        let latest: TuringAlanResult | null = null;
+
+        /* Whether the generation is finished */
+        let done: boolean = false;
+
+        /* Request body for the API */
+        const body: TuringAlanBody = {
+            conversationId: conversation.userIdentifier,
+            userName: conversation.user.username,
+            message: prompt,
+            imageGenerator: this.bot.db.settings.get(user, "alan:imageGenerator"),
+            imageModificator: this.bot.db.settings.get(user, "alan:imageModifier"),
+            searchEngine: this.bot.db.settings.get(user, "alan:searchEngine"),
+            videoGenerator: "none",
+            pluginList: []
+        };
+
+        /* Make the request to OpenAI's API. */
+        await new Promise<void>(async (resolve, reject) => {
+            const controller: AbortController = new AbortController();
+
+            const abortTimer: NodeJS.Timeout = setTimeout(() => {
+                controller.abort();
+                reject(new TypeError("Request timed out"));
+            }, 90 * 1000);
+
+            try {
+                fetchEventSource(this.url("text/alan/chatgpt"), {
+                    headers: {
+                        ...this.headers() as any,
+                        "Content-Type": "text/stream"
+                    },
+                    body: JSON.stringify(body),
+                    mode: "cors",
+                    signal: controller.signal,
+                    method: "POST",
+
+                    onclose: () => {
+                        if (!done) {
+                            done = true;
+
+                            controller.abort();
+                            resolve();
+                        }
+                    },
+                    
+                    onerror: (error) => {
+                        clearTimeout(abortTimer);
+                        throw error;
+                    },
+        
+                    onopen: async (response) => {
+                        clearTimeout(abortTimer);
+                        console.log("OPENED")
+
+                        /* If the request failed for some reason, throw an exception. */
+                        if (response.status !== 200) {
+                            const error = await this.error(response, "text/alan/chatgpt", true);
+
+                            controller.abort();
+                            reject(error);
+                        }
+                    },
+
+                    onmessage: async (event) => {        
+                        /* Response data */
+                        const data: TuringAlanResult = JSON.parse(event.data);
+                        if (!data || !data.result) return;
+
+                        latest = data;
+                        if (progress !== undefined) progress(latest);
+                    },
+                });
+
+            } catch (error) {
+                if (error instanceof GPTAPIError) return reject(error);
+
+                reject(new GPTGenerationError({
+                    type: GPTGenerationErrorType.Other,
+                    cause: error as Error
+                }));
+            }
+        });
+
+        if (latest === null) throw new GPTGenerationError({
+            type: GPTGenerationErrorType.Empty
+        });
+
+        console.log(latest)
+
+        return latest;
     }
 
     public async generateImages(options: TuringImageOptions): Promise<TuringImageResult> {
@@ -171,15 +387,21 @@ export class TuringAPI {
         return `https://api.turingai.tech/${path}`;
     }
 
-    private async error(response: Response, path: TuringAPIPath): Promise<void> {
+    private async error(response: Response, path: TuringAPIPath, dry: true): Promise<GPTAPIError>;
+    private async error(response: Response, path: TuringAPIPath, dry?: false): Promise<void> 
+
+    private async error(response: Response, path: TuringAPIPath, dry?: boolean): Promise<GPTAPIError | void> {
         const body: any | null = await response.json().catch(() => null);
     
-        throw new GPTAPIError({
-            code: body && body.error && path === "imgs/dalle" ? 400 : response.status,
+        const error: GPTAPIError = new GPTAPIError({
+            code: body && body.error ? 400 : response.status,
             message: body && body.error ? inspect(body.error.toString(), { depth: 1 }) : null,
             endpoint: `/${path}`,
             id: null
         });
+
+        if (dry) return error;
+        else throw error;
     }
 
     private headers(): HeadersInit {

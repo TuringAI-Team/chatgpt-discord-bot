@@ -4,10 +4,12 @@ import chalk from "chalk";
 import { DatabaseConversation, DatabaseInfo, DatabaseResponseMessage, DatabaseUser, RawDatabaseConversation } from "../db/managers/user.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
 import { ChatSettingsModel, ChatSettingsModels } from "./settings/model.js";
+import { ChatSettingsTone, ChatSettingsTones } from "./settings/tone.js";
 import { MessageType, ResponseMessage } from "../chat/types/message.js";
 import { ChatInputImage, ImageBuffer } from "../chat/types/image.js";
 import { check, ModerationResult } from "./moderation/moderation.js";
 import { Cooldown, CooldownModifier } from "./utils/cooldown.js";
+import { RestrictionType } from "../db/types/restriction.js";
 import { GenerationOptions, Session } from "./session.js";
 import { ChatDocument } from "../chat/types/document.js";
 import { ChatClientResult } from "../chat/client.js";
@@ -16,7 +18,6 @@ import { GPTAPIError } from "../error/gpt/api.js";
 import { GeneratorOptions } from "./generator.js";
 import { BotDiscordClient } from "../bot/bot.js";
 import { Utils } from "../util/utils.js";
-import { ChatSettingsTone, ChatSettingsTones } from "./settings/tone.js";
 
 export interface ChatInput {
 	/* The input message itself; always given */
@@ -431,7 +432,7 @@ export class Conversation {
 
 	public cooldownTime(db: DatabaseInfo, model: ChatSettingsModel): number {
 		/* Cool-down duration & modifier */
-		const baseModifier: number = model.options.cooldown && model.options.cooldown.time && model.options.premium
+		const baseModifier: number = model.options.cooldown && model.options.cooldown.time && model.options.restricted === RestrictionType.PremiumOnly
 			? 1
 			: CONVERSATION_COOLDOWN_MODIFIER[this.manager.bot.db.users.subscriptionType(db)];
 
@@ -440,7 +441,7 @@ export class Conversation {
 			? model.options.cooldown.multiplier
 			: 1;
 
-		const baseDuration: number = model.options.cooldown && model.options.cooldown.time && model.options.premium
+		const baseDuration: number = model.options.cooldown && model.options.cooldown.time && model.options.restricted === RestrictionType.PremiumOnly
 			? model.options.cooldown.time
 			: this.cooldown.options.time;
 

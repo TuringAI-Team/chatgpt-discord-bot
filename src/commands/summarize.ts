@@ -83,8 +83,8 @@ export default class SummarizeCommand extends Command {
 			cooldown: {
 				Free: 5 * 60 * 1000,
 				Voter: 4 * 60 * 1000,
-				GuildPremium: 60 * 1000,
-				UserPremium: 30 * 1000
+				GuildPremium: 75 * 1000,
+				UserPremium: 60 * 1000
 			}
 		});
 	}

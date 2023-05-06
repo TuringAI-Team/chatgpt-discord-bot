@@ -64,12 +64,6 @@ export interface ModerationResult {
     /* Auto moderation filter result */
     auto?: AutoModerationActionData;
 
-    /* OpenAI Moderations API result */
-    data?: OpenAIModerationsData;
-
-    /* OpenAI Moderaitons API most-likely flag */
-    highest?: OpenAIModerationScore;
-
     /* Source of the moderation request */
     source: ModerationSource;
 }
@@ -159,7 +153,7 @@ export const check = async ({ conversation, db, content, reply, message, source,
     });
 
     /* Add a flag to the user too, for reference. */
-    if (flagged) await conversation.manager.bot.db.users.flag(db.user, { flagged: data.flagged, blocked: data.blocked, source: source, reference: content, translation: data.translation, auto: data.auto, data: data.data, highest: data.highest });
+    if (flagged) await conversation.manager.bot.db.users.flag(db.user, { flagged: data.flagged, blocked: data.blocked, source: source, reference: content, translation: data.translation, auto: data.auto });
 
     /* If the moderation filter requested it, ban the user. */
     if (auto !== null && auto.type === "ban") {

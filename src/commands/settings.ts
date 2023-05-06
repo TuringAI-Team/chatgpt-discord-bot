@@ -14,7 +14,7 @@ export default class SettingsCommand extends Command {
 
     public async run(_: CommandInteraction, db: DatabaseInfo): CommandResponse {
 		return this.bot.db.settings.buildPage({
-			db, current: db.user.settings, category: this.bot.db.settings.categories()[0]
+			db, category: this.bot.db.settings.categories()[0]
 		});
     }
 }

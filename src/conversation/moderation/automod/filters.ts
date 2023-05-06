@@ -127,7 +127,7 @@ export const AutoModerationFilters: AutoModerationFilter[] = [
         action: { type: "block" },
 
         blocked: [
-            { words: [ "incest"   ], action: { reason: "Incest-related content", type: "warn"  } },
+            { words: [ "incest"   ], action: { reason: "Incest-related content", type: "block"  } },
             { words: [ "futanari" ], action: { reason: "Weird content", type: "block" }          }
         ]
     }),

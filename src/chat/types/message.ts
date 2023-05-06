@@ -24,7 +24,7 @@ export interface MessageData {
 
 export interface BaseMessage {
 	/* Text to prioritize to display for the user */
-	displayText?: string;
+	display?: string;
 
 	/* Raw output message; or the message to display if `displayText` is not set */
 	text: string;
@@ -49,4 +49,4 @@ export type ChatNoticeMessage = ResponseMessage & {
 	notice: string;
 }
 
-export type PartialResponseMessage = Partial<Pick<ResponseMessage, "raw" | "type" | "images">> & Pick<ResponseMessage, "text" | "displayText">
+export type PartialResponseMessage = Partial<Pick<ResponseMessage, "raw" | "type" | "images">> & Pick<ResponseMessage, "text" | "display">

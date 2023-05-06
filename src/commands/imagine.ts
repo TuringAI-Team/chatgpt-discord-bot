@@ -595,7 +595,7 @@ export default class ImagineCommand extends Command {
 				
 			else if (reason === "timeOut") return await new Response()
 				.addEmbed(builder => builder
-					.setDescription("This image generation request has been running for **several minutes**, and had to be cancelled automatically.\n*Try again later, when demand is lower*.")
+					.setDescription("This image generation request has been running for **several minutes** and had to be cancelled automatically. *Try again later, when demand is lower*.")
 					.setColor("Red")
 				)
 			.send(interaction).catch(() => {});

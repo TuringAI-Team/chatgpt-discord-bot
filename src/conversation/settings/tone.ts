@@ -2,9 +2,10 @@ import { Awaitable } from "discord.js";
 
 import { ModelGenerationOptions } from "../../chat/types/options.js";
 import { ChatClient, PromptContext } from "../../chat/client.js";
+import { RestrictionType } from "../../db/types/restriction.js";
+import { OpenAIChatMessage } from "../../openai/types/chat.js";
 import { DisplayEmoji } from "../../util/emoji.js";
 import { Conversation } from "../conversation.js";
-import { OpenAIChatMessage } from "../../openai/types/chat.js";
 
 export type ChatSettingsTonePromptBuilder = ((context: ChatSettingsTonePromptContext) => Awaitable<string>) | string
 
@@ -39,7 +40,7 @@ export declare interface ChatSettingsToneOptions {
     type?: ChatSettingsToneType;
 
     /* Whether this prompt is restricted to Premium users */
-    premium?: boolean;
+    restricted?: RestrictionType | null;
 
     /* Pre-prompt builder for the tone */
     prompt: ChatSettingsTonePromptBuilder | null;
@@ -51,7 +52,7 @@ export class ChatSettingsTone {
 
     constructor(options: ChatSettingsToneOptions) {
         this.options = {
-            premium: false, type: ChatSettingsToneType.Self,
+            restricted: null, type: ChatSettingsToneType.Self,
             ...options
         };
     }

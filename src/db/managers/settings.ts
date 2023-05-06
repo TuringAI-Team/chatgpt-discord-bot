@@ -1,15 +1,16 @@
-import { APIApplicationCommandOptionChoice, ActionRow, ActionRowBuilder, AnyComponentBuilder, ButtonBuilder, ButtonComponent, ButtonInteraction, ButtonStyle, ComponentEmojiResolvable, Interaction, InteractionReplyOptions, InteractionUpdateOptions, ModalBuilder, SelectMenuComponentOptionData, StringSelectMenuBuilder, StringSelectMenuInteraction, TextInputBuilder, TextInputStyle } from "discord.js";
+import { APIApplicationCommandOptionChoice, ActionRow, ActionRowBuilder, ButtonBuilder, ButtonComponent, ButtonInteraction, ButtonStyle, ComponentEmojiResolvable, Interaction, InteractionReplyOptions, InteractionUpdateOptions, ModalBuilder, SelectMenuComponentOptionData, StringSelectMenuBuilder, StringSelectMenuInteraction, TextInputBuilder, TextInputStyle } from "discord.js";
 import chalk from "chalk";
 
+import { TuringAlanImageGenerators, TuringAlanImageModifiers, TuringAlanSearchEngines, TuringVideoModels, alanOptions } from "../../turing/api.js";
 import { LoadingIndicatorManager, LoadingIndicators } from "../types/indicator.js";
 import { GENERATION_SIZES, getAspectRatio } from "../../commands/imagine.js";
 import { STABLE_HORDE_AVAILABLE_MODELS } from "../../image/types/model.js";
 import { ChatSettingsModels } from "../../conversation/settings/model.js";
 import { ChatSettingsTones } from "../../conversation/settings/tone.js";
-import { DatabaseInfo, DatabaseUser, UserSettings } from "./user.js";
+import { DatabaseInfo, DatabaseUser, UserSettings, UserTestingGroup } from "./user.js";
 import { ErrorResponse } from "../../command/response/error.js";
+import { RestrictionType } from "../types/restriction.js";
 import { DisplayEmoji, Emoji } from "../../util/emoji.js";
-import { TuringVideoModels } from "../../turing/api.js";
 import { Response } from "../../command/response.js";
 import { DatabaseManager } from "../manager.js";
 import { Languages } from "../types/locale.js";
@@ -26,7 +27,7 @@ export interface SettingsCategory {
     emoji: DisplayEmoji;
 }
 
-export type SettingsCategoryName = "general" | "image" | "video" | "chat"
+export type SettingsCategoryName = "general" | "image" | "video" | "chat" | "alan"
 export type SettingKeyAndCategory = `${SettingsCategoryName}:${SettingsName}`
 
 export const SettingCategories: SettingsCategory[] = [
@@ -40,6 +41,12 @@ export const SettingCategories: SettingsCategory[] = [
         name: "Chat",
         type: "chat",
         emoji: { fallback: "🗨️" }
+    },
+
+    {
+        name: "Alan",
+        type: "alan",
+        emoji: { display: "<:turing_neon:1100498729414434878>", fallback: "🧑‍💻" }
     },
 
     {
@@ -96,7 +103,6 @@ interface BaseSettingsOptionData<T = any> {
 }
 
 type SettingOptionsData<T = any> = Omit<BaseSettingsOptionData<T>, "type">
-type SettingsInteractionBuilder = AnyComponentBuilder
 
 export abstract class SettingsOption<T extends string | number | boolean = string | number | boolean, U extends BaseSettingsOptionData<T> = BaseSettingsOptionData<T>> {
     public readonly data: U;
@@ -105,7 +111,7 @@ export abstract class SettingsOption<T extends string | number | boolean = strin
         this.data = data;
     }
 
-    public abstract add<U extends SettingsInteractionBuilder = ButtonBuilder>(
+    public abstract add(
         bot: Bot, builder: ActionRowBuilder, current: T
     ): ActionRowBuilder;
 
@@ -210,15 +216,15 @@ export class StringSettingsOption extends SettingsOption<string, BaseSettingsOpt
     }
 }
 
-type ChoiceSettingOptionChoice = Pick<APIApplicationCommandOptionChoice<string>, "name" | "value"> & {
+export type ChoiceSettingOptionChoice = Pick<APIApplicationCommandOptionChoice<string>, "name" | "value"> & {
     /* Description for this choice */
     description?: string;
 
     /* Emoji for this choice */
     emoji?: DisplayEmoji | string;
 
-    /* Whether this option is restricted to Premium users */
-    premium?: boolean;
+    /* Whether this option is restricted to a specific group of users */
+    restricted?: RestrictionType | null;
 }
 
 interface ChoiceSettingOptionData {
@@ -226,9 +232,9 @@ interface ChoiceSettingOptionData {
 }
 
 export class ChoiceSettingsOption extends SettingsOption<string, BaseSettingsOptionData & ChoiceSettingOptionData> {
-    constructor(data: SettingOptionsData & ChoiceSettingOptionData) {
+    constructor(data: Omit<SettingOptionsData, "default"> & Partial<Pick<SettingOptionsData, "default">> & ChoiceSettingOptionData) {
         super({
-            ...data,
+            ...data, default: data.default ?? data.choices[0].value,
             type: SettingsOptionType.Choices
         });
     }
@@ -239,9 +245,9 @@ export class ChoiceSettingsOption extends SettingsOption<string, BaseSettingsOpt
                 new StringSelectMenuBuilder()
                     .setCustomId(this.customID())
                     .setPlaceholder(`${this.data.name} ${Emoji.display(this.data.emoji)}`)
-                    .addOptions(...this.data.choices.map(({ name, value, description, emoji, premium }) => ({
+                    .addOptions(...this.data.choices.map(({ name, value, description, emoji, restricted }) => ({
                         emoji: emoji ? typeof emoji === "string" ? emoji : Emoji.display(emoji, true) : undefined,
-                        description: premium ? `${description ?? ""} (premium-only ✨)` : description,
+                        description: restricted ? `${description ?? ""} (${restricted === RestrictionType.PremiumOnly ? "premium-only ✨" : "tester-only ⚒️"})` : description,
                         default: value === current,
                         label: name, value
                     }) as SelectMenuComponentOptionData))
@@ -274,33 +280,31 @@ export const SettingOptions: SettingsOption[] = [
     }),
 
     new ChoiceSettingsOption({
-        choices: STABLE_HORDE_AVAILABLE_MODELS.map(model => ({
-			name: model.displayName ?? model.name,
-            emoji: model.nsfw ? { fallback: "🔞" } : undefined,
-			value: model.name
-		})),
-
         key: "model",
         name: "/imagine model",
         category: "image",
         emoji: { fallback: "💨" },
         description: "Which Stable Diffusion model to use",
-        default: "stable_diffusion"
+
+        choices: STABLE_HORDE_AVAILABLE_MODELS.map(model => ({
+			name: model.displayName ?? model.name,
+            emoji: model.nsfw ? { fallback: "🔞" } : undefined,
+			value: model.name
+		})),
     }),
 
     new ChoiceSettingsOption({
-        choices: GENERATION_SIZES.map(({ width, height, premium }) => ({
-            name: `${width}x${height} (${getAspectRatio(width, height)})`,
-            value: `${width}:${height}:${premium}`,
-            premium: premium
-        })),
-
         key: "size",
         name: "/imagine image resolution/size",
         category: "image",
         emoji: { fallback: "📸" },
         description: "How big the generated images should be",
-        default: "512:512:false"
+
+        choices: GENERATION_SIZES.map(({ width, height, premium }) => ({
+            name: `${width}x${height} (${getAspectRatio(width, height)})`,
+            value: `${width}:${height}:${premium}`,
+            premium: premium
+        }))
     }),
 
     new ChoiceSettingsOption({
@@ -333,12 +337,11 @@ export const SettingOptions: SettingsOption[] = [
         category: "chat",
         emoji: { fallback: "🤖" },
         description: "Which language model to use for chatting",
-        default: "chatgpt",
 
         choices: ChatSettingsModels.map(model => ({
             name: model.options.name,
             description: model.options.description,
-            premium: model.options.premium,
+            restricted: model.options.restricted,
             emoji: model.options.emoji,
             value: model.id
         }))
@@ -350,12 +353,11 @@ export const SettingOptions: SettingsOption[] = [
         category: "chat",
         emoji: { fallback: "🗣️" },
         description: "Which tone to use for chatting",
-        default: "neutral",
 
         choices: ChatSettingsTones.map(tone => ({
             name: tone.options.name,
             description: tone.options.description,
-            premium: tone.options.premium,
+            premium: tone.options.restricted,
             emoji: tone.options.emoji,
             value: tone.id
         }))
@@ -367,7 +369,6 @@ export const SettingOptions: SettingsOption[] = [
         category: "general",
         emoji: { display: LoadingIndicatorManager.toString(LoadingIndicators[0]), fallback: "🔃" },
         description: "Which loading indicator to use throughout the bot, and for partial messages",
-        default: LoadingIndicators[0].emoji.id,
 
         choices: LoadingIndicators.map(indicator => ({
             display: indicator.name,
@@ -384,22 +385,45 @@ export const SettingOptions: SettingsOption[] = [
         category: "video",
         emoji: { fallback: "📸" },
         description: "Which video generation model to use",
-        default: TuringVideoModels[0].id,
 
         choices: TuringVideoModels.map(model => ({
             name: model.name,
             value: model.id,
             premium: false
         }))
+    }),
+
+    new ChoiceSettingsOption({
+        key: "searchEngine",
+        name: "Search engine",
+        category: "alan",
+        emoji: { fallback: "🔎" },
+        description: "Which search engine to use",
+        choices: alanOptions(TuringAlanSearchEngines)
+    }),
+
+    new ChoiceSettingsOption({
+        key: "imageGenerator",
+        name: "Image generator",
+        category: "alan",
+        emoji: { fallback: "🖨️" },
+        description: "Which image generator to use",
+        choices: alanOptions(TuringAlanImageGenerators)
+    }),
+
+    new ChoiceSettingsOption({
+        key: "imageModifier",
+        name: "Image modifier",
+        category: "alan",
+        emoji: { fallback: "🖌️" },
+        description: "Which image modifier to use",
+        choices: alanOptions(TuringAlanImageModifiers)
     })
 ]
 
 interface SettingsPageBuilderOptions {
     /* Database user instance */
     db: DatabaseInfo;
-
-    /* The actual current settings */
-    current: UserSettings;
 
     /* Category of the current page */
     category: SettingsCategory;
@@ -513,7 +537,8 @@ export class UserSettingsManager {
                 .setLabel(current.name)
                 .setEmoji(Emoji.display(current.emoji, true) as ComponentEmojiResolvable)
                 .setCustomId(`settings:current:${current.type}`)
-                .setStyle(ButtonStyle.Success),
+                .setStyle(ButtonStyle.Success)
+                .setDisabled(true),
 
             new ButtonBuilder()
                 .setEmoji("▶️").setStyle(ButtonStyle.Secondary)
@@ -524,7 +549,7 @@ export class UserSettingsManager {
         return row;
     }
 
-    public buildPage({ current, db, category }: SettingsPageBuilderOptions): Response {
+    public buildPage({ db, category }: SettingsPageBuilderOptions): Response {
         /* Page switcher row */
         const switcher = this.buildPageSwitcher(category);
 
@@ -569,7 +594,7 @@ export class UserSettingsManager {
             if (category === null) return;
 
             return void await interaction.reply(this.buildPage({
-                category, db, current: db.user.settings
+                category, db
             }).get() as InteractionReplyOptions);
         }
 
@@ -598,7 +623,7 @@ export class UserSettingsManager {
             if (newCategory === null) return;
             
             await interaction.update(this.buildPage({
-                category: newCategory, current: db.user.settings, db
+                category: newCategory, db
             }).get() as InteractionUpdateOptions);
 
         /* Update a setting */
@@ -629,7 +654,17 @@ export class UserSettingsManager {
                 const choice: ChoiceSettingOptionChoice | null = option.data.choices.find(c => c.value === newValueName) ?? null;
                 if (choice === null) return;
 
-                if (choice.premium && !premium) {
+                if (choice.restricted === RestrictionType.TesterOnly && db.user.tester === UserTestingGroup.None) {
+                    return void await new Response()
+                        .addEmbed(builder => builder
+                            .setDescription(`The choice **${choice.name}**${choice.emoji ? ` ${typeof choice.emoji === "object" ? Emoji.display(choice.emoji, true) : choice.emoji}` : ""} is restricted to **testers**. ⚒️`)
+                            .setColor("Orange")
+                        )
+                        .setEphemeral(true)
+                    .send(interaction);
+                }
+
+                if (choice.restricted === RestrictionType.PremiumOnly && !premium) {
                     return void await new Response()
                         .addEmbed(builder => builder
                             .setDescription(`✨ The choice **${choice.name}**${choice.emoji ? ` ${typeof choice.emoji === "object" ? Emoji.display(choice.emoji, true) : choice.emoji}` : ""} is restricted to **Premium** users.\n**Premium** *also includes further benefits, view \`/premium info\` for more*. ✨`)
@@ -715,7 +750,7 @@ export class UserSettingsManager {
                 db.user = await this.apply(db.user, changes);
 
                 if (!interaction.replied) await interaction.update(this.buildPage({
-                    category, db, current: db.user.settings
+                    category, db
                 }).get() as InteractionUpdateOptions);
             } else {
                 if (!interaction.replied) await interaction.deferUpdate();

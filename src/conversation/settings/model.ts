@@ -2,6 +2,7 @@ import { Awaitable, ChannelType, ForumChannel, GuildChannel, GuildEmoji, StageCh
 
 import { ModelGenerationOptions } from "../../chat/types/options.js";
 import { ChatClient, PromptContext } from "../../chat/client.js";
+import { RestrictionType } from "../../db/types/restriction.js";
 import { OpenAIChatBody } from "../../openai/types/chat.js";
 import { CooldownModifier } from "../utils/cooldown.js";
 import { ClydeUser } from "../../chat/models/clyde.js";
@@ -40,9 +41,6 @@ export interface ChatSettingsModelHistorySettings {
 }
 
 export interface ChatSettingsModelSettings {
-    /* Whether the model is restricted to Premium members */
-    premium?: boolean;
-
     /* Cool-down for when using this model */
     cooldown?: CooldownModifier;
 
@@ -73,7 +71,7 @@ export declare interface ChatSettingsModelOptions {
     settings?: Partial<Pick<OpenAIChatBody, "temperature" | "frequency_penalty" | "presence_penalty" | "model" | "top_p">>;
 
     /* Whether the model is restricted to Premium members */
-    premium?: boolean;
+    restricted?: RestrictionType | null;
 
     /* Cool-down for when using this model */
     cooldown?: CooldownModifier | null;
@@ -91,7 +89,7 @@ export class ChatSettingsModel {
 
     constructor(options: ChatSettingsModelOptions) {
         this.options = {
-            settings: {}, premium: false, cooldown: null, history: {},
+            settings: {}, restricted: null, cooldown: null, history: {},
             ...options
         };
     }
@@ -183,9 +181,9 @@ Knowledge cut-off: September 2021
         emoji: { fallback: "✨" },
         settings: { model: "gpt-4" },
         type: ModelType.OpenAIChat,
+        restricted: RestrictionType.PremiumOnly,
         history: { context: 425, generation: 270 },
         cooldown: { time: 30 * 1000 },
-        premium: true,
         
         prompt: {
             builder: ({ context }) => `
@@ -203,10 +201,10 @@ Knowledge cut-off: September 2021
         description: "OpenAI's original GPT-3; less restrictions than ChatGPT",
         emoji: { display: "<:gpt3:1097849352657047562>", fallback: "🤖" },
         settings: { temperature: 0.7, model: "text-davinci-003" },
-        type: ModelType.OpenAICompletion,
+        restricted: RestrictionType.PremiumOnly,
         history: { context: 600, generation: 350 },
+        type: ModelType.OpenAICompletion,
         cooldown: { time: 15 * 1000 },
-        premium: true,
 
         prompt: {
             builder: ({ context }) => `
@@ -351,12 +349,25 @@ Current date & time: ${context.time}, ${context.date}
     }),
 
     new ChatSettingsModel({
+        name: "Alan",
+        description: "The usual ChatGPT",
+        emoji: { display: "<:turing_neon:1100498729414434878>", fallback: "🧑‍💻" },
+        restricted: RestrictionType.TesterOnly,
+        type: ModelType.TuringAlan,
+
+        prompt: {
+            type: ChatSettingsModelPromptType.Raw,
+            builder: ({ options }) => options.prompt
+        }
+    }),
+
+    new ChatSettingsModel({
         name: "Clyde",
         description: "Recreation of Discord's AI chatbot",
         emoji: { display: "<a:clyde:1100453636414378125>", fallback: "🤖" },
+        restricted: RestrictionType.PremiumOnly,
         cooldown: { time: 35 * 1000 },
         type: ModelType.Clyde,
-        premium: true,
 
         prompt: {
             builder: ({ options, context, data }) => {

@@ -55,6 +55,7 @@ const QuickReasons: string[] = [
     "Gore/violent content",
     "Racist content",
     "Trolling",
+    "Spam",
     "Tricking bot into generating inappropriate content",
     "Using bot to generate inappropriate content"
 ]
@@ -435,7 +436,7 @@ export const buildUserOverview = async (bot: Bot, target: User, db: DatabaseUser
     
     /* Format the description for previous automated moderation flags. */
     let flagDescription: string | null = null;
-    if (flags.length > 0) flagDescription = `${flags.length - shown.length !== 0 ? `(*${flags.length - shown.length} previous flags ...*)\n\n` : ""}${shown.map(f => `<t:${Math.round(f.when / 1000)}:f> » ${f.moderation!.auto ? `\`${f.moderation!.auto.action}\` ` : ""}${f.moderation!.highest ? `\`${f.moderation!.highest.key}\` (**${Math.floor(f.moderation!.highest.value * 100)}**%) ` : ""}${FlagToEmoji[f.moderation!.source]} » \`${f.moderation!.reference.split("\n").length > 1 ? `${f.moderation!.reference.split("\n")[0]} ...` : f.moderation!.reference}\``).join("\n")}`
+    if (flags.length > 0) flagDescription = `${flags.length - shown.length !== 0 ? `(*${flags.length - shown.length} previous flags ...*)\n\n` : ""}${shown.map(f => `<t:${Math.round(f.when / 1000)}:f> » ${f.moderation!.auto ? `\`${f.moderation!.auto.action}\` ` : ""}${FlagToEmoji[f.moderation!.source]} » \`${f.moderation!.reference.split("\n").length > 1 ? `${f.moderation!.reference.split("\n")[0]} ...` : f.moderation!.reference}\``).join("\n")}`
 
     /* Formatted interactions count, for each category. */
     let interactionsDescription: string = "";
@@ -633,14 +634,6 @@ export const sendModerationMessage = async ({ result, conversation, db, content,
                 inline: true
             }
         );
-    }
-
-    if (result.data && result.highest && (result.flagged || result.blocked) && !result.auto) {
-        reply.embeds[0].addFields({
-            name: "Flagged for 🚩",
-            value: `\`${result.highest.key}\` (**${Math.floor(result.highest.value * 100)}**%)`,
-            inline: true
-        });
     }
     
     if (!result.auto) reply.embeds[0].addFields({

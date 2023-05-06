@@ -10,7 +10,9 @@ import { reactToMessage, removeReaction } from "./utils/reaction.js";
 import { ChatModel, ModelCapability } from "../chat/types/model.js";
 import { buildBanNotice } from "../util/moderation/moderation.js";
 import { buildIntroductionPage } from "../util/introduction.js";
+import { RestrictionType } from "../db/types/restriction.js";
 import { ChatGuildData } from "../chat/types/options.js";
+import { ChatSettingsTones } from "./settings/tone.js";
 import ImagineCommand from "../commands/imagine.js";
 import { format } from "../chat/utils/formatter.js";
 import { Response } from "../command/response.js";
@@ -72,9 +74,10 @@ export class Generator {
 
 		/* User's configured chat model */
 		const model = conversation.model(db);
+		const tone = conversation.tone(db);
 
 		/* Formatted generated response */
-		let content: string = format(data.displayText ?? data.text).trim();
+		let content: string = format(data.display ?? data.text).trim();
 
 		/* Which loading emoji to use */
 		const loadingEmoji: string = LoadingIndicatorManager.toString(
@@ -150,9 +153,17 @@ export class Generator {
 
 			buttons.push(
 				new ButtonBuilder()
-					.setCustomId("settings:menu:chat")
+					.setCustomId("settings:menu:chat:model")
 					.setLabel(model.options.name)
 					.setEmoji(Emoji.display(model.options.emoji, true) as ComponentEmojiResolvable)
+					.setStyle(ButtonStyle.Secondary)
+			);
+
+			if (tone.id !== ChatSettingsTones[0].id) buttons.push(
+				new ButtonBuilder()
+					.setCustomId("settings:menu:chat:tone")
+					.setLabel(tone.options.name)
+					.setEmoji(Emoji.display(tone.options.emoji, true) as ComponentEmojiResolvable)
 					.setStyle(ButtonStyle.Secondary)
 			);
 
@@ -567,7 +578,7 @@ export class Generator {
 		const model: ChatModel = conversation.manager.session.client.modelForSetting(settingsModel);
 		
 		/* If the user is trying to use a Premium-only model, while not having access to one anymore, simply set it back to the default. */
-		if (settingsModel.options.premium && !this.bot.db.users.canUsePremiumFeatures(db)) {
+		if (settingsModel.options.restricted === RestrictionType.PremiumOnly && !this.bot.db.users.canUsePremiumFeatures(db)) {
 			db.user = await this.bot.db.settings.apply(db.user, {
 				"chat:model": ChatSettingsModels[0].id
 			});
