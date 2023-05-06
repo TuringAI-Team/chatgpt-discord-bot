@@ -346,17 +346,16 @@ export class UserManager {
             subscription: raw.subscription ?? null,
             tester: raw.tester ?? UserTestingGroup.None,
             settings: raw.settings ?? this.db.settings.template(),
-            voted: raw.voted
+            voted: raw.voted ?? null
         };
     
-        /* Check if the user's subscription is still valid. */
-        db.subscription = this.subscription(db);
-
         return db;
     }
 
     private processUser(user: DatabaseUser): DatabaseUser {
+        user.subscription = this.subscription(user);
         user.settings = this.db.settings.load(user);
+
         return user;
     }
 
@@ -531,7 +530,7 @@ export class UserManager {
         const updated: DatabaseInteractionStatistics = user.interactions;
         updated[key] = updated[key] + increment;
 
-        return this.updateUser(user.id, { interactions: updated });
+        return this.updateUser(user, { interactions: updated });
     }
 
     public async updateModeratorStatus(user: DatabaseUser, status: boolean): Promise<void> {
@@ -721,7 +720,7 @@ export class UserManager {
         let updated: DatabaseAll;
 
         if (typeof obj === "string") updated = { ...queuedUpdates, ...updates as T };
-        else updated = { ...obj, ...updates as T };
+        else updated = { ...obj, ...queuedUpdates, ...updates as T };
 
         this.updates[type].set(id, updated as any);
     }
