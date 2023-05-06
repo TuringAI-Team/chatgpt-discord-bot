@@ -351,23 +351,6 @@ Current date & time: ${context.time}, ${context.date}
     }),
 
     new ChatSettingsModel({
-        name: "RedPajama",
-        description: "A chatbot fine-tuned on OASST1 and Dolly2 to enhance chatting ability",
-        emoji: { display: "<:redpajama:1104364561773105243>", fallback: "🏮" },
-        settings: { model: "redpajama" },
-        type: ModelType.Turing,
-
-        prompt: {
-            type: ChatSettingsModelPromptType.Raw,
-
-            builder: ({ options }) => `
-<human>: ${options.prompt}
-<bot>:
-`
-        }
-    }),
-
-    new ChatSettingsModel({
         name: "Clyde",
         description: "Recreation of Discord's AI chatbot",
         emoji: { display: "<a:clyde:1100453636414378125>", fallback: "🤖" },

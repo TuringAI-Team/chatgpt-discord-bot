@@ -187,7 +187,8 @@ export class BotManager extends EventEmitter {
      */
     public async restart(): Promise<void> {
         await this.manager!.recluster!.start({
-            restartMode: "gracefulSwitch"
+            restartMode: "rolling",
+            delay: 7 * 1000
         });
 
         await this.announce(DiscordWebhookAnnounceType.ReloadBot);
