@@ -352,7 +352,7 @@ Current date & time: ${context.time}, ${context.date}
 
     new ChatSettingsModel({
         name: "RedPajama",
-        description: "A chatbot trained by fine-tuning Meta's LLaMA on data collected from the internet",
+        description: "A chatbot fine-tuned on OASST1 and Dolly2 to enhance chatting ability",
         emoji: { display: "<:redpajama:1104364561773105243>", fallback: "🏮" },
         settings: { model: "redpajama" },
         type: ModelType.Turing,
@@ -362,7 +362,7 @@ Current date & time: ${context.time}, ${context.date}
 
             builder: ({ options }) => `
 <human>: ${options.prompt}
-<bot>: 
+<bot>:
 `
         }
     }),
