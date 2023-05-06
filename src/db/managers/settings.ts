@@ -480,7 +480,8 @@ export class UserSettingsManager {
     }
 
     public get<T extends string | number | boolean>(user: DatabaseUser, option: SettingsOption | SettingKeyAndCategory): T {
-        return user.settings[this.settingsString(option)] as T;
+        const key = this.settingsString(option);
+        return user.settings[key] as T ?? this.template()[key];
     }
 
     public async apply(user: DatabaseUser, changes: Partial<Record<SettingKeyAndCategory, any>>): Promise<void> {
