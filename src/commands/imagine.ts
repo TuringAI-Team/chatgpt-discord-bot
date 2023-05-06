@@ -894,7 +894,7 @@ export default class ImagineCommand extends Command {
 
 		/* The user requested a list of all available Stable Diffusion models */
 		} else if (action === "models") {
-			await new PagesBuilder(interaction)
+			/*await new PagesBuilder(interaction)
 				.setColor("Aqua")
 				.setPages(this.bot.image.getModels().map(model => {
 					const builder = new EmbedBuilder()
@@ -905,7 +905,7 @@ export default class ImagineCommand extends Command {
 					return builder;
 				}))
 				.setListenEndMethod("delete")
-				.build();
+				.build();*/
 		}
     }
 }

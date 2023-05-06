@@ -203,10 +203,10 @@ export class PagesBuilder extends EmbedBuilder {
      *
      * @hidden
      */
-    private editReply(data: InteractionEditReplyOptions): ReturnType<Message['edit']>
+    private async editReply(data: InteractionEditReplyOptions): Promise<ReturnType<Message['edit']>
         | ReturnType<ChatInputCommandInteraction['editReply']>
         | ReturnType<MessageComponentInteraction['editReply']>
-        | ReturnType<MessageComponentInteraction['update']> {
+        | ReturnType<MessageComponentInteraction['update']>> {
         if (this.messageComponent) {
             const method = this.messageComponent.deferred || this.messageComponent.replied ?
                 'editReply'
@@ -667,8 +667,7 @@ export class PagesBuilder extends EmbedBuilder {
                 switch (this.endMethod) {
                     case EndMethod.EDIT: {
                         const embeds = await this.getPage();
-
-                        const [embed] = embeds;
+                        const [ embed ] = embeds;
 
                         embed.setColor(this.endColor);
 
