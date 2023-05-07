@@ -5,11 +5,12 @@ import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generat
 import { ChoiceSettingOptionChoice } from "../db/managers/settings.js";
 import { Conversation } from "../conversation/conversation.js";
 import { DatabaseUser } from "../db/managers/user.js";
-import { ImageBuffer } from "../chat/types/image.js";
+import { ChatOutputImage, ImageBuffer } from "../chat/types/image.js";
 import { GPTAPIError } from "../error/gpt/api.js";
 import { Utils } from "../util/utils.js";
 import { Awaitable } from "discord.js";
 import { Bot } from "../bot/bot.js";
+import { ChatInputImage } from "../chat/types/image.js";
 
 type TuringAPIPath = `cache/${string}` | "imgs/filter" | "imgs/dalle" | `text/${string}` | `video/${TuringVideoModelName}` | `text/alan/${TuringAlanChatModel}`
 
@@ -96,6 +97,12 @@ export interface TuringAlanOptions {
 
     /* Prompt to pass to Alan */
     prompt: string;
+
+    /* Image to send to Alan, may also be the previously attached image to be edited */
+    image: {
+        input: ChatInputImage | null;
+        output: ChatOutputImage | null;
+    };
 }
 
 export type TuringAlanAction = "image" | "video" | "audio" | "mod-img" | "share-link"
@@ -115,6 +122,9 @@ export interface TuringAlanResult {
 
     /* Prompt used to generate the results */
     generationPrompt: string | null;
+
+    /* Which queries Alan is currently searching for, if applicable */
+    searching: string[] | null;
 
     /* The response by Alan */
     result: string;
@@ -170,13 +180,13 @@ export interface TuringAlanImageModifier {
 }
 
 export const TuringAlanImageModifiers: TuringAlanImageModifier[] = [
-    { name: "Normal", type: "normal" },
-    { name: "Canny edges", type: "canny" },
-    { name: "Hough", type: "hough" },
-    { name: "HED", type: "hed" },
-    { name: "Depth", type: "depth" },
-    { name: "Pose", type: "pose" },
-    { name: "Segmentation", type: "seg" }
+    { name: "ControlNet Normal", type: "normal" },
+    { name: "ControlNet Canny edges", type: "canny" },
+    { name: "ControlNet Hough", type: "hough" },
+    { name: "ControlNet HED", type: "hed" },
+    { name: "ControlNet Depth", type: "depth" },
+    { name: "ControlNet Pose", type: "pose" },
+    { name: "ControlNet Segmentation", type: "seg" }
 ]
 
 interface TuringAlanBody {
@@ -187,11 +197,13 @@ interface TuringAlanBody {
     imageModificator: TuringAlanImageModifier["type"];
     videoGenerator: TuringAlanParameter;
     pluginList: TuringAlanPluginName[];
+    photodescription: string | null;
+    photo?: string;
     message: string;
 }
 
 export const alanOptions = <T extends TuringAlanImageModifier | TuringAlanSearchEngine | TuringAlanImageGenerator>(arr: T[]): ChoiceSettingOptionChoice[] => {
-    arr.push({
+    arr.unshift({
         name: "None",
         type: "none"
     } as any);
@@ -209,12 +221,15 @@ export class TuringAPI {
         this.bot = bot;
     }
 
-    public async alan({ prompt, conversation, user, progress }: TuringAlanOptions): Promise<TuringAlanResult> {
+    public async alan({ prompt, conversation, user, progress, image }: TuringAlanOptions): Promise<TuringAlanResult> {
         /* Latest message of the stream */
         let latest: TuringAlanResult | null = null;
 
         /* Whether the generation is finished */
         let done: boolean = false;
+
+        /* Various settings */
+        const imageModifier = this.bot.db.settings.get(user, "alan:imageModifier");
 
         /* Request body for the API */
         const body: TuringAlanBody = {
@@ -222,8 +237,10 @@ export class TuringAPI {
             userName: conversation.user.username,
             message: prompt,
             imageGenerator: this.bot.db.settings.get(user, "alan:imageGenerator"),
-            imageModificator: this.bot.db.settings.get(user, "alan:imageModifier"),
+            imageModificator: imageModifier !== "none" ? `controlnet-${imageModifier}` : imageModifier,
             searchEngine: this.bot.db.settings.get(user, "alan:searchEngine"),
+            photodescription: image.output && image.output.prompt ? image.output.prompt : null,
+            photo: image.output && image.output.url ? image.output.url : image.input ? image.input.url : undefined,
             videoGenerator: "none",
             pluginList: []
         };
@@ -238,11 +255,8 @@ export class TuringAPI {
             }, 90 * 1000);
 
             try {
-                fetchEventSource(this.url("text/alan/chatgpt"), {
-                    headers: {
-                        ...this.headers() as any,
-                        "Content-Type": "text/stream"
-                    },
+                await fetchEventSource(this.url("text/alan/chatgpt"), {
+                    headers: this.headers() as any,
                     body: JSON.stringify(body),
                     mode: "cors",
                     signal: controller.signal,
@@ -264,7 +278,6 @@ export class TuringAPI {
         
                     onopen: async (response) => {
                         clearTimeout(abortTimer);
-                        console.log("OPENED")
 
                         /* If the request failed for some reason, throw an exception. */
                         if (response.status !== 200) {
@@ -298,8 +311,6 @@ export class TuringAPI {
         if (latest === null) throw new GPTGenerationError({
             type: GPTGenerationErrorType.Empty
         });
-
-        console.log(latest)
 
         return latest;
     }
@@ -384,7 +395,7 @@ export class TuringAPI {
     }
 
     private url(path: TuringAPIPath): string {
-        return `https://api.turingai.tech/${path}`;
+        return `http://212.227.227.178:3231/${path}`;
     }
 
     private async error(response: Response, path: TuringAPIPath, dry: true): Promise<GPTAPIError>;

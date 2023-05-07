@@ -27,8 +27,8 @@ export default class SupportCommand extends Command {
 					},
 
 					{
-						name: "How can I change the model?",
-						value: `You can either run \`/tone\` beforehand to select one, or you can press the first button below a generated message to choose the model from a dropdown menu.`
+						name: "How can I change the model and tone?",
+						value: `You can either run \`/settings\` and go to the **Chat** category beforehand to select one, or you can press the buttons below a generated message to choose the model from a dropdown menu.`
 					},
 					
 					{

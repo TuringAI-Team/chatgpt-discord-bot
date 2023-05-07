@@ -1,9 +1,9 @@
+import { ChatAnalyzedImage, ChatInputImage, ChatOutputImage } from "../types/image.js";
 import { GPTImageAnalyzeOptions, ModelGenerationOptions } from "../types/options.js";
 import { ChatModel, ModelCapability, ModelType } from "../types/model.js";
 import { MessageType, PartialResponseMessage } from "../types/message.js";
-import { TuringAlanResult } from "../../turing/api.js";
+import { TuringAlanImageGenerator, TuringAlanImageGenerators, TuringAlanResult } from "../../turing/api.js";
 import { ChatClient, PromptData } from "../client.js";
-import { ChatAnalyzedImage, ChatOutputImage } from "../types/image.js";
 import { Utils } from "../../util/utils.js";
 
 export class TuringAlanModel extends ChatModel {
@@ -23,16 +23,21 @@ export class TuringAlanModel extends ChatModel {
         };
     }
 
-    private async process(result: TuringAlanResult): Promise<PartialResponseMessage> {
-        if (result.generating !== null && !result.done) {
+    private async process(options: ModelGenerationOptions, result: TuringAlanResult): Promise<PartialResponseMessage> {
+        if (result.generating !== null && result.generationPrompt && !result.done) {
             return {
-                text: `Generating ${result.generating}`,
+                text: `Generating ${result.generating} with prompt \`${result.generationPrompt}\``,
                 type: MessageType.Notice,
             };
         }
 
         /* Generated images */
         const images: ChatOutputImage[] = [];
+
+        /* Display name of the image generator */
+        const imageGenerator: TuringAlanImageGenerator = TuringAlanImageGenerators.find(
+            g => g.type === this.client.session.manager.bot.db.settings.get(options.db.user, "alan:imageGenerator")
+        )!;
         
         if (result.generated === "image" && result.results && result.generationPrompt) {
             for (const url of result.results) {
@@ -40,7 +45,9 @@ export class TuringAlanModel extends ChatModel {
                 if (buffer === null) continue;
 
                 images.push({
-                    data: buffer
+                    prompt: result.generationPrompt,
+                    notice: imageGenerator.name,
+                    data: buffer, url
                 });
             }
         }
@@ -55,15 +62,28 @@ export class TuringAlanModel extends ChatModel {
         /* Build the formatted prompt for the chat model. */
         const prompt: PromptData = await this.client.buildPrompt(options);
 
+        /* Image to send to Alan */
+        const inputImage: ChatInputImage | null = options.images[0] ?? null;
+
+        /* Previously generated output, for editing */
+        const outputImage: ChatOutputImage | null = options.conversation.previous ?
+            options.conversation.previous.output.images ? options.conversation.previous.output.images[0] : null
+        : null;
+
         /* Generate a response for the user's prompt using the Turing API. */
         const result: TuringAlanResult = await this.client.session.manager.bot.turing.alan({
             conversation: options.conversation,
             prompt: prompt.prompt,
             user: options.db.user,
 
-            progress: async result => options.progress(await this.process(result))
+            progress: async result => options.progress(await this.process(options, result)),
+
+            image: {
+                input: inputImage,
+                output: outputImage
+            }
         });
 
-        return await this.process(result);
+        return await this.process(options, result);
     }
 }

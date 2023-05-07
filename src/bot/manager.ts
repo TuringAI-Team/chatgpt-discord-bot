@@ -1,14 +1,24 @@
 import { Collection, ColorResolvable, EmbedBuilder, REST, Routes } from "discord.js";
 import { Cluster, ClusterManager, ReClusterManager } from "discord-hybrid-sharding";
+import { setTimeout as delay } from "node:timers/promises";
 import { EventEmitter } from "node:events";
 import chalk from "chalk";
 
 import { App, StrippedApp } from "../app.js";
 import { Bot, BotStatus } from "./bot.js";
 
+export interface BotDataSessionLimit {
+    max_concurrency: number;
+    remaining: number;
+    total: number;
+}
+
 export interface BotData {
     /* Stripped-down app information */
     app: StrippedApp;
+
+    /* Discord /gateway/bot information */
+    session: BotDataSessionLimit;
     
     /* Cluster identifier */
     id: number;
@@ -73,11 +83,15 @@ export class BotManager extends EventEmitter {
     /* Whether all clusters have started */
     public started: boolean;
 
+    /* Discord /gateway/bot information */
+    public session: BotDataSessionLimit | null;
+
     constructor(app: App) {
         super();
         this.app = app;
 
         this.started = false;
+        this.session = null;
         this.rest = null!;
 
         /* Initialize the cluster sharding manager. */
@@ -194,6 +208,47 @@ export class BotManager extends EventEmitter {
         await this.announce(DiscordWebhookAnnounceType.ReloadBot);
     }
 
+    public async fetchSession(): Promise<BotDataSessionLimit> {
+        const raw: {
+            session_start_limit: BotDataSessionLimit
+        } = await this.rest.get(Routes.gatewayBot()) as any;
+
+        return raw.session_start_limit;
+    }
+
+    public async startQueue(): Promise<void> {
+        this.manager!.spawn({
+            timeout: -1
+        })
+			.catch(error => {
+				this.app.logger.error(`Failed to set up cluster manager ->`, error);
+				this.app.stop(1);
+			});
+
+        await delay(1000);
+
+        /* Current shard counter */
+        let counter: number = 0;
+
+        /* Shard reset timer */
+        const resetTimer: NodeJS.Timer = setInterval(() => {
+            counter = 0;
+        }, 15 * 1000);
+
+        for (let i = 0; i < this.manager!.totalClusters; i++) {
+            /* Increment the current shard counter. */
+            counter += this.manager!.shardsPerClusters ?? this.app.config.shardsPerCluster;
+
+            /* Spawn the next cluster. */
+            await this.manager!.queue.next();
+
+            if (counter >= this.session!.max_concurrency) await delay(7500);
+            else await delay(4000);
+        }
+
+        clearInterval(resetTimer);
+    }
+
     /**
      * Set up the cluster sharding manager.
      */
@@ -222,6 +277,10 @@ export class BotManager extends EventEmitter {
             restarts: {
                 interval: 60 * 60 * 1000,
                 max: 99
+            },
+
+            queue: {
+                auto: false
             }
         }) as BotClusterManager;
 
@@ -236,16 +295,20 @@ export class BotManager extends EventEmitter {
         this.manager.on("clusterCreate", cluster => this.onCreate(cluster));
         if (this.app.config.dev) this.manager.on("debug", line => this.app.logger.debug(line));
 
-        /* Launch the actual sharding manager. */
-        await this.manager.spawn({
-            /* Reduce the delay between the initialization of clusters, to improve startup time. */
-            timeout: -1,
-            delay: 7 * 1000
-        })
+        /* Fetch the /gateway/bot session limit. */
+        await this.fetchSession()
+            .then(session => this.session = session)
 			.catch(error => {
-				this.app.logger.error(`Failed to set up cluster manager ->`, error);
+				this.app.logger.error(`Failed to fetch Discord session limit ->`, error);
 				this.app.stop(1);
 			});
+
+        /* Launch the actual sharding manager. */
+        await this.startQueue()
+            .catch(error => {
+                this.app.logger.error(`Failed to start clusters in queue ->`, error);
+                this.app.stop(1);
+            });
 
         /* Calculate, how long it took to start all clusters. */
         const time: number = Date.now() - now;

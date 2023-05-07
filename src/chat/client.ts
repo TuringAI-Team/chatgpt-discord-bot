@@ -370,7 +370,7 @@ export class ChatClient {
                 });
 
                 results.push({
-                    name: attachment.name, type: attachment.type,
+                    name: attachment.name, type: attachment.type, url: attachment.url,
                     ...result
                 });
 

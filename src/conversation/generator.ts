@@ -93,7 +93,7 @@ export class Generator {
 
 				const builder = new EmbedBuilder()
 					.setImage(`attachment://image-${index}.png`)
-					.setColor("Purple");
+					.setColor(this.bot.branding.color);
 
 				if (image.prompt) builder.setTitle(Utils.truncate(image.prompt, 100));
 				if (image.duration) builder.setFooter({ text: `${(image.duration / 1000).toFixed(1)}s${image.notice ? ` • ${image.notice}` : ""}` });

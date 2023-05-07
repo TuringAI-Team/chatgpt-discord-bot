@@ -30,7 +30,6 @@
     "discord-hybrid-sharding": "^2.1.1",
     "discord.js": "^14.8.0",
     "giphy-api": "^2.0.2",
-    "locale-code": "^2.0.2",
     "md5": "^2.3.0",
     "merge-images": "^2.0.0",
     "node-cache": "^5.1.2",

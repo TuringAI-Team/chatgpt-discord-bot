@@ -149,7 +149,7 @@ export interface ChatBaseImage {
     url: string;
 }
 
-export type ChatInputImage = Pick<ChatBaseImage, "name" | "type"> & {
+export type ChatInputImage = Pick<ChatBaseImage, "name" | "type" | "url"> & {
     /* Readable text about this image, given to the model */
     description: string;
 
@@ -162,6 +162,9 @@ export type ChatAnalyzedImage = Pick<ChatInputImage, "description" | "text">
 export interface ChatOutputImage {
     /* Final rendered image */
     data: ImageBuffer;
+
+    /* The URL, where this image is stored (temporarily) */
+    url?: string;
 
     /* Optional; prompt used to generate the image */
     prompt?: string;

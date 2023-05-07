@@ -37,7 +37,7 @@ export interface Config {
 
 	/* How many clusters to allocate for the bot */
 	clusters: number | string | "auto";
-	shardsPerCluster: number | string | "auto";
+	shardsPerCluster: number;
 
 	channels: {
 		/* Where the error messages should be sent; which guild and channel */

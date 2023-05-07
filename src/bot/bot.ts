@@ -1,4 +1,4 @@
-import { ActivityType, Awaitable, basename, Client, GatewayIntentBits, Partials } from "discord.js";
+import { ActivityType, Awaitable, basename, Client, GatewayIntentBits, Partials, Routes } from "discord.js";
 import { ClusterClient, getInfo, IPCMessage, messageType } from "discord-hybrid-sharding";
 import giphyApi, { Giphy } from "giphy-api";
 import EventEmitter from "events";

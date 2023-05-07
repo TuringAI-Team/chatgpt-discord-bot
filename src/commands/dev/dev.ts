@@ -58,13 +58,13 @@ export default class DeveloperCommand extends Command {
 
 		/* View debug information */
 		if (action === "debug") {
-			const count: number = (await this.bot.client.cluster.broadcastEval(() => this.bot.conversation.session.debug.count))
+			const count: number = (await this.bot.client.cluster.broadcastEval(() => this.bot.conversation.session.debug.count).catch(() => [0]))
 				.reduce((value, count) => value + count, 0);
 
-			const tokens: number = (await this.bot.client.cluster.broadcastEval(() => this.bot.conversation.session.debug.tokens))
+			const tokens: number = (await this.bot.client.cluster.broadcastEval(() => this.bot.conversation.session.debug.tokens).catch(() => [0]))
 				.reduce((value, count) => value + count, 0);
 
-			const runningRequests: number = (await this.bot.client.cluster.broadcastEval(() => this.bot.conversation.conversations.filter(c => c.generating).size))
+			const runningRequests: number = (await this.bot.client.cluster.broadcastEval(() => this.bot.conversation.conversations.filter(c => c.generating).size).catch(() => [0]))
 				.reduce((value, count) => value + count, 0);
 
 			const cache: NodeCache.Stats =
