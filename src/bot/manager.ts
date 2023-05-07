@@ -273,9 +273,7 @@ export class BotManager extends EventEmitter {
             
             mode: "process",
             respawn: true,
-
-            execArgv: [ "--inspect" ],
-
+            
             restarts: {
                 interval: 60 * 60 * 1000,
                 max: 99
