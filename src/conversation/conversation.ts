@@ -414,7 +414,8 @@ export class Conversation {
 				input: result.input,
 				output: this.responseMessageToDatabase(result.output),
 
-				tone: this.model(options.db).id
+				model: this.model(options.db).id,
+				tone: this.tone(options.db).id
 			}
 		);
 

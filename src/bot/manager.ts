@@ -271,8 +271,10 @@ export class BotManager extends EventEmitter {
 
             token: this.app.config.discord.token,
             
-            mode: "worker",
+            mode: "process",
             respawn: true,
+
+            execArgv: [ "--inspect" ],
 
             restarts: {
                 interval: 60 * 60 * 1000,

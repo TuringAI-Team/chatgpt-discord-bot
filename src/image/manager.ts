@@ -287,7 +287,7 @@ export class ImageManager extends EventEmitter {
                 clearInterval(interval);
                 reject(new GPTGenerationError<string>({ type: GPTGenerationErrorType.Cancelled, data: reason }));
 
-                return this.off("cancelled", listener);
+                this.off("cancelled", listener);
             }
 
             const interval: NodeJS.Timer = setInterval(async () => {
@@ -309,7 +309,9 @@ export class ImageManager extends EventEmitter {
                     if (progress) progress(latest);
 
                 } catch (error) {
+                    this.off("cancelled", listener);
                     clearInterval(interval);
+                    
                     return reject(error);
                 }
             }, updateInterval);

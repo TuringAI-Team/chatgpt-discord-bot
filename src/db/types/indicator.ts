@@ -69,6 +69,13 @@ export const LoadingIndicators: LoadingIndicator[] = [
     },
 
     {
+        name: "Turing Spin",
+        emoji: {
+            name: "turing_spin", id: "1104867917436289065", animated: true
+        }
+    },
+
+    {
         name: "Loading Bars",
         emoji: {
             name: "loading2", id: "1104458865224990780", animated: true
@@ -88,6 +95,13 @@ export const LoadingIndicators: LoadingIndicator[] = [
             name: "spinning_cat", id: "1104458868546867424", animated: true
         }
     },
+
+    {
+        name: "SpongeBob",
+        emoji: {
+            name: "spunchbob", id: "1104869247290716201", animated: true
+        }
+    }
 ]
 
 export class LoadingIndicatorManager {

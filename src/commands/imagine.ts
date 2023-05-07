@@ -21,7 +21,6 @@ import { OpenAIChatMessage } from "../openai/types/chat.js";
 import { handleError } from "../util/moderation/error.js";
 import { StorageImage } from "../db/managers/storage.js";
 import { DatabaseInfo } from "../db/managers/user.js";
-import { PagesBuilder } from "../pages/builder.js";
 import { Utils } from "../util/utils.js";
 import { Bot } from "../bot/bot.js";
 
@@ -786,7 +785,7 @@ export default class ImagineCommand extends Command {
 				});
 
 				/* Defer the reply, as this might take a while. */
-				await interaction.deferReply()
+				await interaction.deferReply().catch(() => {});
 
 				const moderation: ModerationResult | null = await checkImagePrompt({
 					conversation, db, content: prompt, nsfw, model: model.name
@@ -812,7 +811,7 @@ export default class ImagineCommand extends Command {
 
 			} else if (action === "ai") {
 				/* Defer the reply, as this might take a while. */
-				await interaction.deferReply();
+				await interaction.deferReply().catch(() => {});
 
 				/* If the message content was not provided by another source, check it for profanity & ask the user if they want to execute the request anyways. */
 				const moderation: ModerationResult | null = await checkImagePrompt({

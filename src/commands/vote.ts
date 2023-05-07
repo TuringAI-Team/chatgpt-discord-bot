@@ -11,7 +11,7 @@ export default class VoteCommand extends Command {
             new SlashCommandBuilder()
                 .setName("vote")
                 .setDescription("Vote for our bot & get rewards")
-		, { long: true, cooldown: 15 * 1000 });
+		, { cooldown: 15 * 1000 });
     }
 
     public async run(): CommandResponse {

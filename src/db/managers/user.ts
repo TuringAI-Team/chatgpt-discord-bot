@@ -226,6 +226,7 @@ export interface DatabaseMessage {
     input: ChatInput;
     output: DatabaseResponseMessage;
     tone: string;
+    model: string;
 }
 
 type DatabaseAll = DatabaseUser | DatabaseConversation | DatabaseGuild | DatabaseMessage | DatabaseImage | DatabaseSubscriptionKey
