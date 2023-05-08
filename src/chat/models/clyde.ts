@@ -266,7 +266,7 @@ export class ClydeModel extends ChatGPTModel {
                 const result: ClydeFormatterResult | string | null = await formatter.replacer(conversation, guild, matched);
 
                 if (result !== null) {
-                    final.text = final.text.replace(matched, typeof result === "string" ? result: result.text);
+                    final.text = final.text.replace(matched, typeof result === "string" ? result : result.text);
                     if (typeof result === "object") final.images.push(...result.images);
                 }
             }

@@ -34,8 +34,8 @@ export default class DallECommand extends Command {
 			)
 		, {
 			cooldown: {
-				Free: 3 * 60 * 100,
-				Voter: 2 * 60 * 100,
+				Free: 3 * 60 * 1000,
+				Voter: 2 * 60 * 1000,
 				GuildPremium: 1 * 60 * 1000,
 				UserPremium: 45 * 1000
 			}
