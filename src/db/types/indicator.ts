@@ -101,6 +101,13 @@ export const LoadingIndicators: LoadingIndicator[] = [
         emoji: {
             name: "spunchbob", id: "1104869247290716201", animated: true
         }
+    },
+
+    {
+        name: "LEGO",
+        emoji: {
+            name: "lego", id: "1105171703170076744", animated: true
+        }
     }
 ]
 
