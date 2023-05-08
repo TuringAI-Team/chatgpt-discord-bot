@@ -110,7 +110,7 @@ export class LoadingIndicatorManager {
     }
 
     public static getFromUser(bot: Bot, user: DatabaseUser): LoadingIndicator {
-        const id: string = bot.db.settings.get(user, "general:loading_indicator");
+        const id: string = bot.db.settings.get(user, "general:loadingIndicator");
         return LoadingIndicators.find(indicator => indicator.emoji.id === id)!;
     }
 

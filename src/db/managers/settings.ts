@@ -414,7 +414,7 @@ export const SettingOptions: SettingsOption[] = [
     }),
 
     new ChoiceSettingsOption({
-        key: "loading_indicator",
+        key: "loadingIndicator",
         name: "Loading indicator",
         category: "general",
         emoji: { display: LoadingIndicatorManager.toString(LoadingIndicators[0]), fallback: "🔃" },
