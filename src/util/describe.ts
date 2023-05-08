@@ -7,6 +7,7 @@ import { LoadingResponse } from "../command/response/loading.js";
 import { Conversation } from "../conversation/conversation.js";
 import { NoticeResponse } from "../command/response/notice.js";
 import { DatabaseInfo } from "../db/managers/user.js";
+import { handleError } from "./moderation/error.js";
 import { Response } from "../command/response.js";
 
 export interface DescribeAttachment {
@@ -90,12 +91,17 @@ export const runDescribeAction = async (conversation: Conversation, db: Database
                 .setTitle("Described image 🔎")
                 .setDescription(description.result.description)
                 .setImage(attachment.url)
-                .setFooter({ text: `${(description.duration / 1000).toFixed(1)}s` })
+                .setFooter(!description.cached ? { text: `${(description.duration / 1000).toFixed(1)}s` } : null)
                 .setColor("Aqua")
             )
         .send(interaction);
 
     } catch (error) {
+        await handleError(conversation.manager.bot, {
+            title: "Failed to describe image",
+            error: error as Error, reply: false
+        });
+
         return void await new NoticeResponse({
             message: "Something went wrong while trying to describe the provided image.\n*The developers have been notified*.",
             color: "Red"

@@ -1,3 +1,5 @@
+import crypto from "crypto";
+
 import { ChatImageAttachment, ImageBuffer } from "../../chat/types/image.js";
 import { ImageOCRResult, detectText } from "../../util/ocr.js";
 import { DescribeAttachment } from "../../util/describe.js";
@@ -14,11 +16,8 @@ export interface ImageDescriptionResult {
 }
 
 export interface ImageDescription {
-    /* ID (URL) of the described image */
+    /* MD5 hash of the image */
     id: string;
-
-    /* Base64-ified data of the image */
-    image: string;
 
     /* How long it took to describe the image */
     duration: number;
@@ -47,13 +46,14 @@ export class ImageDescriptionManager {
         this.db = db;
     }
 
-    private async get(input: ImageDescriptionInput): Promise<ImageDescription | null> {
+    private async get(input: ImageDescriptionInput & { hash: string }): Promise<ImageDescription | null> {
         return this.db.users.fetchFromCacheOrDatabase(
-            "descriptions", input.url
+            "descriptions", input.hash
         );
     }
 
-    private async addToCache(result: ImageDescription): Promise<void> {
+    private async addToCache(result: ImageDescription, buffer: ImageBuffer): Promise<void> {
+        await this.db.storage.uploadImageDescription(result, buffer).catch(() => {});
         await this.db.users.updateImageDescription(result.id, result);
     }
 
@@ -77,17 +77,31 @@ export class ImageDescriptionManager {
         return (await Utils.fetchBuffer(input.url))!;
     }
 
-    public async describe(options: ImageDescriptionOptions): Promise<ImageDescription> {
+    private hash(buffer: ImageBuffer): string {
+        const hashStream = crypto.createHash("md5");
+
+        hashStream.write(buffer.buffer);
+        hashStream.end();
+
+        const hash: string = hashStream.read().toString("hex");
+        return hash;
+    }
+
+    public async describe(options: ImageDescriptionOptions): Promise<ImageDescription & { cached: boolean }> {
         const { input, cached, useOCR }: Required<ImageDescriptionOptions> = {
             cached: options.cached ?? true,
             useOCR: options.useOCR ?? false,
             input: options.input
         };
 
+        /* Buffer data of the described image */
+        const buffer: ImageBuffer = await this.fetch(input);
+        const hash: string = this.hash(buffer);
+
         /* First, try to find a cached image description. */
         if (cached) {
-            const entry: ImageDescription | null = await this.get(input);
-            if (entry !== null) return entry;
+            const entry: ImageDescription | null = await this.get({ ...input, hash });
+            if (entry !== null) return { ...entry, cached: true };
         }
 
         const model = await this.db.bot.replicate.api.models.get("andreasjansson", "blip-2");
@@ -105,7 +119,7 @@ export class ImageDescriptionManager {
             },
 
             wait: {
-                interval: 750
+                interval: 1000
             }
         })) as unknown as string;
 
@@ -122,13 +136,9 @@ export class ImageDescriptionManager {
         /* How long the description took */
         const duration: number = Date.now() - start;
 
-        /* Buffer data of the described image */
-        const buffer: ImageBuffer = await this.fetch(input);
-
         /* Final image description result */
         const result: ImageDescription = {
-            duration, id: input.url,
-            image: buffer.toString(),
+            duration, id: hash,
 
             result: {
                 ocr: ocr ? ocr.content : null,
@@ -137,8 +147,10 @@ export class ImageDescriptionManager {
         };
 
         /* Add the image description result to the cache & database. */
-        await this.addToCache(result);
+        await this.addToCache(result, buffer);
 
-        return result;
+        return {
+            ...result, cached: false
+        };
     }
 }

@@ -201,7 +201,7 @@ export class ImageManager extends EventEmitter {
     }
 
     public async getImageData(image: ImageGenerationResult): Promise<StorageImage> {
-        const storage: StorageImage = await this.bot.db.storage.fetchImage(image);
+        const storage: StorageImage = await this.bot.db.storage.fetchImage(image, "images");
 
         return {
             url: storage.url

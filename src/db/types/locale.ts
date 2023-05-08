@@ -25,6 +25,10 @@ export const Languages: UserLanguage[] = [
     },
 
     {
+        name: "Portuguese", id: "pt-BR", emoji: "🇵🇹"
+    },
+
+    {
         name: "French", id: "fr-FR", emoji: "🇫🇷"
     },
 

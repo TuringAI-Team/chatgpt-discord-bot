@@ -3,8 +3,11 @@ import { Bucket, StorageClient, StorageError } from "@supabase/storage-js";
 import { ImageGenerationResult, StableHordeGenerationResult } from "../../image/types/image.js";
 import { GPTDatabaseError } from "../../error/gpt/db.js";
 import { DatabaseManager } from "../manager.js";
+import { ImageDescription } from "./description.js";
+import { ImageBuffer } from "../../chat/types/image.js";
+import { Utils } from "../../util/utils.js";
 
-type StorageBucketName = "images"
+type StorageBucketName = "images" | "descriptions"
 
 export interface StorageImage {
     /* URL to the image file */
@@ -51,15 +54,15 @@ export class StorageManager {
      * 
      * @returns URL to the public image
      */
-    public async fetchImage(image: ImageGenerationResult): Promise<StorageImage> {
+    public async fetchImage(image: ImageGenerationResult | string, bucket: StorageBucketName): Promise<StorageImage> {
         const { data } = this.client
             .from("images")
-            .getPublicUrl(`${image.id}.png`);
+            .getPublicUrl(typeof image === "object" ? `${image.id}.png` : image);
 
         return { url: data.publicUrl };
     }
 
-    public async uploadImage(image: ImageGenerationResult, data: Buffer): Promise<StorageImage> {
+    public async uploadImageGenerationResult(image: ImageGenerationResult, data: Buffer): Promise<StorageImage> {
         const { error } = await this.client
             .from("images")
             .upload(`${image.id}.png`, data, {
@@ -69,7 +72,21 @@ export class StorageManager {
 
         /* Check for any errors. */
         this.checkError(error);
-        return this.fetchImage(image);
+        return this.fetchImage(image, "images");
+    }
+
+    public async uploadImageDescription(image: ImageDescription, data: ImageBuffer): Promise<void> {
+        const name: string = `${image.id}.${Utils.fileExtension(image.id)}`;
+
+        const { error } = await this.client
+            .from("descriptions")
+            .upload(name, data.buffer, {
+                cacheControl: "86400",
+                contentType: "image/png"
+            });
+
+        /* Check for any errors. */
+        this.checkError(error);
     }
 
     public async uploadImages(result: StableHordeGenerationResult): Promise<StorageImage[]> {
@@ -79,11 +96,11 @@ export class StorageManager {
         /* Upload all of the images to the storage bucket. */
         await Promise.all(images.map(async image => {
             const data: Buffer = Buffer.from(await (await fetch(image.url)).arrayBuffer());
-            return this.uploadImage(image, data);
+            return this.uploadImageGenerationResult(image, data);
         }));
 
         /* Fetch all of the uploaded images again. */
-        return Promise.all(images.map(image => this.fetchImage(image)));
+        return Promise.all(images.map(image => this.fetchImage(image, "images")));
     }
 
     /**
