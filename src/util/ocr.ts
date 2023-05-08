@@ -52,6 +52,8 @@ export const detectText = async (bot: Bot, options: ImageOCROptions): Promise<Im
     if (!body.ParsedResults || body.ParsedResults.length === 0) throw new Error("No detected text");
 
     return {
-        content: body.ParsedResults[0].ParsedText.length > 0 ? body.ParsedResults[0].ParsedText : null
+        content: body.ParsedResults[0].ParsedText.length > 0
+            ? body.ParsedResults[0].ParsedText.replaceAll("\r\n", "\n")
+            : null
     };
 }

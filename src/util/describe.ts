@@ -9,7 +9,7 @@ import { NoticeResponse } from "../command/response/notice.js";
 import { DatabaseInfo } from "../db/managers/user.js";
 import { Response } from "../command/response.js";
 
-interface DescribeAttachment {
+export interface DescribeAttachment {
     /* Type of the attachment */
     type: ChatImageType;
 
@@ -54,45 +54,25 @@ export const runDescribeAction = async (conversation: Conversation, db: Database
     }).send(interaction);
 
     /* Make sure that the image is accessible. */
-    const response = await fetch(attachment.url, {
-        method: "HEAD"
-    });
+    const accessible: boolean = await conversation.manager.bot.db.description.accessible(attachment);
 
-    if (response.status !== 200) return void await new NoticeResponse({
+    if (!accessible) return void await new NoticeResponse({
         message: "**Failed to download the provided attachment**; make sure that it is accessible ❌",
         color: "Red"
     }).send(interaction);
 
     try {
-        /* Get the interrogation model. */
-        const model = await conversation.manager.bot.replicate.api.models.get("andreasjansson", "blip-2");
-        const start: number = Date.now();
-        
-        /* Run the interrogation request, R.I.P money. */
-        const result: string = (await conversation.manager.bot.replicate.api.run(`andreasjansson/blip-2:${model.latest_version!.id}`, {
-            input: {
-                image: attachment.url,
-
-                caption: false,
-                question: "What does this image show? Describe in detail.",
-                context: "",
-                use_nucleus_sampling: true,
-                temperature: 1
-            },
-
-            wait: {
-                interval: 750
-            }
-        })) as unknown as string;
-
-        const duration: number = Date.now() - start;
+        /* Analyze & describe the image. */
+        const description = await conversation.manager.bot.db.description.describe({
+            input: attachment
+        });
 
         if (conversation.manager.bot.dev) conversation.manager.bot.logger.debug(
-            `User ${chalk.bold(interaction.user.tag)} described ${attachment.type} ${chalk.bold(attachment.url)} within ${chalk.bold(duration)}ms.`
+            `User ${chalk.bold(interaction.user.tag)} described ${attachment.type} ${chalk.bold(attachment.url)} within ${chalk.bold(description.duration)}ms.`
         );
 
         const moderation: ModerationResult | null = await checkDescribeResult({
-            conversation, db, content: result
+            conversation, db, content: description.result.description
         });
 
         if (moderation !== null && moderation.blocked) return void await new Response()
@@ -108,15 +88,15 @@ export const runDescribeAction = async (conversation: Conversation, db: Database
         await new Response()
             .addEmbed(builder => builder
                 .setTitle("Described image 🔎")
-                .setDescription(result)
+                .setDescription(description.result.description)
                 .setImage(attachment.url)
-                .setFooter({ text: `${(duration / 1000).toFixed(1)}s` })
+                .setFooter({ text: `${(description.duration / 1000).toFixed(1)}s` })
                 .setColor("Aqua")
             )
         .send(interaction);
 
     } catch (error) {
-        if (response.status !== 200) return void await new NoticeResponse({
+        return void await new NoticeResponse({
             message: "Something went wrong while trying to describe the provided image.\n*The developers have been notified*.",
             color: "Red"
         }).send(interaction);

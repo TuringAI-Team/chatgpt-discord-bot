@@ -109,7 +109,7 @@ export const ChatImageAttachmentExtractors: ChatImageAttachmentExtractor[] = [
             
             let emote = match[0];
             let name = emote.split(":")[1];
-            let id = emote.split(":")[2].slice(0,-1);
+            let id = emote.split(":")[2].slice(0, -1);
 
             const type = message.content.includes("<a:") ? "gif" : "png";
 

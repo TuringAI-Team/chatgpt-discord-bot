@@ -202,7 +202,7 @@ export class BotManager extends EventEmitter {
     public async restart(): Promise<void> {
         await this.manager!.recluster!.start({
             restartMode: "rolling",
-            delay: 7 * 1000
+            delay: 3 * 1000
         });
 
         await this.announce(DiscordWebhookAnnounceType.ReloadBot);
@@ -243,7 +243,7 @@ export class BotManager extends EventEmitter {
             await this.manager!.queue.next();
 
             if (counter >= this.session!.max_concurrency) await delay(7500);
-            else await delay(4000);
+            else await delay(3000);
         }
 
         clearInterval(resetTimer);
@@ -271,7 +271,7 @@ export class BotManager extends EventEmitter {
 
             token: this.app.config.discord.token,
             
-            mode: "process",
+            mode: "worker",
             respawn: true,
             
             restarts: {

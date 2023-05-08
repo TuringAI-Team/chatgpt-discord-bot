@@ -1,9 +1,9 @@
 import { APIEmbedField, ActionRowBuilder, EmbedBuilder, InteractionResponse, SlashCommandBuilder, StringSelectMenuBuilder } from "discord.js";
 import { YoutubeTranscriptError } from "youtube-transcript";
 
+import { Command, CommandInteraction, CommandPrivateType, CommandResponse } from "../command/command.js";
 import { ModerationResult, checkYouTubeQuery } from "../conversation/moderation/moderation.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
-import { Command, CommandInteraction, CommandResponse } from "../command/command.js";
 import { countChatMessageTokens } from "../conversation/utils/length.js";
 import { ErrorResponse, ErrorType } from "../command/response/error.js";
 import { YouTubeSubtitle, YouTubeVideo } from "../util/youtube.js";
@@ -37,6 +37,7 @@ export const SummaryTypes: SummaryType[] = [
 	{
 		name: "Long",
 		description: "Longer summary, going in-depth and into detail",
+
 		prompt: "a pretty long text summary that's very detailed and going in-depth, keep it around 4-6 sentences long"
 	},
 
@@ -85,7 +86,9 @@ export default class SummarizeCommand extends Command {
 				Voter: 4 * 60 * 1000,
 				GuildPremium: 75 * 1000,
 				UserPremium: 60 * 1000
-			}
+			},
+
+			private: CommandPrivateType.OwnerOnly
 		});
 	}
 

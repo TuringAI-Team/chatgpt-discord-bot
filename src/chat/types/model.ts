@@ -78,50 +78,15 @@ export abstract class ChatModel {
      * @returns Analyzed image
      */
     public async analyze(options: GPTImageAnalyzeOptions): Promise<ChatAnalyzedImage> {
-        /* Image analyzing results */
-        let prediction: object | null = null!;
-        let ocr: ImageOCRResult | null = null! as ImageOCRResult;
-
-        await Promise.allSettled([
-            new Promise<void>(async (resolve, reject) => {
-                /* Get the interrogation model. */
-                const model = await this.client.session.manager.bot.replicate.api.models.get("andreasjansson", "blip-2");
-                
-                /* Run the interrogation request, R.I.P money. */
-                prediction = await this.client.session.manager.bot.replicate.api.run(`andreasjansson/blip-2:${model.latest_version!.id}`, {
-                    input: {
-                        image: options.attachment.url,
-
-                        caption: false,
-                        question: "What does this image show? Describe in detail.",
-                        context: "",
-                        use_nucleus_sampling: true,
-                        temperature: 1
-                    },
-
-                    wait: {
-                        interval: 750
-                    }
-                }).catch(reject) ?? null;
-
-                resolve();
-            }),
-
-            new Promise<void>(async resolve => {
-                /* Additionally, run OCR text recognition, to further improve results. */
-                ocr = await detectText(this.client.session.manager.bot, {
-                    url: options.attachment.url, engine: 5
-                }).catch(() => null);
-
-                resolve();
-            })
-        ]);
-
-        if (prediction === null) throw new Error("Failed to get BLIP detection results");
+        /* Analyze & describe the image. */
+        const result = await this.client.session.manager.bot.db.description.describe({
+            input: options.attachment,
+            useOCR: true
+        });
 
         return {
-            description: (prediction as string).replaceAll("Caption: ", ""),
-            text: ocr && ocr.content ? ocr.content.replaceAll("\r\n", "\n") : null
+            description: result.result.description,
+            text: result.result.ocr
         };
     }
 

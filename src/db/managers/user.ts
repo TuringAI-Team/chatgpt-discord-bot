@@ -11,6 +11,7 @@ import { ChatOutputImage } from "../../chat/types/image.js";
 import { DatabaseImage } from "../../image/types/image.js";
 import { GPTDatabaseError } from "../../error/gpt/db.js";
 import { DatabaseManager } from "../manager.js";
+import { ImageDescription } from "./description.js";
 
 /* Type of moderation action */
 export type DatabaseUserInfractionType = "ban" | "unban" | "warn" | "moderation"
@@ -134,8 +135,6 @@ export interface DatabaseGuild {
 
     /* Information about the guild's subscription */
     subscription: DatabaseGuildSubscription | null;
-
-    /* How many interactions this server has had with the bot so far */
 }
 
 export interface DatabaseUser {
@@ -229,9 +228,9 @@ export interface DatabaseMessage {
     model: string;
 }
 
-type DatabaseAll = DatabaseUser | DatabaseConversation | DatabaseGuild | DatabaseMessage | DatabaseImage | DatabaseSubscriptionKey
+type DatabaseAll = DatabaseUser | DatabaseConversation | DatabaseGuild | DatabaseMessage | DatabaseImage | DatabaseSubscriptionKey | ImageDescription
 
-export type DatabaseCollectionType = "users" | "conversations" | "guilds" | "interactions" | "images" | "keys"
+export type DatabaseCollectionType = "users" | "conversations" | "guilds" | "interactions" | "images" | "keys" | "descriptions"
 
 /* How often to save cached entries to the database */
 export const DB_CACHE_INTERVAL: number = 10 * 60 * 1000
@@ -247,13 +246,14 @@ export class UserManager {
         interactions: Collection<string, DatabaseMessage>;
         images: Collection<string, DatabaseImage>;
         keys: Collection<string, DatabaseSubscriptionKey>;
+        descriptions: Collection<string, ImageDescription>;
     };
 
     constructor(db: DatabaseManager) {
         this.db = db;
 
         /* Update collection types */
-        const updateCollections: (keyof typeof this.updates)[] = [ "users", "conversations", "guilds", "interactions", "images", "keys" ];
+        const updateCollections: (keyof typeof this.updates)[] = [ "users", "conversations", "guilds", "interactions", "images", "keys", "descriptions" ];
         const updates: Partial<typeof this.updates> = {};
 
         /* Create all update collections. */
@@ -775,6 +775,11 @@ export class UserManager {
             await this.setCache("keys", key, updates),
             await this.update("keys", key, updates)
         ]);
+    }
+
+    public async updateImageDescription(image: ImageDescription | string, updates: ImageDescription): Promise<ImageDescription> {
+        await this.setCache("descriptions", image, updates);
+        return await this.update("descriptions", image, updates);
     }
 
     public async workOnQueue(): Promise<void> {

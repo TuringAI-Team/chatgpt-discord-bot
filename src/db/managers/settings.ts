@@ -1,4 +1,4 @@
-import { APIApplicationCommandOptionChoice, ActionRow, ActionRowBuilder, ButtonBuilder, ButtonComponent, ButtonInteraction, ButtonStyle, ComponentEmojiResolvable, Interaction, InteractionReplyOptions, InteractionUpdateOptions, ModalBuilder, SelectMenuComponentOptionData, StringSelectMenuBuilder, StringSelectMenuInteraction, TextInputBuilder, TextInputStyle } from "discord.js";
+import { APIApplicationCommandOptionChoice, ActionRow, ActionRowBuilder, Awaitable, ButtonBuilder, ButtonComponent, ButtonInteraction, ButtonStyle, ComponentEmojiResolvable, Interaction, InteractionReplyOptions, InteractionUpdateOptions, ModalBuilder, SelectMenuComponentOptionData, StringSelectMenuBuilder, StringSelectMenuInteraction, TextInputBuilder, TextInputStyle } from "discord.js";
 import chalk from "chalk";
 
 import { TuringAlanImageGenerators, TuringAlanImageModifiers, TuringAlanPlugins, TuringAlanSearchEngines, TuringVideoModels, alanOptions } from "../../turing/api.js";
@@ -132,6 +132,10 @@ export abstract class SettingsOption<T extends any = any, U extends BaseSettings
         return `settings:change:${this.key}${value != undefined ? `:${value}` : ""}`;
     }
 
+    public handle(bot: Bot, user: DatabaseUser): Awaitable<void> {
+        /* Stub */
+    }
+
     public get key(): SettingsName {
         return this.data.key;
     }
@@ -155,10 +159,12 @@ export class BooleanSettingsOption extends SettingsOption<boolean> {
                 new ButtonBuilder()
                     .setCustomId(this.customID(true))
                     .setStyle(current ? ButtonStyle.Success : ButtonStyle.Secondary)
+                    .setDisabled(current)
                     .setEmoji("👍"),
 
                 new ButtonBuilder()
                     .setCustomId(this.customID(false))
+                    .setDisabled(!current)
                     .setStyle(!current ? ButtonStyle.Success : ButtonStyle.Secondary)
                     .setEmoji("👎")
             ]);

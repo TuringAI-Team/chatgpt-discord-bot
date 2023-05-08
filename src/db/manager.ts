@@ -1,5 +1,6 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
+import { ImageDescriptionManager } from "./managers/description.js";
 import { UserSettingsManager } from "./managers/settings.js";
 import { StorageManager } from "./managers/storage.js";
 import { CacheManager } from "./managers/cache.js";
@@ -14,15 +15,17 @@ export class DatabaseManager {
     public client: SupabaseClient<Database>;
 
     /* Various sub-managers */
-    public settings: UserSettingsManager;
-    public storage: StorageManager;
-    public cache: CacheManager;
-    public users: UserManager;
+    public readonly description: ImageDescriptionManager;
+    public readonly settings: UserSettingsManager;
+    public readonly storage: StorageManager;
+    public readonly cache: CacheManager;
+    public readonly users: UserManager;
     
     constructor(bot: Bot) {
         this.bot = bot;
         this.client = null!;
 
+        this.description = new ImageDescriptionManager(this);
         this.settings = new UserSettingsManager(this);
         this.storage = new StorageManager(this);
         this.cache = new CacheManager(this);
