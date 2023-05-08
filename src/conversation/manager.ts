@@ -96,7 +96,7 @@ export class ConversationManager {
      * 
      * @returns Currentlly-active session, or `null` if none exists
      */
-    public get(user: User | APIUser | string): Conversation | null {
+    public get(user: User | APIUser | { id: string } | string): Conversation | null {
         return this.conversations.get(typeof user === "string" ? user : user.id) ?? null;
     }
 

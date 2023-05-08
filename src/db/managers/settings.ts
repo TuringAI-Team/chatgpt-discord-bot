@@ -8,6 +8,7 @@ import { GENERATION_SIZES, getAspectRatio } from "../../commands/imagine.js";
 import { STABLE_HORDE_AVAILABLE_MODELS } from "../../image/types/model.js";
 import { ChatSettingsModels } from "../../conversation/settings/model.js";
 import { ChatSettingsTones } from "../../conversation/settings/tone.js";
+import { Conversation } from "../../conversation/conversation.js";
 import { ErrorResponse } from "../../command/response/error.js";
 import { RestrictionType } from "../types/restriction.js";
 import { DisplayEmoji, Emoji } from "../../util/emoji.js";
@@ -98,6 +99,9 @@ interface BaseSettingsOptionData<T = any> {
     /* Type of the setting */
     type: SettingsOptionType;
 
+    /* Handler to execute when this setting is changed */
+    handler?: (bot: Bot, user: DatabaseUser, value: T) => Awaitable<void>;
+
     /* Default value of this settings option */
     default: T;
 }
@@ -132,8 +136,8 @@ export abstract class SettingsOption<T extends any = any, U extends BaseSettings
         return `settings:change:${this.key}${value != undefined ? `:${value}` : ""}`;
     }
 
-    public handle(bot: Bot, user: DatabaseUser): Awaitable<void> {
-        /* Stub */
+    public async handle(bot: Bot, user: DatabaseUser, value: T): Promise<void> {
+        if (this.data.handler) await this.data.handler(bot, user, value);
     }
 
     public get key(): SettingsName {
@@ -400,7 +404,14 @@ export const SettingOptions: SettingsOption[] = [
             restricted: model.options.restricted,
             emoji: model.options.emoji,
             value: model.id
-        }))
+        })),
+
+        handler: async (bot, user) => {
+            const conversation: Conversation | null = bot.conversation.get(user);
+            if (conversation === null) return;
+
+            await conversation.reset(false);
+        }
     }),
 
     new ChoiceSettingsOption({
@@ -416,7 +427,14 @@ export const SettingOptions: SettingsOption[] = [
             premium: tone.options.restricted,
             emoji: tone.options.emoji,
             value: tone.id
-        }))
+        })),
+
+        handler: async (bot, user) => {
+            const conversation: Conversation | null = bot.conversation.get(user);
+            if (conversation === null) return;
+
+            await conversation.reset(false);
+        }
     }),
 
     new ChoiceSettingsOption({
@@ -578,6 +596,11 @@ export class UserSettingsManager {
             ...user.settings,
             ...changes
         };
+
+        for(const [ key, value ]  of Object.entries(changes)) {
+            const option = this.settingsOption(key as SettingKeyAndCategory)!;
+            await option.handle(this.db.bot, user, value);
+        }
 
         /* Apply all the changes and return the updated database user instance. */
         return await this.db.users.updateUser(user, {
