@@ -307,7 +307,7 @@ export class MultipleChoiceSettingsOption extends SettingsOption<MultipleChoiceS
                     .setCustomId(this.customID())
                     .setPlaceholder(`${this.data.name} ${Emoji.display(this.data.emoji)}${enabled.length > 0 ? ` (${enabled.length} selected)` : ""}`)
                     .addOptions(...this.data.choices.map(({ name, value, description, restricted }) => ({
-                        emoji: enabled.includes(value) ? "✅" : "❌",
+                        emoji: enabled.includes(value) ? "<:blurple_check:1105178019020165161>" : undefined,
                         description: restricted ? `${description ?? ""} (${restricted === RestrictionType.PremiumOnly ? "premium-only ✨" : "tester-only ⚒️"})` : description,
                         label: name, value
                     }) as SelectMenuComponentOptionData))
@@ -383,7 +383,7 @@ export const SettingOptions: SettingsOption[] = [
     }),
 
     new BooleanSettingsOption({
-        key: "partial_messages",
+        key: "partialMessages",
         name: "Partial messages",
         category: "chat",
         emoji: { fallback: "⏳" },

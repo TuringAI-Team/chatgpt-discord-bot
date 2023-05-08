@@ -41,6 +41,27 @@ export const LoadingIndicators: LoadingIndicator[] = [
     },
 
     {
+        name: "Turing Spin",
+        emoji: {
+            name: "turing_spin", id: "1104867917436289065", animated: true
+        }
+    },
+
+    {
+        name: "Discord Typing",
+        emoji: {
+            name: "discord_typing", id: "1103039408728445071", animated: true
+        }
+    },
+
+    {
+        name: "Loading Bars",
+        emoji: {
+            name: "loading2", id: "1104458865224990780", animated: true
+        }
+    },
+
+    {
         name: "Vibe Rabbit",
         emoji: {
             name: "rabbit", id: "1078943805316812850", animated: true
@@ -62,23 +83,9 @@ export const LoadingIndicators: LoadingIndicator[] = [
     },
 
     {
-        name: "Discord Typing",
+        name: "LEGO",
         emoji: {
-            name: "discord_typing", id: "1103039408728445071", animated: true
-        }
-    },
-
-    {
-        name: "Turing Spin",
-        emoji: {
-            name: "turing_spin", id: "1104867917436289065", animated: true
-        }
-    },
-
-    {
-        name: "Loading Bars",
-        emoji: {
-            name: "loading2", id: "1104458865224990780", animated: true
+            name: "lego", id: "1105171703170076744", animated: true
         }
     },
 
@@ -104,9 +111,9 @@ export const LoadingIndicators: LoadingIndicator[] = [
     },
 
     {
-        name: "LEGO",
+        name: "Spinning Cat Cube",
         emoji: {
-            name: "lego", id: "1105171703170076744", animated: true
+            name: "spinning_cat_cube", id: "1105185931209756693", animated: true
         }
     }
 ]

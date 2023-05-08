@@ -626,7 +626,7 @@ export class Generator {
 		let queued: boolean = false;
 
 		/* Whether partial results should be shown, and how often they should be updated */
-		const partial: boolean = this.bot.db.settings.get(db.user, "chat:partial_messages");
+		const partial: boolean = this.bot.db.settings.get(db.user, "chat:partialMessages");
 		const updateTime: number = this.bot.db.users.canUsePremiumFeatures(db) ? 2500 : 5500;
 
 		let typingTimer: NodeJS.Timer | null = setInterval(async () => {

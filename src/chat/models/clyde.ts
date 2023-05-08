@@ -1,6 +1,7 @@
 import { Awaitable, ChannelType, GuildBasedChannel, GuildEmoji, GuildMember, Invite, TextChannel } from "discord.js";
 
 import { OpenAIChatCompletionsData, OpenAIPartialCompletionsJSON } from "../../openai/types/chat.js";
+import { DatabaseSubscription, DatabaseUser } from "../../db/managers/user.js";
 import { ChatGuildData, ModelGenerationOptions } from "../types/options.js";
 import { Conversation } from "../../conversation/conversation.js";
 import { ChatOutputImage, ImageBuffer } from "../types/image.js";
@@ -9,15 +10,14 @@ import { PartialResponseMessage } from "../types/message.js";
 import { ChatClient, PromptData } from "../client.js";
 import { ChatGPTModel } from "./chatgpt.js";
 import { Utils } from "../../util/utils.js";
-import { DatabaseUser } from "../../db/managers/user.js";
 
 export interface ClydeUser {
     name: string;
     suffix: string | null;
     "joined discord at": string;
     "joined the server at": string;
-    "has premium subscription": boolean;
-    "has voted for the bot": boolean;
+    "has premium subscription": string;
+    "has voted for the bot": string;
     nickname: string | null;
     roles: string | null;
 }
@@ -225,8 +225,11 @@ export class ClydeModel extends ChatGPTModel {
         final.name = member.user.username;
         if (conversation.user.id === member.id) final.suffix = "user I'm talking to";
 
-        final["has premium subscription"] = this.client.session.manager.bot.db.users.subscriptionType({ user: db }) === "UserPremium";
-        final["has voted for the bot"] = this.client.session.manager.bot.db.users.voted(db) !== null;
+        const voted: number | null = this.client.session.manager.bot.db.users.voted(db);
+        const subscription: DatabaseSubscription | null = db.subscription;
+
+        final["has premium subscription"] = subscription !== null ? `yes, joined at ${new Date(subscription.since)} and expires at ${new Date(subscription.expires)}` : "no";
+        final["has voted for the bot"] = voted !== null ? `yes, at ${new Date(voted)}` : "no";
 
         final["joined discord at"] = member.user.createdAt.toISOString();
         if (member.joinedAt) final["joined the server at"] = member.joinedAt.toISOString();
