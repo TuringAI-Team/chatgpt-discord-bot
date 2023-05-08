@@ -1,13 +1,13 @@
 import { APIApplicationCommandOptionChoice, ActionRow, ActionRowBuilder, ButtonBuilder, ButtonComponent, ButtonInteraction, ButtonStyle, ComponentEmojiResolvable, Interaction, InteractionReplyOptions, InteractionUpdateOptions, ModalBuilder, SelectMenuComponentOptionData, StringSelectMenuBuilder, StringSelectMenuInteraction, TextInputBuilder, TextInputStyle } from "discord.js";
 import chalk from "chalk";
 
-import { TuringAlanImageGenerators, TuringAlanImageModifiers, TuringAlanSearchEngines, TuringVideoModels, alanOptions } from "../../turing/api.js";
+import { TuringAlanImageGenerators, TuringAlanImageModifiers, TuringAlanPlugins, TuringAlanSearchEngines, TuringVideoModels, alanOptions } from "../../turing/api.js";
+import { DatabaseInfo, DatabaseUser, UserSettings, UserTestingGroup } from "./user.js";
 import { LoadingIndicatorManager, LoadingIndicators } from "../types/indicator.js";
 import { GENERATION_SIZES, getAspectRatio } from "../../commands/imagine.js";
 import { STABLE_HORDE_AVAILABLE_MODELS } from "../../image/types/model.js";
 import { ChatSettingsModels } from "../../conversation/settings/model.js";
 import { ChatSettingsTones } from "../../conversation/settings/tone.js";
-import { DatabaseInfo, DatabaseUser, UserSettings, UserTestingGroup } from "./user.js";
 import { ErrorResponse } from "../../command/response/error.js";
 import { RestrictionType } from "../types/restriction.js";
 import { DisplayEmoji, Emoji } from "../../util/emoji.js";
@@ -104,7 +104,7 @@ interface BaseSettingsOptionData<T = any> {
 
 type SettingOptionsData<T = any> = Omit<BaseSettingsOptionData<T>, "type">
 
-export abstract class SettingsOption<T extends string | number | boolean = string | number | boolean, U extends BaseSettingsOptionData<T> = BaseSettingsOptionData<T>> {
+export abstract class SettingsOption<T extends any = any, U extends BaseSettingsOptionData<T> = BaseSettingsOptionData<T>> {
     public readonly data: U;
 
     constructor(data: U) {
@@ -249,6 +249,56 @@ export class ChoiceSettingsOption extends SettingsOption<string, BaseSettingsOpt
                         emoji: emoji ? typeof emoji === "string" ? emoji : Emoji.display(emoji, true) : undefined,
                         description: restricted ? `${description ?? ""} (${restricted === RestrictionType.PremiumOnly ? "premium-only ✨" : "tester-only ⚒️"})` : description,
                         default: value === current,
+                        label: name, value
+                    }) as SelectMenuComponentOptionData))
+            );
+    }
+}
+
+type MultipleChoiceSettingsObject = {
+    [key: string]: boolean;
+}
+
+interface MultipleChoiceSettingOptionData {
+    choices: ChoiceSettingOptionChoice[];
+}
+
+export class MultipleChoiceSettingsOption extends SettingsOption<MultipleChoiceSettingsObject, BaseSettingsOptionData & MultipleChoiceSettingOptionData> {
+    constructor(data: Omit<SettingOptionsData, "default"> & Partial<Pick<SettingOptionsData, "default">> & MultipleChoiceSettingOptionData) {
+        super({
+            ...data, default: MultipleChoiceSettingsOption.build(),
+            type: SettingsOptionType.Choices
+        });
+    }
+
+    public static build(enabled: MultipleChoiceSettingsObject = {}): MultipleChoiceSettingsObject {
+        const object: Partial<MultipleChoiceSettingsObject> = {};
+
+        for (const choice of Object.keys(enabled)) {
+            object[choice] = enabled[choice] ?? false;
+        }
+
+        return object as MultipleChoiceSettingsObject;
+    }
+
+    public static which(object: MultipleChoiceSettingsObject): string[] {
+        return Object.entries(object)
+            .filter(([ _, enabled ]) => enabled)
+            .map(([ key ]) => key);
+    }
+
+    public add(bot: Bot, builder: ActionRowBuilder, current: MultipleChoiceSettingsObject): ActionRowBuilder {
+        /* Which options are currently enabled */
+        const enabled: string[] = MultipleChoiceSettingsOption.which(current);
+
+        return builder
+            .addComponents(
+                new StringSelectMenuBuilder()
+                    .setCustomId(this.customID())
+                    .setPlaceholder(`${this.data.name} ${Emoji.display(this.data.emoji)}${enabled.length > 0 ? ` (${enabled.length} selected)` : ""}`)
+                    .addOptions(...this.data.choices.map(({ name, value, description, restricted }) => ({
+                        emoji: enabled.includes(value) ? "✅" : "❌",
+                        description: restricted ? `${description ?? ""} (${restricted === RestrictionType.PremiumOnly ? "premium-only ✨" : "tester-only ⚒️"})` : description,
                         label: name, value
                     }) as SelectMenuComponentOptionData))
             );
@@ -418,6 +468,15 @@ export const SettingOptions: SettingsOption[] = [
         emoji: { fallback: "🖌️" },
         description: "Which image modifier to use",
         choices: alanOptions(TuringAlanImageModifiers)
+    }),
+
+    new MultipleChoiceSettingsOption({
+        key: "plugins",
+        name: "Plugins",
+        category: "alan",
+        emoji: { fallback: "🧩" },
+        description: "Which plugins to use",
+        choices: alanOptions(TuringAlanPlugins, false)
     })
 ]
 
@@ -494,7 +553,7 @@ export class UserSettingsManager {
         ) ?? null;
     }
 
-    public get<T extends string | number | boolean>(user: DatabaseUser, key: SettingKeyAndCategory): T {
+    public get<T extends any>(user: DatabaseUser, key: SettingKeyAndCategory): T {
         let value: T = user.settings[key] as T ?? this.template()[key];
         const option = this.settingsOption(key)!;
 
@@ -640,15 +699,15 @@ export class UserSettingsManager {
 
             /* New value of this setting, if applicable */
             const newValue: string | null = data.shift() ?? null;
-            const previous: string | number | boolean = this.get(db.user, key);
+            const previous: any = this.get(db.user, key);
 
             /* Final changes to the settings */
-            let changes: Partial<Record<SettingKeyAndCategory, string | number | boolean>> = {};
+            let changes: Partial<Record<SettingKeyAndCategory, any>> = {};
 
             if (option instanceof BooleanSettingsOption) {
                 changes[key] = newValue === "true";
 
-            } else if (option instanceof ChoiceSettingsOption && interaction instanceof StringSelectMenuInteraction) {
+            } else if ((option instanceof ChoiceSettingsOption || option instanceof MultipleChoiceSettingsOption) && interaction instanceof StringSelectMenuInteraction) {
                 const newValueName: string = interaction.values[0];
 
                 const choice: ChoiceSettingOptionChoice | null = option.data.choices.find(c => c.value === newValueName) ?? null;
@@ -674,7 +733,18 @@ export class UserSettingsManager {
                     .send(interaction);
                 }
 
-                changes[key] = newValueName;
+                if (option instanceof ChoiceSettingsOption) {
+                    changes[key] = newValueName;
+
+                } else if (option instanceof MultipleChoiceSettingsOption) {
+                    const updated: Partial<MultipleChoiceSettingsObject> = {};
+                    
+                    option.data.choices.forEach(c => {
+                        updated[c.value] = newValueName === c.value ? !previous[newValueName] : previous[c.value];
+                    })
+                    
+                    changes[key] = updated;
+                }
 
             } else if (option instanceof IntegerSettingsOption || option instanceof StringSettingsOption) {
                 const modal: ModalBuilder = new ModalBuilder()

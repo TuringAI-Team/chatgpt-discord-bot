@@ -167,7 +167,7 @@ export interface DatabaseUser {
     voted: string | null;
 }
 
-export type UserSettings = Record<string, string | boolean | number>
+export type UserSettings = Record<string, any>
 
 export enum UserTestingGroup {
     /* Not a tester */

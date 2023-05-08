@@ -2,7 +2,7 @@ import { fetchEventSource } from "@waylaidwanderer/fetch-event-source";
 import { inspect } from "util";
 
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
-import { ChoiceSettingOptionChoice } from "../db/managers/settings.js";
+import { ChoiceSettingOptionChoice, MultipleChoiceSettingsOption } from "../db/managers/settings.js";
 import { Conversation } from "../conversation/conversation.js";
 import { DatabaseUser } from "../db/managers/user.js";
 import { ChatOutputImage, ImageBuffer } from "../chat/types/image.js";
@@ -132,7 +132,7 @@ export interface TuringAlanResult {
 
 type TuringAlanParameter = string | "none"
 
-type TuringAlanPluginName = "browsing" | "calculator"
+type TuringAlanPluginName = string
 type TuringAlanChatModel = "chatgpt"
 
 export interface TuringAlanImageGenerator {
@@ -189,6 +189,23 @@ export const TuringAlanImageModifiers: TuringAlanImageModifier[] = [
     { name: "ControlNet Segmentation", type: "seg" }
 ]
 
+export interface TuringAlanPlugin {
+    name: string;
+    type: "calculator" | "urlReader";
+}
+
+export const TuringAlanPlugins: TuringAlanPlugin[] = [
+    {
+        name: "Calculator",
+        type: "calculator"
+    },
+
+    {
+        name: "URL reader",
+        type: "urlReader"
+    }
+]
+
 interface TuringAlanBody {
     userName: string;
     conversationId: string;
@@ -202,8 +219,8 @@ interface TuringAlanBody {
     message: string;
 }
 
-export const alanOptions = <T extends TuringAlanImageModifier | TuringAlanSearchEngine | TuringAlanImageGenerator>(arr: T[]): ChoiceSettingOptionChoice[] => {
-    arr.unshift({
+export const alanOptions = <T extends TuringAlanImageModifier | TuringAlanSearchEngine | TuringAlanImageGenerator>(arr: T[], none: boolean = true): ChoiceSettingOptionChoice[] => {
+    if (none) arr.push({
         name: "None",
         type: "none"
     } as any);
@@ -231,6 +248,11 @@ export class TuringAPI {
         /* Various settings */
         const imageModifier = this.bot.db.settings.get(user, "alan:imageModifier");
 
+        /* Enabled Alan plugins */
+        const plugins: string[] = Object.entries(this.bot.db.settings.get(user, "alan:plugins") as MultipleChoiceSettingsOption)
+            .filter(([ _, enabled ]) => enabled)
+            .map(([ key ]) => key);
+
         /* Request body for the API */
         const body: TuringAlanBody = {
             conversationId: conversation.userIdentifier,
@@ -242,7 +264,7 @@ export class TuringAPI {
             photodescription: image.output && image.output.prompt ? image.output.prompt : null,
             photo: image.output && image.output.url ? image.output.url : image.input ? image.input.url : undefined,
             videoGenerator: "none",
-            pluginList: []
+            pluginList: plugins
         };
 
         /* Make the request to OpenAI's API. */
