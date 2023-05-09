@@ -10,7 +10,7 @@ import { ResponseMessage } from "../../chat/types/message.js";
 import { ChatOutputImage } from "../../chat/types/image.js";
 import { DatabaseImage } from "../../image/types/image.js";
 import { GPTDatabaseError } from "../../error/gpt/db.js";
-import { DatabaseManager } from "../manager.js";
+import { ClientDatabaseManager } from "../cluster.js";
 import { ImageDescription } from "./description.js";
 
 /* Type of moderation action */
@@ -236,7 +236,7 @@ export type DatabaseCollectionType = "users" | "conversations" | "guilds" | "int
 export const DB_CACHE_INTERVAL: number = 10 * 60 * 1000
 
 export class UserManager {
-    private readonly db: DatabaseManager;
+    private readonly db: ClientDatabaseManager;
 
     /* Cache with all database users, to reduce API calls */
     public updates: {
@@ -249,7 +249,7 @@ export class UserManager {
         descriptions: Collection<string, ImageDescription>;
     };
 
-    constructor(db: DatabaseManager) {
+    constructor(db: ClientDatabaseManager) {
         this.db = db;
 
         /* Update collection types */
@@ -832,6 +832,6 @@ export class UserManager {
     }
 
     public collectionName(type: DatabaseCollectionType): string {
-        return this.db.bot.app.config.db.supabase.collections[type];
+        return this.db.bot.app.config.db.supabase.collections[type] ?? type;
     }
 }

@@ -12,8 +12,8 @@ import { Conversation } from "../../conversation/conversation.js";
 import { ErrorResponse } from "../../command/response/error.js";
 import { RestrictionType } from "../types/restriction.js";
 import { DisplayEmoji, Emoji } from "../../util/emoji.js";
+import { ClientDatabaseManager } from "../cluster.js";
 import { Response } from "../../command/response.js";
-import { DatabaseManager } from "../manager.js";
 import { Languages } from "../types/locale.js";
 import { Bot } from "../../bot/bot.js";
 
@@ -513,9 +513,9 @@ interface SettingsPageBuilderOptions {
 }
 
 export class UserSettingsManager {
-    private readonly db: DatabaseManager;
+    private readonly db: ClientDatabaseManager;
 
-    constructor(db: DatabaseManager) {
+    constructor(db: ClientDatabaseManager) {
         this.db = db;
     }
 

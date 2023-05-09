@@ -58,18 +58,17 @@ const ClydeFormatters: ClydeFormatterPair[] = [
                 const query: string = input.replace("<g:", "").replace(">", "");
     
                 /* Search for a GIF using the GIPHY API. */
-                const { data: results } = await conversation.manager.bot.gif.search(query);
+                const results = await conversation.manager.bot.gif.search({ query });
+                if (results.length === 0) return "*no GIF found*";
+
                 const chosen = results[0];
-                
                 return chosen.url;
             }
         },
 
         input: {
-            match: /(https?:\/\/giphy\.com\/gifs\/([\w-]+))/gm,
-            replacer: async (_, __, input) => {
-                return input.replace("https://giphy.com/gifs/", "");
-            }
+            match: /[^/]+(?=-gif-)/gm,
+            replacer: async (_, __, input) => `<g:${input}>`
         }
     },
 

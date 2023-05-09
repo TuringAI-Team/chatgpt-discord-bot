@@ -1,6 +1,5 @@
 import { ActivityType, Awaitable, basename, Client, GatewayIntentBits, Partials, Routes } from "discord.js";
 import { ClusterClient, getInfo, IPCMessage, messageType } from "discord-hybrid-sharding";
-import giphyApi, { Giphy } from "giphy-api";
 import EventEmitter from "events";
 import chalk from "chalk";
 
@@ -8,16 +7,17 @@ import { ConversationManager } from "../conversation/manager.js";
 import { ReplicateManager } from "../chat/other/replicate.js";
 import { StatusIncidentType } from "../util/statuspage.js";
 import { BotClusterManager, BotData } from "./manager.js";
+import { ClientDatabaseManager } from "../db/cluster.js";
 import { chooseStatusMessage } from "../util/status.js";
 import { CommandManager } from "../command/manager.js";
 import { OpenAIManager } from "../openai/openai.js";
-import { DatabaseManager } from "../db/manager.js";
 import { ImageManager } from "../image/manager.js";
 import { ShardLogger } from "../util/logger.js";
 import { ConfigBranding } from "../config.js";
 import { VoteManager } from "../util/vote.js";
 import { NatAI } from "../chat/other/nat.js";
 import { TuringAPI } from "../turing/api.js";
+import { TenorAPI } from "../util/tenor.js";
 import { GitCommit } from "../util/git.js";
 import { Event } from "../event/event.js";
 import { Utils } from "../util/utils.js";
@@ -97,7 +97,7 @@ export class Bot extends EventEmitter {
     public readonly command: CommandManager;
 
     /* Database manager, in charge of managing the database connection & updates */
-    public readonly db: DatabaseManager;
+    public readonly db: ClientDatabaseManager;
 
     /* OpenAI manager, in charge of moderation endpoint requests */
     public readonly ai: OpenAIManager;
@@ -114,8 +114,8 @@ export class Bot extends EventEmitter {
     /* Replicate API manager */
     public readonly replicate: ReplicateManager;
 
-    /* GIPHY API client */
-    public gif: Giphy;
+    /* Tenor API client */
+    public gif: TenorAPI;
 
     /* top.gg API manager */
     public readonly vote: VoteManager;
@@ -157,16 +157,16 @@ export class Bot extends EventEmitter {
         /* Set up various classes & services. */
         this.conversation = new ConversationManager(this);
         this.replicate = new ReplicateManager(this);
+        this.db = new ClientDatabaseManager(this);
         this.command = new CommandManager(this);
         this.logger = new ShardLogger(this);
         this.image = new ImageManager(this);
-        this.db = new DatabaseManager(this);
         this.turing = new TuringAPI(this);
         this.vote = new VoteManager(this);
         this.ai = new OpenAIManager(this);
         this.task = new TaskManager(this);
+        this.gif = new TenorAPI(this);
         this.nat = new NatAI(this);
-        this.gif = null!;
         
         this.client = new Client({
             shards: getInfo().SHARD_LIST,
@@ -285,11 +285,6 @@ export class Bot extends EventEmitter {
                 {
                     name: "Replicate",
                     execute: async () => this.replicate.setup()
-                },
-    
-                {
-                    name: "GIPHY API",
-                    execute: async () => this.gif = giphyApi(this.app.config.giphy.key)
                 },
     
                 {

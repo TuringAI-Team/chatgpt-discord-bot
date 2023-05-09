@@ -8,7 +8,7 @@ import { App, StrippedApp } from "../app.js";
 import { Bot, BotStatus } from "./bot.js";
 
 export interface BotDataSessionLimit {
-    max_concurrency: number;
+    maxConcurrency: number;
     remaining: number;
     total: number;
 }
@@ -210,10 +210,14 @@ export class BotManager extends EventEmitter {
 
     public async fetchSession(): Promise<BotDataSessionLimit> {
         const raw: {
-            session_start_limit: BotDataSessionLimit
+            session_start_limit: { max_concurrency: number, remaining: number, total: number }
         } = await this.rest.get(Routes.gatewayBot()) as any;
 
-        return raw.session_start_limit;
+        return {
+            maxConcurrency: raw.session_start_limit.max_concurrency,
+            remaining: raw.session_start_limit.remaining,
+            total: raw.session_start_limit.total
+        };
     }
 
     public async startQueue(): Promise<void> {
@@ -240,9 +244,10 @@ export class BotManager extends EventEmitter {
             counter += this.manager!.shardsPerClusters ?? this.app.config.shardsPerCluster;
 
             /* Spawn the next cluster. */
+            if (this.app.config.dev) this.app.logger.debug(`Spawning cluster ${chalk.bold(`#${i + 1}`)} ...`);
             await this.manager!.queue.next();
 
-            if (counter >= this.session!.max_concurrency) await delay(7500);
+            if (counter >= this.session!.maxConcurrency) await delay(7500);
             else await delay(3000);
         }
 

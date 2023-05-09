@@ -92,9 +92,9 @@ export interface Config {
 	};
 
 	/* Tenor API information */
-	giphy: {
-		/* API key */
-		key: string;
+	gif: {
+		tenor: string;
+		giphy: string;
 	}
 
 	/* Nat playground API information & keys */

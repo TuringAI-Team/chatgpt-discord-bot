@@ -1,12 +1,15 @@
 import { Attachment, Message, Sticker, StickerFormatType } from "discord.js";
 import { Utils } from "../../util/utils.js";
+import { TenorGIF } from "../../util/tenor.js";
+import { Bot } from "../../bot/bot.js";
 
-export type ChatImageType = "image" | "sticker" | "emoji" | "Discord attachment link"
+export type ChatImageType = "image" | "sticker" | "emoji" | "discord attachment link" | "tenor gif"
 
 export const ALLOWED_FILE_EXTENSIONS: string[] = [ "webp", "png", "jpeg", "jpg", "gif" ]
 
 const DISCORD_CDN_REGEX = /https:\/\/media\.discordapp\.net\/attachments\/\d+\/\d+\/\S+\.(gif|png|jpe?g|webp)/ig
 const EMOJI_REGEX = /<(a?)?:[\w-]+:(\d{18,19})?>/gu
+const TENOR_GIF_REGEX = /-gif-(\d+)/g
 
 export class ImageBuffer {
     private data: Buffer;
@@ -54,26 +57,31 @@ export interface ChatImageAttachment {
 
 export type ChatExtractedImageAttachment = Pick<ChatImageAttachment, "name" | "url">
 
+export interface ChatImageAttachmentExtractorData {
+    message: Message;
+    bot: Bot;
+}
+
 export interface ChatImageAttachmentExtractor {
     /* Type of the attachment */
     type: ChatImageType;
 
     /* Whether the message contains this type of attachment */
-    condition: (message: Message) => boolean;
+    condition: (data: ChatImageAttachmentExtractorData) => boolean;
 
     /* Callback, to extract the attachments from the message */
-    extract: (message: Message) => ChatExtractedImageAttachment[] | null;
+    extract: (data: ChatImageAttachmentExtractorData) => Promise<ChatExtractedImageAttachment[] | null>;
 }
 
 export const ChatImageAttachmentExtractors: ChatImageAttachmentExtractor[] = [
     {
         type: "image",
 
-        condition: message => message.attachments.filter(
+        condition: ({ message }) => message.attachments.filter(
             a => ALLOWED_FILE_EXTENSIONS.includes(Utils.fileExtension(a.name))
         ).size > 0,
 
-        extract: message => {
+        extract: async ({ message }) => {
             const attachments: Attachment[] = Array.from(message.attachments.filter(
                 a => ALLOWED_FILE_EXTENSIONS.includes(Utils.fileExtension(a.name))
             ).values());
@@ -87,9 +95,9 @@ export const ChatImageAttachmentExtractors: ChatImageAttachmentExtractor[] = [
 
     {
         type: "sticker",
-        condition: message => message.stickers.size > 0,
+        condition: ({ message }) => message.stickers.size > 0,
 
-        extract: message => {
+        extract: async ({ message }) => {
             const stickers: Sticker[] = Array.from(message.stickers.values())
                 .filter(s => s.format !== StickerFormatType.Lottie);
 
@@ -101,9 +109,9 @@ export const ChatImageAttachmentExtractors: ChatImageAttachmentExtractor[] = [
 
     {
         type: "emoji",
-        condition: message => message.content.match(EMOJI_REGEX) !== null,
+        condition: ({ message }) => message.content.match(EMOJI_REGEX) !== null,
 
-        extract: message => {
+        extract: async ({ message }) => {
             const match = message.content.match(EMOJI_REGEX);
             if (match === null) return null;
             
@@ -121,15 +129,37 @@ export const ChatImageAttachmentExtractors: ChatImageAttachmentExtractor[] = [
     },
 
     {
-        type: "Discord attachment link",
-        condition: message => message.content.match(DISCORD_CDN_REGEX) !== null,
+        type: "discord attachment link",
+        condition: ({ message }) => message.content.match(DISCORD_CDN_REGEX) !== null,
 
-        extract: message => {
+        extract: async ({ message }) => {
             const matches = message.content.match(DISCORD_CDN_REGEX);
             if (matches === null || matches.length === 0) return null;
 
             return matches.map(url => ({
                 name: url.split("/").reverse()[0], url
+            }));
+        }
+    },
+
+    {
+        type: "tenor gif",
+        condition: ({ message }) => message.content.matchAll(TENOR_GIF_REGEX) !== null,
+
+        extract: async ({ bot, message }) => {
+            const matches = message.content.matchAll(TENOR_GIF_REGEX);
+            if (matches === null) return null;
+
+            /* List of Tenor IDs */
+            const arr: string[] = Array.from(matches, m => m[1]);
+            if (arr.length === 0) return null;
+
+            const results: TenorGIF[] = await bot.gif.info(arr).catch(() => []);
+            if (results.length === 0) return null;
+
+            return results.map(r => ({
+                name: r.title,
+                url: r.media.gif.url
             }));
         }
     }

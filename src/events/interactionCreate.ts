@@ -12,9 +12,6 @@ export default class InteractionCreateEvent extends Event {
 	}
 
 	public async run(interaction: Interaction): Promise<void> {
-		/* If the interaction most likely already expired, don't bother replying to it. */
-		if (Date.now() - interaction.createdTimestamp >= 3000) return;
-
 		try {
 			if ((interaction.isButton() || interaction.isStringSelectMenu()) && interaction.customId.startsWith("settings:")) {
 				if (!interaction || !interaction.customId) return;

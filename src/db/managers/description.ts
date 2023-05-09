@@ -4,7 +4,7 @@ import { ChatImageAttachment, ImageBuffer } from "../../chat/types/image.js";
 import { ImageOCRResult, detectText } from "../../util/ocr.js";
 import { DescribeAttachment } from "../../util/describe.js";
 import { ChatBaseImage } from "../../chat/types/image.js";
-import { DatabaseManager } from "../manager.js";
+import { ClientDatabaseManager } from "../cluster.js";
 import { Utils } from "../../util/utils.js";
 
 export interface ImageDescriptionResult {
@@ -40,9 +40,9 @@ interface ImageDescriptionOptions {
 }
 
 export class ImageDescriptionManager {
-    private readonly db: DatabaseManager;
+    private readonly db: ClientDatabaseManager;
 
-    constructor(db: DatabaseManager) {
+    constructor(db: ClientDatabaseManager) {
         this.db = db;
     }
 

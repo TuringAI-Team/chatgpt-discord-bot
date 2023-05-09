@@ -525,7 +525,7 @@ export class Generator {
 				).send(message).catch(() => {});
 		}
 
-		const attachedImages: boolean = conversation.manager.session.client.findMessageImageAttachments(message).length > 0;
+		const attachedImages: boolean = (await conversation.manager.session.client.findMessageImageAttachments(message)).length > 0;
 		const attachedDocuments: boolean = conversation.manager.session.client.hasMessageDocuments(message);
 
 		/* If the user sen't an empty message, respond with the introduction message. */
@@ -600,7 +600,7 @@ export class Generator {
 
 		if (model.hasCapability(ModelCapability.GuildOnly) && !message.guild) return void await new Response()
 			.addEmbed(builder => builder
-				.setDescription(`The selected model **${settingsModel.options.name}** ${Emoji.display(settingsModel.options.emoji, true)} only works on servers, and not in direct messages 😔`)
+				.setDescription(`The selected model **${settingsModel.options.name}** ${Emoji.display(settingsModel.options.emoji, true)} only works on servers, not in DMs 😔`)
 				.setColor("Red")
 			).send(message);
 

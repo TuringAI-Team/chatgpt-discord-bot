@@ -4,7 +4,7 @@ import { randomUUID } from "crypto";
 import chalk from "chalk";
 
 import { GPT_MAX_CONTEXT_LENGTH, GPT_MAX_GENERATION_LENGTH, countChatMessageTokens, getChatMessageLength, getPromptLength, isPromptLengthAcceptable } from "../conversation/utils/length.js";
-import { ChatAnalyzedImage, ChatImageAttachment, ChatImageAttachmentExtractors, ChatBaseImage, ChatInputImage } from "./types/image.js";
+import { ChatAnalyzedImage, ChatImageAttachment, ChatImageAttachmentExtractors, ChatBaseImage, ChatInputImage, ChatImageAttachmentExtractorData } from "./types/image.js";
 import { ChatDocument, ChatDocumentExtractors, ChatExtractedDocument } from "./types/document.js";
 import { ChatInput, ChatInteraction, Conversation } from "../conversation/conversation.js";
 import { MessageType, PartialResponseMessage, ResponseMessage } from "./types/message.js";
@@ -318,18 +318,25 @@ export class ChatClient {
         return content.trim();
     }
 
+    private messageImageAttachmentData(message: Message): ChatImageAttachmentExtractorData {
+        return {
+            bot: this.session.manager.bot,
+            message
+        };
+    }
+
     /**
      * Get all usable Discord image attachments.
      * @returns Usable Discord Image attachments
      */
-    public findMessageImageAttachments(message: Message): ChatImageAttachment[] {
+    public async findMessageImageAttachments(message: Message): Promise<ChatImageAttachment[]> {
         const total: ChatImageAttachment[] = [];
 
         for (const extractor of ChatImageAttachmentExtractors) {
-            const condition: boolean = extractor.condition(message);
+            const condition: boolean = extractor.condition(this.messageImageAttachmentData(message));
             if (!condition) continue;
 
-            total.push(...(extractor.extract(message) ?? []).map(extracted => ({
+            total.push(...(await extractor.extract(this.messageImageAttachmentData(message)) ?? []).map(extracted => ({
                 ...extracted, type: extractor.type
             })));
         }
@@ -453,7 +460,10 @@ export class ChatClient {
         const id: string = randomUUID();
 
         /* First off, gather all applicable Discord image attachments. */
-        const attachments: ChatBaseImage[] = await this.messageImages(this.findMessageImageAttachments(options.trigger));
+        const attachments: ChatBaseImage[] = await this.messageImages(
+            await this.findMessageImageAttachments(options.trigger)
+        );
+        
         let images: ChatInputImage[] = [];
 
         /* Try to analyze all images passed as attachments. */

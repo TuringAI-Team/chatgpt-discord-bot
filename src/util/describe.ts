@@ -9,6 +9,7 @@ import { NoticeResponse } from "../command/response/notice.js";
 import { DatabaseInfo } from "../db/managers/user.js";
 import { handleError } from "./moderation/error.js";
 import { Response } from "../command/response.js";
+import { Utils } from "./utils.js";
 
 export interface DescribeAttachment {
     /* Type of the attachment */
@@ -33,10 +34,13 @@ export const runDescribeAction = async (conversation: Conversation, db: Database
 
     if (interaction instanceof ChatInputCommandInteraction) {
         const chosen: Attachment = interaction.options.getAttachment("image", true);
-        attachment = { url: chosen.proxyURL, type: "image" };
+        const extension: string = Utils.fileExtension(chosen.url);
+
+        /* Make sure that the uploaded attachment is allowed. */
+        if (ALLOWED_FILE_EXTENSIONS.includes(extension)) attachment = { url: chosen.proxyURL, type: "image" };
 
     } else if (interaction instanceof MessageContextMenuCommandInteraction) {
-        const results = conversation.manager.session.client.findMessageImageAttachments(interaction.targetMessage);
+        const results = await conversation.manager.session.client.findMessageImageAttachments(interaction.targetMessage);
         if (results.length > 0) attachment = results[0];
     }
 

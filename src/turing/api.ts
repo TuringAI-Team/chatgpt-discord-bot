@@ -1,16 +1,16 @@
 import { fetchEventSource } from "@waylaidwanderer/fetch-event-source";
+import { Awaitable } from "discord.js";
 import { inspect } from "util";
 
-import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
 import { ChoiceSettingOptionChoice, MultipleChoiceSettingsOption } from "../db/managers/settings.js";
-import { Conversation } from "../conversation/conversation.js";
-import { DatabaseUser } from "../db/managers/user.js";
+import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
 import { ChatOutputImage, ImageBuffer } from "../chat/types/image.js";
+import { Conversation } from "../conversation/conversation.js";
+import { ChatInputImage } from "../chat/types/image.js";
+import { DatabaseUser } from "../db/managers/user.js";
 import { GPTAPIError } from "../error/gpt/api.js";
 import { Utils } from "../util/utils.js";
-import { Awaitable } from "discord.js";
 import { Bot } from "../bot/bot.js";
-import { ChatInputImage } from "../chat/types/image.js";
 
 type TuringAPIPath = `cache/${string}` | "imgs/filter" | "imgs/dalle" | `text/${string}` | `video/${TuringVideoModelName}` | `text/alan/${TuringAlanChatModel}`
 
@@ -421,7 +421,7 @@ export class TuringAPI {
     }
 
     private async error(response: Response, path: TuringAPIPath, dry: true): Promise<GPTAPIError>;
-    private async error(response: Response, path: TuringAPIPath, dry?: false): Promise<void> 
+    private async error(response: Response, path: TuringAPIPath, dry?: false): Promise<void>;
 
     private async error(response: Response, path: TuringAPIPath, dry?: boolean): Promise<GPTAPIError | void> {
         const body: any | null = await response.json().catch(() => null);

@@ -1,6 +1,7 @@
 import chalk from "chalk";
 
 import { CacheManager } from "./bot/managers/cache.js";
+import { AppDatabaseManager } from "./db/app.js";
 import { BotManager } from "./bot/manager.js";
 import { Logger } from "./util/logger.js";
 import { Config } from "./config.js";
@@ -32,6 +33,9 @@ export class App {
 	/* Global cache manager */
 	public readonly cache: CacheManager;
 
+	/* Database manager */
+	public readonly db: AppDatabaseManager;
+
 	/* Configuration data */
 	public config: Config;
 
@@ -42,11 +46,12 @@ export class App {
         this.logger = new Logger();
 
 		/* Set up various managers & services. */
+		this.db = new AppDatabaseManager(this);
 		this.manager = new BotManager(this);
 		this.cache = new CacheManager(this);
 
         /* Assign a temporary value to the config, while we wait for the application start.
-           Other parts shouldn't access the configuration during this time. */
+           Other parts *shouldn't* access the configuration during this time. */
         this.config = null!;
 
 		/* Set the default, stopped state of the app. */

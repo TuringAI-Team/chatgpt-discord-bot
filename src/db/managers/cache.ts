@@ -2,15 +2,15 @@ import chalk from "chalk";
 
 import { CacheType, CacheValue } from "../../bot/managers/cache.js";
 import { BotClusterManager } from "../../bot/manager.js";
+import { ClientDatabaseManager } from "../cluster.js";
 import { DatabaseCollectionType } from "./user.js";
-import { DatabaseManager } from "../manager.js";
 
 type CacheEvalAction = "get" | "delete" | "set"
 
 export class CacheManager {
-    private db: DatabaseManager;
+    private db: ClientDatabaseManager;
 
-    constructor(db: DatabaseManager) {
+    constructor(db: ClientDatabaseManager) {
         this.db = db;
     }
 
@@ -89,9 +89,5 @@ export class CacheManager {
                 `Failed to ${chalk.bold(action)} in cache collection ${chalk.bold(collection)} for key ${chalk.bold(key)} ->`, error
             );
         }
-    }
-
-    private keyName(collection: CacheType, key: string): string {
-        return `${collection}-${key}`;
     }
 }

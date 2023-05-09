@@ -350,7 +350,7 @@ Current date & time: ${context.time}, ${context.date}
 
     new ChatSettingsModel({
         name: "Alan",
-        description: "The usual ChatGPT",
+        description: "A combination of various AIs, creating the ultimate chatbot",
         emoji: { display: "<:turing_neon:1100498729414434878>", fallback: "🧑‍💻" },
         restricted: RestrictionType.TesterOnly,
         type: ModelType.TuringAlan,

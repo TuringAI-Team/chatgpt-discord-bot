@@ -1,35 +1,20 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
-import { ImageDescriptionManager } from "./managers/description.js";
-import { UserSettingsManager } from "./managers/settings.js";
-import { StorageManager } from "./managers/storage.js";
-import { CacheManager } from "./managers/cache.js";
-import { UserManager } from "./managers/user.js";
 import { Database } from "./types/db.js";
-import { Bot } from "../bot/bot.js";
+import { type Bot } from "../bot/bot.js";
+import { type App } from "../app.js";
 
-export class DatabaseManager {
-    public readonly bot: Bot;
+export type DatabaseManagerBot = Bot | App
+
+export class DatabaseManager<T extends DatabaseManagerBot = Bot> {
+    public readonly bot: T;
 
     /* Supabase client */
     public client: SupabaseClient<Database>;
-
-    /* Various sub-managers */
-    public readonly description: ImageDescriptionManager;
-    public readonly settings: UserSettingsManager;
-    public readonly storage: StorageManager;
-    public readonly cache: CacheManager;
-    public readonly users: UserManager;
     
-    constructor(bot: Bot) {
+    constructor(bot: T) {
         this.bot = bot;
         this.client = null!;
-
-        this.description = new ImageDescriptionManager(this);
-        this.settings = new UserSettingsManager(this);
-        this.storage = new StorageManager(this);
-        this.cache = new CacheManager(this);
-        this.users = new UserManager(this);
     }
 
     /**
@@ -37,12 +22,9 @@ export class DatabaseManager {
      */
     public async setup(): Promise<void> {
         /* Supabase credentials */
-        const { url, key } = this.bot.data.app.config.db.supabase;
+        const { url, key } = (this.bot as any).data ? (this.bot as any).data.app.config.db.supabase : (this.bot as any).config!.db.supabase;
 
         /* Create the Supabase client. */
         this.client = createClient<Database>(url, key.service);
-
-        /* Set up the various sub-managers. */
-        await this.storage.setup();
     }
 }

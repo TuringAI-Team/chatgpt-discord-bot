@@ -2,9 +2,9 @@ import { Bucket, StorageClient, StorageError } from "@supabase/storage-js";
 
 import { ImageGenerationResult, StableHordeGenerationResult } from "../../image/types/image.js";
 import { GPTDatabaseError } from "../../error/gpt/db.js";
-import { DatabaseManager } from "../manager.js";
-import { ImageDescription } from "./description.js";
 import { ImageBuffer } from "../../chat/types/image.js";
+import { ClientDatabaseManager } from "../cluster.js";
+import { ImageDescription } from "./description.js";
 import { Utils } from "../../util/utils.js";
 
 type StorageBucketName = "images" | "descriptions"
@@ -16,12 +16,12 @@ export interface StorageImage {
 
 export class StorageManager {
     /* The database manager itself */
-    private readonly db: DatabaseManager;
+    private readonly db: ClientDatabaseManager;
 
     /* The Supabase storage client */
     private client: StorageClient;
 
-    constructor(db: DatabaseManager) {
+    constructor(db: ClientDatabaseManager) {
         this.db = db;
         this.client = null!;
     }

@@ -9,7 +9,6 @@
     "build": "tsc"
   },
   "devDependencies": {
-    "@types/giphy-api": "^2.0.3",
     "@types/md5": "^2.3.2",
     "@types/merge-images": "^1.2.1",
     "@types/node": "^18.15.10",
@@ -29,7 +28,6 @@
     "dayjs": "^1.11.7",
     "discord-hybrid-sharding": "^2.1.1",
     "discord.js": "^14.8.0",
-    "giphy-api": "^2.0.2",
     "md5": "^2.3.0",
     "merge-images": "^2.0.0",
     "node-cache": "^5.1.2",
