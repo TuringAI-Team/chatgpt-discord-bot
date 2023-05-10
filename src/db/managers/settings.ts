@@ -125,7 +125,7 @@ export abstract class SettingsOption<T extends any = any, U extends BaseSettings
                 .setLabel(this.data.name)
                 .setEmoji(Emoji.display(this.data.emoji, true) as ComponentEmojiResolvable)
                 .setStyle(ButtonStyle.Secondary)
-                .setCustomId(this.customID(this.data.name))
+                .setCustomId(this.customID())
                 .setDisabled(true)
         );
         

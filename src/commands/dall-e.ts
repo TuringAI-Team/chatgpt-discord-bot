@@ -82,6 +82,16 @@ export default class DallECommand extends Command {
 			/* Increment the user's usage. */
 			await this.bot.db.users.incrementInteractions(db.user, "images");
 
+			await this.bot.db.metrics.changeImageMetric({
+				models: {
+					"dall-e": "+1"
+				},
+
+				counts: {
+					[count]: "+1"
+				}
+			});
+
 			const response =  new Response()
 				.setContent(`**${prompt}** — *${(result.duration / 1000).toFixed(1)} seconds*`);
 

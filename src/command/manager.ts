@@ -267,7 +267,7 @@ export class CommandManager {
 			await this.bot.db.metrics.changeCooldownMetric({
 				[command.builder.name]: "+1"
 			});
-			
+
 			await this.bot.db.users.incrementInteractions(db.user, "cooldown_messages");
 
 			/* Send the notice message. */
@@ -407,5 +407,9 @@ export class CommandManager {
 
 		/* Increment the user's interaction count. */
 		await this.bot.db.users.incrementInteractions(db.user, "commands");
+
+		await this.bot.db.metrics.changeCommandsMetric({
+			[command.builder.name]: "+1"
+		});
 	}
 }

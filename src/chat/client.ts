@@ -5,12 +5,12 @@ import chalk from "chalk";
 
 import { GPT_MAX_CONTEXT_LENGTH, GPT_MAX_GENERATION_LENGTH, countChatMessageTokens, getChatMessageLength, getPromptLength, isPromptLengthAcceptable } from "../conversation/utils/length.js";
 import { ChatAnalyzedImage, ChatImageAttachment, ChatImageAttachmentExtractors, ChatBaseImage, ChatInputImage, ChatImageAttachmentExtractorData } from "./types/image.js";
+import { ChatSettingsModel, ChatSettingsModelPromptType } from "../conversation/settings/model.js";
 import { ChatDocument, ChatDocumentExtractors, ChatExtractedDocument } from "./types/document.js";
-import { ChatInput, ChatInteraction, Conversation } from "../conversation/conversation.js";
 import { MessageType, PartialResponseMessage, ResponseMessage } from "./types/message.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
 import { ChatGenerationOptions, ModelGenerationOptions } from "./types/options.js";
-import { ChatSettingsModel, ChatSettingsModelPromptBuilder, ChatSettingsModelPromptType } from "../conversation/settings/model.js";
+import { ChatInput, ChatInteraction } from "../conversation/conversation.js";
 import { ChatModel, ModelCapability, ModelType } from "./types/model.js";
 import { OpenAIChatMessage } from "../openai/types/chat.js";
 import { handleError } from "../util/moderation/error.js";
@@ -56,9 +56,9 @@ export const OtherPrompts = {
     /* This prompt is added if the user attaches an image to the message, in order to make it easier for the model to understand */
     ImageAttachments:
 `
-To attach images, users may use the format: '[<image type> #<index> = <file name>: "<image description>". [optional: "Detected text: "<corrected OCR text>"]]'.
-You must be able to "see" these attached images, act as if you can see, view and read them, referring to them as attached image/emoji/sticker/etc.
-Prioritize detected text from the image, fix OCR errors, and use logic and common sense to understand the image. Don't ask the user about the description.
+From now on, you are a text and image-based AI. Users will be able to attach images to their message for you to understand using the format: '[<image type> #<index> = <file name>: "<image description>". [optional: "Detected text: "<corrected OCR text>"]]'.
+You must be able to act like you can see and understand these attached images, act as if you can see, view and read them, referring to them as attached image/emoji/sticker/etc.
+Prioritize detected text from the image, fix OCR errors, and use logic and common sense to understand the image. Don't ask the user about the description, treat it as an image attachment.
 `.trim(),
 
     /* This prompt is added if the user attaches a text document, e.g. file or HasteBin link */
