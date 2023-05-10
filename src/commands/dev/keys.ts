@@ -180,7 +180,7 @@ export default class KeysCommand extends Command {
 
 			/* Delete the key permanently. */
 			await this.bot.db.client
-				.from(this.bot.db.users.collectionName("keys")).delete()
+				.from(this.bot.db.collectionName("keys")).delete()
 				.eq("id", id).select("*");
 
 			await this.bot.db.cache.delete("keys", id);

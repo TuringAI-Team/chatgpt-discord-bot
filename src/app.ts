@@ -84,6 +84,13 @@ export class App {
 				this.stop(1);
 			});
 
+		/* Initialize the database manager. */
+		await this.db.setup()
+			.catch(error => {
+				this.logger.error(`Failed to set up the database manager -> ${chalk.bold(error.message)}`);
+				this.stop(1);
+			});
+
 		this.state = AppState.Running;
     }
 

@@ -1,7 +1,7 @@
 import { PostgrestError } from "@supabase/supabase-js";
 import { StorageError } from "@supabase/storage-js";
 
-import { DatabaseCollectionType } from "../../db/managers/user.js";
+import { DatabaseCollectionType } from "../../db/manager.js";
 import { GPTError, GPTErrorType } from "./base.js";
 
 export interface GPTDatabaseErrorOptions {

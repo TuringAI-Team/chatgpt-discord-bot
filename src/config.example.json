@@ -12,6 +12,9 @@
         "color": "#5765F2"
     },
 
+    "noticeMetrics": "Whether metrics about usage, cool-down, guilds, users, etc. should be collected in the database",
+    "metrics": true,
+
     "noticeDev": "Whether developer info should be logged",
     "dev": false,
 
@@ -59,8 +62,8 @@
         "key": "Turing API key @ https://github.com/TuringAI-Team/turing-ai-api"
     },
 
-    "giphy": {
-        "key": "GIPHY API key"
+    "gif": {
+        "tenor": "Tenor API key"
     },
 
     "nat": {

@@ -43,6 +43,15 @@ const BOT_TASKS: BotTask[] = [
     },
 
     {
+        name: "Save metric entries",
+        interval: 5 * 1000,
+        type: BotTaskType.RunOnStart,
+
+        condition: bot => bot.data.id === 0,
+        callback: async bot => await bot.db.metrics.save()
+    },
+
+    {
         name: "Get bot statistics",
         type: BotTaskType.RunOnStart,
 
@@ -59,7 +68,7 @@ const BOT_TASKS: BotTask[] = [
                 .reduce((value, count) => value + count, 0);
 
             /* Total database user count */
-            const databaseUsers: number = (await bot.db.client.from(bot.db.users.collectionName("users")).select("*", { count: "estimated" })).count ?? 0;
+            const databaseUsers: number = (await bot.db.client.from(bot.db.collectionName("users")).select("*", { count: "estimated" })).count ?? 0;
 
             /* Total conversation count */
             const conversations: number = ((await bot.client.cluster.fetchClientValues("bot.conversation.conversations.size")) as number[])

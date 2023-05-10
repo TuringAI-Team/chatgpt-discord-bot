@@ -57,7 +57,7 @@ const ClydeFormatters: ClydeFormatterPair[] = [
                 /* Search query to use for Tenor */
                 const query: string = input.replace("<g:", "").replace(">", "");
     
-                /* Search for a GIF using the GIPHY API. */
+                /* Search for a GIF using the Tenor API. */
                 const results = await conversation.manager.bot.gif.search({ query });
                 if (results.length === 0) return "*no GIF found*";
 

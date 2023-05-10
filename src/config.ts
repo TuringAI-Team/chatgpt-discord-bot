@@ -1,6 +1,6 @@
 import { ColorResolvable, Snowflake } from "discord.js";
 
-import { DatabaseCollectionType } from "./db/managers/user.js";
+import { DatabaseCollectionType } from "./db/manager.js";
 
 export interface ConfigDiscordChannel {
     /* ID of the guild */
@@ -28,6 +28,9 @@ export interface Config {
 		/* ID of the bot owner */
 		owner: Snowflake[];
 	};
+
+	/* Whether metrics about usage, cool-down, guilds, users, etc. should be collected in the database */
+	metrics: boolean;
 
 	/* Whether the bot is in development mode */
 	dev: boolean;
@@ -91,10 +94,9 @@ export interface Config {
 		key: string;
 	};
 
-	/* Tenor API information */
+	/* Various GIF APIs */
 	gif: {
 		tenor: string;
-		giphy: string;
 	}
 
 	/* Nat playground API information & keys */

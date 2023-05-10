@@ -6,7 +6,7 @@ import { runDescribeAction } from "../util/describe.js";
 import { DatabaseInfo } from "../db/managers/user.js";
 import { Bot } from "../bot/bot.js";
 
-export default class ResetCommand extends Command {
+export default class DescribeCommand extends Command {
     constructor(bot: Bot) {
         super(bot,
             new SlashCommandBuilder()

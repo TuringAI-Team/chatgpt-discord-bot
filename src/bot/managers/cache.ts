@@ -1,6 +1,6 @@
 import NodeCache from "node-cache";
 
-import { DatabaseCollectionType } from "../../db/managers/user.js";
+import { DatabaseCollectionType } from "../../db/manager.js";
 import { App } from "../../app.js";
 
 /* How long to cache database entries for */

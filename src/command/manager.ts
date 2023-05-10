@@ -263,6 +263,11 @@ export class CommandManager {
 
 			/* How long until the cool-down expires */
 			const delay: number = (cooldown.createdAt + cooldown.duration) - Date.now() - 1000;
+
+			await this.bot.db.metrics.changeCooldownMetric({
+				[command.builder.name]: "+1"
+			});
+			
 			await this.bot.db.users.incrementInteractions(db.user, "cooldown_messages");
 
 			/* Send the notice message. */

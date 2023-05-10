@@ -12,6 +12,7 @@ import { DatabaseImage } from "../../image/types/image.js";
 import { GPTDatabaseError } from "../../error/gpt/db.js";
 import { ClientDatabaseManager } from "../cluster.js";
 import { ImageDescription } from "./description.js";
+import { DatabaseCollectionType } from "../manager.js";
 
 /* Type of moderation action */
 export type DatabaseUserInfractionType = "ban" | "unban" | "warn" | "moderation"
@@ -72,7 +73,7 @@ export interface DatabaseUserInfraction {
 
 type DatabaseInfractionOptions = Pick<DatabaseUserInfraction, "by" | "reason" | "type" | "moderation" | "automatic">
 
-export type DatabaseSubscriptionType = "guild" | "user";
+export type DatabaseSubscriptionType = "guild" | "user"
 
 export interface DatabaseSubscriptionRedeemStatus {
     /* Who redeemed this key */
@@ -230,8 +231,6 @@ export interface DatabaseMessage {
 
 type DatabaseAll = DatabaseUser | DatabaseConversation | DatabaseGuild | DatabaseMessage | DatabaseImage | DatabaseSubscriptionKey | ImageDescription
 
-export type DatabaseCollectionType = "users" | "conversations" | "guilds" | "interactions" | "images" | "keys" | "descriptions"
-
 /* How often to save cached entries to the database */
 export const DB_CACHE_INTERVAL: number = 10 * 60 * 1000
 
@@ -277,7 +276,7 @@ export class UserManager {
         if (existing) return process ? process(existing) : existing;
 
         const { data, error } = await this.db.client
-            .from(this.collectionName(type)).select("*")
+            .from(this.db.collectionName(type)).select("*")
             .eq("id", id);
 
         if (error !== null) throw new GPTDatabaseError({ collection: type, raw: error });
@@ -796,7 +795,7 @@ export class UserManager {
                 const id: string = entries[i][0];
 
                 const { error } = await this.db.client
-                    .from(this.collectionName(type))
+                    .from(this.db.collectionName(type))
                     .upsert({
                             id,
                             ...e as any,
@@ -829,9 +828,5 @@ export class UserManager {
                 }
             }));
         }
-    }
-
-    public collectionName(type: DatabaseCollectionType): string {
-        return this.db.bot.app.config.db.supabase.collections[type] ?? type;
     }
 }

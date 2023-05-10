@@ -2,8 +2,8 @@ import chalk from "chalk";
 
 import { CacheType, CacheValue } from "../../bot/managers/cache.js";
 import { BotClusterManager } from "../../bot/manager.js";
+import { DatabaseCollectionType } from "../manager.js";
 import { ClientDatabaseManager } from "../cluster.js";
-import { DatabaseCollectionType } from "./user.js";
 
 type CacheEvalAction = "get" | "delete" | "set"
 

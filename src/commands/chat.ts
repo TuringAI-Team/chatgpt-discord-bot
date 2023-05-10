@@ -4,7 +4,7 @@ import { Command, CommandResponse } from "../command/command.js";
 import { Response } from "../command/response.js";
 import { Bot } from "../bot/bot.js";
 
-export default class SupportCommand extends Command {
+export default class ChatCommand extends Command {
 	constructor(bot: Bot) {
 		super(bot, new SlashCommandBuilder()
 			.setName("chat")

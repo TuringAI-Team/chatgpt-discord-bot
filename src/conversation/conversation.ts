@@ -260,7 +260,7 @@ export class Conversation {
 
 		/* Remove the entry in the database. */
         if (remove) await this.manager.bot.db.client
-            .from(this.manager.bot.db.users.collectionName("conversations"))
+            .from(this.manager.bot.db.collectionName("conversations"))
 			.delete()
 
 			.eq("id", this.id);
@@ -390,8 +390,22 @@ export class Conversation {
 			time: Date.now()
 		};
 
+		/* Tone & model stuff */
+		const model = this.model(options.db);
+		const tone = this.tone(options.db);
+
 		/* Add the response to the history. */
 		await this.pushToHistory(result);
+
+		await this.manager.bot.db.metrics.changeChatMetric({
+			models: {
+				[model.id]: "+1"
+			},
+
+			tones: {
+				[tone.id]: "+1"
+			}
+		});
 
 		/* Also update the last-updated time and message count in the database for this conversation. */
 		await this.manager.bot.db.users.updateConversation(this, {
@@ -414,8 +428,8 @@ export class Conversation {
 				input: result.input,
 				output: this.responseMessageToDatabase(result.output),
 
-				model: this.model(options.db).id,
-				tone: this.tone(options.db).id
+				model: model.id,
+				tone: tone.id
 			}
 		);
 
@@ -473,6 +487,10 @@ export class Conversation {
 		}
 
 		if (additional[0]) additional[0].setDescription(`${additional[0].data.description!}\n\nYou can also reduce your cool-down for **completely free**, by simply voting for us on **[top.gg](https://top.gg/en/bot/${this.manager.bot.client.user!.id}/vote)**. 📩\nAfter voting, run \`/vote\` and press the **Check your vote** button.`)
+
+		this.manager.bot.db.metrics.changeCooldownMetric({
+			chat: "+1"
+		});
 
 		return [
 			new EmbedBuilder()

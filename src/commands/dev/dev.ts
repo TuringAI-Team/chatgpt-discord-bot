@@ -195,7 +195,7 @@ export default class DeveloperCommand extends Command {
 		} else if (action === "premium-roles") {
 			/* Fetch all Premium users from the database. */
 			const { data, error } = await this.bot.db.client
-				.from(this.bot.db.users.collectionName("users"))
+				.from(this.bot.db.collectionName("users"))
 				.select("*")
 				.neq("subscription", null);
 

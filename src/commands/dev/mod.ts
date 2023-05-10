@@ -6,7 +6,6 @@ import { Response } from "../../command/response.js";
 import { Utils } from "../../util/utils.js";
 import { Bot } from "../../bot/bot.js";
 
-
 export default class ModeratorCommand extends Command {
     constructor(bot: Bot) {
         super(bot,

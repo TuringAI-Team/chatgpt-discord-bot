@@ -1,11 +1,10 @@
-import { APIApplicationCommandOptionChoice, SlashCommandBuilder, User } from "discord.js";
+import { SlashCommandBuilder, User } from "discord.js";
 
 import { Command, CommandInteraction, CommandPrivateType, CommandResponse } from "../../command/command.js";
 import { DatabaseUser, UserTestingGroup } from "../../db/managers/user.js";
 import { Response } from "../../command/response.js";
 import { Utils } from "../../util/utils.js";
 import { Bot } from "../../bot/bot.js";
-
 
 export default class TesterCommand extends Command {
     constructor(bot: Bot) {
