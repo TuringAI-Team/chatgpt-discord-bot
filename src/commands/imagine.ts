@@ -266,11 +266,6 @@ export default class ImagineCommand extends Command {
 						.setRequired(false)
 					)
 				)
-
-				/*.addSubcommand(builder => builder
-					.setName("models")
-					.setDescription("View a list of all available Stable Diffusion models")
-				)*/
 		, { cooldown: {
 			Free: 75 * 1000,
 			Voter: 60 * 1000,
@@ -315,7 +310,7 @@ export default class ImagineCommand extends Command {
 
 		const response: Response = new Response()
 			.addEmbed(builder => builder
-				.setTitle(`${this.bot.image.displayPrompt(image.options.prompt, 95)} 🔍`)
+				.setTitle(`${this.bot.image.displayPrompt(image.options.prompt)} 🔍`)
 				.setImage(storage.url)
 				.setColor(conversation.manager.bot.branding.color)
 			)
@@ -337,7 +332,7 @@ export default class ImagineCommand extends Command {
 
 		const response = new Response()
 			.addEmbed(builder => builder
-				.setTitle(this.bot.image.displayPrompt(options.prompt, 100))
+				.setTitle(this.bot.image.displayPrompt(options.prompt))
 				.setImage(`attachment://${result.id}.png`)
 				.setFooter({ text: `${(result.duration / 1000).toFixed(1)}s • powered by Stable Horde` })
 				.setFields(this.formatFields(conversation, options, result))
@@ -709,7 +704,7 @@ export default class ImagineCommand extends Command {
 		const conversation: Conversation = await this.bot.conversation.create(interaction.user);
 
 		/* Which sub-command to run */
-		const action: "generate" | "ai" | "models" = interaction.options.getSubcommand(true) as any;
+		const action: "generate" | "ai" = interaction.options.getSubcommand(true) as any;
 
 		if (action === "ai" && !canUsePremiumFeatures) return new PremiumUpsellResponse({
 			type: PremiumUpsellType.SDChatGPT
@@ -890,21 +885,6 @@ export default class ImagineCommand extends Command {
 					} as any
 				});
 			}
-
-		/* The user requested a list of all available Stable Diffusion models */
-		} else if (action === "models") {
-			/*await new PagesBuilder(interaction)
-				.setColor("Aqua")
-				.setPages(this.bot.image.getModels().map(model => {
-					const builder = new EmbedBuilder()
-						.setTitle(`${this.bot.image.displayNameForModel(model)}${this.bot.image.isModelNSFW(model) ? " 🔞" : ""}`)
-						.setDescription(this.bot.image.descriptionForModel(model));
-
-					if (model.showcases) builder.setImage(model.showcases[0]);
-					return builder;
-				}))
-				.setListenEndMethod("delete")
-				.build();*/
 		}
     }
 }

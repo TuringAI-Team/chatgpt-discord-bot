@@ -44,8 +44,7 @@ const BOT_TASKS: BotTask[] = [
 
     {
         name: "Save metric entries",
-        interval: 5 * 1000,
-        type: BotTaskType.RunOnStart,
+        interval: 60 * 60 * 1000,
 
         condition: bot => bot.data.id === 0,
         callback: async bot => await bot.db.metrics.save()
@@ -91,7 +90,11 @@ const BOT_TASKS: BotTask[] = [
                 client.bot.statistics = context;
             }) as any, {
                 context: data
-            })
+            });
+
+            await bot.db.metrics.changeGuildsMetric({
+                total: guildCount
+            });
 
             bot.statistics = data;
         }

@@ -196,7 +196,7 @@ export class ImageManager extends EventEmitter {
         else return true;
     }
 
-    public displayPrompt(prompt: ImageGenerationPrompt, length: number = 90): string {
+    public displayPrompt(prompt: ImageGenerationPrompt, length: number = 250): string {
         return `${prompt.ai ? "🤖 " : ""}${Utils.truncate(Utils.removeTrailing(prompt.tags ? prompt.prompt.replace(prompt.tags, "").trim() : prompt.prompt.trim(), ","), length)}`; 
     }
 

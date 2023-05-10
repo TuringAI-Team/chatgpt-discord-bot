@@ -178,6 +178,8 @@ export default class PremiumCommand extends Command {
 			if (db.type === "user") await this.bot.db.users.redeemSubscriptionKey(user, db);
 			else if (db.type === "guild") await this.bot.db.users.redeemSubscriptionKey(guild!, db, interaction.user.id);
 
+			await this.bot.db.metrics.changePremiumMetric({ redeemed: "+1" });
+
 			return new Response()
 				.addEmbed(builder => builder
 					.setDescription(`Thank you for buying **Premium** for **${dayjs.duration(db.duration).humanize()}** 🎉${overwrite && subscription !== null ? `\n\n*The previous **Premium** subscription hadn't expired yet; the remaining **${dayjs.duration(subscription!.expires - Date.now()).humanize()}** have been added to the new one*.` : ""}`)

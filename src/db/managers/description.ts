@@ -119,7 +119,7 @@ export class ImageDescriptionManager {
             },
 
             wait: {
-                interval: 1000
+                interval: 750
             }
         })) as unknown as string;
 

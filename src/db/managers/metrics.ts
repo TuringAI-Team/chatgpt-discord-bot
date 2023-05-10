@@ -7,7 +7,7 @@ type MetricsUpdateValue = `+${string | number}` | `-${string | number}` | string
 type MetricsUpdateObject<T extends MetricsEntry> = Record<keyof T["data"], MetricsUpdateValue>
 
 type MetricsData = { [key: string]: any }
-type MetricsType = "cooldown" | "guilds" | "users" | "chat"
+type MetricsType = "cooldown" | "guilds" | "users" | "chat" | "premium" | "vote"
 
 interface MetricsEntry<T extends MetricsType = MetricsType, U extends MetricsData = MetricsData> {
     /* Type of metric */
@@ -62,6 +62,14 @@ type ChatMetricsEntry = MetricsEntry<"chat", {
     }
 }>
 
+type PremiumMetricsEntry = MetricsEntry<"premium", {
+    redeemed: number
+}>
+
+type VoteMetricsEntry = MetricsEntry<"vote", {
+    count: number
+}>
+
 export class DatabaseMetricsManager<T extends DatabaseManagerBot> {
     protected readonly db: DatabaseManager<T>;
 
@@ -91,6 +99,14 @@ export class ClusterDatabaseMetricsManager extends DatabaseMetricsManager<Bot> {
         return this.change("chat", updates);
     }
 
+    public changePremiumMetric(updates: Partial<MetricsUpdateObject<PremiumMetricsEntry>>): Promise<PremiumMetricsEntry["data"]> {
+        return this.change("premium", updates);
+    }
+
+    public changeVoteMetric(updates: Partial<MetricsUpdateObject<VoteMetricsEntry>>): Promise<VoteMetricsEntry["data"]> {
+        return this.change("vote", updates);
+    }
+
     private async change<T extends MetricsEntry>(
         type: MetricsType, updates: Partial<MetricsUpdateObject<T>>
     ): Promise<T["data"]> {
@@ -108,11 +124,21 @@ export class ClusterDatabaseMetricsManager extends DatabaseMetricsManager<Bot> {
             await manager.bot.app.db.metrics.save()
         ) as any);
     }
+
+    public async pending(): Promise<Pick<MetricsEntry, "type" | "data">[]> {
+        const entries = await this.db.bot.client.cluster.evalOnManager(((manager: BotClusterManager) =>
+            Array.from(manager.bot.app.db.metrics.pending.entries())
+        ) as any);
+
+        return entries.map(([ type, data ]) => ({
+            type, data
+        }));
+    }
 }
 
 export class AppDatabaseMetricsManager extends DatabaseMetricsManager<App> {
     /* Pending metric entries */
-    private readonly pending: Map<MetricsType, MetricsData>;
+    public readonly pending: Map<MetricsType, MetricsData>;
 
     constructor(db: DatabaseManager<App>) {
         super(db);
