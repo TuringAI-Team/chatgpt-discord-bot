@@ -76,7 +76,7 @@ export class StorageManager {
     }
 
     public async uploadImageDescription(image: ImageDescription, data: ImageBuffer): Promise<void> {
-        const name: string = `${image.id}.${Utils.fileExtension(image.id)}`;
+        const name: string = image.id;
 
         const { error } = await this.client
             .from("descriptions")

@@ -242,6 +242,9 @@ export class AppDatabaseMetricsManager extends DatabaseMetricsManager<App> {
             });
         }
 
+        /* Clear the previous metrics now. */
+        this.pending.clear();
+
         /* Insert the updated metric entries into the collection. */
         await this.db.client
             .from("metrics")
