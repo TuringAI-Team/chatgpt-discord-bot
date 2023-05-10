@@ -1,3 +1,5 @@
+import { Guild } from "discord.js";
+
 import { Event } from "../event/event.js";
 import { Bot } from "../bot/bot.js";
 
@@ -6,9 +8,9 @@ export default class GuildDeleteEvent extends Event {
 		super(bot, "guildDelete");
 	}
 
-	public async run(): Promise<void> {
-        await this.bot.db.metrics.changeGuildsMetric({
-            joins: "-1"
+	public async run(guild: Guild): Promise<void> {
+        if (guild.available) await this.bot.db.metrics.changeGuildsMetric({
+            leaves: "+1"
         });
 	}
 }

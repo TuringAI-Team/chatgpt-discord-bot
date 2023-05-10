@@ -1,4 +1,5 @@
 import { ActionRowBuilder, AttachmentBuilder, AutocompleteInteraction, ButtonBuilder, ButtonInteraction, ButtonStyle, ChatInputCommandInteraction, EmbedBuilder, EmbedField, InteractionReplyOptions, SlashCommandBuilder } from "discord.js";
+import { setTimeout as delay } from "timers/promises";
 
 import { Command, CommandInteraction, CommandOptionChoice, CommandResponse } from "../command/command.js";
 import { Response } from "../command/response.js";
@@ -631,10 +632,8 @@ export default class ImagineCommand extends Command {
 
 				/* Upload the generated images to the storage bucket. */
 				await this.bot.db.storage.uploadImages(result);
+				await delay(1000);
 			}
-
-			/* Increment the user's usage. */
-			await this.bot.db.users.incrementInteractions(db.user, "images");
 
 			if (!usable) {
 				return new ErrorResponse({
@@ -642,6 +641,15 @@ export default class ImagineCommand extends Command {
 					message: "All of the generated images were deemed as **not safe for work**. 🔞\n_Try changing your prompt or using the bot in a channel marked as **NSFW**_."
 				});
 			}
+
+			/* Increment the user's usage. */
+			await this.bot.db.users.incrementInteractions(db.user, "images");
+			
+			await this.bot.db.metrics.changeImageMetric({
+				models: { [model.name]: "+1" },
+				counts: { [count]: "+1" },
+				steps: { [steps]: "+1" }
+			});
 
 			/* Generate the final message, showing the generated results. */
 			const final: Response = await this.formatResultResponse(conversation, db, options, result, moderation, censored);

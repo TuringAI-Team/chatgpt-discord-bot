@@ -53,6 +53,7 @@ export class ReplicateModel extends ChatModel {
         do {
             /* Get the latest prediction result. */
             latest = await this.client.session.manager.bot.replicate.api.predictions.get(prediction.id);
+            if (!latest.output) continue;
             
             const formatted: string | null = format(latest.output);
             if (formatted) options.progress({ text: formatted });

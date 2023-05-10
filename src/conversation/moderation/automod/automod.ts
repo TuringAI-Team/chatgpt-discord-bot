@@ -34,7 +34,10 @@ export type AutoModerationActionData = AutoModerationAction & {
 
 export interface AutoModerationWord {
     /* Words to block */
-    words: string[]; 
+    words: (string | RegExp)[]; 
+
+    /* White-listed words */
+    allowed?: (string | RegExp)[];
 
     /* Which infraction to execute for this flagged word */
     action?: Partial<AutoModerationAction>;

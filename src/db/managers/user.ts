@@ -791,7 +791,7 @@ export class UserManager {
             if (changes.length === 0) continue;
 
             /* Apply the changes to the database. */
-            await Promise.all(changes.map(async (e, i) => {
+            for (const [ i, e ] of changes.entries()) {
                 const id: string = entries[i][0];
 
                 const { error } = await this.db.client
@@ -826,7 +826,7 @@ export class UserManager {
 
                     this.updates[type].delete(id);
                 }
-            }));
+            }
         }
     }
 }

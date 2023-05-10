@@ -7,7 +7,7 @@ type MetricsUpdateValue = `+${string | number}` | `-${string | number}` | string
 type MetricsUpdateObject<T extends MetricsEntry> = Record<keyof T["data"], MetricsUpdateValue>
 
 type MetricsData = { [key: string]: any }
-type MetricsType = "cooldown" | "guilds" | "users" | "chat" | "premium" | "vote"
+type MetricsType = "cooldown" | "guilds" | "users" | "chat" | "premium" | "vote" | "image"
 
 interface MetricsEntry<T extends MetricsType = MetricsType, U extends MetricsData = MetricsData> {
     /* Type of metric */
@@ -70,6 +70,20 @@ type VoteMetricsEntry = MetricsEntry<"vote", {
     count: number
 }>
 
+type ImageMetricsEntry = MetricsEntry<"image", {
+    models: {
+        [key: string]: number;
+    };
+
+    counts: {
+        [key: number]: number;
+    };
+
+    steps: {
+        [key: number]: number;
+    };
+}>
+
 export class DatabaseMetricsManager<T extends DatabaseManagerBot> {
     protected readonly db: DatabaseManager<T>;
 
@@ -105,6 +119,10 @@ export class ClusterDatabaseMetricsManager extends DatabaseMetricsManager<Bot> {
 
     public changeVoteMetric(updates: Partial<MetricsUpdateObject<VoteMetricsEntry>>): Promise<VoteMetricsEntry["data"]> {
         return this.change("vote", updates);
+    }
+
+    public changeImageMetric(updates: Partial<MetricsUpdateObject<ImageMetricsEntry>>): Promise<ImageMetricsEntry["data"]> {
+        return this.change("image", updates);
     }
 
     private async change<T extends MetricsEntry>(

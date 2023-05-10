@@ -40,7 +40,7 @@ export class AutoModerationFilter {
 
 export class AutoModerationWordFilter extends AutoModerationFilter {
     /* Words / RegEx's to block */
-    private readonly blocked: AutoModerationWord[];
+    private readonly blocked: (AutoModerationWord & Required<Pick<AutoModerationWord, "allowed">>)[];
 
     /* Default action to execute, if no other was specified */
     private readonly action: AutoModerationAction;
@@ -51,7 +51,11 @@ export class AutoModerationWordFilter extends AutoModerationFilter {
     constructor({ description, blocked, action }: AutoModerationWordFilterOptions) {
         super({ description });
 
-        this.blocked = blocked;
+        this.blocked = blocked.map(({ words, action, allowed }) => ({
+            words, action,
+            allowed: allowed ?? []
+        }));
+
         this.action = action;
 
 		this.replacements = new Map([
@@ -71,6 +75,13 @@ export class AutoModerationWordFilter extends AutoModerationFilter {
 		]);
     }
 
+    private matches(filter: AutoModerationWord, input: string): boolean {
+        return filter.words.some(w => {
+            if (filter.allowed!.some(w => typeof w === "string" ? input.includes(w) : input.match(w) !== null)) return false;
+            return typeof w === "string" ? input.includes(w) : input.match(w) !== null;
+        });
+    }
+
     public async filter({ content }: AutoModerationFilterData): Promise<AutoModerationAction | null> {
         /* Which word was flagged by the filters, if any */
         let flagged: AutoModerationWord | null = null;
@@ -78,7 +89,7 @@ export class AutoModerationWordFilter extends AutoModerationFilter {
 
         for (const wordFilter of this.blocked) {
             /* Whether the input message contains this word */
-            const matches: boolean = wordFilter.words.some(w => cleaned.includes(w));
+            const matches: boolean = this.matches(wordFilter, cleaned);
 
             if (matches) {
                 flagged = wordFilter;
@@ -118,7 +129,7 @@ export const AutoModerationFilters: AutoModerationFilter[] = [
 
         blocked: [
             { words: [ "child porn", "i love cp", "send cp", "i love child porn", "where can i get child porn", "get child porn", "love child porn", "love cp", "watching child porn", "pornografia infantil", "children porn", "infant porn", "children sex", "child sex", "infant sex", "childporn", "childsex", "childrensex" ] },
-            { words: [ "loli"     ], action: { reason: "Content involving underage characters", type: "block" } }
+            { words: [ "loli" ], allowed: [ "hololive" ], action: { reason: "Content involving underage characters", type: "block" } }
         ]
     }),
 
@@ -146,7 +157,7 @@ export const AutoModerationFilters: AutoModerationFilter[] = [
         action: { reason: "Homophobic content", type: "block" },
 
         blocked: [
-            { words: [ "trannie", "tranny", "faggot" ] }
+            { words: [ "trannie", "tranny", "faggot", "fagget" ] }
         ]
     })
 ]
