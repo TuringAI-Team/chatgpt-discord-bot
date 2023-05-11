@@ -53,7 +53,7 @@ export default class MetricsCommand extends Command {
 		});
 
 		/* Action to execute */
-		const action: "save" | "view" = interaction.options.getSubcommandGroup(true) as any;
+		const action: "save" | "view" = interaction.options.getSubcommandGroup(false) ?? interaction.options.getSubcommand(true) as any;
 
 		/* Save all pending metrics to the database */
 		if (action === "save") {

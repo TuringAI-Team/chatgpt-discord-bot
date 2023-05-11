@@ -1,9 +1,9 @@
-import { Bot, BotStatus } from "../bot/bot.js";
-import { Utils } from "./utils.js";
-
 import { ActivityType, Awaitable } from "discord.js";
 import chalk from "chalk";
+
 import { StatusTypeEmojiMap, StatusTypeTitleMap } from "../commands/status.js";
+import { Bot, BotStatus } from "../bot/bot.js";
+import { Utils } from "./utils.js";
 
 interface StatusMessage {
     /* Type of the status message */

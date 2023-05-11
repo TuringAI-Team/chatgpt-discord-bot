@@ -92,7 +92,7 @@ export class NatAI {
     }
 
     /**
-     * Set the Clerk authentication manager & all available models up.
+     * Set all available models up.
      */
     public async setup(): Promise<void> {
         await this.fetchModels();

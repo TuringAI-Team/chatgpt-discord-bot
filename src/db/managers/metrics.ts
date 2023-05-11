@@ -202,7 +202,7 @@ export class AppDatabaseMetricsManager extends DatabaseMetricsManager<App> {
             return value;
 
         } else if (typeof value === "object") {
-            const newObject: any = existing ? existing[key] : {};
+            const newObject: any = existing !== null && existing[key] != undefined ? existing[key] : {};
 
             for (const [ objectKey, objectValue ] of Object.entries(value)) {
                 newObject[objectKey] = this.newValue(
@@ -250,12 +250,12 @@ export class AppDatabaseMetricsManager extends DatabaseMetricsManager<App> {
             });
         }
 
-        /* Clear the previous metrics now. */
-        this.pending.clear();
-
         /* Insert the updated metric entries into the collection. */
         await this.db.client
             .from("metrics")
             .insert(entries);
+
+        /* Clear the previous metrics now. */
+        this.pending.clear();
     }
 }

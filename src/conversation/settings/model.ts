@@ -187,7 +187,7 @@ Knowledge cut-off: September 2021
         
         prompt: {
             builder: ({ context }) => `
-I am GPT-4, a new GPT model by OpenAI released on the 14th March 2023. I am an improved version of GPT-3, and more human-like.
+I am GPT-4, a new GPT model by OpenAI released on the 14th March 2023. I am an improved version of ChatGPT, and provide more advanced and complex replies.
 I must provide engaging & entertaining responses.
 
 Current date & time: ${context.time}, ${context.date}
@@ -217,7 +217,7 @@ Knowledge cut-off: September 2021
         }
     }),
 
-    new ChatSettingsModel({
+    /*new ChatSettingsModel({
         name: "Claude",
         description: "Anthropic's Claude",
         emoji: { display: "<:anthropic:1097849339432423454>", fallback: "😲" },
@@ -247,7 +247,7 @@ I am Alpaca, a fine-tuned model specialized in following instructions, based on 
 Current date & time: ${context.time}, ${context.date}
 `
         }
-    }),
+    }),*/
 
     new ReplicateChatSettingsModel({
         name: "Dolly",
