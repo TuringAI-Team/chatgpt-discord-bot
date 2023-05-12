@@ -49,7 +49,7 @@ export default class MetricsCommand extends Command {
 
     public async run(interaction: CommandInteraction): CommandResponse {
 		if (!this.bot.app.config.metrics) return new ErrorResponse({
-			interaction, command: this, message: "Metrics are currently disabled"
+			interaction, command: this, message: "Metrics are disabled"
 		});
 
 		/* Action to execute */
@@ -69,6 +69,7 @@ export default class MetricsCommand extends Command {
 			const type: "chart" | "raw" = interaction.options.getSubcommand(true) as any;
 
 			/* Pending metric entries */
+			const lastResetAt = await this.bot.db.metrics.lastResetAt();
 			const pending = await this.bot.db.metrics.pending();
 
 			if (pending.length === 0) return new ErrorResponse({
@@ -79,6 +80,8 @@ export default class MetricsCommand extends Command {
 				const embed: EmbedBuilder = new EmbedBuilder()
 					.setTitle("Metrics ⚙️")
 					.setColor(this.bot.branding.color);
+
+				if (lastResetAt) embed.setTimestamp(lastResetAt);
 
 				pending.forEach(m => embed.addFields({
 					name: `\`${m.type}\``,

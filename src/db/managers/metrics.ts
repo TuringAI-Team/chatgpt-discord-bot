@@ -1,7 +1,9 @@
-import { DatabaseManager, DatabaseManagerBot } from "../manager.js";
+import { DatabaseCollectionType, DatabaseManager, DatabaseManagerBot } from "../manager.js";
 import { BotClusterManager } from "../../bot/manager.js";
 import { Bot } from "../../bot/bot.js";
 import { App } from "../../app.js";
+import { GPTDatabaseError } from "../../error/gpt/db.js";
+import { randomUUID } from "crypto";
 
 type MetricsUpdateValue = `+${string | number}` | `-${string | number}` | string | number | Object
 type MetricsUpdateObject<T extends MetricsEntry> = Record<keyof T["data"], MetricsUpdateValue>
@@ -18,6 +20,10 @@ interface MetricsEntry<T extends MetricsType = MetricsType, U extends MetricsDat
 
     /* The actual data, varies from type to type */
     data: U;
+}
+
+type DatabaseMetricsEntry<T extends MetricsType = MetricsType, U extends MetricsData = MetricsData> = MetricsEntry<T, U> & {
+    id: string;
 }
 
 type CooldownMetricsEntry = MetricsEntry<"cooldown", {
@@ -160,16 +166,26 @@ export class ClusterDatabaseMetricsManager extends DatabaseMetricsManager<Bot> {
             type, data
         }));
     }
+
+    public async lastResetAt(): Promise<number | null> {
+        return (await this.db.bot.client.cluster.evalOnManager(((manager: BotClusterManager) =>
+            manager.bot.app.db.metrics.lastResetAt
+        ) as any)) as unknown as number;
+    }
 }
 
 export class AppDatabaseMetricsManager extends DatabaseMetricsManager<App> {
     /* Pending metric entries */
     public readonly pending: Map<MetricsType, MetricsData>;
 
+    /* Last time when the metrics got reset */
+    public lastResetAt: number | null;
+
     constructor(db: DatabaseManager<App>) {
         super(db);
 
         this.pending = new Map();
+        this.lastResetAt = null;
     }
 
     /**
@@ -241,21 +257,27 @@ export class AppDatabaseMetricsManager extends DatabaseMetricsManager<App> {
         if (!this.db.bot.config.metrics) return;
 
         /* All new metric entries */
-        const entries: MetricsEntry[] = [];
+        const entries: DatabaseMetricsEntry[] = [];
 
         for (const [ key, data ] of this.pending.entries()) {
             entries.push({
                 type: key, time: new Date().toISOString(),
-                data
+                data, id: randomUUID()
             });
         }
 
         /* Insert the updated metric entries into the collection. */
-        await this.db.client
+        const { error } = await this.db.client
             .from("metrics")
             .insert(entries);
 
-        /* Clear the previous metrics now. */
-        this.pending.clear();
+        if (error) {
+            this.db.bot.logger.error("Failed to save metrics ->", error.message);
+            throw new GPTDatabaseError({ collection: "metrics" as DatabaseCollectionType, raw: error });
+        } else {
+            /* Clear the previous metrics now. */
+            this.lastResetAt = Date.now();
+            this.pending.clear();
+        }
     }
 }
