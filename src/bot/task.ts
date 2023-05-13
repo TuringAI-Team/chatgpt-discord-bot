@@ -44,9 +44,9 @@ const BOT_TASKS: BotTask[] = [
 
     {
         name: "Save metric entries",
-        interval: 15 * 60 * 1000,
+        interval: 60 * 60 * 1000,
 
-        condition: bot => bot.data.id === 0,
+        condition: bot => bot.data.id === 0 && !bot.dev,
         callback: async bot => await bot.db.metrics.save()
     },
 

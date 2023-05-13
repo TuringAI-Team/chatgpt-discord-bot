@@ -268,6 +268,18 @@ export const MetricsCharts: MetricsChart[] = [
 	},
 
 	{
+		description: "Total guilds",
+		name: "guilds-total",
+		type: "guilds",
+
+		settings: {
+			filter: {
+				exclude: [ "joins", "leaves" ]
+			}
+		}
+	},
+
+	{
 		description: "Where cool-down messages are displayed",
 		name: "cooldown-messages",
 		type: "cooldown"
@@ -334,8 +346,43 @@ export const MetricsCharts: MetricsChart[] = [
 
 		settings: {
 			filter: {
-				exclude: [ "models", "tones" ],
-                include: [ "sources" ]
+				exclude: [ "models", "tones", "tokens" ]
+			}
+		}
+	},
+
+	{
+		description: "Usage of Stable Horde models",
+		name: "stable-models",
+		type: "image",
+
+		settings: {
+			filter: {
+				exclude: [ "steps", "counts" ]
+			}
+		}
+	},
+
+	{
+		description: "Usage of Stable Horde generation steps",
+		name: "stable-steps",
+		type: "image",
+
+		settings: {
+			filter: {
+				exclude: [ "counts", "models" ]
+			}
+		}
+	},
+
+	{
+		description: "Usage of Stable Horde image count",
+		name: "stable-count",
+		type: "image",
+
+		settings: {
+			filter: {
+				exclude: [ "steps", "models" ]
 			}
 		}
 	}

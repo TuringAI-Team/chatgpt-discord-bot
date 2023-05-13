@@ -79,8 +79,7 @@ export default class MetricsCommand extends Command {
                 .setDisabled(currentIndex - 1 < 0),
 
             new ButtonBuilder()
-                .setLabel(chart.description)
-                .setCustomId(`metrics:current:${chart.name}`)
+                .setCustomId(`metrics:refresh:${chart.name}`)
                 .setStyle(ButtonStyle.Success).setEmoji("🔄"),
 
             new ButtonBuilder()
@@ -151,7 +150,7 @@ export default class MetricsCommand extends Command {
         data.shift();
 
         /* Type of settings action */
-        const type: "page" | "current" | "time" = data.shift()! as any;
+        const type: "page" | "refresh" | "time" = data.shift()! as any;
 
         /* Database instances, guild & user */
         const db: DatabaseInfo = await this.bot.db.users.fetchData(interaction.user, interaction.guild);
@@ -178,7 +177,7 @@ export default class MetricsCommand extends Command {
 		const time: ChartTimeFrame = TIME_FRAME_OPTIONS.find(t => t.name === timeFrame)!;
 
         /* Change the page */
-        if (type === "page" || type === "time" || type === "current") {
+        if (type === "page" || type === "time" || type === "refresh") {
 			let newChart: MetricsChart | null = null;
 			let newTime: ChartTimeFrame | null = null;
 
