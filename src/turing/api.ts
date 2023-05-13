@@ -11,8 +11,9 @@ import { DatabaseUser } from "../db/managers/user.js";
 import { GPTAPIError } from "../error/gpt/api.js";
 import { Utils } from "../util/utils.js";
 import { Bot } from "../bot/bot.js";
+import { MetricsType } from "../db/managers/metrics.js";
 
-type TuringAPIPath = `cache/${string}` | "imgs/filter" | "imgs/dalle" | `text/${string}` | `video/${TuringVideoModelName}` | `text/alan/${TuringAlanChatModel}`
+type TuringAPIPath = `cache/${string}` | "imgs/filter" | "imgs/dalle" | `text/${string}` | `video/${TuringVideoModelName}` | `text/alan/${TuringAlanChatModel}` | `chart/${MetricsType}`
 
 interface TuringAPIFilterResult {
     isNsfw: boolean;
@@ -231,11 +232,123 @@ export const alanOptions = <T extends TuringAlanImageModifier | TuringAlanSearch
     }));
 }
 
+interface MetricsChartDisplayFilter {
+	exclude?: string[];
+	include?: string[];
+}
+
+interface MetricsChartDisplaySettings {
+	filter?: MetricsChartDisplayFilter;
+	period?: string | number;
+}
+
+export interface MetricsChart {
+	/* Display name of this chart */
+	description: string;
+	name: string;
+
+	/* Which type of chart this is */
+	type: MetricsType;
+
+	/* Various display settings for the graph */
+	settings?: Pick<MetricsChartDisplaySettings, "filter">;
+}
+
+export const MetricsCharts: MetricsChart[] = [
+	{
+		description: "Guild joins & leaves",
+		name: "guilds",
+		type: "guilds",
+
+		settings: {
+			filter: {
+				exclude: [ "total" ]
+			}
+		}
+	},
+
+	{
+		description: "Usage of chat models",
+		name: "chat-models",
+		type: "chat",
+
+		settings: {
+			filter: {
+				exclude: [ "tones", "source", "models.chatgpt" ]
+			}
+		}
+	},
+
+	{
+		description: "Usage of chat tones",
+		name: "chat-tones",
+		type: "chat",
+
+		settings: {
+			filter: {
+				exclude: [ "models", "source", "tones.neutral" ]
+			}
+		}
+	},
+
+	{
+		description: "How chat interactions are done",
+		name: "chat-sources",
+		type: "chat",
+
+		settings: {
+			filter: {
+				exclude: [ "models", "tones" ],
+                include: [ "sources" ]
+			}
+		}
+	}
+]
+
+interface TuringChartOptions {
+    chart: MetricsChart | MetricsType;
+    settings?: MetricsChartDisplaySettings;
+}
+
+interface TuringRawChartResult {
+    image: string;
+    url: string;
+}
+
+export interface TuringChartResult {
+    image: ImageBuffer;
+    url: string;
+}
+
 export class TuringAPI {
     private readonly bot: Bot;
 
     constructor(bot: Bot) {
         this.bot = bot;
+    }
+
+    public async chart({ chart, settings }: TuringChartOptions): Promise<TuringChartResult> {
+        /* Chart type specified */
+        const type: MetricsType = typeof chart === "object" ? chart.type : chart;
+
+        /* Time frame */
+        const period: string | undefined = settings && settings.period ? settings.period.toString() : undefined;
+
+        const filter: MetricsChartDisplayFilter | undefined = settings && settings.filter ? {
+            exclude: [], include: undefined,
+            ...settings.filter
+        } : undefined;
+
+        console.log(JSON.stringify({ period, filter }))
+
+        const result: TuringRawChartResult = await this.request(`chart/${type}`, "POST", {
+            period, filter
+        });
+
+        return {
+            image: ImageBuffer.load(result.image),
+            url: result.url
+        };
     }
 
     public async alan({ prompt, conversation, user, progress, image }: TuringAlanOptions): Promise<TuringAlanResult> {

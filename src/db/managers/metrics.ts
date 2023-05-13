@@ -1,15 +1,17 @@
+import { randomUUID } from "crypto";
+
 import { DatabaseCollectionType, DatabaseManager, DatabaseManagerBot } from "../manager.js";
+import { MentionType } from "../../conversation/generator.js";
 import { BotClusterManager } from "../../bot/manager.js";
+import { GPTDatabaseError } from "../../error/gpt/db.js";
 import { Bot } from "../../bot/bot.js";
 import { App } from "../../app.js";
-import { GPTDatabaseError } from "../../error/gpt/db.js";
-import { randomUUID } from "crypto";
 
 type MetricsUpdateValue = `+${string | number}` | `-${string | number}` | string | number | Object
 type MetricsUpdateObject<T extends MetricsEntry> = Record<keyof T["data"], MetricsUpdateValue>
 
 type MetricsData = { [key: string]: any }
-type MetricsType = "cooldown" | "guilds" | "users" | "chat" | "premium" | "vote" | "image" | "commands"
+export type MetricsType = "cooldown" | "guilds" | "users" | "chat" | "premium" | "vote" | "image" | "commands"
 
 interface MetricsEntry<T extends MetricsType = MetricsType, U extends MetricsData = MetricsData> {
     /* Type of metric */
@@ -65,7 +67,9 @@ type ChatMetricsEntry = MetricsEntry<"chat", {
 
     tones: {
         [key: string]: number;
-    }
+    };
+
+    sources: Record<MentionType, number>;
 }>
 
 type PremiumMetricsEntry = MetricsEntry<"premium", {

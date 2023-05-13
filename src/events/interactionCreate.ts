@@ -3,6 +3,7 @@ import { Interaction, ChatInputCommandInteraction, ButtonInteraction, Autocomple
 import { handleModerationInteraction } from "../util/moderation/moderation.js";
 import { handleIntroductionPageSwitch } from "../util/introduction.js";
 import { handleError } from "../util/moderation/error.js";
+import MetricsCommand from "../commands/dev/metrics.js";
 import { Event } from "../event/event.js";
 import { Bot } from "../bot/bot.js";
 
@@ -16,6 +17,11 @@ export default class InteractionCreateEvent extends Event {
 			if ((interaction.isButton() || interaction.isStringSelectMenu()) && interaction.customId.startsWith("settings:")) {
 				if (!interaction || !interaction.customId) return;
 				return await this.bot.db.settings.handleInteraction(interaction);
+			}
+
+			if (interaction.isButton() && interaction.customId.startsWith("metrics:")) {
+				if (!interaction || !interaction.customId) return;
+				return await this.bot.command.get<MetricsCommand>("metrics").handleInteraction(interaction);
 			}
 
 			if (interaction.isChatInputCommand() || interaction.isMessageContextMenuCommand()) {

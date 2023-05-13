@@ -33,7 +33,7 @@ const BOT_REQUIRED_PERMISSIONS: { [key: string]: PermissionsString } = {
 	"Read Message History": "ReadMessageHistory"
 }
 
-type MentionType = "interactionReply" | "reply" | "inMessage" | "user" | "role" | "dm"
+export type MentionType = "interactionReply" | "reply" | "inMessage" | "user" | "role" | "dm"
 
 enum GeneratorButtonType {
 	Continue
@@ -868,6 +868,12 @@ export class Generator {
 
 			/* Update the reply message in the history entry, if the conversation wasn't reset. */
 			if (conversation.history.length > 0) conversation.history[conversation.history.length - 1].reply = reply;
+
+			if (mentions !== null) await this.bot.db.metrics.changeChatMetric({
+				sources: {
+					[mentions]: "+1"
+				}
+			});
 
 		} catch (error) {
 			/* Don't try to handle Discord API errors, just send the user a notice message in DMs. */

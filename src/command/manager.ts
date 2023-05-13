@@ -128,7 +128,7 @@ export class CommandManager {
 	 */
 	public async applyCooldown(interaction: ChatInputCommandInteraction, db: DatabaseInfo, command: Command): Promise<void> {
 		/* If the command doesn't have a cool-down time set, abort. */
-		if (command.options.cooldown == undefined || this.bot.app.config.discord.owner.includes(interaction.user.id)) return;
+		if (!command.options.cooldown || this.bot.app.config.discord.owner.includes(interaction.user.id)) return;
 		const name: string = this.commandName(interaction, command);
 		
 		/* How long the cool-down should last */
