@@ -15,6 +15,10 @@ export class VoteManager {
         this.bot = bot;
     }
 
+    public voteLink(db: DatabaseUser): string {
+        return this.bot.turing.trackingURL(db, "topgg");
+    }
+
     /**
      * Check if a user has voted for the bot.
      * @param user User to check for

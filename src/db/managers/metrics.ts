@@ -69,15 +69,23 @@ type ChatMetricsEntry = MetricsEntry<"chat", {
         [key: string]: number;
     };
 
+    tokens: {
+        prompt: Record<string, number>;
+        completion: Record<string, number>;
+    };
+
     sources: Record<MentionType, number>;
 }>
 
 type PremiumMetricsEntry = MetricsEntry<"premium", {
-    redeemed: number
+    redeemed: {
+        user: number;
+        guild: number;
+    };
 }>
 
 type VoteMetricsEntry = MetricsEntry<"vote", {
-    count: number
+    count: number;
 }>
 
 type ImageMetricsEntry = MetricsEntry<"image", {

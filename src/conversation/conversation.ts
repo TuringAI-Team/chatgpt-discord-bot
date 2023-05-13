@@ -407,6 +407,18 @@ export class Conversation {
 			}
 		});
 
+		if (result.output.raw && result.output.raw.usage) await this.manager.bot.db.metrics.changeChatMetric({
+			tokens: {
+				prompt: {
+					[model.id]: `+${result.output.raw.usage.prompt}`
+				},
+
+				completion: {
+					[model.id]: `+${result.output.raw.usage.completion}`
+				}
+			}
+		});
+
 		/* Also update the last-updated time and message count in the database for this conversation. */
 		await this.manager.bot.db.users.updateConversation(this, {
 			/* Save a stripped-down version of the chat history in the database. */
@@ -486,7 +498,7 @@ export class Conversation {
 			}
 		}
 
-		if (additional[0]) additional[0].setDescription(`${additional[0].data.description!}\n\nYou can also reduce your cool-down for **completely free**, by simply voting for us on **[top.gg](https://top.gg/en/bot/${this.manager.bot.client.user!.id}/vote)**. 📩\nAfter voting, run \`/vote\` and press the **Check your vote** button.`)
+		if (additional[0]) additional[0].setDescription(`${additional[0].data.description!}\n\nYou can also reduce your cool-down for **completely free**, by simply voting for us on **[top.gg](${this.manager.bot.vote.voteLink(db.user)})**. 📩\nAfter voting, run \`/vote\` and press the **Check your vote** button.`)
 
 		this.manager.bot.db.metrics.changeCooldownMetric({
 			chat: "+1"

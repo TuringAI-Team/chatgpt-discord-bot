@@ -24,26 +24,6 @@ interface MetricsChartBuilderOption {
 
 export default class MetricsCommand extends Command {
     constructor(bot: Bot) {
-		const group = new SlashCommandSubcommandGroupBuilder()
-			.setName("view")
-			.setDescription("View all metrics in charts");
-
-		MetricsCharts.forEach(chart => {
-			const sub = new SlashCommandSubcommandBuilder()
-				.setName(chart.name)
-				.setDescription(chart.description)
-				.addStringOption(builder => builder
-					.setName("time")
-					.setDescription("Which time frame to view the charts in")
-					.addChoices(...TIME_FRAME_OPTIONS.map(t => ({
-						name: t.name,
-						value: t.name
-					})))
-				);
-
-			group.addSubcommand(sub);
-		});
-
         super(bot, new SlashCommandBuilder()
 			.setName("metrics")
 			.setDescription("View information about metrics")
@@ -51,7 +31,26 @@ export default class MetricsCommand extends Command {
 				.setName("save")
 				.setDescription("Save all pending metrics to the database")
 			)
-			.addSubcommandGroup(group)
+			.addSubcommand(builder => builder
+				.setName("view")
+				.setDescription("View all metrics in charts")
+				.addStringOption(builder => builder
+					.setName("which")
+					.setDescription("Which chart to view")
+					.addChoices(...MetricsCharts.map(chart => ({
+						name: chart.description,
+						value: chart.name
+					})))
+				)
+				.addStringOption(builder => builder
+					.setName("time")
+					.setDescription("Which time frame to view the charts in")
+					.addChoices(...TIME_FRAME_OPTIONS.map(t => ({
+						name: t.name,
+						value: t.name
+					})))
+				)
+			)
 		, { private: CommandPrivateType.OwnerOnly });
     }
 
@@ -129,12 +128,16 @@ export default class MetricsCommand extends Command {
 		/* Fetch the actual chart. */
 		const result = await this.fetchChart({ chart, time });
 
+		/* Last save time */
+		const lastResetAt: number | null = await this.bot.db.metrics.lastResetAt();
+
         /* Final response */
         const response: Response = new Response()
 			.addEmbed(builder => builder
 				.setImage(result.url)
 				.setTitle(`${chart.description} 📊`)
-				.setColor(this.bot.branding.color)	
+				.setColor(this.bot.branding.color)
+				.setTimestamp(lastResetAt)
 			);
 
         return response
@@ -153,11 +156,9 @@ export default class MetricsCommand extends Command {
         /* Database instances, guild & user */
         const db: DatabaseInfo = await this.bot.db.users.fetchData(interaction.user, interaction.guild);
 
-		if (Date.now() - interaction.message.createdTimestamp > 5 * 60 * 1000) {
-            return void await new ErrorResponse({
-                interaction, message: `This chart menu can't be used anymore; run \`/metrics view\` again to continue`, emoji: "😔"
-            }).send(interaction);
-        }
+		if (interaction.user.id !== interaction.message.interaction?.user.id) return void await new ErrorResponse({
+			interaction, message: `This chart menu doesn't belong to you; run \`/metrics view\` to use it yourself`, emoji: "😔"
+		}).send(interaction);
 
         const chartType: string = (interaction.message.components[0] as ActionRow<ButtonComponent>)
             .components[1].customId!.split(":").pop()!;
@@ -177,7 +178,7 @@ export default class MetricsCommand extends Command {
 		const time: ChartTimeFrame = TIME_FRAME_OPTIONS.find(t => t.name === timeFrame)!;
 
         /* Change the page */
-        if (type === "page" || type === "time") {
+        if (type === "page" || type === "time" || type === "current") {
 			let newChart: MetricsChart | null = null;
 			let newTime: ChartTimeFrame | null = null;
 
@@ -207,8 +208,6 @@ export default class MetricsCommand extends Command {
             
             await interaction.message.edit(page.get() as MessageEditOptions);
 		}
-
-		console.log(chartType, chart, chartIndex, timeFrame)
 	}
 
     public async run(interaction: CommandInteraction, db: DatabaseInfo): CommandResponse {
@@ -230,8 +229,8 @@ export default class MetricsCommand extends Command {
 		/* View all pending metrics */
 		} else if (action === "view") {
 			/* Name of the chart to view */
-			const metricName: string = interaction.options.getSubcommand();
-			const metric: MetricsChart = MetricsCharts.find(c => c.name === metricName)!;
+			const metricName: string | null = interaction.options.getString("which", false);
+			const metric: MetricsChart = metricName !== null ? MetricsCharts.find(c => c.name === metricName)! : MetricsCharts[0];
 
 			/* Time period to display */
 			const time: ChartTimeFrame = interaction.options.getString("time", false) ?

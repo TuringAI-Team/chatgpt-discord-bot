@@ -268,13 +268,25 @@ export const MetricsCharts: MetricsChart[] = [
 	},
 
 	{
+		description: "Where cool-down messages are displayed",
+		name: "cooldown-messages",
+		type: "cooldown"
+	},
+
+	{
+		description: "Votes for the bot",
+		name: "votes",
+		type: "vote"
+	},
+
+	{
 		description: "Usage of chat models",
 		name: "chat-models",
 		type: "chat",
 
 		settings: {
 			filter: {
-				exclude: [ "tones", "source", "models.chatgpt" ]
+				exclude: [ "tones", "sources", "tokens", "models.chatgpt" ]
 			}
 		}
 	},
@@ -286,7 +298,31 @@ export const MetricsCharts: MetricsChart[] = [
 
 		settings: {
 			filter: {
-				exclude: [ "models", "source", "tones.neutral" ]
+				exclude: [ "models", "sources", "tokens", "tones.neutral" ]
+			}
+		}
+	},
+
+	{
+		description: "Token usage for chat models (prompt)",
+		name: "chat-tokens-prompt",
+		type: "chat",
+
+		settings: {
+			filter: {
+				exclude: [ "models", "sources", "tones", "tokens.completion" ]
+			}
+		}
+	},
+
+	{
+		description: "Token usage for chat models (completion)",
+		name: "chat-tokens-completion",
+		type: "chat",
+
+		settings: {
+			filter: {
+				exclude: [ "models", "sources", "tones", "tokens.prompt" ]
 			}
 		}
 	},
@@ -320,11 +356,17 @@ export interface TuringChartResult {
     url: string;
 }
 
+export type TuringTrackingType = "topgg"
+
 export class TuringAPI {
     private readonly bot: Bot;
 
     constructor(bot: Bot) {
         this.bot = bot;
+    }
+
+    public trackingURL(db: DatabaseUser, type: TuringTrackingType): `https://l.turing.sh/${TuringTrackingType}/${string}` {
+        return `https://l.turing.sh/${type}/${db.id}`;
     }
 
     public async chart({ chart, settings }: TuringChartOptions): Promise<TuringChartResult> {
@@ -338,8 +380,6 @@ export class TuringAPI {
             exclude: [], include: undefined,
             ...settings.filter
         } : undefined;
-
-        console.log(JSON.stringify({ period, filter }))
 
         const result: TuringRawChartResult = await this.request(`chart/${type}`, "POST", {
             period, filter

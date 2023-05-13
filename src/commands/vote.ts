@@ -2,6 +2,7 @@ import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, SlashComman
 
 import { CONVERSATION_COOLDOWN_MODIFIER, CONVERSATION_DEFAULT_COOLDOWN } from "../conversation/conversation.js";
 import { Command, CommandResponse } from "../command/command.js";
+import { DatabaseInfo } from "../db/managers/user.js";
 import { Response } from "../command/response.js";
 import { Bot } from "../bot/bot.js";
 
@@ -14,7 +15,7 @@ export default class VoteCommand extends Command {
 		);
     }
 
-    public async run(): CommandResponse {
+    public async run(_: any, { user }: DatabaseInfo): CommandResponse {
 		const fields = [
 			{
 				key: "Way lower cool-down ⏰",
@@ -45,13 +46,14 @@ export default class VoteCommand extends Command {
 					.setStyle(ButtonStyle.Success),
 
 				new ButtonBuilder()
-					.setURL(`https://top.gg/en/bot/${this.bot.client.user!.id}/vote`)
+					.setURL(this.bot.vote.voteLink(user))
 					.setLabel("Vote")
 					.setStyle(ButtonStyle.Link)
 			);
 
         return new Response()
             .addEmbed(builder)
-			.addComponent(ActionRowBuilder<ButtonBuilder>, row);
+			.addComponent(ActionRowBuilder<ButtonBuilder>, row)
+			.setEphemeral(true);
     }
 }
