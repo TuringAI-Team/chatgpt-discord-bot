@@ -2,12 +2,12 @@ import { APIApplicationCommandOptionChoice, ActionRow, ActionRowBuilder, Awaitab
 import chalk from "chalk";
 
 import { TuringAlanImageGenerators, TuringAlanImageModifiers, TuringAlanPlugins, TuringAlanSearchEngines, TuringVideoModels, alanOptions } from "../../turing/api.js";
-import { DatabaseInfo, DatabaseUser, UserSettings, UserTestingGroup } from "./user.js";
 import { LoadingIndicatorManager, LoadingIndicators } from "../types/indicator.js";
 import { GENERATION_SIZES, getAspectRatio } from "../../commands/imagine.js";
 import { STABLE_HORDE_AVAILABLE_MODELS } from "../../image/types/model.js";
 import { ChatSettingsModels } from "../../conversation/settings/model.js";
 import { ChatSettingsTones } from "../../conversation/settings/tone.js";
+import { DatabaseInfo, DatabaseUser, UserSettings } from "./user.js";
 import { Conversation } from "../../conversation/conversation.js";
 import { ErrorResponse } from "../../command/response/error.js";
 import { RestrictionType } from "../types/restriction.js";
@@ -742,7 +742,7 @@ export class UserSettingsManager {
                 const choice: ChoiceSettingOptionChoice | null = option.data.choices.find(c => c.value === newValueName) ?? null;
                 if (choice === null) return;
 
-                if (choice.restricted === RestrictionType.TesterOnly && db.user.tester === UserTestingGroup.None) {
+                if (choice.restricted === RestrictionType.TesterOnly && !this.db.role.tester(db.user)) {
                     return void await new Response()
                         .addEmbed(builder => builder
                             .setDescription(`The choice **${choice.name}**${choice.emoji ? ` ${typeof choice.emoji === "object" ? Emoji.display(choice.emoji, true) : choice.emoji}` : ""} is restricted to **testers**. ⚒️`)

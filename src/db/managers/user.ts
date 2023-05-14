@@ -13,6 +13,7 @@ import { GPTDatabaseError } from "../../error/gpt/db.js";
 import { ClientDatabaseManager } from "../cluster.js";
 import { ImageDescription } from "./description.js";
 import { DatabaseCollectionType } from "../manager.js";
+import { UserRoles } from "./role.js";
 
 /* Type of moderation action */
 export type DatabaseUserInfractionType = "ban" | "unban" | "warn" | "moderation"
@@ -33,12 +34,11 @@ export interface RawDatabaseGuild {
 export interface RawDatabaseUser {
     id: Snowflake;
     created: string;
-    moderator: boolean;
     interactions: DatabaseInteractionStatistics;
     infractions: DatabaseUserInfraction[];
     subscription: DatabaseSubscription | null;
-    tester: UserTestingGroup;
     settings: UserSettings;
+    roles: UserRoles;
     voted: string | null;
 }
 
@@ -144,9 +144,6 @@ export interface DatabaseUser {
 
     /* When the user first interacted with the bot */
     created: number;
-    
-    /* Whether the user is a moderator of the bot */
-    moderator: boolean;
 
     /* How many interactions the user has with the bot */
     interactions: DatabaseInteractionStatistics;
@@ -157,28 +154,18 @@ export interface DatabaseUser {
     /* Information about the user's subscription status */
     subscription: DatabaseSubscription | null;
 
-    /* Testing group */
-    tester: UserTestingGroup;
-
-    /* Other miscellaneous data about the user */
+    /* The user's configured settings */
     settings: UserSettings;
+
+    /* The user's roles */
+    roles: UserRoles;
 
     /* When the user voted for the bot */
     voted: string | null;
 }
 
 export type UserSettings = Record<string, any>
-
-export enum UserTestingGroup {
-    /* Not a tester */
-    None = 0,
-
-    /* Normal tester */
-    Normal = 1,
-
-    /* Priority tester; gets access to new features first */
-    Priority = 2
-}
+export type UserSubscriptionType = "UserPremium" | "GuildPremium" | "Voter" | "Free"
 
 export interface DatabaseInteractionStatistics {
     commands: number;
@@ -286,7 +273,7 @@ export class UserManager {
             ? process(converter ? await converter(data[0] as V) : data[0] as U)
             : converter ? await converter(data[0] as V) : data[0] as U;
 
-        await this.setCache(type, id, final);
+        await this.setCache(type, id, final as any);
         return final;
     }
 
@@ -321,11 +308,9 @@ export class UserManager {
             interactions: {
                 commands: 0, messages: 0, images: 0, resets: 0, translations: 0, votes: 0, image_descriptions: 0, cooldown_messages: 0, videos: 0
             },
-            moderator: this.db.bot.app.config.discord.owner.includes(user.id),
-            subscription: null,
-            tester: this.db.bot.app.config.discord.owner.includes(user.id) ? UserTestingGroup.Priority : UserTestingGroup.None,
+            subscription: null, voted: null,
             settings: this.db.settings.template(),
-            voted: null
+            roles: this.db.role.template(user)
         };
     }
 
@@ -342,10 +327,9 @@ export class UserManager {
             id: raw.id,
             interactions: interactions as DatabaseInteractionStatistics,
             infractions: raw.infractions ?? [],
-            moderator: raw.moderator ?? false,
             subscription: raw.subscription ?? null,
-            tester: raw.tester ?? UserTestingGroup.None,
             settings: raw.settings ?? this.db.settings.template(),
+            roles: raw.roles,
             voted: raw.voted ?? null
         };
     
@@ -534,19 +518,15 @@ export class UserManager {
     }
 
     public async updateModeratorStatus(user: DatabaseUser, status: boolean): Promise<void> {
-        return void await this.updateUser(user, {
-            moderator: status
-        });
+        return void await this.db.role.toggle(user, "moderator", status);
     }
 
-    public async updateTesterStatus(user: DatabaseUser, status: UserTestingGroup): Promise<void> {
-        return void await this.updateUser(user, {
-            tester: status
-        });
+    public async updateTesterStatus(user: DatabaseUser, status: boolean): Promise<void> {
+        return void await this.db.role.toggle(user, "tester", status);
     }
 
     public subscriptionIcon({ user, guild }: DatabaseInfo): "⚒️" | "✨" | "💫" | "📩" | "👤" {
-        if (user.moderator) return "⚒️";
+        if (this.db.role.moderator(user)) return "⚒️";
         
         if (user.subscription !== null) return "✨";
         if (guild && guild.subscription !== null) return "💫";
@@ -555,7 +535,7 @@ export class UserManager {
         return "👤";
     }
 
-    public subscriptionType({ user, guild }: DatabaseInfo): "UserPremium" | "GuildPremium" | "Voter" | "Free" {
+    public subscriptionType({ user, guild }: DatabaseInfo): UserSubscriptionType {
         if (user.subscription !== null) return "UserPremium";
         if (guild && guild.subscription !== null) return "GuildPremium";
 

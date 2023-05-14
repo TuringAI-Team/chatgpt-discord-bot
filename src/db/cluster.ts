@@ -2,6 +2,7 @@ import { ClusterDatabaseMetricsManager } from "./managers/metrics.js";
 import { ImageDescriptionManager } from "./managers/description.js";
 import { UserSettingsManager } from "./managers/settings.js";
 import { StorageManager } from "./managers/storage.js";
+import { UserRoleManager } from "./managers/role.js";
 import { CacheManager } from "./managers/cache.js";
 import { UserManager } from "./managers/user.js";
 import { DatabaseManager } from "./manager.js";
@@ -13,6 +14,7 @@ export class ClientDatabaseManager extends DatabaseManager<Bot> {
     public readonly description: ImageDescriptionManager;
     public readonly settings: UserSettingsManager;
     public readonly storage: StorageManager;
+    public readonly role: UserRoleManager;
     public readonly cache: CacheManager;
     public readonly users: UserManager;
 
@@ -23,6 +25,7 @@ export class ClientDatabaseManager extends DatabaseManager<Bot> {
         this.description = new ImageDescriptionManager(this);
         this.settings = new UserSettingsManager(this);
         this.storage = new StorageManager(this);
+        this.role = new UserRoleManager(this);
         this.cache = new CacheManager(this);
         this.users = new UserManager(this);
     }

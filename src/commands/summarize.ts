@@ -1,9 +1,9 @@
 import { APIEmbedField, ActionRowBuilder, EmbedBuilder, InteractionResponse, SlashCommandBuilder, StringSelectMenuBuilder } from "discord.js";
 import { YoutubeTranscriptError } from "youtube-transcript";
 
-import { Command, CommandInteraction, CommandPrivateType, CommandResponse } from "../command/command.js";
 import { ModerationResult, checkYouTubeQuery } from "../conversation/moderation/moderation.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
+import { Command, CommandInteraction, CommandResponse } from "../command/command.js";
 import { countChatMessageTokens } from "../conversation/utils/length.js";
 import { ErrorResponse, ErrorType } from "../command/response/error.js";
 import { YouTubeSubtitle, YouTubeVideo } from "../util/youtube.js";
@@ -88,7 +88,7 @@ export default class SummarizeCommand extends Command {
 				UserPremium: 60 * 1000
 			},
 
-			private: CommandPrivateType.OwnerOnly
+			restriction: "owner"
 		});
 	}
 

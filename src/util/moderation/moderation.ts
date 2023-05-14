@@ -1,7 +1,7 @@
 import { ComponentType, ActionRowBuilder, ButtonBuilder, APIButtonComponentWithCustomId, ButtonInteraction, ButtonStyle, EmbedBuilder, Interaction, InteractionReplyOptions, Message, MessageEditOptions, ModalActionRowComponentBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, User, StringSelectMenuBuilder, StringSelectMenuInteraction, Collection, Snowflake } from "discord.js";
 import dayjs from "dayjs";
 
-import { DatabaseUser, DatabaseUserInfraction, DatabaseUserInfractionType, DatabaseInfo, UserTestingGroup } from "../../db/managers/user.js";
+import { DatabaseUser, DatabaseUserInfraction, DatabaseUserInfractionType, DatabaseInfo } from "../../db/managers/user.js";
 import { ModerationOptions, ModerationResult } from "../../conversation/moderation/moderation.js";
 import { AutoModerationActionType } from "../../conversation/moderation/automod/automod.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../../error/gpt/generation.js";
@@ -476,20 +476,14 @@ export const buildUserOverview = async (bot: Bot, target: User, db: DatabaseUser
                 },
 
                 {
-                    name: "Testing group 👀",
-                    value: `**${UserTestingGroup[db.tester]}** (\`${db.tester}\`)`,
+                    name: "Roles ⚒️",
+                    value: [ ... bot.db.role.roles(db), "*User*" ].map(role => `**${Utils.titleCase(role)}**`).join(", "),
                     inline: true
                 },
 
                 {
                     name: "Voted 📩",
                     value: db.voted ? `<t:${Math.round(Date.parse(db.voted) / 1000)}:R>` : "❌",
-                    inline: true
-                },
-
-                {
-                    name: "Moderator ⚒️",
-                    value: db.moderator ? "✅" : "❌",
                     inline: true
                 },
 

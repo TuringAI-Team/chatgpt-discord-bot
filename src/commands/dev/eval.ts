@@ -1,7 +1,7 @@
 import { Awaitable, SlashCommandBuilder } from "discord.js";
 import { inspect } from "util";
 
-import { Command, CommandInteraction, CommandPrivateType, CommandResponse } from "../../command/command.js";
+import { Command, CommandInteraction, CommandResponse } from "../../command/command.js";
 import { Response } from "../../command/response.js";
 import { Bot } from "../../bot/bot.js";
 
@@ -14,7 +14,7 @@ export default class EvaluateCommand extends Command {
 				.addStringOption(builder => builder
 					.setName("code")
 					.setDescription("Code snippet to run"))
-        , { private: CommandPrivateType.OwnerOnly });
+        , { restriction: "owner" });
     }
 
 	private async clean(result: Awaitable<any>): Promise<string> {

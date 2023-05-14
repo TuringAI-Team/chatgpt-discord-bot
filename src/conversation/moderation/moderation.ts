@@ -172,9 +172,9 @@ export const checkImagePrompt = async ({ conversation, db, content, nsfw, model 
         conversation, db, content,
         source: "image",
 
-        /* Check for all possibly flags, *expect* for `sexual` flags to give people some freedom with their stupid prompts. */ 
-        filter: nsfw ? (action) => {
-            if (action && action.description === "Block sexual words") return true;
+        /* Check for all possibly flags, *except* for `sexual` flags to give people some freedom with their prompts. */ 
+        filter: nsfw ? action => {
+            if (action.description === "Block sexual words" ) return true;
             return false;
         } : undefined,
 

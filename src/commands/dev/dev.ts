@@ -6,7 +6,7 @@ import NodeCache from "node-cache";
 import chalk from "chalk";
 import dayjs from "dayjs";
 
-import { Command, CommandInteraction, CommandPrivateType, CommandResponse } from "../../command/command.js";
+import { Command, CommandInteraction, CommandResponse } from "../../command/command.js";
 import { SessionCostProducts } from "../../conversation/session.js";
 import { RawDatabaseUser } from "../../db/managers/user.js";
 import { Bot, BotDiscordClient } from "../../bot/bot.js";
@@ -49,7 +49,7 @@ export default class DeveloperCommand extends Command {
 				.setName("crash")
 				.setDescription("Crash the cluster")
 			)
-		, { long: true, private: CommandPrivateType.OwnerOnly });
+		, { long: true, restriction: "owner" });
 	}
 
     public async run(interaction: CommandInteraction): CommandResponse {

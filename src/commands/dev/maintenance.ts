@@ -1,7 +1,7 @@
 import { SlashCommandBuilder } from "discord.js";
 
-import { Command, CommandInteraction, CommandPrivateType, CommandResponse } from "../../command/command.js";
 import { StatusTypeColorMap, StatusTypeEmojiMap, StatusTypeTitleMap } from "../status.js";
+import { Command, CommandInteraction, CommandResponse } from "../../command/command.js";
 import { Bot, BotStatusType } from "../../bot/bot.js";
 import { Response } from "../../command/response.js";
 
@@ -27,7 +27,7 @@ export default class MaintenanceCommand extends Command {
 					.setDescription("Notice message to display")
 					.setRequired(false)
 				)
-        , { private: CommandPrivateType.OwnerOnly });
+        , { restriction: "owner" });
     }
 
     public async run(interaction: CommandInteraction): CommandResponse {

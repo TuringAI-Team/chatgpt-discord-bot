@@ -5,6 +5,7 @@ import { APIApplicationCommandOptionChoice } from "discord-api-types/v10";
 import { DatabaseInfo } from "../db/managers/user.js";
 import { Response } from "./response.js";
 import { Bot } from "../bot/bot.js";
+import { UserRole, UserRoles } from "../db/managers/role.js";
 
 export type CommandBuilder = 
 	SlashCommandBuilder
@@ -17,16 +18,7 @@ export type CommandOptionChoice<T = string | number> = APIApplicationCommandOpti
 
 export type CommandResponse = Promise<Response | undefined>
 
-export enum CommandPrivateType {
-	/* The command can only be used by Premium subscribers; both guild & user Premium */
-	PremiumOnly = "premium",
-
-	/* The command can only be used by moderators & the owner; it is restricted to the development server */
-	ModeratorOnly = "mod",
-
-	/* The command can only be used by the owner; it is restricted to the development server */
-	OwnerOnly = "owner"
-}
+export type CommandRestrictionType = UserRoles | UserRole | "premium"
 
 export interface CommandSpecificCooldown {
 	Free: number;
@@ -50,8 +42,8 @@ export interface CommandOptions {
 	/* Whether the command requires the bot to be fully started */
 	waitForStart?: boolean;
 
-	/* Whether the command should be restricted to the development server */
-	private?: CommandPrivateType;
+	/* Which roles the command should be restricted to */
+	restriction?: CommandRestrictionType;
 }
 
 export class Command<U extends ContextMenuCommandInteraction | ChatInputCommandInteraction = ChatInputCommandInteraction, T extends CommandOptions = CommandOptions> {
@@ -61,16 +53,16 @@ export class Command<U extends ContextMenuCommandInteraction | ChatInputCommandI
 	public readonly builder: CommandBuilder;
 
     /* Other command options */
-    public readonly options: T;
+    public readonly options: Required<T>;
 
-	constructor(bot: Bot, builder: CommandBuilder, options?: T, defaultOptions: T = { long: false, cooldown: null, private: undefined, waitForStart: false } as any) {
+	constructor(bot: Bot, builder: CommandBuilder, options?: T, defaultOptions: T = { long: false, cooldown: null, roles: [], waitForStart: false } as any) {
 		this.bot = bot;
 		this.builder = builder;
 
         this.options = {
 			...defaultOptions,
 			...options ?? {}
-		};
+		} as Required<T>;
 	}
 
 	/**

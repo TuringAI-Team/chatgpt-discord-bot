@@ -103,8 +103,7 @@ export abstract class Utils {
 
 	public static titleCase(content: string): string {
 		return content
-			.replaceAll("_", " ")
-			.toLowerCase().split(" ")
+			.replaceAll("_", " ").split(" ")
 			.map(word => word.charAt(0).toUpperCase() + word.slice(1))
 			.join(" ");
 	}

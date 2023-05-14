@@ -1,8 +1,8 @@
 import { AttachmentBuilder, Guild, SlashCommandBuilder, User } from "discord.js";
 import dayjs from "dayjs";
 
-import { Command, CommandInteraction, CommandPrivateType, CommandResponse } from "../../command/command.js";
 import { DatabaseSubscriptionKey, DatabaseSubscriptionType } from "../../db/managers/user.js";
+import { Command, CommandInteraction, CommandResponse } from "../../command/command.js";
 import { SUBSCRIPTION_DURATION_OPTIONS } from "./grant.js";
 import { Response } from "../../command/response.js";
 import { Bot } from "../../bot/bot.js";
@@ -59,7 +59,7 @@ export default class KeysCommand extends Command {
 				)
 			)
 
-		, { private: CommandPrivateType.OwnerOnly });
+		, { restriction: "owner" });
 	}
 
     public async run(interaction: CommandInteraction): CommandResponse {

@@ -1,6 +1,6 @@
 import { ActionRow, ActionRowBuilder, ButtonBuilder, ButtonComponent, ButtonInteraction, ButtonStyle, MessageEditOptions, SlashCommandBuilder, SlashCommandSubcommandBuilder, SlashCommandSubcommandGroupBuilder } from "discord.js";
 
-import { Command, CommandInteraction, CommandPrivateType, CommandResponse } from "../../command/command.js";
+import { Command, CommandInteraction, CommandResponse } from "../../command/command.js";
 import { MetricsChart, MetricsCharts, TuringChartResult } from "../../turing/api.js";
 import { LoadingIndicatorManager } from "../../db/types/indicator.js";
 import { NoticeResponse } from "../../command/response/notice.js";
@@ -51,7 +51,7 @@ export default class MetricsCommand extends Command {
 					})))
 				)
 			)
-		, { private: CommandPrivateType.OwnerOnly });
+		, { restriction: "owner" });
     }
 
 	public async fetchChart({ chart, time }: MetricsChartBuilderOption): Promise<TuringChartResult> {

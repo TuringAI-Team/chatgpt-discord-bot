@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, User } from "discord.js";
 
-import { Command, CommandInteraction, CommandPrivateType, CommandResponse } from "../../command/command.js";
+import { Command, CommandInteraction, CommandResponse } from "../../command/command.js";
 import { DatabaseUser } from "../../db/managers/user.js";
 import { Response } from "../../command/response.js";
 import { Utils } from "../../util/utils.js";
@@ -22,7 +22,7 @@ export default class BanCommand extends Command {
 					.setDescription("Reason for the ban/unban")
 					.setRequired(false)
 				)
-        , { private: CommandPrivateType.ModeratorOnly });
+        , { restriction: "moderator" });
     }
 
     public async run(interaction: CommandInteraction): CommandResponse {

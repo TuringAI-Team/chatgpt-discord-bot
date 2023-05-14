@@ -1,8 +1,8 @@
 import { AttachmentBuilder, SlashCommandBuilder } from "discord.js";
 
-import { Command, CommandInteraction, CommandPrivateType, CommandResponse } from "../command/command.js";
 import { ModerationResult, checkVideoPrompt } from "../conversation/moderation/moderation.js";
 import { TuringVideoModel, TuringVideoModels, TuringVideoOptions } from "../turing/api.js";
+import { Command, CommandInteraction, CommandResponse } from "../command/command.js";
 import { ErrorResponse, ErrorType } from "../command/response/error.js";
 import { Conversation } from "../conversation/conversation.js";
 import { handleError } from "../util/moderation/error.js";
@@ -44,7 +44,7 @@ export default class VideoCommand extends Command {
 				UserPremium: 5 * 60 * 1000
 			},
 
-			private: CommandPrivateType.PremiumOnly
+			restriction: "premium"
 		});
 	}
 

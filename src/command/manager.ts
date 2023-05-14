@@ -2,7 +2,7 @@ import { ActionRowBuilder, AutocompleteInteraction, ComponentType, ButtonStyle, 
 import { RESTPostAPIApplicationCommandsJSONBody, Routes } from "discord-api-types/v10";
 import { DiscordAPIError, REST } from "@discordjs/rest";
 
-import { Command, CommandOptionChoice, CommandPrivateType, CommandSpecificCooldown } from "./command.js";
+import { Command, CommandOptionChoice, CommandRestrictionType, CommandSpecificCooldown } from "./command.js";
 import { DatabaseInfo, DatabaseUserInfraction } from "../db/managers/user.js";
 import { handleError } from "../util/moderation/error.js";
 import { Bot, BotStatus } from "../bot/bot.js";
@@ -56,7 +56,7 @@ export class CommandManager {
         if (this.commands.size === 0) throw new Error("Commands have not been loaded yet");
 
 		/* Information about each application command, as JSON */
-		const commandList: RESTPostAPIApplicationCommandsJSONBody[] = this.commands.filter(cmd => cmd.options.private == undefined || cmd.options.private === CommandPrivateType.PremiumOnly).map(cmd =>
+		const commandList: RESTPostAPIApplicationCommandsJSONBody[] = this.commands.filter(cmd => cmd.options.restriction == undefined || cmd.options.restriction === "premium").map(cmd =>
 			(cmd.builder as SlashCommandBuilder).setDefaultPermission(true).toJSON()
 		);
 
@@ -66,7 +66,7 @@ export class CommandManager {
 		return new Promise(async (resolve, reject) => {
 			/* Register the serialized list of moderation-specific commands to Discord. */
 			await client.put(Routes.applicationGuildCommands(this.bot.app.config.discord.id, this.bot.app.config.channels.moderation.guild), {
-				body: this.commands.filter(cmd => cmd.options.private != undefined && cmd.options.private != CommandPrivateType.PremiumOnly).map(cmd =>
+				body: this.commands.filter(cmd => cmd.options.restriction != undefined && cmd.options.restriction !== "premium").map(cmd =>
 					(cmd.builder as SlashCommandBuilder).setDefaultPermission(true).toJSON()
 				)
 			});
@@ -172,7 +172,7 @@ export class CommandManager {
 		const subscription = this.bot.db.users.subscriptionType(db);
 
 		/* If this command is Premium-only and the user doesn't have a subscription, ... */
-		if (command.options.private === CommandPrivateType.PremiumOnly && !subscription.includes("Premium")) {
+		if (command.options.restriction === "premium" && !subscription.includes("Premium")) {
 			return await interaction.respond([
 				{ name: `The command /${command.builder.name} is only available to Premium users.`, value: "" },
 				{ name: `Premium 🌟 also includes many additional benefits; view /premium info for more.`, value: "" }
@@ -210,17 +210,6 @@ export class CommandManager {
 				.setColor("Orange")
 			).setEphemeral(true).send(interaction);
 
-		/* Current status of the bot */
-		const status: BotStatus = await this.bot.status();
-
-		if (status.type === "maintenance" && !command.options.private) return void await new Response()
-			.addEmbed(builder => builder
-				.setTitle("The bot is currently under maintenance 🛠️")
-				.setDescription(status.notice !== undefined ? `*${status.notice}*` : null)
-				.setTimestamp(status.since)
-				.setColor("Orange")
-			).setEphemeral(true).send(interaction);
-
 		/* Get the current cool-down of the command. */
 		const cooldown: CooldownData | null = await this.cooldown(interaction, command);
 
@@ -228,8 +217,19 @@ export class CommandManager {
 		let db: DatabaseInfo = await this.bot.db.users.fetchData(interaction.user, interaction.guild);
 		const subscription = this.bot.db.users.subscriptionType(db);
 
+		/* Current status of the bot */
+		const status: BotStatus = await this.bot.status();
+
+		if (status.type === "maintenance" && !this.bot.db.role.canExecuteCommand(db.user, command, status)) return void await new Response()
+			.addEmbed(builder => builder
+				.setTitle("The bot is currently under maintenance 🛠️")
+				.setDescription(status.notice !== undefined ? `*${status.notice}*` : null)
+				.setTimestamp(status.since)
+				.setColor("Orange")
+			).setEphemeral(true).send(interaction);
+
 		/* If this command is Premium-only and the user doesn't have a subscription, ... */
-		if (command.options.private === CommandPrivateType.PremiumOnly && !subscription.includes("Premium")) {
+		if (command.options.restriction === "premium" && !subscription.includes("Premium")) {
 			const response = new Response()
 				.addEmbed(builder => builder
 					.setDescription(`The ${interaction instanceof MessageContextMenuCommandInteraction ? `context menu action \`${command.builder.name}\`` : `command \`/${command.builder.name}\``} is only available to **Premium** users. **Premium 🌟** also includes many additional benefits; view \`/premium info\` for more.`)
@@ -283,22 +283,16 @@ export class CommandManager {
 		}
 
 		/* If the command is marked as private, do some checks to make sure only privileged users are able to execute this command. */
-		if (command.options.private != undefined && command.options.private !== CommandPrivateType.PremiumOnly) {
-			/* If the command was executed on the wrong guild, silently ignore it. */
-			if (interaction.guildId === null || interaction.guildId !== this.bot.app.config.channels.moderation.guild) return;
+		if (command.options.restriction !== "premium") {
+			/* Whether the user can execute this command */
+			const canExecute: boolean = this.bot.db.role.canExecuteCommand(db.user, command);
 
-			/* Check whether the user has the correct permissions to execute this command. */
-			if (
-				(command.options.private === CommandPrivateType.OwnerOnly && !this.bot.app.config.discord.owner.includes(interaction.user.id)) ||
-				(command.options.private === CommandPrivateType.ModeratorOnly && !db.user.moderator)
-			) {
-				return void await new Response()
-					.addEmbed(builder => builder
-						.setDescription(`You are not ${command.options.private === CommandPrivateType.OwnerOnly ? "the owner" : "a moderator"} of the bot 🤨`)
-						.setColor("Red")
-					).setEphemeral(true)
-				.send(interaction);
-			}
+			if (!canExecute) return void await new Response()
+				.addEmbed(builder => builder
+					.setDescription(`You are not allowed to run this command 🤨`)
+					.setColor("Red")
+				).setEphemeral(true)
+			.send(interaction);
 		}
 
 		/* Defer the message, in case the command may execute for more than 3 seconds. */
@@ -312,7 +306,7 @@ export class CommandManager {
 		const unread: DatabaseUserInfraction[] = this.bot.db.users.unread(db.user);
 
 		/* If the user is banned from the bot, send a notice message. */
-		if (banned !== null && !command.options.always && command.options.private == undefined) return void await new Response()
+		if (banned !== null && !command.options.always) return void await new Response()
 			.addEmbed(builder => builder
 				.setTitle(`You have been banned **permanently** from the bot 😔`)
 				.addFields({
