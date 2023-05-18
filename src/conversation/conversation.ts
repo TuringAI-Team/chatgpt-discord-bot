@@ -483,8 +483,14 @@ export class Conversation {
 	public cooldownTime(db: DatabaseInfo, model: ChatSettingsModel): number | null {
 		/* Subscription type of the user */
 		const type: UserSubscriptionType = this.manager.bot.db.users.type(db);
-		if (type.type === "plan" || this.manager.bot.app.config.discord.owner.includes(this.user.id)) return null;
+		if (type.type === "plan" && type.location === "user") return null;
 
+		if (type.type === "plan" && type.location === "guild") {
+			/* Cool-down, set by the server */
+			const guildCooldown: number = this.manager.bot.db.settings.get<number>(db.guild!, "limits:cooldown");
+			return guildCooldown * 1000;
+		}
+		
 		/* Cool-down duration & modifier */
 		const baseModifier: number = model.options.cooldown && model.options.cooldown.time && model.options.restricted === RestrictionType.PremiumOnly
 			? 1

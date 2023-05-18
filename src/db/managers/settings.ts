@@ -646,21 +646,6 @@ export const SettingOptions: SettingsOption[] = [
         location: SettingsLocation.User
     }),
 
-    new IntegerSettingsOption({
-        key: "cooldown",
-        name: "Cool-down for all users",
-        category: "premium",
-        emoji: { fallback: "⏰" },
-        description: "Cool-down overwrite for users on the server",
-        location: SettingsLocation.Guild,
-        default: Math.floor(CONVERSATION_DEFAULT_COOLDOWN.time / 1000), min: 5, max: 300,
-        suffix: "second",
-
-        explanation: {
-            description: "This setting will change the cool-down for all users, regardless of whether they have the **Premium**-restricted role configured above or not. Users who have their own Premium subscription will not be affected by this setting."
-        }
-    }),
-
     new RoleSettingsOption({
         key: "role",
         name: "Premium-restricted role",
@@ -671,6 +656,21 @@ export const SettingOptions: SettingsOption[] = [
 
         explanation: {
             description: "Choosing a role for this setting will lock all Premium-unlocked features (*no cool-down, configurable token limit*, *etc.*) for a specific role. Users who don't have this role will simply use their own subscription, if they have one."
+        }
+    }),
+
+    new IntegerSettingsOption({
+        key: "cooldown",
+        name: "Cool-down for all users",
+        category: "limits",
+        emoji: { fallback: "⏰" },
+        description: "Cool-down overwrite for users on the server",
+        location: SettingsLocation.Guild,
+        default: Math.floor(CONVERSATION_DEFAULT_COOLDOWN.time / 1000), min: 5, max: 300,
+        suffix: "second",
+
+        explanation: {
+            description: "This setting will change the cool-down for all users, regardless of whether they have the **Premium**-restricted role configured above or not. Users who have their own Premium subscription will not be affected by this setting."
         }
     }),
 

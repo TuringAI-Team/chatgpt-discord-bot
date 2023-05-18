@@ -156,7 +156,7 @@ export class PlanManager {
             time: Date.now()
         } as T;
 
-        const entry: DatabaseEntry = (db as any).guild
+        const entry: DatabaseEntry = (db as any).user
             ? (db as DatabaseInfo)[this.db.users.type(db as DatabaseInfo).location]!
             : db as DatabaseEntry;
 
