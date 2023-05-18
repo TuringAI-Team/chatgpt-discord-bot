@@ -19,10 +19,9 @@ export default class DescribeCommand extends Command {
 				)
 		, {
 			cooldown: {
-                Free: 3 * 60 * 1000,
-                Voter: 1.75 * 60 * 1000,
-                GuildPremium: 50 * 1000,
-                UserPremium: 25 * 1000
+                free: 3 * 60 * 1000,
+                voter: 1.75 * 60 * 1000,
+                subscription: 30 * 1000
             }
 		});
     }

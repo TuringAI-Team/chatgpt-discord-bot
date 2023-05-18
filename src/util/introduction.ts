@@ -123,7 +123,7 @@ export const IntroductionPages: IntroductionPage[] = [
 
                 {
                     name: "Way lower cool-down ⏰",
-                    value: `Chat with **ChatGPT** for as long as you want - without being interrupted by an annoying cool-down! ⏰\nYour cool-down will be lowered to an amazing **${Math.floor((CONVERSATION_DEFAULT_COOLDOWN.time! * CONVERSATION_COOLDOWN_MODIFIER.UserPremium) / 1000)} seconds**, for all normal models.`
+                    value: `Chat with **ChatGPT** for as long as you want - without being interrupted by an annoying cool-down! ⏰\nYour cool-down will be lowered to an amazing **${Math.floor((CONVERSATION_DEFAULT_COOLDOWN.time! * CONVERSATION_COOLDOWN_MODIFIER.subscription) / 1000)} seconds**, for all normal models.`
                 },
 
                 {

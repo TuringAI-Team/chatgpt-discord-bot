@@ -22,13 +22,13 @@ export default class WarningCommand extends Command {
 					.setDescription("Reason for the warning")
 					.setRequired(false)
 				)
-		, { restriction: "moderator" });
+		, { restriction: [ "moderator" ] });
     }
 
     public async run(interaction: CommandInteraction): CommandResponse {
 		/* ID of the user */
 		const id: string = interaction.options.getString("id", true);
-		const target: User | null = await Utils.findUser(this.bot, id);
+		const target = await Utils.findUser(this.bot, id);
 
 		/* Reason for the warning */
 		const reason: string | undefined = interaction.options.getString("reason") !== null ? interaction.options.getString("reason", true) : undefined;
@@ -41,7 +41,7 @@ export default class WarningCommand extends Command {
 			.setEphemeral(true);
 
 		/* Get the database entry of the user, if applicable. */
-		let db: DatabaseUser | null = await this.bot.db.users.getUser(target);
+		let db: DatabaseUser | null = await this.bot.db.users.getUser(target.id);
 
 		if (db === null) return new Response()
 			.addEmbed(builder => builder
@@ -57,12 +57,12 @@ export default class WarningCommand extends Command {
 		});
 
 		/* Fetch the user's infractions again. */
-		db = await this.bot.db.users.fetchUser(target);
+		db = (await this.bot.db.users.getUser(target.id))!;
 		const infractions: DatabaseUserInfraction[] = this.bot.db.users.unread(db);
 
 		return new Response()
 			.addEmbed(builder => builder
-				.setAuthor({ name: target.tag, iconURL: target.displayAvatarURL() })
+				.setAuthor({ name: target.name, iconURL: target.icon ?? undefined })
 				.setDescription(`\`\`\`\n${infractions[infractions.length - 1].reason}\n\`\`\``)
 				.setTitle("Warning given ✉️")
 				.setColor("Yellow")

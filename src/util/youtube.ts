@@ -1,5 +1,5 @@
-import search, { VideoSearchResult } from "yt-search";
 import { YoutubeTranscript } from "youtube-transcript";
+import search, { VideoSearchResult } from "yt-search";
 
 interface YouTubeSearchOptions {
     /* Which query to search for */

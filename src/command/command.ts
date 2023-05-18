@@ -2,10 +2,10 @@ import { ContextMenuCommandBuilder, SlashCommandBuilder, SlashCommandSubcommands
 import { AutocompleteInteraction, ChatInputCommandInteraction, ContextMenuCommandInteraction } from "discord.js";
 import { APIApplicationCommandOptionChoice } from "discord-api-types/v10";
 
-import { DatabaseInfo } from "../db/managers/user.js";
+import { DatabaseInfo, UserSubscriptionPlanType } from "../db/managers/user.js";
+import { UserRole } from "../db/managers/role.js";
 import { Response } from "./response.js";
 import { Bot } from "../bot/bot.js";
-import { UserRole, UserRoles } from "../db/managers/role.js";
 
 export type CommandBuilder = 
 	SlashCommandBuilder
@@ -18,13 +18,12 @@ export type CommandOptionChoice<T = string | number> = APIApplicationCommandOpti
 
 export type CommandResponse = Promise<Response | undefined>
 
-export type CommandRestrictionType = UserRoles | UserRole | "premium"
+export type CommandRestrictionType = (UserRole | UserSubscriptionPlanType)[]
 
 export interface CommandSpecificCooldown {
-	Free: number;
-	Voter: number;
-	GuildPremium: number;
-	UserPremium: number;
+	free: number;
+	voter: number;
+	subscription: number;
 }
 
 export type CommandCooldown = number | CommandSpecificCooldown
@@ -46,23 +45,32 @@ export interface CommandOptions {
 	restriction?: CommandRestrictionType;
 }
 
-export class Command<U extends ContextMenuCommandInteraction | ChatInputCommandInteraction = ChatInputCommandInteraction, T extends CommandOptions = CommandOptions> {
+export class Command<U extends ContextMenuCommandInteraction | ChatInputCommandInteraction = ChatInputCommandInteraction> {
     protected readonly bot: Bot;
 
 	/* Data of the command */
 	public readonly builder: CommandBuilder;
 
     /* Other command options */
-    public readonly options: Required<T>;
+    public readonly options: Required<CommandOptions>;
 
-	constructor(bot: Bot, builder: CommandBuilder, options?: T, defaultOptions: T = { long: false, cooldown: null, roles: [], waitForStart: false } as any) {
+	constructor(bot: Bot, builder: CommandBuilder, options?: CommandOptions, defaultOptions: CommandOptions = { long: false, cooldown: null, restriction: [], waitForStart: false } as any) {
 		this.bot = bot;
 		this.builder = builder;
 
         this.options = {
 			...defaultOptions,
 			...options ?? {}
-		} as Required<T>;
+		} as Required<CommandOptions>;
+	}
+
+	public restricted(check: CommandRestrictionType | (UserRole | UserSubscriptionPlanType)): boolean {
+		return (typeof check !== "object" ? [ check ] : check)
+			.every(c => this.options.restriction.includes(c));
+	}
+
+	public premiumOnly(): boolean {
+		return this.restricted([ "subscription", "plan" ]);
 	}
 
 	/**

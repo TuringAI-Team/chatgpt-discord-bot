@@ -39,10 +39,9 @@ export default class TranslateContentContextMenuCommand extends ContextMenuComma
 			.setName("Translate")
         , {
             cooldown: {
-                Free: 90 * 1000,
-                Voter: 70 * 1000,
-                GuildPremium: 20 * 1000,
-                UserPremium: 10 * 1000
+                free: 90 * 1000,
+                voter: 70 * 1000,
+                subscription: 20 * 1000
             }
         });
 	}
@@ -64,11 +63,11 @@ export default class TranslateContentContextMenuCommand extends ContextMenuComma
 			color: "Red"
 		});
 
-        let moderation: ModerationResult | null = await checkTranslationPrompt({
+        let moderation: ModerationResult = await checkTranslationPrompt({
             conversation, db, content, source: "translationPrompt"
         });
 
-        if (moderation !== null && moderation.blocked) return new Response()
+        if (moderation.blocked) return new Response()
             .addEmbed(builder => builder
                 .setTitle("What's this? 🤨")
                 .setDescription(`The message to translate violates our **usage policies**.\n\n*If you violate the usage policies, we may have to take moderative actions; otherwise, you can ignore this notice*.`)

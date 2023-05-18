@@ -3,10 +3,10 @@ import { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonInteraction, 
 import { ChatNoticeMessage, MessageType, ResponseMessage } from "../chat/types/message.js";
 import { LoadingIndicator, LoadingIndicatorManager } from "../db/types/indicator.js";
 import { check as moderate, ModerationResult } from "./moderation/moderation.js";
-import { DatabaseInfo, DatabaseUserInfraction } from "../db/managers/user.js";
+import { DatabaseInfo, DatabaseUserInfraction, UserSubscriptionType } from "../db/managers/user.js";
 import { ChatSettingsModel, ChatSettingsModels } from "./settings/model.js";
 import { ChatGeneratedInteraction, Conversation } from "./conversation.js";
-import { reactToMessage, removeReaction } from "./utils/reaction.js";
+import { addReaction, removeReaction } from "./utils/reaction.js";
 import { ChatModel, ModelCapability } from "../chat/types/model.js";
 import { buildBanNotice } from "../util/moderation/moderation.js";
 import { buildIntroductionPage } from "../util/introduction.js";
@@ -25,6 +25,7 @@ import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generat
 import { ErrorResponse, ErrorType } from "../command/response/error.js";
 import { handleError } from "../util/moderation/error.js";
 import { GPTAPIError } from "../error/gpt/api.js";
+import { PlanCreditViewers, PlanCreditVisility } from "../db/managers/plan.js";
 
 /* Permissions required by the bot to function correctly */
 const BOT_REQUIRED_PERMISSIONS: { [key: string]: PermissionsString } = {
@@ -67,7 +68,7 @@ export class Generator {
 	 * 
 	 * @returns Formatted Discord message
 	 */
-	public async process(conversation: Conversation, data: ResponseMessage, options: GeneratorOptions, db: DatabaseInfo, moderations: (ModerationResult | null)[], pending: boolean): Promise<Response> {
+	public async process(conversation: Conversation, data: ResponseMessage, options: GeneratorOptions, db: DatabaseInfo, moderations: (ModerationResult | null)[], interaction: ChatGeneratedInteraction | null, pending: boolean): Promise<Response> {
 		/* Embeds to display in the message */
 		const embeds: EmbedBuilder[] = [];
 		const response: Response = new Response();
@@ -83,6 +84,14 @@ export class Generator {
 		const loadingEmoji: string = LoadingIndicatorManager.toString(
 			LoadingIndicatorManager.getFromUser(conversation.manager.bot, db.user)
 		);
+
+		/* Subscription type of the user */
+		const type: UserSubscriptionType = this.bot.db.users.type(db);
+
+		/* Whether the remaining credit should be shown in the toolbar */
+		const creditVisibility: PlanCreditVisility = type.type === "plan"
+			? this.bot.db.settings.get<PlanCreditVisility>(type.location === "user" ? db.user : db.guild!, "premium:toolbar")
+			: "hide";
 
 		/* If the received data includes generated images, display them. */
 		if (data.images && data.images.length > 0) {
@@ -151,9 +160,21 @@ export class Generator {
 					.setEmoji("📜")
 			);
 
+			if (interaction !== null && creditVisibility && creditVisibility !== "hide") {
+				/* Final formatted string */
+				const final: string | null = PlanCreditViewers[creditVisibility](type.location === "user" ? db.user.plan! : db.guild!.plan!, interaction);
+
+				if (final !== null) buttons.push(
+					new ButtonBuilder()
+						.setCustomId("premium:overview")
+						.setLabel(final).setEmoji("💸")
+						.setStyle(ButtonStyle.Secondary)
+				);
+			}
+
 			buttons.push(
 				new ButtonBuilder()
-					.setCustomId("settings:menu:chat:model")
+					.setCustomId("settings:menu:user:chat:model")
 					.setLabel(model.options.name)
 					.setEmoji(Emoji.display(model.options.emoji, true) as ComponentEmojiResolvable)
 					.setStyle(ButtonStyle.Secondary)
@@ -161,7 +182,7 @@ export class Generator {
 
 			if (tone.id !== ChatSettingsTones[0].id) buttons.push(
 				new ButtonBuilder()
-					.setCustomId("settings:menu:chat:tone")
+					.setCustomId("settings:menu:user:chat:tone")
 					.setLabel(tone.options.name)
 					.setEmoji(Emoji.display(tone.options.emoji, true) as ComponentEmojiResolvable)
 					.setStyle(ButtonStyle.Secondary)
@@ -171,7 +192,7 @@ export class Generator {
 				new ButtonBuilder()
 					.setCustomId(`user:${conversation.id}`)
 					.setDisabled(true)
-					.setEmoji(this.bot.db.users.subscriptionIcon(db))
+					.setEmoji(this.bot.db.users.userIcon(db))
 					.setLabel(conversation.user.tag)
 					.setStyle(ButtonStyle.Secondary)
 			);
@@ -338,9 +359,9 @@ export class Generator {
 		}
 	}
 
-	private async guildData(message: Message, author: User, mentions: MentionType | null): Promise<ChatGuildData | null> {
+	public async guildData(message: Message, author: User, mentions: MentionType | null): Promise<ChatGuildData | null> {
 		/* If the invocation message was sent in DMs, don't try to get data about the guild. */
-		if (mentions === "dm" || message.member === null || message.guild === null) return null;	
+		if (mentions === "dm" || message.member === null || message.guild === null) return null;
 		if (!(message.channel instanceof TextChannel)) return null;
 
 		return {
@@ -419,7 +440,7 @@ export class Generator {
 		}
 
 		/* If the user mentioned the bot somewhere in the message (and not at the beginning), react with a nice emoji. */
-		if (mentions === "inMessage") return void await reactToMessage(this.bot, message, "👋").catch(() => {});
+		if (mentions === "inMessage") return void await addReaction(this.bot, message, "👋").catch(() => {});
 
 		/* Get the user & guild data from the database, if available. */
 		let db = await this.bot.db.users.fetchData(author, guild);
@@ -557,14 +578,14 @@ export class Generator {
 				await reply.delete().catch(() => {});
 			}, remaining);
 
-			await reactToMessage(this.bot, message, "🐢");
+			await addReaction(this.bot, message, "🐢");
 			return;
 
 		/* If the remaining time is negligible, wait for the cool-down to expire. */
 		} else if (conversation.cooldown.active) {
 			conversation.generating = true;
 
-			await reactToMessage(this.bot, message, "⌛");
+			await addReaction(this.bot, message, "⌛");
 			await new Promise<void>(resolve => setTimeout(resolve, remaining));
 			await removeReaction(this.bot, message, "⌛");
 
@@ -640,7 +661,7 @@ export class Generator {
 			if (data === null || (!partial && (data.type === "Chat" || data.type === "ChatNotice"))) return;
 
 			/* Generate a nicely formatted embed. */
-			const response: Response | null = await this.process(conversation, data, options, db, [ moderation ], true);
+			const response: Response | null = await this.process(conversation, data, options, db, [ moderation ], null, true);
 
 			/* Send an initial reply placeholder. */
 			if (reply === null && final === null && !queued && (partial || (!partial && (data.type !== "Chat" && data.type !== "ChatNotice")))) {
@@ -723,13 +744,13 @@ export class Generator {
 
 		/* Start the generation process. */
 		try {
-			if (mentions !== "dm") await reactToMessage(this.bot, message, loadingEmoji);
+			if (mentions !== "dm") await addReaction(this.bot, message, loadingEmoji);
 			await message.channel.sendTyping();
 
 			/* Send the request to the selected chat model. */
 			final = await conversation.generate({
 				...options,
-				conversation, db,
+				conversation, db, partial,
 
 				guild: guildData,
 				prompt: content,
@@ -824,7 +845,7 @@ export class Generator {
 			}
 
 			/* Gemerate a nicely formatted embed. */
-			const response: Response | null = final !== null ? await this.process(conversation, final.output, options, db, [ moderation, final.moderation ], false) : null;
+			const response: Response | null = final !== null ? await this.process(conversation, final.output, options, db, [ moderation, final.moderation ], final, false) : null;
 
 			/* If the embed failed to generate, send an error message. */
 			if (response === null) return await sendError(new Response()

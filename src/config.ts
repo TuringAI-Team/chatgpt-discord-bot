@@ -133,5 +133,11 @@ export interface Config {
 				[key in DatabaseCollectionType]: string;
 			}
 		};
+
+		redis: {
+			url: string;
+			password: string;
+			port: number;
+		};
 	};
 }

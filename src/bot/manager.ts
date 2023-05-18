@@ -130,7 +130,6 @@ export class BotManager extends EventEmitter {
 
     /**
      * Internal event, called when a cluster child process dies
-     * 
      * @param cluster Cluster that exited
      */
     private async onDeath(cluster: Cluster): Promise<void> {
@@ -139,7 +138,6 @@ export class BotManager extends EventEmitter {
 
         /* Try to respawn the dead cluster, and then mark it as initialized again. */
         await this.onCreate(cluster).then(() => this.sendDone([ cluster ]));
-        
     }
 
     /**
@@ -229,8 +227,9 @@ export class BotManager extends EventEmitter {
 				this.app.stop(1);
 			});
 
-        await delay(1000);
-
+        
+        await delay(2000);
+            
         /* Current shard counter */
         let counter: number = 0;
 

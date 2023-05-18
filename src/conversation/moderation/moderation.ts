@@ -119,7 +119,6 @@ export const check = async ({ conversation, db, content, reply, message, source,
 
     /* If the message was flagged, send the notice message to the user. */
     if (blocked && message && (reply ?? true)) {
-        /* Reply to the invocation message. */
         await message.reply({
             embeds: [
                 new EmbedBuilder()
@@ -184,25 +183,25 @@ export const checkImagePrompt = async ({ conversation, db, content, nsfw, model 
     return result;
 }
 
-export const checkVideoPrompt = async ({ conversation, db, content }: DescribeModerationOptions): Promise<ModerationResult | null> => {
+export const checkVideoPrompt = async ({ conversation, db, content }: DescribeModerationOptions): Promise<ModerationResult> => {
     return check({
         conversation, db, content, source: "video"
     });
 }
 
-export const checkTranslationPrompt = async ({ conversation, db, content, source }: TranslationModerationOptions): Promise<ModerationResult | null> => {
+export const checkTranslationPrompt = async ({ conversation, db, content, source }: TranslationModerationOptions): Promise<ModerationResult> => {
     return check({
         conversation, db, content, source
     });
 }
 
-export const checkDescribeResult = async ({ conversation, db, content }: DescribeModerationOptions): Promise<ModerationResult | null> => {
+export const checkDescribeResult = async ({ conversation, db, content }: DescribeModerationOptions): Promise<ModerationResult> => {
     return check({
         conversation, db, content, source: "describe"
     });
 }
 
-export const checkYouTubeQuery = async ({ conversation, db, content }: DescribeModerationOptions): Promise<ModerationResult | null> => {
+export const checkYouTubeQuery = async ({ conversation, db, content }: DescribeModerationOptions): Promise<ModerationResult> => {
     return check({
         conversation, db, content, source: "youTubeQuery"
     });

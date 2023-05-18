@@ -145,6 +145,9 @@ export interface GenerationOptions {
 
     /* Prompt to use for generation */
     prompt: string;
+
+    /* Whether partial messages should be shown */
+    partial: boolean;
 }
 
 
@@ -330,7 +333,7 @@ export class Session {
      * @throws Any exception that may occur
      * @returns Given chat response
      */
-    public async generate({ prompt, conversation, onProgress, trigger, db, guild }: GenerationOptions): Promise<ChatClientResult> {
+    public async generate({ prompt, conversation, onProgress, trigger, db, guild, partial }: GenerationOptions): Promise<ChatClientResult> {
         if (this.state === SessionState.Disabled) throw new GPTGenerationError({
             type: GPTGenerationErrorType.SessionUnusable
         });
@@ -348,7 +351,7 @@ export class Session {
             /* Send the request, to complete the prompt. */
             const data = await this.client.ask({
                 progress: onProgress, conversation,
-                trigger, prompt, db, guild
+                trigger, prompt, db, guild, partial
             });
 
             if (data.output.raw && data.output.raw.usage) this.debug.tokens += data.output.raw.usage.prompt + data.output.raw.usage.completion;

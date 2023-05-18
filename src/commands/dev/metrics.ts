@@ -51,7 +51,7 @@ export default class MetricsCommand extends Command {
 					})))
 				)
 			)
-		, { restriction: "owner" });
+		, { restriction: [ "owner", "investor", "advertiser" ] });
     }
 
 	public async fetchChart({ chart, time }: MetricsChartBuilderOption): Promise<TuringChartResult> {

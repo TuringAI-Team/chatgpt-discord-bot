@@ -51,15 +51,15 @@ export default class RolesCommand extends Command {
 					.setRequired(true)
 				)
 			);
-		})
+		});
 
-        super(bot, builder, { restriction: "owner" });
+        super(bot, builder, { restriction: [ "owner" ] });
     }
 
     public async run(interaction: CommandInteraction): CommandResponse {
 		/* ID of the user */
 		const id: string = interaction.options.getString("id", true);
-		const target: User | null = await Utils.findUser(this.bot, id);
+		const target = await Utils.findType(this.bot, "user", id);
 		
 		if (target === null) return new Response()
 			.addEmbed(builder => builder
@@ -69,7 +69,7 @@ export default class RolesCommand extends Command {
 			.setEphemeral(true);
 
 		/* Get the database entry of the user, if applicable. */
-		const db: DatabaseUser | null = await this.bot.db.users.getUser(target);
+		const db: DatabaseUser | null = await this.bot.db.users.getUser(target.id);
 
 		if (db === null) return new Response()
 			.addEmbed(builder => builder
@@ -94,7 +94,7 @@ export default class RolesCommand extends Command {
 
 		return new Response()
 			.addEmbed(builder => builder
-				.setAuthor({ name: target.tag, iconURL: target.displayAvatarURL() })
+				.setAuthor({ name: target.name, iconURL: target.icon ?? undefined })
 				.setDescription(`Role **${Utils.titleCase(role)}** ${action === "add" ? "added" : "removed"}`)
 				.setColor("Yellow")
 				.setTimestamp()

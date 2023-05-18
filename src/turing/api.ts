@@ -21,9 +21,14 @@ interface TuringAPIFilterResult {
     isCP: boolean;
 }
 
+type TuringChatModel = string
+
 interface TuringChatOptions {
+    /* Conversation this request corresponds to */
+    conversation: Conversation;
+
     /* Which model to use */
-    model: string;
+    model: TuringChatModel;
 
     /* Prompt to pass to the model */
     prompt: string;
@@ -33,6 +38,7 @@ interface TuringChatOptions {
 }
 
 type TuringAPIChatBody = Pick<TuringChatOptions, "prompt"> & {
+    conversationId?: string;
     chat?: boolean;
 }
 
@@ -129,6 +135,9 @@ export interface TuringAlanResult {
 
     /* The response by Alan */
     result: string;
+
+    /* How many credits were used for this request */
+    credits: number;
 }
 
 type TuringAlanParameter = string | "none"
@@ -438,6 +447,13 @@ export class TuringAPI {
         };
     }
 
+    public async resetAlanConversation({ conversation }: Pick<TuringAlanOptions, "conversation">): Promise<void> {
+        await this.request(`text/alan/chatgpt`, "DELETE", {
+            userName: conversation.user.username,
+            conversationId: conversation.id
+        });
+    }
+
     public async alan({ prompt, conversation, user, progress, image }: TuringAlanOptions): Promise<TuringAlanResult> {
         /* Latest message of the stream */
         let latest: TuringAlanResult | null = null;
@@ -455,8 +471,8 @@ export class TuringAPI {
 
         /* Request body for the API */
         const body: TuringAlanBody = {
-            conversationId: conversation.userIdentifier,
             userName: conversation.user.username,
+            conversationId: conversation.id,
             message: prompt,
             imageGenerator: this.bot.db.settings.get(user, "alan:imageGenerator"),
             imageModificator: imageModifier !== "none" ? `controlnet-${imageModifier}` : imageModifier,
@@ -588,15 +604,21 @@ export class TuringAPI {
         /* API request body */
         const body: TuringAPIChatBody = {
             prompt: options.prompt,
-            chat: options.raw
+            chat: options.raw,
+            conversationId: options.conversation.id
         };
 
         /* Response data from the API */
         const data = await this.request<TuringChatResult>(`text/${options.model}`, "POST", body);
+        console.log(data)
 
         return {
             response: data.response.trim()
         };
+    }
+
+    public async resetConversation(model: TuringChatModel): Promise<void> {
+        await this.request(`text/${model}`, "DELETE");
     }
 
     private async request<T>(path: TuringAPIPath, method: "GET" | "POST" | "DELETE" = "GET", data?: { [key: string]: any }): Promise<T> {
@@ -612,7 +634,7 @@ export class TuringAPI {
         if (!response.status.toString().startsWith("2") || (await response.clone().json().catch(() => null))?.error) await this.error(response, path);
 
         /* Get the response body. */
-        const body: T = await response.json().catch(() => null) as T ?? await response.text() as T;
+        const body: T = await response.clone().json().catch(() => null) as T ?? await response.text() as T;
         return body;
     }
 
@@ -624,7 +646,7 @@ export class TuringAPI {
     private async error(response: Response, path: TuringAPIPath, dry?: false): Promise<void>;
 
     private async error(response: Response, path: TuringAPIPath, dry?: boolean): Promise<GPTAPIError | void> {
-        const body: any | null = await response.json().catch(() => null);
+        const body: any | null = await response.clone().json().catch(() => null);
     
         const error: GPTAPIError = new GPTAPIError({
             code: body && body.error ? 400 : response.status,

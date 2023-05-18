@@ -5,7 +5,9 @@ import { StorageManager } from "./managers/storage.js";
 import { UserRoleManager } from "./managers/role.js";
 import { CacheManager } from "./managers/cache.js";
 import { UserManager } from "./managers/user.js";
+import { PlanManager } from "./managers/plan.js";
 import { DatabaseManager } from "./manager.js";
+
 import { type Bot } from "../bot/bot.js";
 
 export class ClientDatabaseManager extends DatabaseManager<Bot> {
@@ -17,6 +19,7 @@ export class ClientDatabaseManager extends DatabaseManager<Bot> {
     public readonly role: UserRoleManager;
     public readonly cache: CacheManager;
     public readonly users: UserManager;
+    public readonly plan: PlanManager;
 
     constructor(bot: any) {
         super(bot);
@@ -28,6 +31,7 @@ export class ClientDatabaseManager extends DatabaseManager<Bot> {
         this.role = new UserRoleManager(this);
         this.cache = new CacheManager(this);
         this.users = new UserManager(this);
+        this.plan = new PlanManager(this);
     }
 
     public async setup(): Promise<void> {

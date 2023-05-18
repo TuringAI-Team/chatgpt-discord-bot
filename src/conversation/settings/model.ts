@@ -1,5 +1,6 @@
 import { Awaitable, ChannelType, ForumChannel, GuildChannel, GuildEmoji, StageChannel, TextChannel, VoiceChannel } from "discord.js";
 
+import { UserPlanCreditBonusAmount } from "../../db/managers/plan.js";
 import { ModelGenerationOptions } from "../../chat/types/options.js";
 import { ChatClient, PromptContext } from "../../chat/client.js";
 import { RestrictionType } from "../../db/types/restriction.js";
@@ -36,20 +37,50 @@ export interface ChatSettingsModelHistorySettings {
     /* Maximum generation length, in tokens */
     generation?: number;
 
+    /* Maximum amount of tokens this model supports */
+    maxTokens: number;
+
     /* Maximum messages to keep in chat history */
     messages?: number;
 }
 
-export interface ChatSettingsModelSettings {
-    /* Cool-down for when using this model */
-    cooldown?: CooldownModifier;
+export enum ChatSettingsModelBillingType {
+    /* The specified amount is billed per 1000 tokens, including prompt & completion tokens */
+    Per1000Tokens,
 
-    /* Settings related to context & history for this model */
-    history?: ChatSettingsModelHistorySettings;
+    /* The specified amount is billed every second of generation */
+    PerSecond,
 
-    /* Which type of model this is */
-    model: ModelType;
+    /* The specified amount is billed fixed for each message */
+    PerMessage,
+
+    /* The chat model doesn't cost anything */
+    Free,
+
+    /* The amount will be given once the message has finished generating */
+    Custom
 }
+
+export interface ChatSettingsModelBillingTokenBilling {
+    /* How much money to charge for completion tokens */
+    prompt: number;
+
+    /* How much credit to charge for completion tokens */
+    completion: number;
+}
+
+export interface ChatSettingsModelBillingSettings {
+    /* Type of billing to do */
+    type: ChatSettingsModelBillingType;
+
+    /* How much credit to charge, depending on the type */
+    amount: ChatSettingsModelBillingTokenBilling | number;
+
+    /* How much % to take as a "bonus" */
+    extra?: UserPlanCreditBonusAmount;
+}
+
+export type ChatSettingsModelAdditionalSettings = Partial<Pick<OpenAIChatBody, "temperature" | "frequency_penalty" | "presence_penalty" | "model" | "top_p">>
 
 export declare interface ChatSettingsModelOptions {
     /* Name of the model */
@@ -68,7 +99,7 @@ export declare interface ChatSettingsModelOptions {
     };
 
     /* Model generation settings */
-    settings?: Partial<Pick<OpenAIChatBody, "temperature" | "frequency_penalty" | "presence_penalty" | "model" | "top_p">>;
+    settings?: ChatSettingsModelAdditionalSettings;
 
     /* Whether the model is restricted to Premium members */
     restricted?: RestrictionType | null;
@@ -78,6 +109,9 @@ export declare interface ChatSettingsModelOptions {
 
     /* Settings related to context & history for this model */
     history?: ChatSettingsModelHistorySettings;
+
+    /* Settings related to billing for the pay-as-you-go plan */
+    billing: ChatSettingsModelBillingSettings;
 
     /* Which type of model this is */
     type: ModelType;
@@ -89,7 +123,7 @@ export class ChatSettingsModel {
 
     constructor(options: ChatSettingsModelOptions) {
         this.options = {
-            settings: {}, restricted: null, cooldown: null, history: {},
+            settings: {}, restricted: null, cooldown: null, history: { maxTokens: 1024 },
             ...options
         };
     }
@@ -162,7 +196,13 @@ export const ChatSettingsModels: ChatSettingsModel[] = [
         description: "The usual ChatGPT",
         emoji: { display: "<:chatgpt:1097849346164281475>", fallback: "😐" },
         settings: { temperature: 0.4 },
+        history: { maxTokens: 4096 },
         type: ModelType.OpenAIChat,
+
+        billing: {
+            type: ChatSettingsModelBillingType.Per1000Tokens,
+            amount: 0.002
+        },
 
         prompt: {
             builder: ({ context }) => `
@@ -182,8 +222,16 @@ Knowledge cut-off: September 2021
         settings: { model: "gpt-4" },
         type: ModelType.OpenAIChat,
         restricted: RestrictionType.PremiumOnly,
-        history: { context: 425, generation: 270 },
+        history: { context: 425, generation: 270, maxTokens: 8192 },
         cooldown: { time: 30 * 1000 },
+
+        billing: {
+            type: ChatSettingsModelBillingType.Per1000Tokens,
+            amount: {
+                prompt: 0.03,
+                completion: 0.06
+            }
+        },
         
         prompt: {
             builder: ({ context }) => `
@@ -202,9 +250,14 @@ Knowledge cut-off: September 2021
         emoji: { display: "<:gpt3:1097849352657047562>", fallback: "🤖" },
         settings: { temperature: 0.7, model: "text-davinci-003" },
         restricted: RestrictionType.PremiumOnly,
-        history: { context: 600, generation: 350 },
+        history: { context: 600, generation: 350, maxTokens: 4097 },
         type: ModelType.OpenAICompletion,
         cooldown: { time: 15 * 1000 },
+
+        billing: {
+            type: ChatSettingsModelBillingType.Per1000Tokens,
+            amount: 0.02
+        },
 
         prompt: {
             builder: ({ context }) => `
@@ -217,45 +270,18 @@ Knowledge cut-off: September 2021
         }
     }),
 
-    /*new ChatSettingsModel({
-        name: "Claude",
-        description: "Anthropic's Claude",
-        emoji: { display: "<:anthropic:1097849339432423454>", fallback: "😲" },
-        settings: { temperature: 0.8, model: "anthropic:claude-instant-v1" },
-        history: { context: 600, generation: 550 },
-        type: ModelType.Nat,
-
-        prompt: {
-            builder: ({ context }) => `
-I am Claude, created by Anthropic, PBC. I am helpful, harmless, and honest using a technique called Constitutional AI.
-Current date & time: ${context.time}, ${context.date}
-`
-        }
-    }),
-
-    new ChatSettingsModel({
-        name: "Alpaca",
-        emoji: { display: "<:alpaca:1097849324945289326>", fallback: "🦙" },
-        description: "An instruction-following LLaMA model",
-        settings: { temperature: 0.4, model: "replicate:alpaca-7b" },
-        type: ModelType.Nat,
-        history: { context: 800, generation: 750 },
-
-        prompt: {
-            builder: ({ context }) => `
-I am Alpaca, a fine-tuned model specialized in following instructions, based on LLaMA, which was created by Meta. I was created by Stanford researchers.
-Current date & time: ${context.time}, ${context.date}
-`
-        }
-    }),*/
-
     new ReplicateChatSettingsModel({
         name: "Dolly",
         description: "Open source instruction-tuned large language model developed by Databricks",
         emoji: { display: "<:dolly:1100453639396524122>", fallback: "🐑" },
         settings: { model: "replicate/dolly-v2-12b" },
-        history: { generation: 300 },
+        history: { generation: 300, maxTokens: 2048 },
         cooldown: { multiplier: 1.4 },
+
+        billing: {
+            type: ChatSettingsModelBillingType.PerSecond,
+            amount: 0.0023
+        },
 
         prompt: {
             builder: ({ context }) => `
@@ -280,8 +306,13 @@ Current date & time: ${context.time}, ${context.date}
         description: "7 billion parameter version of Stability AI's language model",
         emoji: { display: "<:stablelm:1100453631746113597>", fallback: "🦜" },
         settings: { model: "stability-ai/stablelm-tuned-alpha-7b" },
+        history: { generation: 300, maxTokens: 4096 },
         cooldown: { multiplier: 1.4 },
-        history: { generation: 300 },
+
+        billing: {
+            type: ChatSettingsModelBillingType.PerSecond,
+            amount: 0.0023
+        },
 
         prompt: {
             builder: ({ context }) => `
@@ -303,9 +334,14 @@ Current date & time: ${context.time}, ${context.date}
         name: "Vicuna",
         emoji: { display: "<:vicuna:1100453628256456765>", fallback: "🦙" },
         description: "An open-source chatbot impressing GPT-4 with 90% ChatGPT quality",
-        history: { messages: 3 },
+        history: { messages: 3, maxTokens: 1500 },
         settings: { model: "vicuna" },
         type: ModelType.Turing,
+
+        billing: {
+            type: ChatSettingsModelBillingType.PerSecond,
+            amount: 0.0023
+        },
 
         prompt: {
             builder: ({ context }) => `
@@ -319,11 +355,29 @@ Knowledge cut-off: September 2021, like ChatGPT
     }),
 
     new ChatSettingsModel({
+        name: "Bard",
+        emoji: { display: "<:bard:1108815821997879317>", fallback: "✨" },
+        description: "Your creative and helpful collaborator, by Google",
+        cooldown: { multiplier: 0.6 },
+        settings: { model: "bard" },
+        type: ModelType.Turing,
+
+        billing: { type: ChatSettingsModelBillingType.Free, amount: 0 },
+        prompt: { builder: () => "" }
+    }),
+
+    new ChatSettingsModel({
         name: "FastChat",
         description: "Open-source chat bot trained by fine-tuning FLAN-T5 XL on ShareGPT conversations",
         emoji: { display: "<:google:1102619904185733272>", fallback: "🔤" },
         settings: { model: "fastchat" },
+        history: { maxTokens: 1500 },
         type: ModelType.Turing,
+
+        billing: {
+            type: ChatSettingsModelBillingType.PerSecond,
+            amount: 0.0023
+        },
 
         prompt: {
             builder: ({ context }) => `
@@ -338,7 +392,13 @@ Current date & time: ${context.time}, ${context.date}
         description: "A chatbot trained by fine-tuning Meta's LLaMA on data collected from the internet",
         emoji: { display: "<:koala:1102622567845593209>", fallback: "🐨" },
         settings: { model: "koala" },
+        history: { maxTokens: 1500 },
         type: ModelType.Turing,
+
+        billing: {
+            type: ChatSettingsModelBillingType.PerSecond,
+            amount: 0.0023
+        },
 
         prompt: {
             builder: ({ context }) => `
@@ -354,6 +414,12 @@ Current date & time: ${context.time}, ${context.date}
         emoji: { display: "<:turing_neon:1100498729414434878>", fallback: "🧑‍💻" },
         restricted: RestrictionType.TesterOnly,
         type: ModelType.TuringAlan,
+        history: { maxTokens: 4097 },
+
+        billing: {
+            type: ChatSettingsModelBillingType.Custom,
+            amount: 0
+        },
 
         prompt: {
             type: ChatSettingsModelPromptType.Raw,
@@ -367,7 +433,13 @@ Current date & time: ${context.time}, ${context.date}
         emoji: { display: "<a:clyde:1100453636414378125>", fallback: "🤖" },
         restricted: RestrictionType.PremiumOnly,
         cooldown: { time: 35 * 1000 },
+        history: { maxTokens: 4097 },
         type: ModelType.Clyde,
+
+        billing: {
+            type: ChatSettingsModelBillingType.Per1000Tokens,
+            amount: 0.002
+        },
 
         prompt: {
             builder: ({ options, context, data }) => {
@@ -422,7 +494,7 @@ I can use this information about the chat participants in the conversation in yo
 
 ${userList}
 
-I am not a personal assistant and cannot complete tasks for people. I cannot access any other information on Discord. I can't see images or avatars. When discussing my limitations, I must tell the user these things could be possible in the future.
+I am not a personal assistant and cannot complete tasks for people. I cannot access any other information on Discord. When discussing my limitations, I must tell the user these things could be possible in the future.
 
 Current date & time: ${context.date}, ${context.time}
 Knowledge cut-off: 2021

@@ -28,8 +28,8 @@ export class GPT3Model extends ChatModel {
 
         const data: OpenAICompletionsData = await this.client.session.ai.complete({
             model: options.settings.options.settings.model ?? "text-davinci-003",
-            stop: "Human:",
-            stream: true,
+            stream: options.partial,
+            stop: "User:",
 
             user: options.conversation.userIdentifier,
 
@@ -46,7 +46,6 @@ export class GPT3Model extends ChatModel {
             usage: {
                 completion_tokens: getPromptLength(data.response.text),
                 prompt_tokens: getPromptLength(prompt.prompt),
-
                 total_tokens: 0
             }
         };
@@ -60,7 +59,7 @@ export class GPT3Model extends ChatModel {
             text: data.response.text,
 
             raw: {
-                finishReason: data.response.finish_reason ? data.response.finish_reason === "length" || data.response.finish_reason === "max_tokens" ? "maxLength" : "stop" : null,
+                finishReason: data.response.finish_reason ? data.response.finish_reason === "length" || data.response.finish_reason === "max_tokens" ? "maxLength" : "stop" : undefined,
                
                 usage: {
                     completion: data.usage.completion_tokens,

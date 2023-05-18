@@ -2,8 +2,9 @@ import { setTimeout } from "timers/promises";
 import { Prediction } from "replicate";
 
 import { GPTGenerationError, GPTGenerationErrorType } from "../../error/gpt/generation.js";
-import { ChatModel, ModelCapability, ModelType } from "../types/model.js";
 import { ReplicateChatSettingsModel } from "../../conversation/settings/model.js";
+import { ChatModel, ModelCapability, ModelType } from "../types/model.js";
+import { getPromptLength } from "../../conversation/utils/length.js";
 import { ModelGenerationOptions } from "../types/options.js";
 import { PartialResponseMessage } from "../types/message.js";
 import { ChatClient } from "../client.js";
@@ -49,6 +50,7 @@ export class ReplicateModel extends ChatModel {
 
         /* Latest prediction result */
         let latest: Prediction = null!;
+        const started: number = Date.now();
 
         do {
             /* Get the latest prediction result. */
@@ -58,15 +60,26 @@ export class ReplicateModel extends ChatModel {
             const formatted: string | null = format(latest.output);
             if (formatted) options.progress({ text: formatted });
 
-            await setTimeout(500);
+            await setTimeout(1000);
         } while (latest.output === null || (latest.status === "starting" || latest.status === "processing"));
 
         if (latest === null || latest.error || latest.status === "failed") throw new GPTGenerationError({
             type: GPTGenerationErrorType.Other
         });
+
+        const final: string = format(latest.output)!;
         
         return {
-            text: format(latest.output)!
+            text: final,
+
+            raw: {
+                usage: {
+                    prompt: getPromptLength(input.prompt),
+                    completion: getPromptLength(final)
+                },
+
+                duration: prediction.metrics?.predict_time ? prediction.metrics?.predict_time * 1000 : Date.now() - started 
+            }
         };
     }
 }

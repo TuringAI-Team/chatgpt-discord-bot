@@ -25,8 +25,8 @@ export class ChatGPTModel extends ChatModel {
     protected async chat(options: ModelGenerationOptions, prompt: PromptData, progress?: (response: OpenAIPartialCompletionsJSON) => Promise<void> | void): Promise<OpenAIChatCompletionsData> {
         const data: OpenAIChatCompletionsData = await this.client.session.ai.chat({
             model: options.settings.options.settings.model ?? "gpt-3.5-turbo",
+            stream: options.partial,
             stop: "User:",
-            stream: true,
 
             user: options.conversation.userIdentifier,
 
@@ -45,7 +45,7 @@ export class ChatGPTModel extends ChatModel {
 
         return {
             raw: {
-                finishReason: data.response.finish_reason ? data.response.finish_reason === "length" ? "maxLength" : "stop" : null,
+                finishReason: data.response.finish_reason ? data.response.finish_reason === "length" ? "maxLength" : "stop" : undefined,
                 
                 usage: {
                     completion: data.usage.completion_tokens,

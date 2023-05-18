@@ -76,8 +76,7 @@ export class TenorAPI {
 
     public async search(options: TenorSearchOptions): Promise<TenorGIF[]> {
         const { query, max }: Required<TenorSearchOptions> = {
-            ...options,
-            max: 10
+            ...options, max: 10
         };
 
         const response: { results: TenorRawGIF[] } = await this.request("search", {

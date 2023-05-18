@@ -161,9 +161,9 @@ export class ChatClient {
         let tokens: number = 0;
 
         /* The user's subscription type */
-        const subscriptionType = options.conversation.manager.bot.db.users.subscriptionType(options.db);
+        const subscriptionType = options.conversation.manager.bot.db.users.type(options.db);
 
-        /* The user's selected tone. */
+        /* The user's selected tone */
         const tone = options.conversation.tone(options.db);
 
         /* If the prompt itself exceeds the length limit, throw an error. */
@@ -171,13 +171,22 @@ export class ChatClient {
             type: GPTGenerationErrorType.Length
         });
 
+        const { type, location } = this.session.manager.bot.db.users.type(options.db);
+
+        const limits = {
+            context: this.session.manager.bot.db.settings.get<number>(options.db[location]!, "limits:contextTokens"),
+            generation: this.session.manager.bot.db.settings.get<number>(options.db[location]!, "limits:generationTokens")
+        };
+
         /* Actual maximum token count for the prompt */
-        let maxContextLength: number = options.settings.options.history.context
-            ?? GPT_MAX_CONTEXT_LENGTH[subscriptionType];
+        let maxContextLength: number = type !== "plan"
+            ? options.settings.options.history.context ?? GPT_MAX_CONTEXT_LENGTH[subscriptionType.type]
+            : Math.min(options.settings.options.history.maxTokens, limits.context);
 
         /* Maximum generation length */
-        const maxGenerationTokens: number = options.settings.options.history.generation
-            ?? GPT_MAX_GENERATION_LENGTH[subscriptionType];
+        let maxGenerationTokens: number = type !== "plan"
+            ? options.settings.options.history.generation ?? GPT_MAX_GENERATION_LENGTH[subscriptionType.type]
+            : limits.generation;
 
         /* If the prompt itself exceeds the length limit, throw an error. */
         if (!isPromptLengthAcceptable(options.prompt, maxContextLength)) throw new GPTGenerationError({
@@ -299,6 +308,14 @@ export class ChatClient {
             if (maxContextLength - tokens <= 0) options.conversation.history.shift();
             else break;
         } while (maxContextLength - tokens <= 0);
+
+        /* Update the maximum generation tokens, to avoid possible conflicts with the OpenAI API. */
+        maxGenerationTokens = Math.min(
+            options.settings.options.history.maxTokens - tokens,
+            maxGenerationTokens
+        ) - 1;
+
+        console.log(maxContextLength, maxGenerationTokens)
 
         return {
             prompt: Object.values(messages).map(message => message.content).join("\n\n"),

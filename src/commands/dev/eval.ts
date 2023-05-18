@@ -14,7 +14,7 @@ export default class EvaluateCommand extends Command {
 				.addStringOption(builder => builder
 					.setName("code")
 					.setDescription("Code snippet to run"))
-        , { restriction: "owner" });
+        , { restriction: [ "owner" ] });
     }
 
 	private async clean(result: Awaitable<any>): Promise<string> {

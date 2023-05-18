@@ -1,9 +1,9 @@
 import { Awaitable } from "discord.js";
 import chalk from "chalk";
 
+import { Bot, BotDiscordClient, BotStatistics } from "./bot.js";
 import { DB_CACHE_INTERVAL } from "../db/managers/user.js";
 import { Git, GitCommit } from "../util/git.js";
-import { Bot, BotDiscordClient, BotStatistics } from "./bot.js";
 
 enum BotTaskType {
     RunOnStart

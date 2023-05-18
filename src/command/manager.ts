@@ -56,7 +56,7 @@ export class CommandManager {
         if (this.commands.size === 0) throw new Error("Commands have not been loaded yet");
 
 		/* Information about each application command, as JSON */
-		const commandList: RESTPostAPIApplicationCommandsJSONBody[] = this.commands.filter(cmd => cmd.options.restriction == undefined || cmd.options.restriction === "premium").map(cmd =>
+		const commandList: RESTPostAPIApplicationCommandsJSONBody[] = this.commands.filter(cmd => cmd.premiumOnly() || cmd.options.restriction.length === 0).map(cmd =>
 			(cmd.builder as SlashCommandBuilder).setDefaultPermission(true).toJSON()
 		);
 
@@ -64,9 +64,9 @@ export class CommandManager {
 		const client: REST = new REST().setToken(this.bot.app.config.discord.token);
 
 		return new Promise(async (resolve, reject) => {
-			/* Register the serialized list of moderation-specific commands to Discord. */
+			/* Register the serialized list of private commands to Discord. */
 			await client.put(Routes.applicationGuildCommands(this.bot.app.config.discord.id, this.bot.app.config.channels.moderation.guild), {
-				body: this.commands.filter(cmd => cmd.options.restriction != undefined && cmd.options.restriction !== "premium").map(cmd =>
+				body: this.commands.filter(cmd => !cmd.premiumOnly() && cmd.options.restriction.length > 0).map(cmd =>
 					(cmd.builder as SlashCommandBuilder).setDefaultPermission(true).toJSON()
 				)
 			});
@@ -108,15 +108,17 @@ export class CommandManager {
 		return (await this.bot.db.cache.get("cooldown", name))!;
 	}
 
-	private cooldownDuration(command: Command, db: DatabaseInfo): number {
+	private cooldownDuration(command: Command, db: DatabaseInfo): number | null {
 		/* If the specific command doesn't have a cool-down set, return a default one. */
 		if (!command.options.cooldown) return 3000;
 
 		/* Subscription type of the user */
-		const type = this.bot.db.users.subscriptionType(db);
+		const type = this.bot.db.users.type(db);
 
 		return typeof command.options.cooldown === "object"
-			? command.options.cooldown[type]
+			? type.type !== "plan"
+				? command.options.cooldown[type.type]
+				: null
 			: command.options.cooldown;
 	}
 
@@ -132,7 +134,8 @@ export class CommandManager {
 		const name: string = this.commandName(interaction, command);
 		
 		/* How long the cool-down should last */
-		const duration: number = this.cooldownDuration(command, db);
+		const duration: number | null = this.cooldownDuration(command, db);
+		if (duration === null) return;
 
 		/* Update the database entry for the user & the executed command. */
 		await this.bot.db.cache.set("cooldown", name, {
@@ -169,10 +172,10 @@ export class CommandManager {
 
 		/* Get the database entry of the user. */
 		let db: DatabaseInfo = await this.bot.db.users.fetchData(interaction.user, interaction.guild);
-		const subscription = this.bot.db.users.subscriptionType(db);
+		const subscription = this.bot.db.users.type(db);
 
 		/* If this command is Premium-only and the user doesn't have a subscription, ... */
-		if (command.options.restriction === "premium" && !subscription.includes("Premium")) {
+		if ((command.options.restriction.includes("subscription") || command.options.restriction.includes("plan")) && !subscription.premium) {
 			return await interaction.respond([
 				{ name: `The command /${command.builder.name} is only available to Premium users.`, value: "" },
 				{ name: `Premium 🌟 also includes many additional benefits; view /premium info for more.`, value: "" }
@@ -215,7 +218,7 @@ export class CommandManager {
 
 		/* Get the database entry of the user. */
 		let db: DatabaseInfo = await this.bot.db.users.fetchData(interaction.user, interaction.guild);
-		const subscription = this.bot.db.users.subscriptionType(db);
+		const subscription = this.bot.db.users.type(db);
 
 		/* Current status of the bot */
 		const status: BotStatus = await this.bot.status();
@@ -229,7 +232,7 @@ export class CommandManager {
 			).setEphemeral(true).send(interaction);
 
 		/* If this command is Premium-only and the user doesn't have a subscription, ... */
-		if (command.options.restriction === "premium" && !subscription.includes("Premium")) {
+		if (command.premiumOnly() && !subscription.premium) {
 			const response = new Response()
 				.addEmbed(builder => builder
 					.setDescription(`The ${interaction instanceof MessageContextMenuCommandInteraction ? `context menu action \`${command.builder.name}\`` : `command \`/${command.builder.name}\``} is only available to **Premium** users. **Premium 🌟** also includes many additional benefits; view \`/premium info\` for more.`)
@@ -251,9 +254,9 @@ export class CommandManager {
 				)
 				.setEphemeral(true);
 
-			if (typeof command.options.cooldown === "object" && (subscription === "Free" || subscription === "Voter")) {
+			if (typeof command.options.cooldown === "object" && !subscription.premium) {
 				/* How long the cool-down will be, if the user has Premium */
-				const duration: number = (command.options.cooldown as CommandSpecificCooldown).UserPremium;
+				const duration: number = (command.options.cooldown as CommandSpecificCooldown).subscription;
 
 				response.addEmbed(builder => builder
 					.setDescription(`✨ By buying **[Premium](${Utils.shopURL()})**, the cool-down will be lowered to **${Math.floor(duration / 1000)} seconds** only.\n**Premium** *also includes further benefits, view \`/premium info\` for more*. ✨`)
@@ -283,7 +286,7 @@ export class CommandManager {
 		}
 
 		/* If the command is marked as private, do some checks to make sure only privileged users are able to execute this command. */
-		if (command.options.restriction !== "premium") {
+		if (!command.premiumOnly()) {
 			/* Whether the user can execute this command */
 			const canExecute: boolean = this.bot.db.role.canExecuteCommand(db.user, command);
 
@@ -385,7 +388,7 @@ export class CommandManager {
 			response = new Response()
 				.addEmbed(builder =>
 					builder.setTitle("An error occurred ⚠️")
-					    .setDescription(`It seems like something went wrong while trying to run this command.\nIf you continue to experience issues, join our **[support server](${Utils.supportInvite(this.bot)})**.`)
+					    .setDescription(`It seems like something went wrong while trying to run this command.\n_If you continue to experience issues, join our **[support server](${Utils.supportInvite(this.bot)})**_.`)
 						.setColor("Red")
 				)
 				.setEphemeral(true);

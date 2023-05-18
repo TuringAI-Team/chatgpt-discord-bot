@@ -1,7 +1,7 @@
 import { ColorResolvable, SlashCommandBuilder } from "discord.js";
 
 import { Command, CommandResponse } from "../command/command.js";
-import { Response, ResponseType } from "../command/response.js";
+import { Response } from "../command/response.js";
 import { Bot, BotStatus } from "../bot/bot.js";
 
 import { status as statusPage, StatusSummary, StatusComponent, StatusIncident } from "../util/statuspage.js";

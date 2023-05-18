@@ -15,7 +15,6 @@ import { ImageManager } from "../image/manager.js";
 import { ShardLogger } from "../util/logger.js";
 import { ConfigBranding } from "../config.js";
 import { VoteManager } from "../util/vote.js";
-import { NatAI } from "../chat/other/nat.js";
 import { TuringAPI } from "../turing/api.js";
 import { TenorAPI } from "../util/tenor.js";
 import { GitCommit } from "../util/git.js";
@@ -108,9 +107,6 @@ export class Bot extends EventEmitter {
     /* Conversation & session manager, in charge of managing Microsoft sessions & conversations with the bot */
     public readonly conversation: ConversationManager;
 
-    /* Nat Playground API manager */
-    public readonly nat: NatAI;
-
     /* Replicate API manager */
     public readonly replicate: ReplicateManager;
 
@@ -166,7 +162,6 @@ export class Bot extends EventEmitter {
         this.ai = new OpenAIManager(this);
         this.task = new TaskManager(this);
         this.gif = new TenorAPI(this);
-        this.nat = new NatAI(this);
         
         this.client = new Client({
             shards: getInfo().SHARD_LIST,

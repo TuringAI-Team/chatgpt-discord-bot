@@ -1,14 +1,15 @@
 import { EmbedBuilder, Message, User } from "discord.js";
 import chalk from "chalk";
 
-import { DatabaseConversation, DatabaseInfo, DatabaseResponseMessage, DatabaseUser, RawDatabaseConversation } from "../db/managers/user.js";
+import { DatabaseConversation, DatabaseInfo, DatabaseResponseMessage, DatabaseUser, RawDatabaseConversation, UserSubscriptionType } from "../db/managers/user.js";
+import { ChatSettingsModel, ChatSettingsModelBillingType, ChatSettingsModels } from "./settings/model.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
-import { ChatSettingsModel, ChatSettingsModels } from "./settings/model.js";
 import { ChatSettingsTone, ChatSettingsTones } from "./settings/tone.js";
 import { MessageType, ResponseMessage } from "../chat/types/message.js";
 import { ChatInputImage, ImageBuffer } from "../chat/types/image.js";
 import { check, ModerationResult } from "./moderation/moderation.js";
 import { Cooldown, CooldownModifier } from "./utils/cooldown.js";
+import { UserPlanChatExpense } from "../db/managers/plan.js";
 import { RestrictionType } from "../db/types/restriction.js";
 import { GenerationOptions, Session } from "./session.js";
 import { ChatDocument } from "../chat/types/document.js";
@@ -18,6 +19,7 @@ import { GPTAPIError } from "../error/gpt/api.js";
 import { GeneratorOptions } from "./generator.js";
 import { BotDiscordClient } from "../bot/bot.js";
 import { Utils } from "../util/utils.js";
+import { ChatModel } from "../chat/types/model.js";
 
 export interface ChatInput {
 	/* The input message itself; always given */
@@ -55,18 +57,26 @@ export type ChatGeneratedInteraction = ChatInteraction & {
 	tries: number;
 }
 
+export interface ChatChargeOptions {
+	model: ChatSettingsModel;
+	tone: ChatSettingsTone;
+
+	interaction: ChatInteraction;
+	db: DatabaseInfo;
+}
+
 /* How many tries to allow to retry after an error occurred duration generation */
 const CONVERSATION_ERROR_RETRY_MAX_TRIES: number = 10
 
 /* Usual cool-down for interactions in the conversation */
 export const CONVERSATION_COOLDOWN_MODIFIER = {
-	Free: 1,
-	Voter: 0.6,
-	GuildPremium: 0.2,
-	UserPremium: 0.09
+	free: 1,
+	voter: 0.6,
+	subscription: 0.1,
+	plan: 0
 }
 
-export const CONVERSATION_DEFAULT_COOLDOWN: CooldownModifier = {
+export const CONVERSATION_DEFAULT_COOLDOWN: Required<Pick<CooldownModifier, "time">> = {
 	time: 160 * 1000
 }
 
@@ -119,9 +129,9 @@ export class Conversation {
 		this.history = [];
 
 		/* Set up some default values. */
+		this.generating = false;
 		this.updatedAt = null;
 		this.active = false;
-		this.generating = false;
 	}
 
 	/**
@@ -181,7 +191,7 @@ export class Conversation {
 
 	public async changeSetting<T extends ChatSettingsModel | ChatSettingsTone>(type: "model" | "tone", db: DatabaseUser, updated: T): Promise<void> {
 		/* Reset the conversation first, as the models might get confused otherwise. */
-		await this.reset();
+		await this.reset(db);
 
 		await this.manager.bot.db.settings.apply(db, {
 			[`chat:${type}`]: updated.id
@@ -253,7 +263,18 @@ export class Conversation {
 	/**
 	 * Reset the conversation, and clear its history.
 	 */
-	public async reset(remove: boolean = true): Promise<void> {
+	public async reset(db: DatabaseUser, remove: boolean = true): Promise<void> {
+		/* Currently configured chat model */
+		const settingsModel: ChatSettingsModel = this.model(db);
+		const settingsTone: ChatSettingsTone = this.tone(db);
+
+		const model: ChatModel = this.manager.session.client.modelForSetting(settingsModel);
+
+		/* Before resetting the conversation, call the chat model's reset callback. */
+		await model.reset({
+			conversation: this, model: settingsModel, tone: settingsTone
+		});
+
 		/* Reset the conversation data. */
 		this.applyResetTimer();
 		this.history = [];
@@ -429,6 +450,11 @@ export class Conversation {
 			}))
 		});
 
+		/* If the user has a running pay-as-you plan, charge them for the usage. */
+		await this.charge({
+			model, tone, interaction: result, db: options.db
+		});
+
 		/* If messages should be collected in the database, insert the generated message. */
 		if (!this.manager.bot.dev) await this.manager.bot.db.users.updateInteraction(
 			{
@@ -446,22 +472,23 @@ export class Conversation {
 		);
 
 		/* How long to apply the cool-down for */
-		const cooldown: number = this.cooldownTime(options.db, this.model(options.db));
-
-		/* Activate the cool-down. */
-		if (!this.manager.bot.app.config.discord.owner.includes(this.user.id)) this.cooldown.use(cooldown);
+		const cooldown: number | null = this.cooldownTime(options.db, this.model(options.db));
+		if (cooldown !== null) this.cooldown.use(cooldown);
 
 		return {
-			...result,
-			tries
+			...result, tries
 		};
 	}
 
-	public cooldownTime(db: DatabaseInfo, model: ChatSettingsModel): number {
+	public cooldownTime(db: DatabaseInfo, model: ChatSettingsModel): number | null {
+		/* Subscription type of the user */
+		const type: UserSubscriptionType = this.manager.bot.db.users.type(db);
+		if (type.type === "plan" || this.manager.bot.app.config.discord.owner.includes(this.user.id)) return null;
+
 		/* Cool-down duration & modifier */
 		const baseModifier: number = model.options.cooldown && model.options.cooldown.time && model.options.restricted === RestrictionType.PremiumOnly
 			? 1
-			: CONVERSATION_COOLDOWN_MODIFIER[this.manager.bot.db.users.subscriptionType(db)];
+			: CONVERSATION_COOLDOWN_MODIFIER[this.manager.bot.db.users.type(db).type];
 
 		/* Cool-down modifier, set by the tone */
 		const toneModifier: number = model.options.cooldown && model.options.cooldown.multiplier
@@ -478,24 +505,22 @@ export class Conversation {
 
 	public cooldownMessage(db: DatabaseInfo): EmbedBuilder[] {
 		/* Subscription type of the user */
-		const subscriptionType = this.manager.bot.db.users.subscriptionType(db);
+		const subscriptionType = this.manager.bot.db.users.type(db);
 		const additional: EmbedBuilder[] = [];
 		
-		if (subscriptionType !== "UserPremium") {
-			if (subscriptionType === "Free" || subscriptionType === "Voter") {
-				additional.push(
-					new EmbedBuilder()
-						.setDescription(`✨ By buying **[Premium](${Utils.shopURL()})**, your cool-down will be lowered to **a few seconds** only, with **unlimited** messages per day.\n**Premium** *also includes further benefits, view \`/premium info\` for more*. ✨`)
-						.setColor("Orange")
-				);
-				
-			} else if (subscriptionType === "GuildPremium") {
-				additional.push(
-					new EmbedBuilder()
-						.setDescription(`✨ By buying **[Premium](${Utils.shopURL()})** for yourself, the cool-down will be lowered to only **a few seconds**, with **unlimited** messages per day.\n**Premium** *also includes further benefits, view \`/premium info\` for more*. ✨`)
-						.setColor("Orange")
-				);
-			}
+		if (!subscriptionType.premium) {
+			additional.push(
+				new EmbedBuilder()
+					.setDescription(`✨ By buying **[Premium](${Utils.shopURL()})**, your cool-down will be lowered to **a few seconds** only, with **unlimited** messages per day.\n**Premium** *also includes further benefits, view \`/premium info\` for more*. ✨`)
+					.setColor("Orange")
+			);
+			
+		} else if (subscriptionType.premium && subscriptionType.location === "guild") {
+			additional.push(
+				new EmbedBuilder()
+					.setDescription(`✨ By buying **[Premium](${Utils.shopURL()})** for yourself, the cool-down will be lowered to only **a few seconds**, with **unlimited** messages per day.\n**Premium** *also includes further benefits, view \`/premium info\` for more*. ✨`)
+					.setColor("Orange")
+			);
 		}
 
 		if (additional[0]) additional[0].setDescription(`${additional[0].data.description!}\n\nYou can also reduce your cool-down for **completely free**, by simply voting for us on **[top.gg](${this.manager.bot.vote.voteLink(db.user)})**. 📩\nAfter voting, run \`/vote\` and press the **Check your vote** button.`)
@@ -512,6 +537,73 @@ export class Conversation {
 
 			...additional
 		];
+	}
+
+	public async charge(options: ChatChargeOptions): Promise<UserPlanChatExpense | null> {
+		/* Subscription type of the user */
+		const type: UserSubscriptionType = this.manager.bot.db.users.type(options.db);
+		if (type.type !== "plan") return null;
+
+		const db = options.db[type.location];
+		if (!db || db.plan === null) return null;
+
+		/* Calculated credit amount */
+		const amount: number | null = this.calculateChargeAmount(options);
+		if (amount === null) return null;
+
+		/* Add the charge to the user's plan. */
+		const charge = await this.manager.bot.db.plan.expenseForChat(db, {
+			bonus: options.model.id === "gpt-4" ? 0.05 : 0.15,
+			used: amount,
+			
+			data: {
+				model: options.model.id,
+
+				duration: options.interaction.output.raw && options.interaction.output.raw.duration
+					? options.interaction.output.raw.duration : undefined,
+
+				tokens: options.interaction.output.raw && options.interaction.output.raw.usage
+					? options.interaction.output.raw.usage : undefined
+			}
+		});
+
+		return charge;
+	}
+
+	private chargeBillingForType({ model }: ChatChargeOptions, type: "prompt" | "completion" | "all"): number {
+		if (typeof model.options.billing.amount === "object") {
+			if (type !== "all") return model.options.billing.amount[type];
+			else return model.options.billing.amount["prompt"] + model.options.billing.amount["completion"];
+		} else return model.options.billing.amount;
+	};
+
+	/**
+	 * Calculate the amount of credit to charge for this chat request.
+	 */
+	public calculateChargeAmount(options: ChatChargeOptions): number | null {
+		const { interaction, model } = options;
+
+		/* Per 1000 tokens */
+		if (model.options.billing.type === ChatSettingsModelBillingType.Per1000Tokens) {
+			if (!interaction.output.raw!.usage) return null;
+
+			const promptCost: number = (interaction.output.raw!.usage.prompt / 1000) * this.chargeBillingForType(options, "prompt");
+			const completionCost: number = (interaction.output.raw!.usage.completion / 1000) * this.chargeBillingForType(options, "completion");
+
+			return promptCost + completionCost;
+
+		} else if (model.options.billing.type === ChatSettingsModelBillingType.PerMessage) {
+			return this.chargeBillingForType(options, "all");
+
+		} else if (model.options.billing.type === ChatSettingsModelBillingType.PerSecond) {
+			if (!interaction.output.raw?.duration) return null;
+			return (interaction.output.raw.duration / 1000) * this.chargeBillingForType(options, "all");
+
+		} else if (model.options.billing.type === ChatSettingsModelBillingType.Custom) {
+			return interaction.output.raw?.cost ?? null;
+		}
+
+		return null;
 	}
 
 	public async pushToHistory(entry?: ChatInteraction): Promise<void> {

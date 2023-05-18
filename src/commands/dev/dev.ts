@@ -2,7 +2,6 @@ import { Guild, GuildMember, SlashCommandBuilder } from "discord.js";
 import { setTimeout as delay } from "timers/promises";
 import { getInfo } from "discord-hybrid-sharding";
 import prettyBytes from "pretty-bytes";
-import NodeCache from "node-cache";
 import chalk from "chalk";
 import dayjs from "dayjs";
 
@@ -49,7 +48,7 @@ export default class DeveloperCommand extends Command {
 				.setName("crash")
 				.setDescription("Crash the cluster")
 			)
-		, { long: true, restriction: "owner" });
+		, { long: true, restriction: [ "owner" ] });
 	}
 
     public async run(interaction: CommandInteraction): CommandResponse {
@@ -66,9 +65,6 @@ export default class DeveloperCommand extends Command {
 
 			const runningRequests: number = (await this.bot.client.cluster.broadcastEval(() => this.bot.conversation.conversations.filter(c => c.generating).size).catch(() => [0]))
 				.reduce((value, count) => value + count, 0);
-
-			const cache: NodeCache.Stats =
-				await this.bot.client.cluster.evalOnManager("this.bot.app.cache.cache.stats") as unknown as NodeCache.Stats;
 
 			const guilds: number[] = (await this.bot.client.cluster.fetchClientValues("guilds.cache.size")) as number[];
 			const running: boolean[] = (await this.bot.client.cluster.fetchClientValues("bot.started")) as boolean[];
@@ -124,16 +120,6 @@ export default class DeveloperCommand extends Command {
 					.setTitle("Clusters 🤖")
 					.setDescription(
 						clusterDebug.trim()
-					)
-				)
-				.addEmbed(builder => builder
-					.setColor(this.bot.branding.color)
-					.setTitle("Cache ⚙️")
-					.addFields(
-						{ name: "Entries", value: `${cache.keys}`, inline: true },
-						{ name: "Hits", value: `${cache.hits}`, inline: true },
-						{ name: "Misses", value: `${cache.misses}`, inline: true },
-						{ name: "Size", value: `${prettyBytes(cache.vsize + cache.ksize)}`, inline: true }
 					)
 				)
 				.addEmbed(builder => builder

@@ -1,13 +1,13 @@
-import { ChatInputCommandInteraction, EmbedBuilder, GuildMember, PermissionsBitField, SlashCommandBuilder, User } from "discord.js";
-import dayjs from "dayjs";
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, EmbedBuilder, GuildMember, SlashCommandBuilder } from "discord.js";
 
-import { DatabaseSubscriptionKey, DatabaseSubscription, DatabaseGuildSubscription, DatabaseInfo } from "../db/managers/user.js";
-import { CONVERSATION_COOLDOWN_MODIFIER, CONVERSATION_DEFAULT_COOLDOWN } from "../conversation/conversation.js";
+import { DatabaseInfo, UserSubscriptionType } from "../db/managers/user.js";
 import { Command, CommandResponse } from "../command/command.js";
+import { ErrorResponse } from "../command/response/error.js";
 import { Response } from "../command/response.js";
 import { PremiumRole } from "../util/roles.js";
 import { Utils } from "../util/utils.js";
 import { Bot } from "../bot/bot.js";
+import { ProgressBar } from "../util/progressBar.js";
 
 export default class PremiumCommand extends Command {
     constructor(bot: Bot) {
@@ -18,175 +18,181 @@ export default class PremiumCommand extends Command {
 
 				.addSubcommand(builder => builder
 					.setName("info")
-					.setDescription("View information about the benefits & perks of a subscription")
-				)
-				.addSubcommand(builder => builder
-					.setName("redeem")
-					.setDescription("Redeem a Premium subscription key")
-					.addStringOption(builder => builder
-						.setName("key")
-						.setDescription("Key to redeem")
-						.setRequired(true)
-					)
+					.setDescription("View information about your active Premium subscription or plan")
 				)
 				.addSubcommand(builder => builder
 					.setName("buy")
-					.setDescription("Find out where to buy a Premium subscription key")
+					.setDescription("Find out where to buy Premium")
 				)
 		);
     }
 
     public async run(interaction: ChatInputCommandInteraction, { user, guild }: DatabaseInfo): CommandResponse {
 		/* Which sub-command to execute */
-		const action: "info" | "redeem" | "buy" = interaction.options.getSubcommand(true) as any;
+		const action: "info" | "buy" = interaction.options.getSubcommand(true) as any;
 
 		/* If the command was run on the support server, check whether the user already has their Premium role. */
 		if (guild && guild.id === this.bot.app.config.channels.moderation.guild && interaction.member instanceof GuildMember) {
 			await PremiumRole.checkRole(this.bot, interaction.member);
 		}
 
+		/* Current subscription & plan */
+		const subscriptions = {
+			user: this.bot.db.users.subscription(user),
+			guild: guild ? this.bot.db.users.subscription(guild) : null
+		};
+
+		const plans = {
+			user: this.bot.db.plan.get(user),
+			guild: guild ? this.bot.db.plan.get(guild) : null
+		};
+
+		/* Subscription type of the user */
+		const type: UserSubscriptionType = this.bot.db.users.type({ user, guild });
+
+		/* The user's permissions */
+		const permissions = interaction.member instanceof GuildMember ? interaction.member.permissions : null;
+
+		/* Whether the "Recharge" button should be shown */
+		const showShopButton: boolean = user.metadata.email != undefined && (type.location === "guild" ? permissions !== null && permissions.has("ManageGuild") : true);
+
 		/* View information about the benefits & perks of a subscription */
 		if (action === "info") {
-			const fields = [
-				{
-					name: "Way lower cool-down ⏰",
-					value: `Chat with **ChatGPT** for as long as you want - without being interrupted by an annoying cool-down! ⏰\nYour cool-down will be lowered to an amazing **${Math.floor((CONVERSATION_DEFAULT_COOLDOWN.time! * CONVERSATION_COOLDOWN_MODIFIER.UserPremium) / 1000)} seconds**, for all normal models.`
-				},
-
-				{
-					name: "GPT-4 access 🤖",
-					value: `Be part of the few people that have access to **GPT-4** - _while still being **cheaper** than **ChatGPT Plus**_.`
-				},
-	
-				{
-					name: "Earlier access to new features 👀",
-					value: `As a **Premium** member, you get access to preview features that we may add in the future, before the rest.`
-				},
-	
-				{
-					name: "... a special place in our 💖",
-					value: `Keeping this bot free is our top priority, but it wouldn't be possible without supporters like **you**. Feel free to become one of the supporters of the bot.`
-				}
-			];
-	
 			const builder: EmbedBuilder = new EmbedBuilder()
-				.setTitle("Premium ✨")
-				.setDescription(`*An even better experience to use **${this.bot.client.user!.username}** on Discord*`)
-				.setColor("Orange")
-	
-				.addFields(fields.map(field => ({
-					...field,
-					inline: false
-				})));
-	
+				.setColor("Orange");
+
+			const buttons: ActionRowBuilder<ButtonBuilder> = new ActionRowBuilder<ButtonBuilder>()
+				.addComponents(
+					new ButtonBuilder()
+						.setStyle(ButtonStyle.Link)
+						.setURL(Utils.shopURL())
+						.setLabel("Visit our shop")
+						.setEmoji("💸")
+				);
+
 			const response = new Response()
-				.addEmbed(builder);
+				.setEphemeral(true);
 
-			if (guild && guild.subscription !== null) {
-				/* Fetch the user, who redeemed the Premium key. */
-				const owner: User | null = guild.subscription.by ? await this.bot.client.users.fetch(guild.subscription.by) : null;
+			if (type.premium || (plans.guild !== null || plans.user !== null)) {
+				if (type.type === "plan") {
+					if (type.location === "guild") {
+						/* Check whether the user has the "Manage Server" permission. */
+						if (!permissions || !permissions.has("ManageGuild")) return new ErrorResponse({
+							interaction, message: "You must have the `Manage Server` permission to view & manage the server's plan", emoji: "😔"
+						});
+					}
 
-				response.addEmbed(builder => builder
-					.setDescription(`This server has had a **Premium** subscription since <t:${Math.floor(guild.subscription!.since / 1000)}:R>${owner !== null ? `, redeemed by **${owner.tag}**` : ""} 🙏\n*The subscription will expire <t:${Math.floor(guild.subscription!.expires / 1000)}:R>.*`)
-					.setColor("Purple")
+					/* The user's (or guild's) plan */
+					const plan = plans[type.location]!;
+
+					/* Previous plan expenses */
+					const expenses = plan.expenses.slice(-10);
+
+					if (expenses.length > 0) response.addEmbed(builder => builder
+						.setTitle("Previous expenses")
+						.setDescription("*This will show your last few expenses using the bot*.")
+						.addFields(expenses.map(expense => ({
+							name: `${Utils.titleCase(expense.type)}`,
+							value: `**$${Math.round(expense.used * Math.pow(10, 5)) / Math.pow(10, 5)}** — *<t:${Math.floor(expense.time / 1000)}:F>*`
+						})))
+					);
+
+					/* Previous plan purchase history */
+					const history = plan.history.slice(-10);
+
+					if (history.length > 0) response.addEmbed(builder => builder
+						.setTitle("Previous charge-ups")
+						.setDescription("*This will show your last few charge-ups or granted credits*.")
+						.addFields(history.map(credit => ({
+							name: `${Utils.titleCase(credit.type)}${credit.gateway ? `— *using **\`${credit.gateway}\`***` : ""}`,
+							value: `**$${credit.amount.toFixed(2)}** — *<t:${Math.floor(credit.time / 1000)}:F>*`
+						})))
+					);
+
+					const percentage = plan.used / plan.total;
+					const size: number = 25;
+					
+					/* Whether the user has exceeded the limit */
+					const exceededLimit: boolean = plan.used >= plan.total;
+
+					/* Final, formatted diplay message */
+					const displayMessage: string = !exceededLimit
+						? `**$${plan.used.toFixed(2)}** \`${ProgressBar.display({ percentage, total: size })}\` **$${plan.total.toFixed(2)}**`
+						: `_You ran out of credits for the **Pay-as-you-go** plan; re-charge credits ${showShopButton ? `using the **Purchase credits** button below` : `in **[our shop](${Utils.shopURL()})**`}_.`;
+
+					builder.setTitle(`${type.location === "guild" ? "The server's" : "Your"} pay-as-you-go plan 📊` );
+					builder.setDescription(displayMessage);
+
+				} else if (type.type === "subscription" && subscriptions[type.location] !== null) {
+					const subscription = subscriptions[type.location]!;
+					builder.setTitle(`${type.location === "guild" ? "The server's" : "Your"} Premium subscription ✨`);
+
+					builder.addFields(
+						{
+							name: "Premium subscriber since", inline: true,
+							value: `<t:${Math.floor(subscription.since / 1000)}:F>`,
+						},
+
+						{
+							name: "Subscription active until", inline: true,
+							value: `<t:${Math.floor(subscription.expires / 1000)}:F>, <t:${Math.floor(subscription.expires / 1000)}:R>`,
+						}
+					);
+				}
+
+				if (type.premium) buttons.components.unshift(
+					new ButtonBuilder()
+						.setCustomId(`settings:menu:${type.location}:premium`)
+						.setLabel("Settings").setEmoji("⚙️")
+						.setStyle(ButtonStyle.Secondary)
+				);
+
+				/* Add the `Buy credits` button, if applicable. */
+				if (showShopButton) buttons.components.unshift(
+					new ButtonBuilder()
+						.setCustomId(`premium:purchase:${type.type}`).setEmoji("🛍️")
+						.setLabel(type.type === "subscription" ? "Extend your subscription" : "Purchase credits")
+						.setStyle(ButtonStyle.Success)
+				);
+
+			} else {
+				builder.setDescription("You can buy a **Premium** subscription or **Premium** credits for the plan below.");
+
+				if (showShopButton) buttons.components.unshift(
+					new ButtonBuilder()
+						.setCustomId(`premium:purchase:plan`).setEmoji("🛍️")
+						.setLabel("Purchase credits")
+						.setStyle(ButtonStyle.Success),
+
+					new ButtonBuilder()
+						.setCustomId(`premium:purchase:subscription`).setEmoji("🛍️")
+						.setLabel("Subscribe")
+						.setStyle(ButtonStyle.Success)
 				);
 			}
 
-			if (user.subscription !== null) response
-				.addEmbed(builder => builder
-					.setDescription(`You have been a **Premium** member since <t:${Math.floor(user.subscription!.since / 1000)}:R> 🙏\n*The subscription will expire <t:${Math.floor(user.subscription!.expires / 1000)}:R>.*`)
-					.setColor("Purple")
-				);
-
-			if (!this.bot.db.users.canUsePremiumFeatures({ user, guild })) response
-				.addEmbed(builder => builder
-					.setDescription(`To buy **Premium**, visit **[our shop](${Utils.shopURL()})** and acquire a **Premium subscription key** there. Then, run **\`/premium redeem\`** with the subscription key you got.`)
-					.setColor("Purple")
-				);
+			response
+				.addComponent(ActionRowBuilder<ButtonBuilder>, buttons)
+				.addEmbed(builder);
 
 			return response;
 
-		/* Find out where to buy a Premium subscription key */
+		/* Find out where to buy a Premium subscription */
 		} else if (action === "buy") {
-			return new Response()
-				.addEmbed(builder => builder
-					.setDescription(`You can get a **Premium** subscription key **[here](${Utils.shopURL()})**.\n*Once you got your subscription key, run \`/premium redeem\` with the received **key**.*`)
-					.setColor("Orange")
+			const buttons: ActionRowBuilder<ButtonBuilder> = new ActionRowBuilder<ButtonBuilder>()
+				.addComponents(
+					new ButtonBuilder()
+						.setStyle(ButtonStyle.Link)
+						.setURL(Utils.shopURL())
+						.setLabel("Visit our shop")
+						.setEmoji("💸")
 				);
 
-		/* Redeem a Premium subscription key */
-		} else if (action === "redeem") {
-			/* Key to redeem */
-			const key: string = interaction.options.getString("key", true);
-
-			/* Find the key in the database. */
-			const db: DatabaseSubscriptionKey | null = await this.bot.db.users.getSubscriptionKey(key);
-
-			if (db === null) return new Response()
-				.addEmbed(builder => builder
-					.setDescription("You specified an invalid subscription key ❌")
-					.setColor("Red")
-				)
+			const response = new Response()
+				.addComponent(ActionRowBuilder<ButtonBuilder>, buttons)
 				.setEphemeral(true);
 
-			if (db.redeemed !== null) return new Response()
-				.addEmbed(builder => builder
-					.setDescription("The specified subscription key was already redeemed ❌")
-					.setColor("Red")
-				)
-				.setEphemeral(true);
-
-			/* If the command wasn't executed on a guild, show an error. */
-			if ((!guild && db.type === "guild")) return new Response()
-				.addEmbed(builder => builder
-					.setDescription("You can only redeem **Premium** server keys on guilds ❌")
-					.setColor("Red")
-				)
-				.setEphemeral(true);
-
-			/* Either the current guild or user subscription */
-			const subscription: DatabaseGuildSubscription | DatabaseSubscription | null =
-				(db.type === "user" ? user.subscription : guild!.subscription);
-
-			/* Whether the subscription can be "ovewritten" */
-			const overwrite: boolean = subscription !== null ?
-				subscription!.expires - Date.now() < 7 * 24 * 60 * 60 * 1000
-				: false;
-			
-			if (((guild?.subscription && db.type === "guild") || (user.subscription !== null && db.type === "user")) && !overwrite) return new Response()
-				.addEmbed(builder => builder
-					.setDescription(db.type === "user" ? "You already have a **Premium** subscription 🎉" : "This server already has a **Premium** subscription 🎉")
-					.setFooter({ text: "You can redeem a new subscription key, when the subscription expires in less than 7 days." })
-					.setColor("Purple")
-				)
-				.setEphemeral(true);
-
-			if (db.type === "guild") {
-				/* Make sure that the user has Administrator permissions, if they want to redeem a server key. */
-				const permissions: PermissionsBitField = interaction.memberPermissions!;
-
-				/* If the user doesn't have the required permissions, show a notice. */
-				if (!permissions.has("Administrator", true)) return new Response()
-					.addEmbed(builder => builder
-						.setDescription("You need to have the `Administrator` permission in order to redeem a **Premium** server key ❌")
-						.setColor("Red")
-					)
-					.setEphemeral(true);
-			}
-
-			/* Try to redeem the key for the user. */
-			if (db.type === "user") await this.bot.db.users.redeemSubscriptionKey(user, db);
-			else if (db.type === "guild") await this.bot.db.users.redeemSubscriptionKey(guild!, db, interaction.user.id);
-
-			await this.bot.db.metrics.changePremiumMetric({ redeemed: "+1" });
-
-			return new Response()
-				.addEmbed(builder => builder
-					.setDescription(`Thank you for buying **Premium** for **${dayjs.duration(db.duration).humanize()}** 🎉${overwrite && subscription !== null ? `\n\n*The previous **Premium** subscription hadn't expired yet; the remaining **${dayjs.duration(subscription!.expires - Date.now()).humanize()}** have been added to the new one*.` : ""}`)
-					.setFooter({ text: `View /premium info for ${db.type === "user" ? "your current subscription status" : "the server's current subscription status"}` })
-					.setColor("Purple")
-				)
-				.setEphemeral(true);
+			return response;
 		}
     }
 }

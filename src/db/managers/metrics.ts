@@ -100,6 +100,8 @@ type ImageMetricsEntry = MetricsEntry<"image", {
     steps: {
         [key: number]: number;
     };
+
+    kudos: number;
 }>
 
 type CommandsMetricsEntry = MetricsEntry<"commands", {

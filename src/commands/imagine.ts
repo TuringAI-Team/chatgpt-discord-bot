@@ -85,14 +85,14 @@ const RATE_ACTIONS: { emoji: string; value: number; }[] = [
 ]
 
 const DEFAULT_PROMPT: Partial<ImageGenerationPrompt> & Required<Pick<ImageGenerationPrompt, "negative">> = {
-	negative: "cropped, artifacts, lowres, cropped, artifacts, lowres, lowres, bad anatomy, bad hands, error, missing fingers, extra digit, fewer digits, awkward fingers, cropped, jpeg artifacts, worst quality, low quality, signature, blurry, extra ears, deformed, disfigured, mutation, extra limbs:1.5"
+	negative: "cropped, artifacts, lowres, cropped, artifacts, lowres, lowres, bad anatomy, bad hands, error, missing fingers, extra digit, fewer digits, awkward fingers, cropped, jpeg artifacts, worst quality, low quality, signature, blurry, extra ears, deformed, disfigured, mutation, extra limbs"
 }
 
 const MAX_STEP_COUNT = {
-	Free: 50,
-	Voter: 60,
-	GuildPremium: 75,
-	UserPremium: 100
+	free: 50,
+	voter: 60,
+	subscription: 100,
+	plan: 100
 }
 
 /* ChatGPT prompt used to improve an image generation prompt & add additional tags */
@@ -178,7 +178,7 @@ export default class ImagineCommand extends Command {
 						.setDescription("How many steps to generate the images for")
 						.setRequired(false)
 						.setMinValue(5)
-						.setMaxValue(MAX_STEP_COUNT.UserPremium)
+						.setMaxValue(MAX_STEP_COUNT.subscription)
 					)
 					.addStringOption(builder => builder
 						.setName("negative")
@@ -257,7 +257,7 @@ export default class ImagineCommand extends Command {
 						.setDescription("How many steps to generate the images for")
 						.setRequired(false)
 						.setMinValue(5)
-						.setMaxValue(MAX_STEP_COUNT.UserPremium)
+						.setMaxValue(MAX_STEP_COUNT.subscription)
 					)
 					.addNumberOption(builder => builder
 						.setName("guidance")
@@ -268,10 +268,9 @@ export default class ImagineCommand extends Command {
 					)
 				)
 		, { cooldown: {
-			Free: 75 * 1000,
-			Voter: 60 * 1000,
-			GuildPremium: 25 * 1000,
-			UserPremium: 15 * 1000
+			free: 75 * 1000,
+			voter: 60 * 1000,
+			subscription: 15 * 1000
 		} });
     }
 
@@ -648,8 +647,13 @@ export default class ImagineCommand extends Command {
 			await this.bot.db.metrics.changeImageMetric({
 				models: { [model.name]: "+1" },
 				counts: { [count]: "+1" },
-				steps: { [steps]: "+1" }
+				steps: { [steps]: "+1" },
+				kudos: `+${result.kudos}`
 			});
+
+			await this.bot.db.plan.expenseForImage(
+				db, result
+			);
 
 			/* Generate the final message, showing the generated results. */
 			const final: Response = await this.formatResultResponse(conversation, db, options, result, moderation, censored);
@@ -707,7 +711,7 @@ export default class ImagineCommand extends Command {
 
     public async run(interaction: ChatInputCommandInteraction, db: DatabaseInfo): CommandResponse {
 		const canUsePremiumFeatures: boolean = this.bot.db.users.canUsePremiumFeatures(db);
-		const subscriptionType = this.bot.db.users.subscriptionType(db);
+		const subscriptionType = this.bot.db.users.type(db);
 
 		const conversation: Conversation = await this.bot.conversation.create(interaction.user);
 
@@ -727,7 +731,7 @@ export default class ImagineCommand extends Command {
 			/* How many steps to generate the images with */
 			const steps: number =
 				interaction.options.getInteger("steps")
-				?? this.bot.db.settings.get<number>(db.user, "image:steps");
+				?? Math.min(this.bot.db.settings.get<number>(db.user, "image:steps"), MAX_STEP_COUNT[subscriptionType.type]);
 
 			/* To which scale the AI should follow the prompt; higher values mean that the AI will respect the prompt more */
 			const guidance: number = Math.round(interaction.options.getNumber("guidance") ?? DEFAULT_GEN_OPTIONS.params!.cfg_scale!);
@@ -736,7 +740,7 @@ export default class ImagineCommand extends Command {
 			const sampler: ImageGenerationSampler = interaction.options.getString("sampler") ?? "k_euler";
 
 			/* If the user is trying to generate an image with more steps than possible for a normal user, send them a notice. */
-			if (steps > MAX_STEP_COUNT[subscriptionType] && !canUsePremiumFeatures) return new PremiumUpsellResponse({
+			if (steps > MAX_STEP_COUNT[subscriptionType.type] && !canUsePremiumFeatures) return new PremiumUpsellResponse({
 				type: PremiumUpsellType.SDSteps
 			});
 

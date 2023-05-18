@@ -1,6 +1,3 @@
-import pkg from "voucher-code-generator";
-const { generate: generateVoucherCode } = pkg;
-
 import { Awaitable, Collection, Guild, Snowflake, User } from "discord.js";
 import chalk from "chalk";
 
@@ -10,9 +7,12 @@ import { ResponseMessage } from "../../chat/types/message.js";
 import { ChatOutputImage } from "../../chat/types/image.js";
 import { DatabaseImage } from "../../image/types/image.js";
 import { GPTDatabaseError } from "../../error/gpt/db.js";
+import { DatabaseCollectionType } from "../manager.js";
 import { ClientDatabaseManager } from "../cluster.js";
 import { ImageDescription } from "./description.js";
-import { DatabaseCollectionType } from "../manager.js";
+import { VOTE_DURATION } from "../../util/vote.js";
+import { SettingsLocation } from "./settings.js";
+import { GuildPlan, UserPlan } from "./plan.js";
 import { UserRoles } from "./role.js";
 
 /* Type of moderation action */
@@ -29,6 +29,8 @@ export interface RawDatabaseGuild {
     id: Snowflake;
     created: string;
     subscription: DatabaseGuildSubscription | null;
+    settings: DatabaseSettings;
+    plan: GuildPlan | null;
 }
 
 export interface RawDatabaseUser {
@@ -37,17 +39,11 @@ export interface RawDatabaseUser {
     interactions: DatabaseInteractionStatistics;
     infractions: DatabaseUserInfraction[];
     subscription: DatabaseSubscription | null;
-    settings: UserSettings;
+    plan: UserPlan | null;
+    settings: DatabaseSettings;
     roles: UserRoles;
+    metadata: DatabaseUserMetadata | null;
     voted: string | null;
-}
-
-export interface RawDatabaseSubscriptionKey {
-    id: string;
-    created: string;
-    type: DatabaseSubscriptionType;
-    duration: number;
-    redeemed: DatabaseSubscriptionRedeemStatus | null;
 }
 
 export interface DatabaseUserInfraction {
@@ -75,51 +71,12 @@ type DatabaseInfractionOptions = Pick<DatabaseUserInfraction, "by" | "reason" | 
 
 export type DatabaseSubscriptionType = "guild" | "user"
 
-export interface DatabaseSubscriptionRedeemStatus {
-    /* Who redeemed this key */
-    who: Snowflake;
-
-    /* When did they redeem this key */
-    when: number;
-
-    /* Optional, for guilds; which guild this key was redeemed for */
-    guild?: Snowflake;
-}
-
-export interface DatabaseSubscriptionKey {
-    /* The subscription redeem key itself */
-    id: string;
-
-    /* When the key was created */
-    created: number;
-
-    /* How long the key lasts */
-    duration: number;
-
-    /* Type of key */
-    type: DatabaseSubscriptionType;
-
-    /* Information about who redeemed this key, etc. */
-    redeemed: DatabaseSubscriptionRedeemStatus | null;
-}
-
-export interface DatabaseSubscriptionHistoryKey {
-    /* The key that was redeemed */
-    key: string;
-
-    /* When this key was claimed */
-    claimedAt: number;
-}
-
 export interface DatabaseSubscription {
     /* Since when the user has an active subscription */
     since: number;
 
     /* When this premium subscription expires */
     expires: number;
-
-    /* Which key was used to redeem this subscription */
-    keys: DatabaseSubscriptionHistoryKey[];
 }
 
 export type DatabaseGuildSubscription = DatabaseSubscription & {
@@ -136,6 +93,12 @@ export interface DatabaseGuild {
 
     /* Information about the guild's subscription */
     subscription: DatabaseGuildSubscription | null;
+
+    /* The guild's configured settings */
+    settings: DatabaseSettings;
+
+    /* Information bout the guild's pay-as-you-go plan */
+    plan: GuildPlan | null;
 }
 
 export interface DatabaseUser {
@@ -151,21 +114,39 @@ export interface DatabaseUser {
     /* Moderation history of the user */
     infractions: DatabaseUserInfraction[];
 
-    /* Information about the user's subscription status */
+    /* Information about the user's subscription */
     subscription: DatabaseSubscription | null;
 
-    /* The user's configured settings */
-    settings: UserSettings;
-
-    /* The user's roles */
-    roles: UserRoles;
+    /* Information about the user's pay-as-you-go plan */
+    plan: UserPlan | null;
 
     /* When the user voted for the bot */
     voted: string | null;
+
+    /* The user's configured settings */
+    settings: DatabaseSettings;
+
+    /* The user's metadata */
+    metadata: DatabaseUserMetadata;
+
+    /* The user's roles */
+    roles: UserRoles;
 }
 
-export type UserSettings = Record<string, any>
-export type UserSubscriptionType = "UserPremium" | "GuildPremium" | "Voter" | "Free"
+export type DatabaseSettings = Record<string, any>
+
+export type DatabaseUserMetadataKey = "country" | "region" | "email"
+export type DatabaseUserMetadata = Record<DatabaseUserMetadataKey, string | undefined>
+export const DatabaseUserMetadataKeys: DatabaseUserMetadataKey[] = [ "country", "region", "email" ]
+
+export type UserSubscriptionPlanType = "plan" | "subscription" | "voter" | "free"
+export type UserSubscriptionLocation = "guild" | "user"
+
+export interface UserSubscriptionType {
+    type: UserSubscriptionPlanType;
+    location: UserSubscriptionLocation;
+    premium: boolean;
+}
 
 export interface DatabaseInteractionStatistics {
     commands: number;
@@ -216,10 +197,10 @@ export interface DatabaseMessage {
     model: string;
 }
 
-type DatabaseAll = DatabaseUser | DatabaseConversation | DatabaseGuild | DatabaseMessage | DatabaseImage | DatabaseSubscriptionKey | ImageDescription
+type DatabaseAll = DatabaseUser | DatabaseConversation | DatabaseGuild | DatabaseMessage | DatabaseImage | ImageDescription
 
 /* How often to save cached entries to the database */
-export const DB_CACHE_INTERVAL: number = 10 * 60 * 1000
+export const DB_CACHE_INTERVAL: number = 2.5 * 60 * 1000
 
 export class UserManager {
     private readonly db: ClientDatabaseManager;
@@ -231,7 +212,6 @@ export class UserManager {
         guilds: Collection<string, DatabaseGuild>;
         interactions: Collection<string, DatabaseMessage>;
         images: Collection<string, DatabaseImage>;
-        keys: Collection<string, DatabaseSubscriptionKey>;
         descriptions: Collection<string, ImageDescription>;
     };
 
@@ -239,7 +219,7 @@ export class UserManager {
         this.db = db;
 
         /* Update collection types */
-        const updateCollections: (keyof typeof this.updates)[] = [ "users", "conversations", "guilds", "interactions", "images", "keys", "descriptions" ];
+        const updateCollections: (keyof typeof this.updates)[] = [ "users", "conversations", "guilds", "interactions", "images", "descriptions" ];
         const updates: Partial<typeof this.updates> = {};
 
         /* Create all update collections. */
@@ -308,9 +288,10 @@ export class UserManager {
             interactions: {
                 commands: 0, messages: 0, images: 0, resets: 0, translations: 0, votes: 0, image_descriptions: 0, cooldown_messages: 0, videos: 0
             },
-            subscription: null, voted: null,
-            settings: this.db.settings.template(),
-            roles: this.db.role.template(user)
+            subscription: null, plan: null, voted: null,
+            settings: this.db.settings.template(SettingsLocation.User),
+            roles: this.db.role.template(user),
+            metadata: this.metadataTemplate()
         };
     }
 
@@ -323,12 +304,14 @@ export class UserManager {
         }
 
         const db: DatabaseUser =  {
-            created: Date.parse(raw.created),
+            created: raw.created ? Date.parse(raw.created) : Date.now(),
             id: raw.id,
             interactions: interactions as DatabaseInteractionStatistics,
             infractions: raw.infractions ?? [],
             subscription: raw.subscription ?? null,
-            settings: raw.settings ?? this.db.settings.template(),
+            plan: raw.plan ?? null,
+            settings: raw.settings ?? this.db.settings.template(SettingsLocation.User),
+            metadata: raw.metadata ?? this.metadataTemplate(),
             roles: raw.roles,
             voted: raw.voted ?? null
         };
@@ -338,7 +321,10 @@ export class UserManager {
 
     private processUser(user: DatabaseUser): DatabaseUser {
         user.subscription = this.subscription(user);
+        user.plan = this.db.plan.get(user);
+
         user.settings = this.db.settings.load(user);
+        user.metadata = this.metadata(user);
 
         return user;
     }
@@ -365,6 +351,35 @@ export class UserManager {
 
 
     /**
+     * User & guild metadata
+     */
+
+    public metadata(entry: DatabaseUser): DatabaseUserMetadata {
+        const final: Partial<DatabaseUserMetadata> = {};
+
+        for (const key of DatabaseUserMetadataKeys) {
+            final[key] = entry.metadata !== null ? entry.metadata[key] : undefined;
+        }
+
+        return final as DatabaseUserMetadata;
+    }
+
+    public metadataTemplate(): DatabaseUserMetadata {
+        const final: Partial<DatabaseUserMetadata> = {};
+
+        for (const key of DatabaseUserMetadataKeys) {
+            final[key] = undefined;
+        }
+
+        return final as DatabaseUserMetadata;
+    }
+
+    /**
+     * User & guild metadata
+     */
+
+
+    /**
      * Guilds
      */
 
@@ -372,15 +387,27 @@ export class UserManager {
         return {
             id: guild.id,
             created: Date.now(),
-            subscription: null
+            subscription: null,
+            plan: null,
+            settings: this.db.settings.template(SettingsLocation.Guild)
         };
     }
 
-    private async rawToGuild(guild: RawDatabaseGuild): Promise<DatabaseGuild> {
+    private processGuild(guild: DatabaseGuild): DatabaseGuild {
+        guild.subscription = this.subscription(guild);
+        guild.plan = this.db.plan.get(guild);
+
+        guild.settings = this.db.settings.load(guild);
+        return guild;
+    }
+
+    private async rawToGuild(raw: RawDatabaseGuild): Promise<DatabaseGuild> {
         const db: DatabaseGuild = {
-            created: Date.parse(guild.created),
-            id: guild.id,
-            subscription: guild.subscription ?? null
+            created: Date.parse(raw.created),
+            id: raw.id,
+            subscription: raw.subscription ?? null,
+            plan: raw.plan ?? null,
+            settings: raw.settings ?? this.db.settings.template(SettingsLocation.Guild)
         };
 
         /* Check if the guild's subscription is still valid. */
@@ -389,9 +416,9 @@ export class UserManager {
         return db;
     }
 
-    public async getGuild(guild: Guild): Promise<DatabaseGuild | null> {
+    public async getGuild(guild: Guild | Snowflake): Promise<DatabaseGuild | null> {
         return this.fetchFromCacheOrDatabase<Guild, DatabaseGuild, RawDatabaseGuild>(
-            "guilds", guild, raw => this.rawToGuild(raw)
+            "guilds", guild, raw => this.rawToGuild(raw), guild => this.processGuild(guild)
         );
     }
 
@@ -400,7 +427,8 @@ export class UserManager {
             "guilds", guild.id,
 
             () => this.guildTemplate(guild),
-            raw => this.rawToGuild(raw)
+            raw => this.rawToGuild(raw),
+            guild => this.processGuild(guild)
         );
     }
 
@@ -452,7 +480,7 @@ export class UserManager {
      * @param user User to give the infraction to
      * @param options Infraction options
      */
-    private async infraction(user: DatabaseUser, { by, reason, type, seen, moderation, automatic }: DatabaseInfractionOptions & { seen?: boolean }): Promise<void> {
+    private async infraction(user: DatabaseUser, { by, reason, type, seen, moderation, automatic }: DatabaseInfractionOptions & { seen?: boolean }): Promise<DatabaseUser> {
         /* Raw infraction data */
         const data: DatabaseUserInfraction = {
             by, reason, type, moderation, automatic,
@@ -462,7 +490,7 @@ export class UserManager {
         if (type !== "moderation" && type !== "ban" && type !== "unban") data.seen = seen ?? false;
 
         /* Update the user cache too. */
-        await this.updateUser(user, {
+        return await this.updateUser(user, {
             infractions: [
                 ...(await this.getUser(user.id))?.infractions ?? [],
                 data
@@ -470,17 +498,17 @@ export class UserManager {
         });
     }
 
-    public async flag(user: DatabaseUser, data: DatabaseModerationResult): Promise<void> {
+    public async flag(user: DatabaseUser, data: DatabaseModerationResult): Promise<DatabaseUser> {
         return this.infraction(user, { type: "moderation", moderation: data });   
     }
 
-    public async warn(user: DatabaseUser, { by, reason, automatic }: Pick<DatabaseInfractionOptions, "reason" | "by" | "automatic">): Promise<void> {
+    public async warn(user: DatabaseUser, { by, reason, automatic }: Pick<DatabaseInfractionOptions, "reason" | "by" | "automatic">): Promise<DatabaseUser> {
         return this.infraction(user, { by, reason: reason ?? "Inappropriate use of the bot", type: "warn", seen: false, automatic: automatic });
     }
 
-    public async ban(user: DatabaseUser, { by, reason, status, automatic  }: Pick<DatabaseInfractionOptions, "reason" | "by" | "automatic"> & { status: boolean }): Promise<void> {
-        if (this.banned(user) && status) return;
-        else if (!this.banned(user) && !status) return;
+    public async ban(user: DatabaseUser, { by, reason, status, automatic  }: Pick<DatabaseInfractionOptions, "reason" | "by" | "automatic"> & { status: boolean }): Promise<DatabaseUser | null> {
+        if (this.banned(user) && status) return null;
+        else if (!this.banned(user) && !status) return null;
 
         return this.infraction(user, { by, reason: reason ?? "Inappropriate use of the bot", type: status ? "ban" : "unban", automatic });
     }
@@ -512,46 +540,67 @@ export class UserManager {
      */
     public async incrementInteractions(user: DatabaseUser, key: keyof DatabaseInteractionStatistics, increment: number = 1): Promise<void> {
         const updated: DatabaseInteractionStatistics = user.interactions;
-        updated[key] = updated[key] + increment;
+        updated[key] = (updated[key] ?? 0) + increment;
 
         return void await this.updateUser(user, { interactions: updated });
     }
 
-    public async updateModeratorStatus(user: DatabaseUser, status: boolean): Promise<void> {
-        return void await this.db.role.toggle(user, "moderator", status);
-    }
-
-    public async updateTesterStatus(user: DatabaseUser, status: boolean): Promise<void> {
-        return void await this.db.role.toggle(user, "tester", status);
-    }
-
-    public subscriptionIcon({ user, guild }: DatabaseInfo): "⚒️" | "✨" | "💫" | "📩" | "👤" {
+    public userIcon({ user, guild }: DatabaseInfo): "⚒️" | "📊" | "✨" | "💫" | "✉️" | "📩" | "👤" {
         if (this.db.role.moderator(user)) return "⚒️";
         
+        if (user.plan !== null) return "📊";
         if (user.subscription !== null) return "✨";
-        if (guild && guild.subscription !== null) return "💫";
+        if (guild && (guild.subscription !== null || guild.plan !== null)) return "💫";
 
-        if (this.voted(user)) return "📩";
+        const votedAt: number | null = this.voted(user);
+
+        if (votedAt !== null) {
+            if ((votedAt + VOTE_DURATION) - Date.now() < 30 * 60 * 1000) return "📩";
+            else return "✉️";
+        }
         return "👤";
     }
 
-    public subscriptionType({ user, guild }: DatabaseInfo): UserSubscriptionType {
-        if (user.subscription !== null) return "UserPremium";
-        if (guild && guild.subscription !== null) return "GuildPremium";
+    public type(db: DatabaseInfo): UserSubscriptionType {
+        /* In which order to use the plans in */
+        const typePriority: "plan" | "subscription" = this.db.settings.get(db.guild != undefined && db.guild.plan !== null ? db.guild : db.user, "premium:typePriority");
+        const locationPriority: UserSubscriptionLocation = this.db.settings.get(db.user, "premium:locationPriority");
 
-        if (this.voted(user)) return "Voter";
-        return "Free";
+        const checks: Record<typeof typePriority, (entry: DatabaseGuild | DatabaseUser) => boolean> = {
+            subscription: entry => this.subscription(entry) !== null,
+            plan: entry => entry.plan !== null && this.db.plan.active(entry)
+        };
+
+        const locations: UserSubscriptionLocation[] = [ "guild", "user" ];
+        const types: typeof typePriority[] = [ "plan", "subscription" ];
+
+        if (locationPriority !== locations[0]) locations.reverse();
+        if (typePriority !== types[0]) types.reverse();
+
+        for (const type of types) {
+            for (const location of locations) {
+                const entry = db[location];
+                if (!entry) continue;
+
+                if (checks[type](entry)) return {
+                    location, type, premium: true
+                };
+            }
+        }
+
+        if (this.voted(db.user)) return { type: "voter", location: "user", premium: false };
+        return { type: "free", location: "user", premium: false };
     }
 
-    public canUsePremiumFeatures({ user, guild }: DatabaseInfo): boolean {
-        return (guild && this.subscription(guild) !== null) || this.subscription(user) !== null;
+    public canUsePremiumFeatures(db: DatabaseInfo): boolean {
+        return this.type(db).premium;
     }
 
     public voted(user: DatabaseUser): number | null {
         if (user.voted === null) return null;
 
         const parsed: number = Date.parse(user.voted);
-        if (Date.now() - parsed > 12.5 * 60 * 60 * 1000) return null;
+        if (Date.now() - parsed > VOTE_DURATION) return null;
 
         return parsed;
     }
@@ -569,8 +618,9 @@ export class UserManager {
         return {
             ...db.subscription as T,
             
-            /* Handle an edge case where `since` is actually a date string instead of a UNIX timestamp. */
-            since: typeof db.subscription.since === "string" ? Date.parse(db.subscription.since) : db.subscription.since
+            /* Handle an edge case where `since` and `expires` are actually a date string instead of a UNIX timestamp. */
+            since: typeof db.subscription.since === "string" ? Date.parse(db.subscription.since) : db.subscription.since,
+            expires: typeof db.subscription.expires === "string" ? Date.parse(db.subscription.expires) : db.subscription.expires
         };
     }
 
@@ -580,21 +630,16 @@ export class UserManager {
      * @param user User to grant subscription
      * @param expires When the subscription should expire
      */
-    public async grantSubscription(user: DatabaseUser | DatabaseGuild, type: DatabaseSubscriptionType, expires: number, by?: Snowflake, key?: DatabaseSubscriptionKey): Promise<void> {
-        /* All previously redeemed subscription keys */
-        const keys: DatabaseSubscriptionHistoryKey[] = user.subscription && user.subscription.keys ? user.subscription.keys : [];
-        if (key) keys.push({ key: key.id, claimedAt: Date.now() });
-
+    public async grantSubscription(user: DatabaseUser | DatabaseGuild, type: DatabaseSubscriptionType, expires: number, by?: Snowflake): Promise<void> {
         const updated: DatabaseSubscription | DatabaseGuildSubscription = {
             since: user.subscription !== null ? user.subscription.since : Date.now(),
             expires: (user.subscription ? user.subscription.expires - Date.now() : 0) + Date.now() + expires,
-            keys
         };
 
         if (type === "guild") (updated as DatabaseGuildSubscription).by = by!;
 
         if (type === "user") return void await this.updateUser(user as DatabaseUser, { subscription: updated });
-        else if (type === "guild") return await this.updateGuild(user as DatabaseGuild, { subscription: updated as DatabaseGuildSubscription });
+        else if (type === "guild") return void await this.updateGuild(user as DatabaseGuild, { subscription: updated as DatabaseGuildSubscription });
     }
 
     /**
@@ -603,70 +648,7 @@ export class UserManager {
      */
     public async revokeSubscription(user: DatabaseUser | DatabaseGuild, type: DatabaseSubscriptionType): Promise<void> {
         if (type === "user") return void await this.updateUser(user as DatabaseUser, { subscription: null });
-        else if (type === "guild") return await this.updateGuild(user as DatabaseGuild, { subscription: null });
-    }
-
-    private rawToSubscriptionKey(key: RawDatabaseSubscriptionKey): DatabaseSubscriptionKey {
-        return {
-            created: Date.parse(key.created),
-            duration: key.duration,
-            redeemed: key.redeemed,
-            type: key.type,
-            id: key.id
-        };
-    }
-
-    public async getSubscriptionKey(key: string): Promise<DatabaseSubscriptionKey | null> {
-        return this.fetchFromCacheOrDatabase<string, DatabaseSubscriptionKey, RawDatabaseSubscriptionKey>(
-            "keys", key, raw => this.rawToSubscriptionKey(raw)
-        );
-    }
-
-    /**
-     * Generate the specified amount of subscription keys, and add them to the database.
-     * @param count How many keys to generate
-     * 
-     * @returns The generated keys
-     */
-    public async generateSubscriptionKeys(count: number = 1, type: DatabaseSubscriptionType = "user", duration: number = 30 * 24 * 60 * 60 * 1000): Promise<DatabaseSubscriptionKey[]> {
-        /* Generate the voucher codes itself. */
-        const rawCodes: string[] = generateVoucherCode({
-            pattern: "####-####-####",
-            count
-        });
-
-        /* Create the subscription keys. */
-        const keys: DatabaseSubscriptionKey[] = rawCodes.map(code => ({
-            created: Date.now(),
-            id: code, type,
-
-            duration: duration,
-            redeemed: null
-        }));
-
-        /* Add all of the keys to the queue & cache. */
-        await Promise.all(keys.map(key => this.updateSubscriptionKey(key.id, key)));
-        return keys;
-    }
-
-    /**
-     * Redeem the specified key, for the user.
-     * 
-     * @param user User to redeem the key for
-     * @param key Key to redeem
-     */
-    public async redeemSubscriptionKey(user: DatabaseUser | DatabaseGuild, key: DatabaseSubscriptionKey, by?: Snowflake): Promise<void> {
-        /* Invalidate the key from the database. */
-        await this.updateSubscriptionKey(key, {
-            redeemed: {
-                when: Date.now(),
-                who: key.type === "user" ? user.id : by!,
-                guild: key.type === "guild" ? user.id : undefined
-            }
-        });
-
-        /* Grant the subscription to the user. */
-        await this.grantSubscription(user, key.type, key.duration, by, key);
+        else if (type === "guild") return void await this.updateGuild(user as DatabaseGuild, { subscription: null });
     }
 
     public rawToConversation(data: RawDatabaseConversation): DatabaseConversation {
@@ -711,11 +693,9 @@ export class UserManager {
         return await this.update("users", user, updates);
     }
 
-    public async updateGuild(guild: DatabaseGuild, updates: Partial<DatabaseGuild>): Promise<void> {
-        await Promise.all([
-            this.setCache("guilds", guild, updates),
-            this.update("guilds", guild, updates)
-        ]);
+    public async updateGuild(guild: DatabaseGuild, updates: Partial<DatabaseGuild>): Promise<DatabaseGuild> {
+        await this.setCache("guilds", guild, updates);
+        return await this.update("guilds", guild, updates);
     }
 
     public async updateConversation(conversation: Conversation, updates: Partial<DatabaseConversation>): Promise<void> {
@@ -746,13 +726,6 @@ export class UserManager {
         await Promise.all([
             this.setCache("images", data),
             this.update("images", image.id, data)
-        ]);
-    }
-
-    public async updateSubscriptionKey(key: DatabaseSubscriptionKey | string, updates: Partial<DatabaseSubscriptionKey> | DatabaseSubscriptionKey): Promise<void> {
-        await Promise.all([
-            await this.setCache("keys", key, updates),
-            await this.update("keys", key, updates)
         ]);
     }
 

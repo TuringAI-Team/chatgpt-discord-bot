@@ -1,10 +1,19 @@
+import { Guild, Snowflake, User } from "discord.js";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
 
 import { ImageBuffer } from "../chat/types/image.js";
 import { Bot } from "../bot/bot.js";
-import { User } from "discord.js";
+
+type FindType = "guild" | "user"
+
+export interface FindResult {
+	name: string;
+	id: Snowflake;
+	created: number;
+	icon: string | null;
+}
 
 export abstract class Utils {
 	/* Search for files with the specified extensions. */
@@ -71,27 +80,42 @@ export abstract class Utils {
 	}
 
 	/**
-	 * Find a Discord user by their identifier or tag.
-	 * @param id Identifier of tag of the user
+	 * Find a Discord user or guild by their identifier or tag.
+	 * @param id Identifier or name of the user or guild
 	 */
-	public static async findUser(bot: Bot, id: string): Promise<User | null> {
-		const methods: ((id: string) => Promise<User | null>)[] = [
-			/* Get the cached user. */
-			async (id: string) => bot.client.users.cache.find(user => user.tag === id) ?? null,
+	public static async findType(bot: Bot, type: FindType, id: Snowflake): Promise<FindResult | null> {
+		const methods: ((id: string) => Promise<User | Guild | null>)[] = [
+			/* Get the cached entry. */
+			async (id: string) => bot.client.users.cache.find(user => user.tag === id) ?? bot.client.guilds.cache.find(guild => guild.name === id) ?? null,
 
-			/* Fetch the user by their ID. */
-			async (id: string) => await bot.client.users.fetch(id).catch(() => null)
+			/* Fetch the entry by their ID. */
+			async (id: string) => await bot.client.users.fetch(id).catch(() => null) ?? await bot.client.guilds.fetch(id).catch(() => null)
 		]
 
 		/* Try all of the methods in the array above. */
 		for (const method of methods) {
-			const user: User | null = await method(id);
-			
-			if (user !== null) return user;
-			else continue;
+			const data: User | Guild | null = await method(id);
+			if (data === null) continue;
+
+			const result: FindResult = {
+				name: data instanceof Guild ? data.name : data.tag,
+				icon: data instanceof Guild ? data.iconURL() : data.displayAvatarURL(),
+				created: data.createdTimestamp,
+				id: data.id
+			};
+
+			return result;
 		}
 
 		return null;
+	}
+
+	public static async findUser(bot: Bot, id: Snowflake): Promise<FindResult | null> {
+		return this.findType(bot, "user", id);
+	}
+
+	public static async findGuild(bot: Bot, id: Snowflake): Promise<FindResult | null> {
+		return this.findType(bot, "guild", id);
 	}
 
 	public static async fetchBuffer(url: string): Promise<ImageBuffer | null> {
@@ -125,6 +149,6 @@ export abstract class Utils {
 	}
 
 	public static shopURL(): string {
-		return "https://turingai.mysellix.io";
+		return "https://app.turing.sh/pay";
 	}
 }

@@ -1,64 +1,69 @@
-import NodeCache from "node-cache";
+import { RedisClientType, createClient } from "redis";
 
 import { DatabaseCollectionType } from "../../db/manager.js";
 import { App } from "../../app.js";
 
-/* How long to cache database entries for */
-const DATABASE_CACHE_TTL: number = 30 * 60 * 1000
+/* How long to cache database entries for, by default */
+const DATABASE_CACHE_TTL: number = 30 * 60
 
 export type CacheType = DatabaseCollectionType | "cooldown"
 export type CacheValue = any[] | { [key: string]: any }
 
 const CacheDuration: Partial<Record<CacheType, number>> = {
-    conversations: 60 * 60 * 1000,
-    interactions: 5 * 60 * 1000,
-    guilds: 60 * 60 * 1000,
-    users: 60 * 60 * 1000
+    conversations: 60 * 60,
+    interactions: 5 * 60,
+    guilds: 60 * 60,
+    users: 60 * 60
 }
 
 export class CacheManager {
-    private app: App;
-    public readonly cache: NodeCache;
+    public client: RedisClientType;
+    private readonly app: App;
 
     constructor(app: App) {
+        this.client = null!;
         this.app = app;
-        
-        /* Initialize the cache. */
-        this.cache = new NodeCache({
-            deleteOnExpire: true,
-            checkperiod: 5 * 60
+    }
+
+    public async setup(): Promise<void> {
+        this.client = createClient({
+            socket: {
+                host: this.app.config.db.redis.url,
+                port: this.app.config.db.redis.port
+            },
+            password: this.app.config.db.redis.password
         });
+
+        await this.client.connect();
     }
 
     public async set(
         collection: CacheType,
         key: string,
-        value: CacheValue,
+        value: CacheValue
     ): Promise<void> {
-        this.cache.set(
-            this.keyName(collection, key), value,
-            CacheDuration[collection] ?? DATABASE_CACHE_TTL
-        );
+        this.client.set(this.keyName(collection, key), JSON.stringify(value));
+        this.client.expire(this.keyName(collection, key), CacheDuration[collection] ?? DATABASE_CACHE_TTL);
     }
 
     public async get<T>(
         collection: CacheType,
         key: string
     ): Promise<T | null> {
-        const raw: T | null = await this.cache.get(this.keyName(collection, key)) ?? null;
+        const raw: string | null = await this.client.get(this.keyName(collection, key));
         if (raw === null) return null;
 
-        return raw as T;
+        return JSON.parse(raw);
     }
 
     public async delete(
         collection: CacheType,
         key: string
     ): Promise<void> {
-        this.cache.del(this.keyName(collection, key));
+        this.client.del(this.keyName(collection, key));
     }
 
     private keyName(collection: CacheType, key: string): string {
-        return `${collection}-${key}`;
+        return `testing1:${collection}:${key}`;
     }
 }

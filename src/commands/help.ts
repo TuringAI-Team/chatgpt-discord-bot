@@ -4,14 +4,6 @@ import { IntroductionPage, IntroductionPages, buildIntroductionPage, introductio
 import { Command, CommandInteraction, CommandResponse } from "../command/command.js";
 import { Bot } from "../bot/bot.js";
 
-interface DocumentationCommandOptions {
-	/* Name of the command itself */
-	name: string;
-
-	/* Which page to display */
-	page: IntroductionPage;
-}
-
 export default class HelpCommand extends Command {
 	constructor(bot: Bot) {
 		super(bot, new SlashCommandBuilder()
@@ -31,23 +23,5 @@ export default class HelpCommand extends Command {
     public async run(interaction: CommandInteraction): CommandResponse {
 		const page: IntroductionPage = introductionPageAt(interaction.options.getInteger("page") ?? 0);
 		return buildIntroductionPage(this.bot, interaction.user, page);
-    }
-}
-
-class BaseDocumentationCommand extends Command {
-	/* Which page to display */
-	private readonly page: IntroductionPage;
-
-	constructor(bot: Bot, { name, page }: DocumentationCommandOptions) {
-		super(bot, new SlashCommandBuilder()
-			.setName(name)
-			.setDescription(page.design.description)
-		, { always: true });
-
-		this.page = page;
-	}
-
-    public async run(interaction: CommandInteraction): CommandResponse {
-		return buildIntroductionPage(this.bot, interaction.user, this.page, true);
     }
 }

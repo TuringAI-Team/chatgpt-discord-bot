@@ -34,10 +34,9 @@ export default class DallECommand extends Command {
 			)
 		, {
 			cooldown: {
-				Free: 3 * 60 * 1000,
-				Voter: 2 * 60 * 1000,
-				GuildPremium: 1 * 60 * 1000,
-				UserPremium: 45 * 1000
+				free: 5 * 60 * 1000,
+				voter: 4 * 60 * 1000,
+				subscription: 1 * 60 * 1000
 			}
 		});
 	}
@@ -91,6 +90,8 @@ export default class DallECommand extends Command {
 					[count]: "+1"
 				}
 			});
+
+			await this.bot.db.plan.expenseForDallEImage(db, count);
 
 			const response =  new Response()
 				.setContent(`**${prompt}** — *${(result.duration / 1000).toFixed(1)} seconds*`);

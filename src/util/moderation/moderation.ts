@@ -10,7 +10,7 @@ import { OpenAIChatMessage } from "../../openai/types/chat.js";
 import { Response } from "../../command/response.js";
 import { messageChannel } from "./channel.js";
 import { Bot } from "../../bot/bot.js";
-import { Utils } from "../utils.js";
+import { FindResult, Utils } from "../utils.js";
 
 const ActionToEmoji: { [ Key in DatabaseUserInfractionType as string ]: string; } = {
 	"warn": "⚠️",
@@ -199,7 +199,7 @@ export const handleModerationInteraction = async (bot: Bot, original: ButtonInte
 
     /* View information about a user */
     } else if (type === "view") {
-        const response: Response = (await buildUserOverview(bot, author, db))
+        const response: Response = (await buildUserOverview(bot, { id: author.id, name: author.tag, created: author.createdTimestamp, icon: author.displayAvatarURL() }, db))
             .setEphemeral(true);
 
         await original.reply(response.get() as InteractionReplyOptions);
@@ -408,7 +408,7 @@ export const buildBanNotice = (bot: Bot, user: DatabaseUser, infraction: Databas
         );
 }
 
-export const buildUserOverview = async (bot: Bot, target: User, db: DatabaseUser): Promise<Response> => {
+export const buildUserOverview = async (bot: Bot, target: FindResult, db: DatabaseUser): Promise<Response> => {
     /* Overview of the users' infractions in the description */
     const infractions: DatabaseUserInfraction[] = db.infractions.filter(i => i.type !== "moderation");
     let description: string | null = null;
@@ -438,22 +438,30 @@ export const buildUserOverview = async (bot: Bot, target: User, db: DatabaseUser
     let flagDescription: string | null = null;
     if (flags.length > 0) flagDescription = `${flags.length - shown.length !== 0 ? `(*${flags.length - shown.length} previous flags ...*)\n\n` : ""}${shown.map(f => `<t:${Math.round(f.when / 1000)}:f> » ${f.moderation!.auto ? `\`${f.moderation!.auto.action}\` ` : ""}${FlagToEmoji[f.moderation!.source]} » \`${f.moderation!.reference.split("\n").length > 1 ? `${f.moderation!.reference.split("\n")[0]} ...` : f.moderation!.reference}\``).join("\n")}`
 
-    /* Formatted interactions count, for each category. */
+    /* Formatted interactions count, for each category */
     let interactionsDescription: string = "";
 
     for (const [ category, count ] of Object.entries(db.interactions)) {
         interactionsDescription = `${interactionsDescription}\n${Utils.titleCase(category)} ▶️ **${count}** times`;
     }
 
+    /* Formatted meta-data values, for each type */
+    let metadataDescription: string = "";
+
+    for (const [ key, value ] of Object.entries(db.metadata)) {
+        if (!value) continue;
+        metadataDescription = `${metadataDescription}\n${Utils.titleCase(key)} ▶️ \`${value}\``;
+    }
+
     const response = new Response()
         .addEmbed(builder => builder
             .setTitle("User Overview 🔎")
-            .setAuthor({ name: `${target.tag} [${target.id}]`, iconURL: target.displayAvatarURL() })
+            .setAuthor({ name: `${target.name} [${target.id}]`, iconURL: target.icon ?? undefined })
             .setDescription(description)
             .setFields(
                 {
                     name: "Discord member since <:discord:1097815072602067016>",
-                    value: `<t:${Math.floor(target.createdTimestamp / 1000)}:f>`,
+                    value: `<t:${Math.floor(target.created / 1000)}:f>`,
                     inline: true
                 },
 
@@ -466,6 +474,12 @@ export const buildUserOverview = async (bot: Bot, target: User, db: DatabaseUser
                 {
                     name: "Interactions 🦾",
                     value: interactionsDescription,
+                    inline: true
+                },
+
+                {
+                    name: "Metadata ⌨️",
+                    value: metadataDescription.length > 0 ? metadataDescription : "*(none)*",
                     inline: true
                 },
 
@@ -568,8 +582,7 @@ export const buildModerationToolbar = (user: User, result: ModerationResult): Ac
 }
 
 /**
- * Reply to the invocation message with the occurred error & also
- * add a reaction to the message.
+ * Send a moderation flag to the log channel, for moderators to review the flagged message.
  * 
  * @param options Moderation send options
  */

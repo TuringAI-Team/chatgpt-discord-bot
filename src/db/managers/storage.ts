@@ -5,7 +5,6 @@ import { GPTDatabaseError } from "../../error/gpt/db.js";
 import { ImageBuffer } from "../../chat/types/image.js";
 import { ClientDatabaseManager } from "../cluster.js";
 import { ImageDescription } from "./description.js";
-import { Utils } from "../../util/utils.js";
 
 type StorageBucketName = "images" | "descriptions"
 

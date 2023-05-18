@@ -1,5 +1,5 @@
 import { ChatAnalyzedImage, ChatInputImage, ChatOutputImage } from "../types/image.js";
-import { GPTImageAnalyzeOptions, ModelGenerationOptions } from "../types/options.js";
+import { ChatResetOptions, GPTImageAnalyzeOptions, ModelGenerationOptions } from "../types/options.js";
 import { ChatModel, ModelCapability, ModelType } from "../types/model.js";
 import { MessageType, PartialResponseMessage } from "../types/message.js";
 import { TuringAlanImageGenerator, TuringAlanImageGenerators, TuringAlanResult } from "../../turing/api.js";
@@ -54,8 +54,16 @@ export class TuringAlanModel extends ChatModel {
 
         return {
             text: result.result,
-            images
+            images,
+
+            raw: {
+                cost: result.credits
+            }
         };
+    }
+
+    public async reset({ conversation }: ChatResetOptions): Promise<void> {
+        await this.client.session.manager.bot.turing.resetAlanConversation({ conversation });
     }
 
     public async complete(options: ModelGenerationOptions): Promise<PartialResponseMessage> {

@@ -296,7 +296,7 @@ export class ClydeModel extends ChatGPTModel {
 
         return {
             raw: {
-                finishReason: data.response.finish_reason ? data.response.finish_reason === "length" ? "maxLength" : "stop" : null,
+                finishReason: data.response.finish_reason ? data.response.finish_reason === "length" ? "maxLength" : "stop" : undefined,
                 
                 usage: {
                     completion: data.usage.completion_tokens,

@@ -17,7 +17,7 @@ export default class MessageCreateEvent extends Event {
 				author: message.author
 			});
 			
-		} catch (error) {
+		} catch (_) {
 			/* Stub */
 		}
 	}

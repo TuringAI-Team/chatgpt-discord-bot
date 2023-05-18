@@ -22,13 +22,13 @@ export default class BanCommand extends Command {
 					.setDescription("Reason for the ban/unban")
 					.setRequired(false)
 				)
-        , { restriction: "moderator" });
+        , { restriction: [ "moderator" ] });
     }
 
     public async run(interaction: CommandInteraction): CommandResponse {
 		/* ID of the user */
 		const id: string = interaction.options.getString("id", true);
-		const target: User | null = await Utils.findUser(this.bot, id);
+		const target = await Utils.findUser(this.bot, id);
 		
 		if (target === null) return new Response()
 			.addEmbed(builder => builder
@@ -38,7 +38,7 @@ export default class BanCommand extends Command {
 			.setEphemeral(true);
 
 		/* Get the database entry of the user, if applicable. */
-		const db: DatabaseUser | null = await this.bot.db.users.getUser(target);
+		const db: DatabaseUser | null = await this.bot.db.users.getUser(target.id);
 
 		if (db === null) return new Response()
 			.addEmbed(builder => builder
@@ -64,7 +64,7 @@ export default class BanCommand extends Command {
 
 		return new Response()
 			.addEmbed(builder => builder
-				.setAuthor({ name: target.tag, iconURL: target.displayAvatarURL() })
+				.setAuthor({ name: target.name, iconURL: target.icon ?? undefined })
 				.setTitle(action ? "Banned 🔨" : "Un-banned 🙌")
 				.setDescription(`\`\`\`\n${reason}\n\`\`\``)
 				.setColor(action ? "Red" : "Yellow")

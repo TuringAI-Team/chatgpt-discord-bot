@@ -76,11 +76,11 @@ export const runDescribeAction = async (conversation: Conversation, db: Database
             `User ${chalk.bold(interaction.user.tag)} described ${attachment.type} ${chalk.bold(attachment.url)} within ${chalk.bold(description.duration)}ms.`
         );
 
-        const moderation: ModerationResult | null = await checkDescribeResult({
+        const moderation: ModerationResult = await checkDescribeResult({
             conversation, db, content: description.result.description
         });
 
-        if (moderation !== null && moderation.blocked) return void await new Response()
+        if (moderation.blocked) return void await new Response()
             .addEmbed(builder => builder
                 .setTitle("What's this? 🤨")
                 .setDescription(`The image description violates our **usage policies**.\n\n*If you violate the usage policies, we may have to take moderative actions; otherwise, you can ignore this notice*.`)
@@ -89,6 +89,7 @@ export const runDescribeAction = async (conversation: Conversation, db: Database
         .send(interaction);
 
         await conversation.manager.bot.db.users.incrementInteractions(db.user, "image_descriptions");
+        await conversation.manager.bot.db.plan.expenseForImageDescription(db, description);
 
         await new Response()
             .addEmbed(builder => builder

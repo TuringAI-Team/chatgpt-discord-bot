@@ -18,13 +18,13 @@ export default class UserCommand extends Command {
 					.setDescription("ID or tag of the user to view")
 					.setRequired(true)
 				)
-        , { restriction: "moderator" });
+        , { restriction: [ "moderator" ] });
     }
 
     public async run(interaction: CommandInteraction): CommandResponse {
 		/* ID of the user */
 		const id: string = interaction.options.getString("id", true);
-		const target: User | null = await Utils.findUser(this.bot, id);
+		const target = await Utils.findUser(this.bot, id);
 		
 		if (target === null) return new Response()
 			.addEmbed(builder => builder
@@ -34,7 +34,7 @@ export default class UserCommand extends Command {
 			.setEphemeral(true);
 
 		/* Get the database entry of the user, if applicable. */
-		const db: DatabaseUser | null = await this.bot.db.users.getUser(target);
+		const db: DatabaseUser | null = await this.bot.db.users.getUser(target.id);
 
 		if (db === null) return new Response()
 			.addEmbed(builder => builder

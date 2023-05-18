@@ -8,6 +8,8 @@ import { getInfo } from "discord-hybrid-sharding";
 
 type VoteAPIPath = string
 
+export const VOTE_DURATION: number = 12.5 * 60 * 60 * 1000
+
 export class VoteManager {
     private readonly bot: Bot;
 

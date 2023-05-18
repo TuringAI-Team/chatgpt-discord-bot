@@ -19,7 +19,7 @@ export default class VoteCommand extends Command {
 		const fields = [
 			{
 				key: "Way lower cool-down ⏰",
-				value: `The cool-down between messages can get a bit annoying. By voting, it'll be reduced to only **${Math.round((CONVERSATION_DEFAULT_COOLDOWN.time! * CONVERSATION_COOLDOWN_MODIFIER.Voter) / 1000)}** seconds.`
+				value: `The cool-down between messages can get a bit annoying. By voting, it'll be reduced to only **${Math.round((CONVERSATION_DEFAULT_COOLDOWN.time! * CONVERSATION_COOLDOWN_MODIFIER.voter) / 1000)}** seconds.`
 			},
 
 			{

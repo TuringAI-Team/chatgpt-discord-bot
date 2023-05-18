@@ -37,7 +37,7 @@ export default class ResetCommand extends Command {
 
 		try {
 			/* Try to reset the conversation. */
-			await conversation.reset(false);
+			await conversation.reset(user, false);
 			await this.bot.db.users.incrementInteractions(user, "resets");
 
 			return new Response()

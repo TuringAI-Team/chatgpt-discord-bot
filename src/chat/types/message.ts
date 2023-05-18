@@ -9,17 +9,23 @@ export enum MessageType {
 
 export type MessageStopReason = "maxLength" | "stop"
 
-export interface MessageDataUsage {
+export interface MessageDataTokenUsage {
 	completion: number;
 	prompt: number;
 }
 
 export interface MessageData {
 	/* How many tokens were used for the prompt & completion */
-	usage: MessageDataUsage | null;
+	usage?: MessageDataTokenUsage;
 
 	/* Why the message stopped generating */
-	finishReason: MessageStopReason | null;
+	finishReason?: MessageStopReason;
+
+	/* How long the message took to generate, in milliseconds */
+	duration?: number;
+
+	/* How much this message cost to generate, used for Alan */
+	cost?: number;
 }
 
 export interface BaseMessage {

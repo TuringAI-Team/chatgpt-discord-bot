@@ -52,6 +52,7 @@ export const STABLE_HORDE_AVAILABLE_MODELS: StableHordeConfigModel[] = [
     { name: "Grapefruit Hentai", tags: [ "anime", "hentai" ], summary: "The best hentai/anime model with bright and soft style" },
     { name: "Papercut Diffusion", tags: [ "PaperCut" ], summary: "Paper cut images" },
     { name: "Anything Diffusion", summary: "HQ anime images" },
+    { name: "Robo-Diffusion", tags: [ "nousr robot" ], summary: "Specialized in generating images of robots, NOTHING ELSE" },
     { name: "ACertainThing", nsfw: true, summary: "Better than Anything Diffusion, focused on scenes" },
     { name: "Realistic Vision", nsfw: false, summary: "Photorealistic humans" },
     { name: "Redshift Diffusion", tags: [ "redshift style" ], summary: "High-quality 3D artworks" },
@@ -60,5 +61,5 @@ export const STABLE_HORDE_AVAILABLE_MODELS: StableHordeConfigModel[] = [
     { name: "Cheese Daddys Landscape Mix", displayName: "Landscape Mix", summary: "Landscape images" },
     { name: "ChromaV5", tags: [ "ChromaV5", "award winning photography", "extremely detailed", "artstation", "8k", "incredible art" ], summary: "Metallic/chrome images" },
     { name: "Microworlds", description: "Micro-world image generator", tags: [ "microworld render style" ], summary: "Microworld NFT art" },
-    { name: "Arcane Diffusion", tags: [ "arcane style" ], summary: "Arcane TV show" },
+    { name: "Arcane Diffusion", tags: [ "arcane style" ], summary: "Arcane TV show" }
 ]

@@ -53,10 +53,10 @@ export class UserRoleManager {
 
     public has(user: DatabaseUser, role: UserRole | UserRole[], check: UserHasRoleCheck = UserHasRoleCheck.All): boolean {
         if (Array.isArray(role)) {
-            if (check === UserHasRoleCheck.All) return user.roles.every(r => role.includes(r));
-            else if (check === UserHasRoleCheck.Some) return user.roles.some(r => role.includes(r));
-            else if (check === UserHasRoleCheck.NotAll) return user.roles.every(r => !role.includes(r));
-            else if (check === UserHasRoleCheck.NotSome) return user.roles.some(r => !role.includes(r));
+            if (check === UserHasRoleCheck.All) return role.every(r => user.roles.includes(r));
+            else if (check === UserHasRoleCheck.Some) return role.some(r => user.roles.includes(r));
+            else if (check === UserHasRoleCheck.NotAll) return role.every(r => !user.roles.includes(r));
+            else if (check === UserHasRoleCheck.NotSome) return role.some(r => !user.roles.includes(r));
 
             return false;
         } else return user.roles.includes(role);
@@ -65,8 +65,13 @@ export class UserRoleManager {
     public canExecuteCommand(user: DatabaseUser, command: Command, status?: BotStatus): boolean {
         if (command.options.restriction.length === 0) return status ? status.type !== "maintenance" : true;
 
-        if (command.options.restriction === "premium") return user.subscription !== null;
-        return this.has(user, command.options.restriction);
+        if (command.premiumOnly()) {
+            if (command.restricted([ "subscription", "plan" ])) return this.db.users.type({ user }).premium;
+            else if (command.restricted([ "subscription" ])) return this.db.users.type({ user }).type === "subscription";
+            else if (command.restricted([ "plan" ])) return this.db.users.type({ user }).type === "plan";
+        }
+
+        return this.has(user, command.options.restriction as UserRole[]);
     }
 
     /* Shortcuts */
@@ -88,8 +93,6 @@ export class UserRoleManager {
 
         if (changes.remove) updated = updated.filter(r => !changes.remove!.includes(r));
         if (changes.add) updated.push(...changes.add.filter(r => !updated.includes(r)));
-
-        console.log(user.roles, updated);
 
         return this.db.users.updateUser(user, {
             roles: updated

@@ -82,13 +82,12 @@ export default class SummarizeCommand extends Command {
 			)
 		, {
 			cooldown: {
-				Free: 5 * 60 * 1000,
-				Voter: 4 * 60 * 1000,
-				GuildPremium: 75 * 1000,
-				UserPremium: 60 * 1000
+				free: 5 * 60 * 1000,
+				voter: 4 * 60 * 1000,
+				subscription: 60 * 1000
 			},
 
-			restriction: "owner"
+			restriction: [ "plan" ]
 		});
 	}
 
@@ -176,12 +175,12 @@ export default class SummarizeCommand extends Command {
 			interaction, command: this, message: "You specified an invalid YouTube query"
 		});
 
-		const moderation: ModerationResult | null = await checkYouTubeQuery({
+		const moderation: ModerationResult = await checkYouTubeQuery({
 			conversation, db, content: query
 		});
 
 		/* If the message was flagged, send a warning message. */
-		if (moderation !== null && moderation.blocked) return new ErrorResponse({
+		if (moderation.blocked) return new ErrorResponse({
 			interaction, command: this,
 			message: "Your YouTube search query was blocked by our filters. *If you violate the usage policies, we may have to take moderative actions; otherwise, you can ignore this notice*.",
 			color: "Orange", emoji: null

@@ -28,7 +28,7 @@ export interface OpenAICompletionsBody {
     };
 
     /* Whether the response should be streamed */
-    stream: true;
+    stream: boolean;
 
     /* Unique user identifier, used by OpenAI to track down violating requests */
     user?: string;

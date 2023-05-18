@@ -1,5 +1,4 @@
-import { GPTImageAnalyzeOptions, ModelGenerationOptions } from "./options.js";
-import { ImageOCRResult, detectText } from "../../util/ocr.js";
+import { ChatResetOptions, GPTImageAnalyzeOptions, ModelGenerationOptions } from "./options.js";
 import { PartialResponseMessage } from "./message.js";
 import { ChatAnalyzedImage } from "./image.js";
 import { ChatClient } from "../client.js";
@@ -69,6 +68,14 @@ export abstract class ChatModel {
         };
 
         this.client = client;
+    }
+
+    /**
+     * This function is called before the conversation of a user is reset, using the `/reset` command.
+     * @param options Various reset options
+     */
+    public async reset(options: ChatResetOptions): Promise<void> {
+        /* Stub */
     }
 
     /**

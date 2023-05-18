@@ -38,13 +38,12 @@ export default class VideoCommand extends Command {
 			)
 		, {
 			cooldown: {
-				Free: 5 * 60 * 100,
-				Voter: 5 * 60 * 100,
-				GuildPremium: 5 * 60 * 1000,
-				UserPremium: 5 * 60 * 1000
+				free: 5 * 60 * 100,
+				voter: 5 * 60 * 100,
+				subscription: 5 * 60 * 1000
 			},
 
-			restriction: "premium"
+			restriction: [ "plan" ]
 		});
 	}
 
@@ -73,12 +72,11 @@ export default class VideoCommand extends Command {
 		/* Defer the reply, as this might take a while. */
 		await interaction.deferReply().catch(() => {});
 
-		const moderation: ModerationResult | null = await checkVideoPrompt({
+		const moderation: ModerationResult = await checkVideoPrompt({
 			conversation, db, content: prompt
 		});
 
-		/* If the message was flagged, send a warning message. */
-		if (moderation !== null && moderation.blocked) return new ErrorResponse({
+		if (moderation.blocked) return new ErrorResponse({
 			interaction, command: this,
 			message: "Your video prompt was blocked by our filters. *If you violate the usage policies, we may have to take moderative actions; otherwise, you can ignore this notice*.",
 			color: "Orange", emoji: null
@@ -93,12 +91,13 @@ export default class VideoCommand extends Command {
 			/* Try to generate the actual video. */
 			const result = await this.bot.turing.generateVideo(options);
 
-			/* Increment the user's usage. */
-			await this.bot.db.users.incrementInteractions(db.user, "videos");
-
 			/* Fetch the actual video file. */
 			const buffer: ImageBuffer | null = await Utils.fetchBuffer(result.url);
 			if (buffer === null) throw new Error("Video buffer is null");
+
+			/* Increment the user's usage. */
+			await this.bot.db.users.incrementInteractions(db.user, "videos");
+			await this.bot.db.plan.expenseForVideo(db, result);
 
 			return new Response()
 				.setContent(`**${prompt}** — *${(result.duration / 1000).toFixed(1)} seconds*`)

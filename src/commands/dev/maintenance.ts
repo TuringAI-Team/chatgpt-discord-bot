@@ -27,7 +27,7 @@ export default class MaintenanceCommand extends Command {
 					.setDescription("Notice message to display")
 					.setRequired(false)
 				)
-        , { restriction: "owner" });
+        , { restriction: [ "owner" ] });
     }
 
     public async run(interaction: CommandInteraction): CommandResponse {

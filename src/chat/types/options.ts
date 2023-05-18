@@ -2,13 +2,14 @@ import { Guild, GuildMember, Message, TextChannel } from "discord.js";
 
 import { ChatNoticeMessage, PartialResponseMessage, ResponseMessage } from "./message.js";
 import { ChatSettingsModel } from "../../conversation/settings/model.js";
+import { ChatSettingsTone } from "../../conversation/settings/tone.js";
 import { Conversation } from "../../conversation/conversation.js";
 import { ChatBaseImage, ChatInputImage } from "./image.js";
 import { DatabaseInfo } from "../../db/managers/user.js";
 import { ChatDocument } from "./document.js";
 import { ChatModel } from "./model.js";
 
-export type ModelGenerationOptions = Pick<ChatGenerationOptions, "conversation" | "trigger" | "db" | "prompt" | "guild"> & {
+export type ModelGenerationOptions = Pick<ChatGenerationOptions, "conversation" | "trigger" | "db" | "prompt" | "guild" | "partial"> & {
     /* Which model is being used for generation */
     model: ChatModel;
 
@@ -55,8 +56,22 @@ export interface ChatGenerationOptions {
     /* Database instances */
     db: DatabaseInfo;
 
+    /* Whether partial messages should be generated */
+    partial: boolean;
+
     /* Prompt to ask */
     prompt: string;
+}
+
+export interface ChatResetOptions {
+    /* Which conversation this reset request is for */
+    conversation: Conversation;
+
+    /* Which settings model is being used */
+    model: ChatSettingsModel;
+
+    /* Which settings tone is being used */
+    tone: ChatSettingsTone;
 }
 
 export type GPTImageAnalyzeOptions = ChatGenerationOptions & {
