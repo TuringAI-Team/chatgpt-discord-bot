@@ -149,7 +149,7 @@ export class PlanManager {
 
     public async expense<T extends UserPlanExpense = UserPlanExpense>(
         db: DatabaseEntry | DatabaseInfo, { type, used, data, bonus }: Pick<T, "type" | "used" | "data"> & { bonus?: UserPlanCreditBonusAmount }
-    ): Promise<T> {
+    ): Promise<T | null> {
         /* The new expense */
         const expense: T = {
             type, used, data,
@@ -161,7 +161,7 @@ export class PlanManager {
             : db as DatabaseEntry;
 
         /* The entry's current plan */
-        if (entry.plan === null) throw new Error("User/guild doesn't have a running plan");
+        if (entry.plan === null) return null;
         const plan: UserPlan = this.get(entry)!;
 
         let additional: number = used;
@@ -184,7 +184,7 @@ export class PlanManager {
 
     public async expenseForChat(
         entry: DatabaseEntry | DatabaseInfo, { used, data }: Pick<UserPlanChatExpense, "used" | "data"> & { bonus?: UserPlanCreditBonusAmount }
-    ): Promise<UserPlanChatExpense> {
+    ): Promise<UserPlanChatExpense | null> {
         return this.expense(entry, {
             type: "chat", used, data
         });
@@ -192,7 +192,7 @@ export class PlanManager {
 
     public async expenseForImage(
         entry: DatabaseEntry | DatabaseInfo, result: StableHordeGenerationResult
-    ): Promise<UserPlanImageExpense> {
+    ): Promise<UserPlanImageExpense | null> {
         return this.expense(entry, {
             type: "image", used: result.kudos / 4000, data: { kudos: result.kudos }, bonus: 0.10
         });
@@ -200,7 +200,7 @@ export class PlanManager {
 
     public async expenseForDallEImage(
         entry: DatabaseEntry | DatabaseInfo, count: number
-    ): Promise<UserPlanDallEExpense> {
+    ): Promise<UserPlanDallEExpense | null> {
         return this.expense(entry, {
             type: "dall-e", used: count * 0.02, data: { count }, bonus: 0.10
         });
@@ -208,7 +208,7 @@ export class PlanManager {
 
     public async expenseForImageDescription(
         entry: DatabaseEntry | DatabaseInfo, result: ImageDescription
-    ): Promise<UserPlanImageDescribeExpense> {
+    ): Promise<UserPlanImageDescribeExpense | null> {
         return this.expense(entry, {
             type: "describe", used: (result.duration / 1000) * 0.0023, data: { duration: result.duration }, bonus: 0.10
         });
@@ -216,7 +216,7 @@ export class PlanManager {
 
     public async expenseForVideo(
         entry: DatabaseEntry | DatabaseInfo, video: TuringVideoResult
-    ): Promise<UserPlanVideoExpense> {
+    ): Promise<UserPlanVideoExpense | null> {
         return this.expense(entry, {
             type: "video", used: (video.duration / 1000) * 0.0023, data: { duration: video.duration }, bonus: 0.05
         });
