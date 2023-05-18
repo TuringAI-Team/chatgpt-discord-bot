@@ -992,11 +992,12 @@ export class UserSettingsManager {
         const type: "page" | "current" | "change" | "menu" | "explanation" = data.shift()! as any;
         data.shift();
 
-        /* Make sure that the button we're searching for actually exists. */
-        if (interaction.message.components[interaction.message.components.length - 1].components.length < 2) return;
+        /* Components on the original message */
+        const components = (interaction.message.components[interaction.message.components.length - 1] as ActionRow<ButtonComponent>).components ;
 
-        const [ _, __, originRaw, categoryType ] = (interaction.message.components[interaction.message.components.length - 1] as ActionRow<ButtonComponent>)
-            .components[1].customId!.split(":");
+        const [ _, __, originRaw, categoryType ] = components.length > 2 && components[1].disabled
+            ? components[1].customId!.split(":")
+            : interaction.customId.split(":");
 
         const origin: SettingsLocation = originRaw as any;
 

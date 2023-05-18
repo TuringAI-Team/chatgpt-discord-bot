@@ -386,13 +386,16 @@ export class ChatClient {
             });
 
             try {
+                /* When the generation started */
+                const before: number = Date.now();
+
                 /* Run the model-specific image analyzer, and gather all results. */
                 const result: ChatAnalyzedImage = await options.model.analyze({
                     ...options, attachment
                 });
 
                 results.push({
-                    name: attachment.name, type: attachment.type, url: attachment.url,
+                    name: attachment.name, type: attachment.type, url: attachment.url, duration: Date.now() - before,
                     ...result
                 });
 

@@ -185,6 +185,9 @@ export type ChatInputImage = Pick<ChatBaseImage, "name" | "type" | "url"> & {
 
     /* Text recognized in the image, `null` if none was detected */
     text: string | null;
+
+    /* How long it took to analyze the image */
+    duration: number;
 }
 
 export type ChatAnalyzedImage = Pick<ChatInputImage, "description" | "text">

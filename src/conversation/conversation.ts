@@ -588,6 +588,7 @@ export class Conversation {
 	 */
 	public calculateChargeAmount(options: ChatChargeOptions): number | null {
 		const { interaction, model } = options;
+		let cost: number = 0;
 
 		/* Per 1000 tokens */
 		if (model.options.billing.type === ChatSettingsModelBillingType.Per1000Tokens) {
@@ -596,17 +597,25 @@ export class Conversation {
 			const promptCost: number = (interaction.output.raw!.usage.prompt / 1000) * this.chargeBillingForType(options, "prompt");
 			const completionCost: number = (interaction.output.raw!.usage.completion / 1000) * this.chargeBillingForType(options, "completion");
 
-			return promptCost + completionCost;
+			cost += promptCost + completionCost;
 
 		} else if (model.options.billing.type === ChatSettingsModelBillingType.PerMessage) {
-			return this.chargeBillingForType(options, "all");
+			cost += this.chargeBillingForType(options, "all");
 
 		} else if (model.options.billing.type === ChatSettingsModelBillingType.PerSecond) {
 			if (!interaction.output.raw?.duration) return null;
-			return (interaction.output.raw.duration / 1000) * this.chargeBillingForType(options, "all");
+			cost += (interaction.output.raw.duration / 1000) * this.chargeBillingForType(options, "all");
 
 		} else if (model.options.billing.type === ChatSettingsModelBillingType.Custom) {
-			return interaction.output.raw?.cost ?? null;
+			if (!interaction.output.raw?.cost) return null;
+			cost += interaction.output.raw?.cost;
+		}
+
+		/* Count all analyzed images too. */
+		if (model.options.billing.type !== ChatSettingsModelBillingType.Custom && options.interaction.input.images && options.interaction.input.images.length > 0) {
+			options.interaction.input.images.forEach(image => {
+				cost += (image.duration / 1000) * 0.0023;
+			});
 		}
 
 		return null;
