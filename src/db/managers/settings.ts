@@ -992,6 +992,9 @@ export class UserSettingsManager {
         const type: "page" | "current" | "change" | "menu" | "explanation" = data.shift()! as any;
         data.shift();
 
+        /* Make sure that the button we're searching for actually exists. */
+        if (interaction.message.components[interaction.message.components.length - 1].components.length < 2) return;
+
         const [ _, __, originRaw, categoryType ] = (interaction.message.components[interaction.message.components.length - 1] as ActionRow<ButtonComponent>)
             .components[1].customId!.split(":");
 
