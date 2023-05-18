@@ -12,13 +12,16 @@ export default class SettingsCommand extends Command {
         super(bot, new SlashCommandBuilder()
 			.setName("settings")
 			.setDescription("Customize the bot to your liking")
+		);
+		
+		(this.builder as SlashCommandBuilder)
 			.addSubcommand(builder => builder
 				.setName("user")
 				.setDescription("Customize the bot for yourself")
 				.addStringOption(builder => builder
 					.setName("category")
 					.setDescription("Which category to view")
-					.addChoices(...SettingCategories.map(c => ({
+					.addChoices(...this.bot.db.settings.categories(SettingsLocation.User).map(c => ({
 						name: `${c.name} ${Emoji.display(c.emoji)}`,
 						value: c.type
 					})))
@@ -30,13 +33,12 @@ export default class SettingsCommand extends Command {
 				.addStringOption(builder => builder
 					.setName("category")
 					.setDescription("Which category to view")
-					.addChoices(...SettingCategories.map(c => ({
+					.addChoices(...this.bot.db.settings.categories(SettingsLocation.Guild).map(c => ({
 						name: `${c.name} ${Emoji.display(c.emoji)}`,
 						value: c.type
 					})))
 				)
-			)
-		);
+			);
     }
 
     public async run(interaction: CommandInteraction, db: DatabaseInfo): CommandResponse {

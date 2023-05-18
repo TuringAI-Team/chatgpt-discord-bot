@@ -140,7 +140,7 @@ export class PlanManager {
         if (plan === null) return null;
 
         return {
-            expenses: plan.expenses ?? [],
+            expenses: typeof plan.expenses === "number" ? [] : plan.expenses ?? [],
             history: plan.history ?? [],
             total: plan.total ?? 0,
             used: plan.used ?? 0
