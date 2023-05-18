@@ -24,8 +24,6 @@ export class TuringModel extends ChatModel {
     public async complete(options: ModelGenerationOptions): Promise<PartialResponseMessage> {
         const model = options.conversation.model(options.db);
 
-        console.log(model.id)
-
         /* Build the formatted prompt. */
         const prompt: string = model.id !== "bard"
             ? (await this.client.buildPrompt(options)).prompt

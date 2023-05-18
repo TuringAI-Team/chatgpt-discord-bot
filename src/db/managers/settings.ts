@@ -995,8 +995,6 @@ export class UserSettingsManager {
         const [ _, __, originRaw, categoryType ] = (interaction.message.components[interaction.message.components.length - 1] as ActionRow<ButtonComponent>)
             .components[1].customId!.split(":");
 
-        console.log(originRaw, categoryType)
-
         const origin: SettingsLocation = originRaw as any;
 
         /* Database instances, guild & user */
@@ -1039,7 +1037,6 @@ export class UserSettingsManager {
 
             /* New category to switch to */
             const newCategory: SettingsCategory | null = this.categories(origin).at(categoryIndex + delta) ?? null;
-            console.log(delta, newCategory)
             if (newCategory === null) return;
             
             await interaction.update((await this.buildPage({

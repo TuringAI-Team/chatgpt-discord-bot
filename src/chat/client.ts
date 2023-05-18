@@ -315,8 +315,6 @@ export class ChatClient {
             maxGenerationTokens
         ) - 1;
 
-        console.log(maxContextLength, maxGenerationTokens)
-
         return {
             prompt: Object.values(messages).map(message => message.content).join("\n\n"),
             parts: messages as PromptParts,

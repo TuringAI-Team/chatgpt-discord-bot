@@ -610,7 +610,6 @@ export class TuringAPI {
 
         /* Response data from the API */
         const data = await this.request<TuringChatResult>(`text/${options.model}`, "POST", body);
-        console.log(data)
 
         return {
             response: data.response.trim()
