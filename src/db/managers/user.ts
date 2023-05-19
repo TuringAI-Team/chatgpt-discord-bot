@@ -565,8 +565,8 @@ export class UserManager {
 
     public type(db: DatabaseInfo): UserSubscriptionType {
         /* In which order to use the plans in */
-        const typePriority: "plan" | "subscription" = this.db.settings.get(db.guild != undefined && db.guild.plan !== null ? db.guild : db.user, "premium:typePriority");
         const locationPriority: UserSubscriptionLocation = this.db.settings.get(db.user, "premium:locationPriority");
+        const typePriority: "plan" | "subscription" = this.db.settings.get(db.guild != undefined ? db[locationPriority]! : db.user, "premium:typePriority");
 
         const checks: Record<typeof typePriority, (entry: DatabaseGuild | DatabaseUser, type: UserSubscriptionLocation) => boolean> = {
             subscription: entry => this.subscription(entry) !== null,
@@ -589,13 +589,15 @@ export class UserManager {
                         if (role !== null) hasRestrictedRole = role.members.has(db.user.id);
                     }
                 }
-
+                
                 return entry.plan !== null && this.db.plan.active(entry) && hasRestrictedRole;
             }
         };
 
         const locations: UserSubscriptionLocation[] = [ "guild", "user" ];
         const types: typeof typePriority[] = [ "plan", "subscription" ];
+
+        console.log(typePriority, types[0], types)
 
         if (locationPriority !== locations[0]) locations.reverse();
         if (typePriority !== types[0]) types.reverse();
