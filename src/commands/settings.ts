@@ -50,9 +50,9 @@ export default class SettingsCommand extends Command {
 		});
 
 		/* The user's permissions */
-		const permissions = (interaction.member! as GuildMember).permissions;
+		const permissions = interaction.member instanceof GuildMember ? interaction.member.permissions : null;
 
-		if (type === SettingsLocation.Guild && !permissions.has("ManageGuild")) return new ErrorResponse({
+		if (type === SettingsLocation.Guild && (!permissions || !permissions.has("ManageGuild"))) return new ErrorResponse({
 			interaction, message: "You must have the `Manage Server` permission to view & change guild settings", emoji: "😔"
 		});
 
