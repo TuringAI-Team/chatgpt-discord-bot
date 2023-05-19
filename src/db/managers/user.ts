@@ -1,4 +1,4 @@
-import { Awaitable, Collection, Guild, Snowflake, User } from "discord.js";
+import { Awaitable, Collection, Guild, Role, Snowflake, User } from "discord.js";
 import chalk from "chalk";
 
 import { DatabaseModerationResult } from "../../conversation/moderation/moderation.js";
@@ -566,9 +566,30 @@ export class UserManager {
         const typePriority: "plan" | "subscription" = this.db.settings.get(db.guild != undefined && db.guild.plan !== null ? db.guild : db.user, "premium:typePriority");
         const locationPriority: UserSubscriptionLocation = this.db.settings.get(db.user, "premium:locationPriority");
 
-        const checks: Record<typeof typePriority, (entry: DatabaseGuild | DatabaseUser) => boolean> = {
+        const checks: Record<typeof typePriority, (entry: DatabaseGuild | DatabaseUser, type: UserSubscriptionLocation) => boolean> = {
             subscription: entry => this.subscription(entry) !== null,
-            plan: entry => entry.plan !== null && this.db.plan.active(entry)
+            plan: (entry, location) => {
+                /* Whether the user has the set Premium role */
+                let hasRestrictedRole: boolean = true;
+
+                /* If this was called on a guild, get it from the cache. */
+                const guild: Guild | null = db.guild && location === "guild"
+                    ? this.db.bot.client.guilds.cache.get(db.guild.id) ?? null
+                    : null;
+
+                if (location === "guild" && db.guild && guild !== null) {
+                    /* ID of the Premium-restricted role */
+                    const restrictedRoleID: Snowflake = this.db.settings.get(db.guild, "premium:role");
+
+                    /* If a role is actually set, make sure that the user has that role. */
+                    if (restrictedRoleID !== "0") {
+                        const role: Role | null = guild.roles.cache.get(restrictedRoleID) ?? null;
+                        if (role !== null) hasRestrictedRole = role.members.has(db.user.id);
+                    }
+                }
+
+                return entry.plan !== null && this.db.plan.active(entry) && hasRestrictedRole;
+            }
         };
 
         const locations: UserSubscriptionLocation[] = [ "guild", "user" ];
@@ -582,7 +603,7 @@ export class UserManager {
                 const entry = db[location];
                 if (!entry) continue;
 
-                if (checks[type](entry)) return {
+                if (checks[type](entry, location)) return {
                     location, type, premium: true
                 };
             }

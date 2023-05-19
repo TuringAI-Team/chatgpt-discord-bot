@@ -100,7 +100,7 @@ enum PlanLocation {
 export type PlanCreditVisility = "detailed" | "full" | "used" | "percentage" | "hide"
 
 export const PlanCreditViewers: Record<PlanCreditVisility, (plan: UserPlan, interaction: ChatInteraction) => string | null> = {
-    detailed: (plan, interaction) => `${interaction.output.raw!.usage!.completion} tokens • $${plan.used.toFixed(2)} / $${plan.total.toFixed(2)}`,
+    detailed: (plan, interaction) => `${interaction.output.raw?.usage ? `${interaction.output.raw.usage.completion} tokens •` : interaction.output.raw?.cost ? `$${interaction.output.raw.cost.toFixed(4)} •` : ""} $${plan.used.toFixed(2)} / $${plan.total.toFixed(2)}`,
     full: plan => `$${plan.used.toFixed(2)} / $${plan.total.toFixed(2)}`,
     used: plan => `$${plan.used.toFixed(2)}`,
     percentage: plan => plan.used > 0 ? `${(plan.used / plan.total * 100).toFixed(1)}%` : null,
