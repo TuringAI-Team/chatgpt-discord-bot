@@ -233,9 +233,13 @@ export class CommandManager {
 
 		/* If this command is Premium-only and the user doesn't have a subscription, ... */
 		if (command.premiumOnly() && !subscription.premium) {
+			/* Which Premium type this command is restricted to */
+			const type = command.planOnly() && command.premiumOnly()
+				? null : command.planOnly() ? "plan" : "subscription";
+
 			const response = new Response()
 				.addEmbed(builder => builder
-					.setDescription(`The ${interaction instanceof MessageContextMenuCommandInteraction ? `context menu action \`${command.builder.name}\`` : `command \`/${command.builder.name}\``} is only available to **Premium** users. **Premium 🌟** also includes many additional benefits; view \`/premium info\` for more.`)
+					.setDescription(`The ${interaction instanceof MessageContextMenuCommandInteraction ? `context menu action \`${command.builder.name}\`` : `command \`/${command.builder.name}\``} is only available to ${type === null ? "**Premium**" : type === "plan" ? "**pay-as-you-go Premium 📊**" : "**fixed Premium 💸**"} users. **Premium 🌟** also includes many additional benefits; view \`/premium info\` for more.`)
 					.setColor("Orange")
 				)
 				.setEphemeral(true);
