@@ -303,7 +303,7 @@ export class UserManager {
             interactions[key] = raw.interactions ? raw.interactions[key] ?? 0 : 0;
         }
 
-        const db: DatabaseUser =  {
+        const db: DatabaseUser = {
             created: raw.created ? Date.parse(raw.created) : Date.now(),
             id: raw.id,
             interactions: interactions as DatabaseInteractionStatistics,

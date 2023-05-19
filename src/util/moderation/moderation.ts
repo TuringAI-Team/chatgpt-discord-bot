@@ -442,7 +442,7 @@ export const buildUserOverview = async (bot: Bot, target: FindResult, db: Databa
     let interactionsDescription: string = "";
 
     for (const [ category, count ] of Object.entries(db.interactions)) {
-        interactionsDescription = `${interactionsDescription}\n${Utils.titleCase(category)} ▶️ **${count}** times`;
+        interactionsDescription = `${interactionsDescription}\n${Utils.titleCase(category)} » **${count}** times`;
     }
 
     /* Formatted meta-data values, for each type */
@@ -450,8 +450,14 @@ export const buildUserOverview = async (bot: Bot, target: FindResult, db: Databa
 
     for (const [ key, value ] of Object.entries(db.metadata)) {
         if (!value) continue;
-        metadataDescription = `${metadataDescription}\n${Utils.titleCase(key)} ▶️ \`${value}\``;
+        metadataDescription = `${metadataDescription}\n${Utils.titleCase(key)} » \`${value}\``;
     }
+
+    /* Formatted Premium information */
+    let premiumDescription: string = "";
+
+    if (db.subscription !== null) premiumDescription = `${premiumDescription}\n**Subscription** » expires *<t:${Math.floor(db.subscription.expires / 1000)}:R>*`;
+    if (db.plan !== null) premiumDescription = `${premiumDescription}\n**Plan** » **$${db.plan.total.toFixed(2)}** total; **$${db.plan.used.toFixed(2)}** used; **${db.plan.expenses.length}** expenses; **${db.plan.history.length}** charges`;
 
     const response = new Response()
         .addEmbed(builder => builder
@@ -485,7 +491,7 @@ export const buildUserOverview = async (bot: Bot, target: FindResult, db: Databa
 
                 {
                     name: "Premium ✨",
-                    value: db.subscription !== null ? `✅ - expires *${dayjs.duration(db.subscription.expires - Date.now()).humanize(true)}*` : "❌",
+                    value: premiumDescription.length > 0 ? premiumDescription : "❌",
                     inline: true
                 },
 
