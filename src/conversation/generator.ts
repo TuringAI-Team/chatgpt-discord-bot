@@ -206,7 +206,7 @@ export class Generator {
 		/* If the generated message finished due to reaching the token limit, show a notice. */
 		if (!pending && data.raw && data.raw.finishReason === "maxLength") {
 			embeds.push(new EmbedBuilder()
-				.setDescription(`This message reached the length limit, and was not fully generated.${!this.bot.db.users.canUsePremiumFeatures(db) ? "\n✨ _**Premium** heavily increases the length limit, and grants you exclusive features - view \`/premium info\` for more_." : ""}`)
+				.setDescription(`This message reached the length limit, and was not fully generated.${!this.bot.db.users.canUsePremiumFeatures(db) ? "\n✨ _**Premium** heavily increases the length limit, and grants you exclusive features - view \`/premium\` for more_." : ""}`)
 				.setColor("Yellow")
 			);
 
@@ -608,7 +608,7 @@ export class Generator {
 		/* If the user attached images to their messages, but doesn't have Premium access, ignore their request. */
 		if (attachedImages && !premium) return void await new Response()
 			.addEmbed(builder => builder
-				.setDescription(`🖼️ **${this.bot.client.user!.username}** will be able to view your images with **Premium**.\n**Premium** *also includes further benefits, view \`/premium info\` for more*. ✨`)
+				.setDescription(`🖼️ **${this.bot.client.user!.username}** will be able to view your images with **Premium**.\n**Premium** *also includes further benefits, view \`/premium\` for more*. ✨`)
 				.setColor("Orange")
 			).send(message);
 

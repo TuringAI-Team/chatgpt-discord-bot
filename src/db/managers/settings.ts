@@ -696,7 +696,7 @@ export const SettingOptions: SettingsOption[] = [
         emoji: { fallback: "🔢" },
         description: "How many tokens the AI can generate at maximum",
         location: SettingsLocation.Both,
-        default: 500, min: 50, max: 8192,
+        default: 500, min: 30, max: 8192,
         suffix: "token",
 
         explanation: {
@@ -1106,7 +1106,7 @@ export class UserSettingsManager {
                 if (choice.restricted === "premium" && !subscriptionType.premium) {
                     return void await new Response()
                         .addEmbed(builder => builder
-                            .setDescription(`✨ The choice **${choice.name}**${choice.emoji ? ` ${typeof choice.emoji === "object" ? Emoji.display(choice.emoji, true) : choice.emoji}` : ""} is restricted to **Premium** users.\n**Premium** *also includes further benefits, view \`/premium info\` for more*. ✨`)
+                            .setDescription(`✨ The choice **${choice.name}**${choice.emoji ? ` ${typeof choice.emoji === "object" ? Emoji.display(choice.emoji, true) : choice.emoji}` : ""} is restricted to **Premium** users.\n**Premium** *also includes further benefits, view \`/premium\` for more*. ✨`)
                             .setColor("Orange")
                         )
                         .setEphemeral(true)
@@ -1116,7 +1116,7 @@ export class UserSettingsManager {
                 if (choice.restricted === "subscription" && subscriptionType.type !== "subscription") {
                     return void await new Response()
                         .addEmbed(builder => builder
-                            .setDescription(`✨ The choice **${choice.name}**${choice.emoji ? ` ${typeof choice.emoji === "object" ? Emoji.display(choice.emoji, true) : choice.emoji}` : ""} is restricted to **fixed Premium 💸** users.\n**Premium** *also includes further benefits, view \`/premium info\` for differences between them & more*. ✨`)
+                            .setDescription(`✨ The choice **${choice.name}**${choice.emoji ? ` ${typeof choice.emoji === "object" ? Emoji.display(choice.emoji, true) : choice.emoji}` : ""} is restricted to **fixed Premium 💸** users.\n**Premium** *also includes further benefits, view \`/premium\` for differences between them & more*. ✨`)
                             .setColor("Orange")
                         )
                         .setEphemeral(true)
@@ -1126,7 +1126,7 @@ export class UserSettingsManager {
                 if (choice.restricted === "plan" && subscriptionType.type !== "plan") {
                     return void await new Response()
                         .addEmbed(builder => builder
-                            .setDescription(`✨ The choice **${choice.name}**${choice.emoji ? ` ${typeof choice.emoji === "object" ? Emoji.display(choice.emoji, true) : choice.emoji}` : ""} is restricted to **pay-as-you-go Premium 📊** users.\n**Premium** *also includes further benefits, view \`/premium info\` for differences between them & more*. ✨`)
+                            .setDescription(`✨ The choice **${choice.name}**${choice.emoji ? ` ${typeof choice.emoji === "object" ? Emoji.display(choice.emoji, true) : choice.emoji}` : ""} is restricted to **pay-as-you-go Premium 📊** users.\n**Premium** *also includes further benefits, view \`/premium\` for differences between them & more*. ✨`)
                             .setColor("Orange")
                         )
                         .setEphemeral(true)

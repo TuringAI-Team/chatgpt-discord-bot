@@ -178,7 +178,7 @@ export class CommandManager {
 		if ((command.options.restriction.includes("subscription") || command.options.restriction.includes("plan")) && !subscription.premium) {
 			return await interaction.respond([
 				{ name: `The command /${command.builder.name} is only available to Premium users.`, value: "" },
-				{ name: `Premium 🌟 also includes many additional benefits; view /premium info for more.`, value: "" }
+				{ name: `Premium 🌟 also includes many additional benefits; view /premium for more.`, value: "" }
 			]).catch(() => {});
 		}
 		/* Try to complete the options. */
@@ -239,7 +239,7 @@ export class CommandManager {
 
 			const response = new Response()
 				.addEmbed(builder => builder
-					.setDescription(`The ${interaction instanceof MessageContextMenuCommandInteraction ? `context menu action \`${command.builder.name}\`` : `command \`/${command.builder.name}\``} is only available to ${type === null ? "**Premium**" : type === "plan" ? "**pay-as-you-go Premium 📊**" : "**fixed Premium 💸**"} users. **Premium 🌟** also includes many additional benefits; view \`/premium info\` for more.`)
+					.setDescription(`The ${interaction instanceof MessageContextMenuCommandInteraction ? `context menu action \`${command.builder.name}\`` : `command \`/${command.builder.name}\``} is only available to ${type === null ? "**Premium**" : type === "plan" ? "**pay-as-you-go Premium 📊**" : "**fixed Premium 💸**"} users. **Premium 🌟** also includes many additional benefits; view \`/premium\` for more.`)
 					.setColor("Orange")
 				)
 				.setEphemeral(true);
@@ -263,7 +263,7 @@ export class CommandManager {
 				const duration: number = (command.options.cooldown as CommandSpecificCooldown).subscription;
 
 				response.addEmbed(builder => builder
-					.setDescription(`✨ By buying **[Premium](${Utils.shopURL()})**, the cool-down will be lowered to **${Math.floor(duration / 1000)} seconds** only.\n**Premium** *also includes further benefits, view \`/premium info\` for more*. ✨`)
+					.setDescription(`✨ By buying **[Premium](${Utils.shopURL()})**, the cool-down will be lowered to **${Math.floor(duration / 1000)} seconds** only.\n**Premium** *also includes further benefits, view \`/premium\` for more*. ✨`)
 					.setColor("Orange")
 				);
 			}

@@ -517,14 +517,14 @@ export class Conversation {
 		if (!subscriptionType.premium) {
 			additional.push(
 				new EmbedBuilder()
-					.setDescription(`✨ By buying **[Premium](${Utils.shopURL()})**, your cool-down will be lowered to **a few seconds** only, with **unlimited** messages per day.\n**Premium** *also includes further benefits, view \`/premium info\` for more*. ✨`)
+					.setDescription(`✨ By buying **[Premium](${Utils.shopURL()})**, your cool-down will be lowered to **a few seconds** only, with **unlimited** messages per day.\n**Premium** *also includes further benefits, view \`/premium\` for more*. ✨`)
 					.setColor("Orange")
 			);
 			
 		} else if (subscriptionType.premium && subscriptionType.location === "guild") {
 			additional.push(
 				new EmbedBuilder()
-					.setDescription(`✨ By buying **[Premium](${Utils.shopURL()})** for yourself, the cool-down will be lowered to only **a few seconds**, with **unlimited** messages per day.\n**Premium** *also includes further benefits, view \`/premium info\` for more*. ✨`)
+					.setDescription(`✨ By buying **[Premium](${Utils.shopURL()})** for yourself, the cool-down will be lowered to only **a few seconds**, with **unlimited** messages per day.\n**Premium** *also includes further benefits, view \`/premium\` for more*. ✨`)
 					.setColor("Orange")
 			);
 		}

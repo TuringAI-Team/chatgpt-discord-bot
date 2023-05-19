@@ -589,15 +589,13 @@ export class UserManager {
                         if (role !== null) hasRestrictedRole = role.members.has(db.user.id);
                     }
                 }
-                
+
                 return entry.plan !== null && this.db.plan.active(entry) && hasRestrictedRole;
             }
         };
 
         const locations: UserSubscriptionLocation[] = [ "guild", "user" ];
         const types: typeof typePriority[] = [ "plan", "subscription" ];
-
-        console.log(typePriority, types[0], types)
 
         if (locationPriority !== locations[0]) locations.reverse();
         if (typePriority !== types[0]) types.reverse();

@@ -56,7 +56,7 @@ export const IntroductionPages: IntroductionPage[] = [
 
                 {
                     name: "Competitive features 📈",
-                    value: "We offer a fair cool-down and amazing message length limit to free users, and an additional **Premium** tier for even more perks & higher limits; view `/premium info` for more."
+                    value: "We offer a fair cool-down and amazing message length limit to free users, and an additional **Premium** tier for even more perks & higher limits; view `/premium` for more."
                 },
 
                 {

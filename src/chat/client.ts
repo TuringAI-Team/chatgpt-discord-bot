@@ -180,12 +180,12 @@ export class ChatClient {
 
         /* Actual maximum token count for the prompt */
         let maxContextLength: number = type !== "plan"
-            ? options.settings.options.history.context ?? GPT_MAX_CONTEXT_LENGTH[subscriptionType.type]
+            ? Math.min(limits.context, options.settings.options.history.context ?? GPT_MAX_CONTEXT_LENGTH[subscriptionType.type])
             : Math.min(options.settings.options.history.maxTokens, limits.context);
 
         /* Maximum generation length */
         let maxGenerationTokens: number = type !== "plan"
-            ? options.settings.options.history.generation ?? GPT_MAX_GENERATION_LENGTH[subscriptionType.type]
+            ? Math.min(limits.generation, options.settings.options.history.generation ?? GPT_MAX_GENERATION_LENGTH[subscriptionType.type])
             : limits.generation;
 
         /* If the prompt itself exceeds the length limit, throw an error. */

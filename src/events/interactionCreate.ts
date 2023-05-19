@@ -13,15 +13,19 @@ export default class InteractionCreateEvent extends Event {
 	}
 
 	public async run(interaction: Interaction): Promise<void> {
+		if (!interaction || ((interaction.isButton() || interaction.isAnySelectMenu()) && !interaction.customId)) return;
+
 		try {
 			if ((interaction.isButton() || interaction.isStringSelectMenu()) && interaction.customId.startsWith("settings:")) {
-				if (!interaction || !interaction.customId) return;
 				return await this.bot.db.settings.handleInteraction(interaction);
 			}
 
 			if (interaction.isButton() && interaction.customId.startsWith("metrics:")) {
-				if (!interaction || !interaction.customId) return;
 				return await this.bot.command.get<MetricsCommand>("metrics").handleInteraction(interaction);
+			}
+
+			if (interaction.isButton() && interaction.customId.startsWith("premium:")) {
+				return await this.bot.db.plan.handleInteraction(interaction);
 			}
 
 			if (interaction.isChatInputCommand() || interaction.isMessageContextMenuCommand()) {

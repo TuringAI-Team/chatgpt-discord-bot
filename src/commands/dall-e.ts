@@ -36,7 +36,7 @@ export default class DallECommand extends Command {
 			cooldown: {
 				free: 5 * 60 * 1000,
 				voter: 4 * 60 * 1000,
-				subscription: 1 * 60 * 1000
+				subscription: 2 * 60 * 1000
 			}
 		});
 	}

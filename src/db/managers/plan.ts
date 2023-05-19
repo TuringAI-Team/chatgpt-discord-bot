@@ -1,11 +1,17 @@
 import { StableHordeGenerationResult } from "../../image/types/image.js";
-import { DatabaseGuild, DatabaseInfo, DatabaseUser } from "./user.js";
+import { DatabaseGuild, DatabaseInfo, DatabaseUser, UserSubscriptionType } from "./user.js";
 import { ChatInteraction } from "../../conversation/conversation.js";
 import { SummaryPrompt } from "../../commands/summarize.js";
 import { TuringVideoResult } from "../../turing/api.js";
 import { ClientDatabaseManager } from "../cluster.js";
 import { YouTubeVideo } from "../../util/youtube.js";
 import { ImageDescription } from "./description.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle, EmbedBuilder, GuildMember, InteractionReplyOptions } from "discord.js";
+import { Response } from "../../command/response.js";
+import { Utils } from "../../util/utils.js";
+import { ErrorResponse } from "../../command/response/error.js";
+import { CommandInteraction } from "../../command/command.js";
+import { ProgressBar } from "../../util/progressBar.js";
 
 type DatabaseEntry = DatabaseUser | DatabaseGuild
 
@@ -201,7 +207,7 @@ export class PlanManager {
         entry: DatabaseEntry | DatabaseInfo, result: StableHordeGenerationResult
     ): Promise<UserPlanImageExpense | null> {
         return this.expense(entry, {
-            type: "image", used: result.kudos / 4000, data: { kudos: result.kudos }, bonus: 0.10
+            type: "image", used: result.kudos / 4500, data: { kudos: result.kudos }, bonus: 0.10
         });
     }
 
@@ -289,5 +295,166 @@ export class PlanManager {
         });
 
         return plan;
+    }
+
+    public async handleInteraction(interaction: ButtonInteraction): Promise<void> {
+        /* Information about what action to perform, etc. */
+        const data: string[] = interaction.customId.split(":");
+        data.shift();
+
+        /* Which action to perform */
+        const action: "overview" = data.shift()! as any;
+
+        /* Database instances, guild & user */
+        const db: DatabaseInfo = await this.db.users.fetchData(interaction.user, interaction.guild);
+
+        if (action === "overview") {
+            const response = await this.buildOverview(interaction, db);
+            await interaction.reply(response.get() as InteractionReplyOptions);
+            
+        } else {
+            await interaction.deferUpdate();
+        }
+    }
+
+    public async buildOverview(interaction: CommandInteraction | ButtonInteraction, { user, guild }: DatabaseInfo): Promise<Response> {
+        /* Current subscription & plan */
+		const subscriptions = {
+			user: this.db.users.subscription(user),
+			guild: guild ? this.db.users.subscription(guild) : null
+		};
+
+		const plans = {
+			user: this.db.plan.get(user),
+			guild: guild ? this.db.plan.get(guild) : null
+		};
+
+		/* Subscription type of the user */
+		const type: UserSubscriptionType = this.db.users.type({ user, guild });
+
+		/* The user's permissions */
+		const permissions = interaction.member instanceof GuildMember ? interaction.member.permissions : null;
+
+		/* Whether the "Recharge" button should be shown */
+		const showShopButton: boolean = user.metadata.email != undefined && (type.location === "guild" ? permissions !== null && permissions.has("ManageGuild") : true);
+
+		const builder: EmbedBuilder = new EmbedBuilder()
+			.setColor("Orange");
+
+		const buttons: ActionRowBuilder<ButtonBuilder> = new ActionRowBuilder<ButtonBuilder>()
+			.addComponents(
+				new ButtonBuilder()
+					.setStyle(ButtonStyle.Link)
+					.setURL(Utils.shopURL())
+					.setLabel("Visit our shop")
+					.setEmoji("💸")
+			);
+
+		const response = new Response()
+			.setEphemeral(true);
+
+		if (type.premium) {
+			if (type.type === "plan") {
+				if (type.location === "guild") {
+					/* Check whether the user has the "Manage Server" permission. */
+					if (!permissions || !permissions.has("ManageGuild")) return new ErrorResponse({
+						interaction, message: "You must have the `Manage Server` permission to view & manage the server's plan", emoji: "😔"
+					});
+				}
+
+				/* The user's (or guild's) plan */
+				const plan = plans[type.location]!;
+
+				/* Previous plan expenses */
+				const expenses = plan.expenses.slice(-10);
+
+				if (expenses.length > 0) response.addEmbed(builder => builder
+					.setTitle("Previous expenses")
+					.setDescription("*This will show your last few expenses using the bot*.")
+					.addFields(expenses.map(expense => ({
+						name: `${Utils.titleCase(expense.type)}`,
+						value: `**$${Math.round(expense.used * Math.pow(10, 5)) / Math.pow(10, 5)}** — *<t:${Math.floor(expense.time / 1000)}:F>*`
+					})))
+				);
+
+				/* Previous plan purchase history */
+				const history = plan.history.slice(-10);
+
+				if (history.length > 0) response.addEmbed(builder => builder
+					.setTitle("Previous charge-ups")
+					.setDescription("*This will show your last few charge-ups or granted credits*.")
+					.addFields(history.map(credit => ({
+						name: `${Utils.titleCase(credit.type)}${credit.gateway ? `— *using **\`${credit.gateway}\`***` : ""}`,
+						value: `**$${credit.amount.toFixed(2)}** — *<t:${Math.floor(credit.time / 1000)}:F>*`
+					})))
+				);
+
+				const percentage = plan.used / plan.total;
+				const size: number = 25;
+				
+				/* Whether the user has exceeded the limit */
+				const exceededLimit: boolean = plan.used >= plan.total;
+
+				/* Final, formatted diplay message */
+				const displayMessage: string = !exceededLimit
+					? `**$${plan.used.toFixed(2)}** \`${ProgressBar.display({ percentage, total: size })}\` **$${plan.total.toFixed(2)}**`
+					: `_You ran out of credits for the **Pay-as-you-go** plan; re-charge credits ${showShopButton ? `using the **Purchase credits** button below` : `in **[our shop](${Utils.shopURL()})**`}_.`;
+
+				builder.setTitle(`${type.location === "guild" ? "The server's" : "Your"} pay-as-you-go plan 📊` );
+				builder.setDescription(displayMessage);
+
+			} else if (type.type === "subscription" && subscriptions[type.location] !== null) {
+				const subscription = subscriptions[type.location]!;
+				builder.setTitle(`${type.location === "guild" ? "The server's" : "Your"} Premium subscription ✨`);
+
+				builder.addFields(
+					{
+						name: "Premium subscriber since", inline: true,
+						value: `<t:${Math.floor(subscription.since / 1000)}:F>`,
+					},
+
+					{
+						name: "Subscription active until", inline: true,
+						value: `<t:${Math.floor(subscription.expires / 1000)}:F>, <t:${Math.floor(subscription.expires / 1000)}:R>`,
+					}
+				);
+			}
+
+			if (type.premium) buttons.components.unshift(
+				new ButtonBuilder()
+					.setCustomId(`settings:menu:${type.location}:premium`)
+					.setLabel("Settings").setEmoji("⚙️")
+					.setStyle(ButtonStyle.Secondary)
+			);
+
+			/* Add the `Buy credits` button, if applicable. */
+			if (showShopButton) buttons.components.unshift(
+				new ButtonBuilder()
+					.setCustomId(`premium:purchase:${type.type}`).setEmoji("🛍️")
+					.setLabel(type.type === "subscription" ? "Extend your subscription" : "Purchase credits")
+					.setStyle(ButtonStyle.Success)
+			);
+
+		} else {
+			builder.setDescription("You can buy a **Premium** subscription or **Premium** credits for the plan below.");
+
+			if (showShopButton) buttons.components.unshift(
+				new ButtonBuilder()
+					.setCustomId(`premium:purchase:plan`).setEmoji("🛍️")
+					.setLabel("Purchase credits")
+					.setStyle(ButtonStyle.Success),
+
+				new ButtonBuilder()
+					.setCustomId(`premium:purchase:subscription`).setEmoji("🛍️")
+					.setLabel("Subscribe")
+					.setStyle(ButtonStyle.Success)
+			);
+		}
+
+		response
+			.addComponent(ActionRowBuilder<ButtonBuilder>, buttons)
+			.addEmbed(builder);
+
+		return response;
     }
 }
