@@ -618,7 +618,7 @@ export class Conversation {
 			});
 		}
 
-		return null;
+		return cost > 0 ? cost : null;
 	}
 
 	public async pushToHistory(entry?: ChatInteraction): Promise<void> {

@@ -174,7 +174,7 @@ export class PlanManager {
             plan: {
                 ...plan,
 
-                expenses: [ ...plan.expenses, expense ],
+                expenses: [ ...plan.expenses.slice(-(PLAN_MAX_EXPENSE_HISTORY - 1)), expense ],
                 used: updatedUsage
             }
         });
@@ -237,6 +237,8 @@ export class PlanManager {
             ? (db as DatabaseInfo)[this.db.users.type(db as DatabaseInfo).location]!
             : db as DatabaseEntry;
 
+        console.log(entry)
+
         /* The entry's current plan */
         if (entry.plan === null) throw new Error("User/guild doesn't have a running plan");
         const plan: UserPlan = this.get(entry)!;
@@ -248,7 +250,7 @@ export class PlanManager {
             plan: {
                 ...plan,
 
-                history: [ ...plan.history.slice(-(PLAN_MAX_EXPENSE_HISTORY - 1)), credit ],
+                history: [ ...plan.history, credit ],
                 total: updatedCredit
             }
         });
