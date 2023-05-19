@@ -599,7 +599,7 @@ export class Generator {
 		const model: ChatModel = conversation.manager.session.client.modelForSetting(settingsModel);
 		
 		/* If the user is trying to use a Premium-only model, while not having access to one anymore, simply set it back to the default. */
-		if (settingsModel.options.restricted === RestrictionType.PremiumOnly && !this.bot.db.users.canUsePremiumFeatures(db)) {
+		if (settingsModel.premiumOnly && !this.bot.db.users.canUsePremiumFeatures(db)) {
 			db.user = await this.bot.db.settings.apply(db.user, {
 				"chat:model": ChatSettingsModels[0].id
 			});

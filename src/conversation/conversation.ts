@@ -492,7 +492,7 @@ export class Conversation {
 		}
 		
 		/* Cool-down duration & modifier */
-		const baseModifier: number = model.options.cooldown && model.options.cooldown.time && model.options.restricted === RestrictionType.PremiumOnly
+		const baseModifier: number = model.options.cooldown && model.options.cooldown.time && model.premiumOnly
 			? 1
 			: CONVERSATION_COOLDOWN_MODIFIER[this.manager.bot.db.users.type(db).type];
 
@@ -501,7 +501,7 @@ export class Conversation {
 			? model.options.cooldown.multiplier
 			: 1;
 
-		const baseDuration: number = model.options.cooldown && model.options.cooldown.time && model.options.restricted === RestrictionType.PremiumOnly
+		const baseDuration: number = model.options.cooldown && model.options.cooldown.time && model.premiumOnly
 			? model.options.cooldown.time
 			: this.cooldown.options.time;
 

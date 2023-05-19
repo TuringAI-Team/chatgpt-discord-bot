@@ -326,7 +326,7 @@ export class ChoiceSettingsOption extends SettingsOption<string, BaseSettingsOpt
 
                         ...this.data.choices.map(({ name, value, description, emoji, restricted }) => ({
                             emoji: emoji ? typeof emoji === "string" ? emoji : Emoji.display(emoji, true) as ComponentEmojiResolvable : undefined,
-                            description: restricted ? `${description ?? ""} (${restricted === RestrictionType.PremiumOnly ? "premium-only ✨" : "tester-only ⚒️"})` : description,
+                            description: restricted ? `${description ?? ""} (${restricted}-only)` : description,
                             default: value === current,
                             label: name, value
                         }))
@@ -378,7 +378,7 @@ export class MultipleChoiceSettingsOption extends SettingsOption<MultipleChoiceS
                     .setPlaceholder(`${this.data.name} ${Emoji.display(this.data.emoji)}${enabled.length > 0 ? ` (${enabled.length} selected)` : ""}`)
                     .addOptions(...this.data.choices.map(({ name, value, description, restricted }) => ({
                         emoji: enabled.includes(value) ? "<:blurple_check:1105178019020165161>" : undefined,
-                        description: restricted ? `${description ?? ""} (${restricted === RestrictionType.PremiumOnly ? "premium-only ✨" : "tester-only ⚒️"})` : description,
+                        description: restricted ? `${description ?? ""} (${restricted}-only)` : description,
                         label: name, value
                     }) as SelectMenuComponentOptionData))
             );
@@ -474,7 +474,7 @@ export const SettingOptions: SettingsOption[] = [
         choices: STABLE_HORDE_AVAILABLE_MODELS.map(model => ({
 			name: model.displayName ?? model.name,
             emoji: model.nsfw ? { fallback: "🔞" } : undefined,
-            restricted: model.premium ? RestrictionType.PremiumOnly : undefined,
+            restricted: model.premium ? "premium" : undefined,
 			value: model.name
 		}))
     }),
@@ -490,7 +490,7 @@ export const SettingOptions: SettingsOption[] = [
         choices: GENERATION_SIZES.map(({ width, height, premium }) => ({
             name: `${width}x${height} (${getAspectRatio(width, height)})`,
             value: `${width}:${height}:${premium}`,
-            restricted: premium ? RestrictionType.PremiumOnly : undefined,
+            restricted: premium ? "premium" : undefined,
         }))
     }),
 
@@ -655,7 +655,7 @@ export const SettingOptions: SettingsOption[] = [
         noneTooltip: "Don't lock Premium features to a specific role",
 
         explanation: {
-            description: "Choosing a role for this setting will lock all Premium-unlocked features (*no cool-down, configurable token limit*, *etc.*) for a specific role. Users who don't have this role will simply use their own subscription, if they have one."
+            description: "Choosing a role for this setting will lock all **Premium** features (*no cool-down, configurable token limit*, *etc.*) for a specific role on this server. Users who don't have this role will simply use their own subscription, if they have one."
         }
     }),
 
@@ -1008,7 +1008,8 @@ export class UserSettingsManager {
             ? db[origin as "guild" | "user"]!
             : origin === SettingsLocation.Guild ? db.guild! : db.user;
         
-        const premium: boolean = this.db.users.canUsePremiumFeatures(db);
+        /* Subscription type of the user & guild */
+        const subscriptionType = this.db.users.type(db);
 
         if (type === "menu") {
             /* Category name & the actual category */
@@ -1092,7 +1093,7 @@ export class UserSettingsManager {
                 const choice: ChoiceSettingOptionChoice | null = option.data.choices.find(c => c.value === newValueName) ?? null;
                 if (choice === null) return;
 
-                if (choice.restricted === RestrictionType.TesterOnly && !this.db.role.tester(db.user)) {
+                if (choice.restricted === "tester" && !this.db.role.tester(db.user)) {
                     return void await new Response()
                         .addEmbed(builder => builder
                             .setDescription(`The choice **${choice.name}**${choice.emoji ? ` ${typeof choice.emoji === "object" ? Emoji.display(choice.emoji, true) : choice.emoji}` : ""} is restricted to **testers**. ⚒️`)
@@ -1102,10 +1103,30 @@ export class UserSettingsManager {
                     .send(interaction);
                 }
 
-                if (choice.restricted === RestrictionType.PremiumOnly && !premium) {
+                if (choice.restricted === "premium" && !subscriptionType.premium) {
                     return void await new Response()
                         .addEmbed(builder => builder
                             .setDescription(`✨ The choice **${choice.name}**${choice.emoji ? ` ${typeof choice.emoji === "object" ? Emoji.display(choice.emoji, true) : choice.emoji}` : ""} is restricted to **Premium** users.\n**Premium** *also includes further benefits, view \`/premium info\` for more*. ✨`)
+                            .setColor("Orange")
+                        )
+                        .setEphemeral(true)
+                    .send(interaction);
+                }
+
+                if (choice.restricted === "subscription" && subscriptionType.type !== "subscription") {
+                    return void await new Response()
+                        .addEmbed(builder => builder
+                            .setDescription(`✨ The choice **${choice.name}**${choice.emoji ? ` ${typeof choice.emoji === "object" ? Emoji.display(choice.emoji, true) : choice.emoji}` : ""} is restricted to **fixed Premium 💸** users.\n**Premium** *also includes further benefits, view \`/premium info\` for differences between them & more*. ✨`)
+                            .setColor("Orange")
+                        )
+                        .setEphemeral(true)
+                    .send(interaction);
+                }
+
+                if (choice.restricted === "plan" && subscriptionType.type !== "plan") {
+                    return void await new Response()
+                        .addEmbed(builder => builder
+                            .setDescription(`✨ The choice **${choice.name}**${choice.emoji ? ` ${typeof choice.emoji === "object" ? Emoji.display(choice.emoji, true) : choice.emoji}` : ""} is restricted to **pay-as-you-go Premium 📊** users.\n**Premium** *also includes further benefits, view \`/premium info\` for differences between them & more*. ✨`)
                             .setColor("Orange")
                         )
                         .setEphemeral(true)

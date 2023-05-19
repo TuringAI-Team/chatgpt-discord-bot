@@ -115,7 +115,7 @@ export class PlanManager {
     }
 
     public location(entry: DatabaseEntry): PlanLocation {
-        if ((entry as any).voted != undefined) return PlanLocation.User;
+        if ((entry as any).roles != undefined) return PlanLocation.User;
         return PlanLocation.Guild;
     }
 
@@ -237,7 +237,7 @@ export class PlanManager {
             ? (db as DatabaseInfo)[this.db.users.type(db as DatabaseInfo).location]!
             : db as DatabaseEntry;
 
-        console.log(entry)
+        console.log(entry, this.location(entry))
 
         /* The entry's current plan */
         if (entry.plan === null) throw new Error("User/guild doesn't have a running plan");

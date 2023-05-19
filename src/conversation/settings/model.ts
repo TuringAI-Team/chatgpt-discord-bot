@@ -143,6 +143,10 @@ export class ChatSettingsModel {
         });
     }
 
+    public get premiumOnly(): boolean {
+        return this.options.restricted === "plan" || this.options.restricted === "subscription" || this.options.restricted === "premium";
+    }
+
     public get id(): string {
         return this.options.name.toLowerCase().replaceAll(" ", "-");
     }
@@ -221,7 +225,7 @@ Knowledge cut-off: September 2021
         emoji: { fallback: "✨" },
         settings: { model: "gpt-4" },
         type: ModelType.OpenAIChat,
-        restricted: RestrictionType.PremiumOnly,
+        restricted: "premium",
         history: { context: 425, generation: 270, maxTokens: 8192 },
         cooldown: { time: 30 * 1000 },
 
@@ -249,7 +253,7 @@ Knowledge cut-off: September 2021
         description: "OpenAI's original GPT-3; less restrictions than ChatGPT",
         emoji: { display: "<:gpt3:1097849352657047562>", fallback: "🤖" },
         settings: { temperature: 0.7, model: "text-davinci-003" },
-        restricted: RestrictionType.PremiumOnly,
+        restricted: "premium",
         history: { context: 600, generation: 350, maxTokens: 4097 },
         type: ModelType.OpenAICompletion,
         cooldown: { time: 15 * 1000 },
@@ -412,7 +416,7 @@ Current date & time: ${context.time}, ${context.date}
         name: "Alan",
         description: "A combination of various AIs, creating the ultimate chatbot",
         emoji: { display: "<:turing_neon:1100498729414434878>", fallback: "🧑‍💻" },
-        restricted: RestrictionType.TesterOnly,
+        restricted: "plan",
         type: ModelType.TuringAlan,
         history: { maxTokens: 4097 },
 
@@ -431,7 +435,7 @@ Current date & time: ${context.time}, ${context.date}
         name: "Clyde",
         description: "Recreation of Discord's AI chatbot",
         emoji: { display: "<a:clyde:1100453636414378125>", fallback: "🤖" },
-        restricted: RestrictionType.PremiumOnly,
+        restricted: "plan",
         cooldown: { time: 35 * 1000 },
         history: { maxTokens: 4097 },
         type: ModelType.Clyde,
