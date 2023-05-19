@@ -559,7 +559,7 @@ export class UserManager {
             if ((votedAt + VOTE_DURATION) - Date.now() < 30 * 60 * 1000) return "📩";
             else return "✉️";
         }
-        
+
         return "👤";
     }
 
@@ -582,13 +582,11 @@ export class UserManager {
                 if (location === "guild" && db.guild && guild !== null) {
                     /* ID of the Premium-restricted role */
                     const restrictedRoleID: Snowflake = this.db.settings.get(db.guild, "premium:role");
-                    console.log(restrictedRoleID)
 
                     /* If a role is actually set, make sure that the user has that role. */
                     if (restrictedRoleID !== "0") {
                         const role: Role | null = guild.roles.cache.get(restrictedRoleID) ?? null;
                         if (role !== null) hasRestrictedRole = role.members.has(db.user.id);
-                        console.log(role?.name, hasRestrictedRole)
                     }
                 }
 

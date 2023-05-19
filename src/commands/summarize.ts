@@ -2,9 +2,9 @@ import { APIEmbedField, ActionRowBuilder, EmbedBuilder, InteractionResponse, Sla
 import { YoutubeTranscriptError } from "youtube-transcript";
 
 import { ModerationResult, checkYouTubeQuery } from "../conversation/moderation/moderation.js";
+import { countChatMessageTokens, getPromptLength } from "../conversation/utils/length.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
 import { Command, CommandInteraction, CommandResponse } from "../command/command.js";
-import { countChatMessageTokens } from "../conversation/utils/length.js";
 import { ErrorResponse, ErrorType } from "../command/response/error.js";
 import { YouTubeSubtitle, YouTubeVideo } from "../util/youtube.js";
 import { LoadingIndicatorManager } from "../db/types/indicator.js";
@@ -31,6 +31,11 @@ interface SummaryType {
 
 	/* Description of this summary type for the model */
 	prompt: string;
+}
+
+export interface SummaryPrompt {
+	messages: OpenAIChatMessage[];
+	tokens: number;
 }
 
 export const SummaryTypes: SummaryType[] = [
@@ -93,7 +98,8 @@ export default class SummarizeCommand extends Command {
 
 	private baseEmbed(video: YouTubeVideo): EmbedBuilder {
 		return new EmbedBuilder()
-			.setTitle(Utils.truncate(video.title, 100))
+			.setTitle(Utils.truncate(video.title, 256))
+			.setURL(video.url)
 			.setAuthor({ name: video.author.name, url: video.author.url })
 			.setThumbnail(video.thumbnail)
 			.setColor(this.bot.branding.color);
@@ -128,7 +134,7 @@ export default class SummarizeCommand extends Command {
 			);
 	}
 
-	private buildSummarizerPrompt(db: DatabaseInfo, video: YouTubeVideo, subtitles: YouTubeSubtitle[], type: SummaryType): OpenAIChatMessage[] {
+	private buildSummarizerPrompt(db: DatabaseInfo, video: YouTubeVideo, subtitles: YouTubeSubtitle[], type: SummaryType): SummaryPrompt {
 		/* Final list of chat messages */
 		const messages: OpenAIChatMessage[] = [];
 
@@ -136,7 +142,7 @@ export default class SummarizeCommand extends Command {
 		const targetLanguage: string = LanguageManager.modelLanguageName(this.bot, db.user);
 
 		messages.push({
-			content: `The user will send you a transcript of a YouTube video titled ${video.title} uploaded by ${video.author.name}, with the description """${Utils.truncate(video.description, 200)}""". You must summarize it in the language "${targetLanguage}", in ${type.prompt}. In the summary, only reference the video and not the transcript sent by the user."`,
+			content: `You will be sent you a transcript of a YouTube video titled ${video.title} uploaded by ${video.author.name}, with the description """${Utils.truncate(video.description, 200)}""". You must summarize it in the language "${targetLanguage}", in ${type.prompt}. In the summary, only reference the video and not the transcript sent by the user."`,
 			role: "system"
 		});
 
@@ -145,24 +151,28 @@ export default class SummarizeCommand extends Command {
 
 		messages.push({
 			content: str,
-			role: "user"
+			role: "assistant"
 		});
 
 		/* How many tokens the prompt uses in total */
 		const tokens: number = countChatMessageTokens(messages);
 
+		if (tokens > 4000 && subtitles.length === 0) {
+			throw new GPTGenerationError({
+				type: GPTGenerationErrorType.Length
+			});
+
 		/* If the prompt uses too many tokens, re-run the prompt builder with a lower amount of subtitles. */
-		if (tokens > 2000) {
+		} else if (tokens > 4000) {
 			const arr: YouTubeSubtitle[] = subtitles;
 			arr.pop();
 
 			return this.buildSummarizerPrompt(db, video, arr, type);
-			
-		} else if (tokens > 4000 && subtitles.length === 0) throw new GPTGenerationError({
-			type: GPTGenerationErrorType.Length
-		});
+		}
 
-		return messages;
+		return {
+			messages, tokens
+		};
 	}
 
     public async run(interaction: CommandInteraction, db: DatabaseInfo): CommandResponse {
@@ -243,17 +253,23 @@ export default class SummarizeCommand extends Command {
 				});
 
 				/* Merge all the subtitles into a single prompt. */
-				const messages: OpenAIChatMessage[] = this.buildSummarizerPrompt(db, video, subtitles, type);
+				const prompt = this.buildSummarizerPrompt(db, video, subtitles, type);
 				this.statusUpdateResponse(db, video, "Summarizing").send(interaction);
 
 				/* Generate the summarization result using ChatGPT. */
 				const raw = await conversation.manager.session.ai.chat({
-					messages, model: "gpt-3.5-turbo", stream: true,
-					temperature: 0.6, max_tokens: 400
+					messages: prompt.messages, model: "gpt-3.5-turbo",
+					stream: true, temperature: 0.6,
+					max_tokens: 4097 - prompt.tokens - 2
 				});
 
 				/* Summary of the subtitles, by ChatGPT */
 				const summary: string = raw.response.message.content;
+
+				/* How many tokens the final summary uses up */
+				const tokens: number = getPromptLength(summary);
+
+				await this.bot.db.plan.expenseForSummary(db, video, prompt, tokens);
 				return this.finalResponse(video, type, summary);
 
 			} catch (error) {

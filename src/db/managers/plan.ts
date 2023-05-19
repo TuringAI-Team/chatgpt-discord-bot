@@ -1,13 +1,15 @@
 import { StableHordeGenerationResult } from "../../image/types/image.js";
 import { DatabaseGuild, DatabaseInfo, DatabaseUser } from "./user.js";
 import { ChatInteraction } from "../../conversation/conversation.js";
+import { SummaryPrompt } from "../../commands/summarize.js";
 import { TuringVideoResult } from "../../turing/api.js";
 import { ClientDatabaseManager } from "../cluster.js";
+import { YouTubeVideo } from "../../util/youtube.js";
 import { ImageDescription } from "./description.js";
 
 type DatabaseEntry = DatabaseUser | DatabaseGuild
 
-type UserPlanExpenseType = "image" | "dall-e" | "video" | "summarize" | "chat" | "describe"
+type UserPlanExpenseType = "image" | "dall-e" | "video" | "summary" | "chat" | "describe"
 
 type UserPlanExpenseData = {
     [key: string]: string | number | boolean | UserPlanExpenseData;
@@ -52,6 +54,11 @@ export type UserPlanImageDescribeExpense = UserPlanExpense<{
 
 export type UserPlanVideoExpense = UserPlanExpense<{
     duration: number;
+}>
+
+export type UserPlanSummaryExpense = UserPlanExpense<{
+    tokens: number;
+    url: string;
 }>
 
 type UserPlanCreditType = "web" | "grant"
@@ -222,6 +229,17 @@ export class PlanManager {
         });
     }
 
+    public async expenseForSummary(
+        entry: DatabaseEntry | DatabaseInfo, video: YouTubeVideo, prompt: SummaryPrompt, tokens: number
+    ): Promise<UserPlanSummaryExpense | null> {
+        /* Total amount of tokens used and generated */
+        const total: number = prompt.tokens + tokens;
+
+        return this.expense(entry, {
+            type: "summary", used: (total / 1000) * 0.002, data: { tokens: total, url: video.url }, bonus: 0.15
+        });
+    }
+
     public async credit(
         db: DatabaseEntry | DatabaseInfo, { type, amount, gateway }: Pick<UserPlanCredit, "type" | "amount"> & Partial<Pick<UserPlanCredit, "gateway">>
     ): Promise<UserPlanCredit> {
@@ -236,8 +254,6 @@ export class PlanManager {
         const entry: DatabaseEntry = (db as any).guild
             ? (db as DatabaseInfo)[this.db.users.type(db as DatabaseInfo).location]!
             : db as DatabaseEntry;
-
-        console.log(entry, this.location(entry))
 
         /* The entry's current plan */
         if (entry.plan === null) throw new Error("User/guild doesn't have a running plan");
@@ -273,16 +289,5 @@ export class PlanManager {
         });
 
         return plan;
-    }
-
-    public display(entry: DatabaseEntry): { used: string, total: string, all: string } {
-        if (entry.plan === null) throw new Error("User/guild doesn't have a running plan");
-
-        const used: string = `$${entry.plan.used.toFixed(2)}`;
-        const total: string = `$${entry.plan.total.toFixed(2)}`;
-
-        return {
-            used, total, all: `${used} / ${total}`
-        };
     }
 }

@@ -66,11 +66,19 @@ export class Command<U extends ContextMenuCommandInteraction | ChatInputCommandI
 
 	public restricted(check: CommandRestrictionType | (UserRole | UserSubscriptionPlanType)): boolean {
 		return (typeof check !== "object" ? [ check ] : check)
-			.every(c => this.options.restriction.includes(c));
+			.some(c => this.options.restriction.includes(c));
 	}
 
 	public premiumOnly(): boolean {
 		return this.restricted([ "subscription", "plan" ]);
+	}
+
+	public planOnly(): boolean {
+		return this.restricted("plan");
+	}
+
+	public subscriptionOnly(): boolean {
+		return this.restricted("subscription");
 	}
 
 	/**
