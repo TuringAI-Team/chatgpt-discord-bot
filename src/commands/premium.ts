@@ -73,7 +73,7 @@ export default class PremiumCommand extends Command {
 			const response = new Response()
 				.setEphemeral(true);
 
-			if (type.premium || (plans.guild !== null || plans.user !== null)) {
+			if (type.premium) {
 				if (type.type === "plan") {
 					if (type.location === "guild") {
 						/* Check whether the user has the "Manage Server" permission. */
