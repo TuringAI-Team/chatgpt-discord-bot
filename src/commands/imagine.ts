@@ -268,8 +268,8 @@ export default class ImagineCommand extends Command {
 					)
 				)
 		, { cooldown: {
-			free: 80 * 1000,
-			voter: 75 * 1000,
+			free: 100 * 1000,
+			voter: 80 * 1000,
 			subscription: 45 * 1000
 		} });
     }

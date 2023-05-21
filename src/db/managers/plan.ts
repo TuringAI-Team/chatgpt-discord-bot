@@ -68,7 +68,7 @@ export type UserPlanSummaryExpense = UserPlanExpense<{
 }>
 
 type UserPlanCreditType = "web" | "grant"
-type UserPlanCreditGateway = "paypal" | "card" | "bitcoin" | "ethereum" | "monero" | "binance"
+type UserPlanCreditGateway = "BITCOIN" | "ETHEREUM" | "BINANCE_COIN" | "MONERO" | "STRIPE" | "PAYPAL" | "BINANCE"
 
 interface UserPlanCredit {
     /* What type of charge-up this is */

@@ -6,12 +6,12 @@ import { ChoiceSettingOptionChoice, MultipleChoiceSettingsOption } from "../db/m
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
 import { ChatOutputImage, ImageBuffer } from "../chat/types/image.js";
 import { Conversation } from "../conversation/conversation.js";
+import { MetricsType } from "../db/managers/metrics.js";
 import { ChatInputImage } from "../chat/types/image.js";
 import { DatabaseUser } from "../db/managers/user.js";
 import { GPTAPIError } from "../error/gpt/api.js";
 import { Utils } from "../util/utils.js";
 import { Bot } from "../bot/bot.js";
-import { MetricsType } from "../db/managers/metrics.js";
 
 type TuringAPIPath = `cache/${string}` | "imgs/filter" | "imgs/dalle" | `text/${string}` | `video/${TuringVideoModelName}` | `text/alan/${TuringAlanChatModel}` | `chart/${MetricsType}`
 
@@ -379,7 +379,7 @@ export const MetricsCharts: MetricsChart[] = [
 
 		settings: {
 			filter: {
-				exclude: [ "counts", "models" ]
+				exclude: [ "counts", "models", "kudos" ]
 			}
 		}
 	},
@@ -391,10 +391,22 @@ export const MetricsCharts: MetricsChart[] = [
 
 		settings: {
 			filter: {
-				exclude: [ "steps", "models" ]
+				exclude: [ "steps", "models", "kudos" ]
 			}
 		}
-	}
+	},
+
+	{
+		description: "Kudos spent on Stable Horde",
+		name: "stable-kudos",
+		type: "image",
+
+		settings: {
+			filter: {
+				exclude: [ "counts", "models", "steps" ]
+			}
+		}
+	},
 ]
 
 interface TuringChartOptions {
@@ -402,13 +414,9 @@ interface TuringChartOptions {
     settings?: MetricsChartDisplaySettings;
 }
 
-interface TuringRawChartResult {
-    image: string;
-    url: string;
-}
+type TuringRawChartResult = TuringChartResult
 
 export interface TuringChartResult {
-    image: ImageBuffer;
     url: string;
 }
 
@@ -442,7 +450,6 @@ export class TuringAPI {
         });
 
         return {
-            image: ImageBuffer.load(result.image),
             url: result.url
         };
     }

@@ -421,7 +421,7 @@ export class RoleSettingsOption extends SettingsOption<Snowflake, RoleSettingsOp
                             label: role.name,
                             value: role.id,
                             default: current === role.id
-                        })),
+                        })).slice(undefined, 20),
                         
                         { label: "(none)", description: this.data.noneTooltip, value: "0" }
                     ])

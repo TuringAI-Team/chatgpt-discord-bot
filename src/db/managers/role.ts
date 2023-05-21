@@ -64,6 +64,7 @@ export class UserRoleManager {
 
     public canExecuteCommand(user: DatabaseUser, command: Command, status?: BotStatus): boolean {
         if (command.options.restriction.length === 0) return status ? status.type !== "maintenance" : true;
+        if (this.owner(user)) return true;
 
         if (command.premiumOnly()) {
             if (command.restricted([ "subscription", "plan" ])) return this.db.users.type({ user }).premium;
@@ -71,7 +72,7 @@ export class UserRoleManager {
             else if (command.restricted([ "plan" ])) return this.db.users.type({ user }).type === "plan";
         }
 
-        return this.has(user, command.options.restriction as UserRole[]);
+        return this.has(user, command.options.restriction as UserRole[], UserHasRoleCheck.Some);
     }
 
     /* Shortcuts */
