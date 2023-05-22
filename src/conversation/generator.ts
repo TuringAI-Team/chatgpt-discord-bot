@@ -720,9 +720,18 @@ export class Generator {
 
 		/* Remove all components from the previous reply, if applicable. */
 		if (conversation.previous !== null && conversation.previous.reply !== null) {
-			await conversation.previous.reply.edit({
-				components: []
-			}).catch(() => {});
+			if (conversation.previous.reply.webhookId) {
+				/* Fetch the corresponding webhook. */
+				const webhook = await this.bot.webhook.fetch(conversation.previous.reply.channel as BaseGuildTextChannel);
+
+				await this.bot.webhook.edit(conversation.previous.reply.channel as BaseGuildTextChannel, conversation.previous.reply, webhook, {
+					components: []
+				}).catch(() => {});
+			} else {
+				await conversation.previous.reply.edit({
+					components: []
+				}).catch(() => {});
+			}
 		}
 
 		/**
