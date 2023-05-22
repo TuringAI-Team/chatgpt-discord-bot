@@ -11,7 +11,7 @@ export default class WarningCommand extends Command {
         super(bot,
             new SlashCommandBuilder()
 				.setName("warn")
-				.setDescription("Send a warning to a user - moderator only")
+				.setDescription("Send a warning to a user")
 				.addStringOption(builder => builder
 					.setName("id")
 					.setDescription("ID or tag of the user to warn")

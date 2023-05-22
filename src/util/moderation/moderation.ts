@@ -1,16 +1,15 @@
 import { ComponentType, ActionRowBuilder, ButtonBuilder, APIButtonComponentWithCustomId, ButtonInteraction, ButtonStyle, EmbedBuilder, Interaction, InteractionReplyOptions, Message, MessageEditOptions, ModalActionRowComponentBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, User, StringSelectMenuBuilder, StringSelectMenuInteraction, Collection, Snowflake } from "discord.js";
-import dayjs from "dayjs";
 
-import { DatabaseUser, DatabaseUserInfraction, DatabaseUserInfractionType, DatabaseInfo } from "../../db/managers/user.js";
+import { DatabaseUser, DatabaseUserInfraction, DatabaseUserInfractionType, DatabaseInfo, DatabaseGuild } from "../../db/managers/user.js";
 import { ModerationOptions, ModerationResult } from "../../conversation/moderation/moderation.js";
 import { AutoModerationActionType } from "../../conversation/moderation/automod/automod.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../../error/gpt/generation.js";
 import { Conversation } from "../../conversation/conversation.js";
 import { OpenAIChatMessage } from "../../openai/types/chat.js";
 import { Response } from "../../command/response.js";
+import { FindResult, Utils } from "../utils.js";
 import { messageChannel } from "./channel.js";
 import { Bot } from "../../bot/bot.js";
-import { FindResult, Utils } from "../utils.js";
 
 const ActionToEmoji: { [ Key in DatabaseUserInfractionType as string ]: string; } = {
 	"warn": "⚠️",
@@ -520,6 +519,42 @@ export const buildUserOverview = async (bot: Bot, target: FindResult, db: Databa
         .setDescription(Utils.truncate(flagDescription!, 2000))
         .setColor("Purple")
     );
+
+    return response;
+}
+
+export const buildGuildOverview = async (bot: Bot, target: FindResult, db: DatabaseGuild): Promise<Response> => {
+    /* Formatted Premium information */
+    let premiumDescription: string = "";
+
+    if (db.subscription !== null) premiumDescription = `${premiumDescription}\n**Subscription** » expires *<t:${Math.floor(db.subscription.expires / 1000)}:R>*`;
+    if (db.plan !== null) premiumDescription = `${premiumDescription}\n**Plan** » **$${db.plan.total.toFixed(2)}** total; **$${db.plan.used.toFixed(2)}** used; **${db.plan.expenses.length}** expenses; **${db.plan.history.length}** charges`;
+
+    const response = new Response()
+        .addEmbed(builder => builder
+            .setTitle("Guild Overview 🔎")
+            .setAuthor({ name: `${target.name} [${target.id}]`, iconURL: target.icon ?? undefined })
+            .setFields(
+                {
+                    name: "Created on <:discord:1097815072602067016>",
+                    value: `<t:${Math.floor(target.created / 1000)}:f>`,
+                    inline: true
+                },
+
+                {
+                    name: "First interaction 🙌",
+                    value: `<t:${Math.floor(db.created / 1000)}:f>`,
+                    inline: true
+                },
+
+                {
+                    name: "Premium ✨",
+                    value: premiumDescription.length > 0 ? premiumDescription : "❌",
+                    inline: true
+                }
+            )
+            .setColor(bot.branding.color)
+        );
 
     return response;
 }

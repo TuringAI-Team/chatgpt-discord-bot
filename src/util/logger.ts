@@ -3,14 +3,14 @@ import dayjs from "dayjs";
 
 import { Bot } from "../bot/bot.js";
 
-type LogType = string | number | boolean | any;
+type LogType = string | number | boolean | any
 
 interface LogLevel {
 	name: string;
 	color: string;
 }
 
-export const LOG_LEVEL: {[id: string]: LogLevel} = {
+export const LOG_LEVEL: Record<string, LogLevel> = {
 	INFO:  { name: "info",  color: "#00aaff" },
 	WARN:  { name: "warn",  color: "#ffff00" },
 	ERROR: { name: "error", color: "#ff3300" },
@@ -32,13 +32,17 @@ export class Logger {
 		const line: string = `${status} ${chalk.italic(chalk.gray(time))} ${chalk.gray("»")}`;
 
 		/* Log the message to the console. */
-		console.log(line, ...message);
+		this.printToConsole(line, ...message);
 	}
 
 	public debug(...message: LogType) { this.log(LOG_LEVEL.DEBUG, message); }
 	public info(...message: LogType)  { this.log(LOG_LEVEL.INFO, message);  }
 	public warn(...message: LogType)  { this.log(LOG_LEVEL.WARN, message);  }
 	public error(...message: LogType) { this.log(LOG_LEVEL.ERROR, message); }
+
+	protected printToConsole(...message: LogType): void {
+		console.log(...message);
+	}
 }
 
 export class ShardLogger extends Logger {
@@ -64,6 +68,6 @@ export class ShardLogger extends Logger {
 		const line: string = `${chalk.green(chalk.bold(`#${this.bot.data.id + 1}`))} ${chalk.gray("»")} ${status} ${chalk.italic(chalk.gray(time))} ${chalk.gray("»")}`.trim();
 
 		/* Log the message to the console. */
-		console.log(line, ...message);
+		this.printToConsole(line, ...message);
 	}
 }

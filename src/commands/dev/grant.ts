@@ -134,7 +134,7 @@ export default class GrantCommand extends Command {
 					.setEphemeral(true);
 
 				/* Revoke the user's subscription. */
-				await this.bot.db.users.revokeSubscription(db, "user");
+				await this.bot.db.users.revokeSubscription(db, type);
 
 				return new Response()
 					.addEmbed(builder => builder
@@ -146,7 +146,7 @@ export default class GrantCommand extends Command {
 			}
 
 			/* Grant the user a subscription of the specified duration. */
-			await this.bot.db.users.grantSubscription(db, "user", duration);
+			await this.bot.db.users.grantSubscription(db, type, duration);
 
 			return new Response()
 				.addEmbed(builder => builder

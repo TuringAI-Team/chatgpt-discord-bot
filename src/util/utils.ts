@@ -15,6 +15,13 @@ export interface FindResult {
 	icon: string | null;
 }
 
+type PartialFindResult = Pick<FindResult, "name" | "icon" | "created">
+
+interface FindAction<T extends Guild | User> {
+	handlers: ((id: Snowflake) => Promise<T | null>)[];
+	process: (data: T) => PartialFindResult;
+}
+
 export abstract class Utils {
 	/* Search for files with the specified extensions. */
 	public static async search(path: string, extension: string, files: string[] = []): Promise<string[]> {
@@ -84,25 +91,46 @@ export abstract class Utils {
 	 * @param id Identifier or name of the user or guild
 	 */
 	public static async findType(bot: Bot, type: FindType, id: Snowflake): Promise<FindResult | null> {
-		const methods: ((id: string) => Promise<User | Guild | null>)[] = [
-			/* Get the cached entry. */
-			async (id: string) => bot.client.users.cache.find(user => user.tag === id) ?? bot.client.guilds.cache.find(guild => guild.name === id) ?? null,
+		const methods: {
+			guild: FindAction<Guild>,
+			user: FindAction<User>
+		} = {
+			guild: {
+				handlers: [
+					async id => bot.client.guilds.cache.find(guild => guild.name === id) ?? null,
+					async id => await bot.client.guilds.fetch(id).catch(() => null)
+				],
 
-			/* Fetch the entry by their ID. */
-			async (id: string) => await bot.client.users.fetch(id).catch(() => null) ?? await bot.client.guilds.fetch(id).catch(() => null)
-		]
+				process: guild => ({
+					name: guild.name,
+					created: guild.createdTimestamp,
+					icon: guild.iconURL()
+				})
+			},
 
-		/* Try all of the methods in the array above. */
-		for (const method of methods) {
-			const data: User | Guild | null = await method(id);
+			user: {
+				handlers: [
+					async id => bot.client.users.cache.find(user => user.tag === id) ?? null,
+					async id => await bot.client.users.fetch(id).catch(() => null)
+				],
+
+				process: user => ({
+					name: user.username,
+					created: user.createdTimestamp,
+					icon: user.displayAvatarURL()
+				})
+			}
+		};
+
+		/* Which action to execute */
+		const action = methods[type];
+
+		for (const method of action.handlers) {
+			const data = await method(id);
 			if (data === null) continue;
 
-			const result: FindResult = {
-				name: data instanceof Guild ? data.name : data.tag,
-				icon: data instanceof Guild ? data.iconURL() : data.displayAvatarURL(),
-				created: data.createdTimestamp,
-				id: data.id
-			};
+			const final: PartialFindResult = action.process(data as any);
+			const result: FindResult = { ...final, id: data.id };
 
 			return result;
 		}
