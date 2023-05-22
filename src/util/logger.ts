@@ -10,7 +10,7 @@ interface LogLevel {
 	color: string;
 }
 
-export const LOG_LEVEL: Record<string, LogLevel> = {
+export const LogLevels: Record<string, LogLevel> = {
 	INFO:  { name: "info",  color: "#00aaff" },
 	WARN:  { name: "warn",  color: "#ffff00" },
 	ERROR: { name: "error", color: "#ff3300" },
@@ -35,10 +35,10 @@ export class Logger {
 		this.printToConsole(line, ...message);
 	}
 
-	public debug(...message: LogType) { this.log(LOG_LEVEL.DEBUG, message); }
-	public info(...message: LogType)  { this.log(LOG_LEVEL.INFO, message);  }
-	public warn(...message: LogType)  { this.log(LOG_LEVEL.WARN, message);  }
-	public error(...message: LogType) { this.log(LOG_LEVEL.ERROR, message); }
+	public debug(...message: LogType) { this.log(LogLevels.DEBUG, message); }
+	public info(...message: LogType)  { this.log(LogLevels.INFO, message);  }
+	public warn(...message: LogType)  { this.log(LogLevels.WARN, message);  }
+	public error(...message: LogType) { this.log(LogLevels.ERROR, message); }
 
 	protected printToConsole(...message: LogType): void {
 		console.log(...message);

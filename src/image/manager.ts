@@ -398,7 +398,7 @@ export class ImageManager extends EventEmitter {
     }
 
     private clientAgent(): string {
-        return `ChatGPT-Discord-Bot:999:Discord->f1nniboy#2806`;
+        return `Turing:999:discord.gg/turing`;
     }
 
     public headers(anon: boolean): HeadersInit {

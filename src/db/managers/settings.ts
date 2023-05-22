@@ -21,6 +21,7 @@ import { Bot } from "../../bot/bot.js";
 import { Snowflake } from "discord.js";
 import { Role } from "discord.js";
 import { Guild } from "discord.js";
+import { Utils } from "../../util/utils.js";
 
 export enum SettingsLocation {
     Guild = "guild",
@@ -41,7 +42,7 @@ export interface SettingsCategory {
     emoji: DisplayEmoji;
 }
 
-export type SettingsCategoryName = "general" | "image" | "video" | "chat" | "premium" | "limits" | "alan"
+export type SettingsCategoryName = "general" | "image" | "video" | "chat" | "premium" | "limits" | "character" | "alan"
 export type SettingKeyAndCategory = `${SettingsCategoryName}:${SettingsName}`
 
 export const SettingCategories: SettingsCategory[] = [
@@ -64,9 +65,15 @@ export const SettingCategories: SettingsCategory[] = [
     },
 
     {
-        name: "Premium limits",
+        name: "Limits",
         type: "limits",
         emoji: { fallback: "‼️" }
+    },
+
+    {
+        name: "Custom character",
+        type: "character",
+        emoji: { fallback: "🧙🏽" }
     },
 
     {
@@ -238,9 +245,13 @@ export class BooleanSettingsOption extends SettingsOption<boolean> {
     }
 }
 
-interface IntegerSettingOptionData {
+interface CommonModalSettingOptionData {
+    placeholder?: string;
     min: number;
     max: number;
+}
+
+type IntegerSettingOptionData = CommonModalSettingOptionData & {
     suffix?: string;
 }
 
@@ -264,10 +275,7 @@ export class IntegerSettingsOption extends SettingsOption<number, BaseSettingsOp
     }
 }
 
-interface StringSettingOptionData {
-    min: number;
-    max: number;
-}
+type StringSettingOptionData = CommonModalSettingOptionData
 
 export class StringSettingsOption extends SettingsOption<string, BaseSettingsOptionData & IntegerSettingOptionData> {
     constructor(data: SettingOptionsData & StringSettingOptionData) {
@@ -278,14 +286,15 @@ export class StringSettingsOption extends SettingsOption<string, BaseSettingsOpt
     }
 
     public add({ builder, current }: SettingsOptionAddContext<string>): ActionRowBuilder {
+        const button = new ButtonBuilder()
+            .setCustomId(this.customID())
+            .setStyle(ButtonStyle.Secondary)
+            .setEmoji("📝");
+
+        if (current.length > 2) button.setLabel(Utils.truncate(current, 80));
+
         return this.applyBase(builder)
-            .addComponents([
-                new ButtonBuilder()
-                    .setCustomId(this.customID())
-                    .setStyle(ButtonStyle.Secondary)
-                    .setLabel(current)
-                    .setEmoji("📝")
-            ]);
+            .addComponents(button);
     }
 }
 
@@ -793,7 +802,64 @@ export const SettingOptions: SettingsOption[] = [
         explanation: {
             description: "This controls whether (and how, if at all) your used & total credit will be shown below ChatGPT's generated messages, for everyone to see. This won't show up on servers with the **pay-as-you-go** plan."
         }
-    })
+    }),
+
+    new ChoiceSettingsOption({
+        key: "mode",
+        name: "How to display the custom character in chat",
+        category: "character",
+        emoji: { fallback: "🏷️" },
+        description: "How to display the custom character in chat",
+        location: SettingsLocation.Guild,
+        default: "off",
+
+        choices: [
+            {
+                name: "Use a custom character",
+                description: "Configure a custom name & avatar for the bot with a small attribution to the bot",
+                value: "on"
+            },
+
+            {
+                name: "Don't use a custom character",
+                value: "off"
+            }
+        ],
+
+        explanation: {
+            description: "Using this setting, you can control if and how the configured custom character displays in chat.\n**To prevent impersonation & other possible issues with custom characters, the user who requested the message will be at the bottom of every reply.**"
+        }
+    }),
+
+    new StringSettingsOption({
+        key: "name",
+        name: "Custom character name",
+        category: "character",
+        emoji: { fallback: "🏷️" },
+        description: "Name of the character",
+        location: SettingsLocation.Guild,
+        default: "ChatGPT", min: 2, max: 32,
+        placeholder: "Ol' mighty ChatGPT",
+
+        explanation: {
+            description: "This setting changes the name of the custom character, and how it is displayed in chat."
+        }
+    }),
+
+    new StringSettingsOption({
+        key: "avatar",
+        name: "Custom character avatar",
+        category: "character",
+        emoji: { fallback: "👤" },
+        description: "Character avatar URL",
+        location: SettingsLocation.Guild,
+        default: "https://app.turing.sh/icons/neon.png", min: 0, max: 256,
+        placeholder: "https://app.turing.sh/icons/neon.png",
+
+        explanation: {
+            description: "This setting changes the avatar of the custom character, set it to any valid image URL to see it in the chat."
+        }
+    }),
 ]
 
 interface SettingsPageBuilderOptions {
@@ -1156,10 +1222,10 @@ export class UserSettingsManager {
                         new ActionRowBuilder<TextInputBuilder>()
                             .addComponents(new TextInputBuilder()
                                 .setCustomId("value")
-                                .setRequired(true)
+                                .setRequired(option.data.min > 0)
                                 .setValue(previous.toString())
                                 .setStyle(TextInputStyle.Short)
-                                .setPlaceholder("Enter a new value...")
+                                .setPlaceholder(option.data.placeholder ? option.data.placeholder : "Enter a new value...")
                                 .setLabel(`${option.data.name} (${option.data.type === SettingsOptionType.String ? `${option.data.min}-${option.data.max} characters` : `${option.data.min}-${option.data.max}`}${option.data.suffix ? ` ${option.data.suffix}s` : ""})`)
                                 .setMinLength(option.data.type === SettingsOptionType.String ? option.data.min : 1)
                                 .setMaxLength(option.data.type === SettingsOptionType.String ? option.data.max : 5)

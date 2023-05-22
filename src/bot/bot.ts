@@ -1,10 +1,11 @@
-import { ActivityType, Awaitable, basename, Client, GatewayIntentBits, Partials, Routes } from "discord.js";
+import { ActivityType, Awaitable, basename, Client, GatewayIntentBits, Partials } from "discord.js";
 import { ClusterClient, getInfo, IPCMessage, messageType } from "discord-hybrid-sharding";
 import EventEmitter from "events";
 import chalk from "chalk";
 
 import { ConversationManager } from "../conversation/manager.js";
 import { ReplicateManager } from "../chat/other/replicate.js";
+import { WebhookManager } from "../conversation/webhook.js";
 import { StatusIncidentType } from "../util/statuspage.js";
 import { BotClusterManager, BotData } from "./manager.js";
 import { ClientDatabaseManager } from "../db/cluster.js";
@@ -70,8 +71,8 @@ interface BotSetupStep {
     execute: () => Awaitable<any>;
 }
 
-export type BotDiscordClient = Client & {
-    cluster: ClusterClient<Client>;
+export type BotDiscordClient = Client<true> & {
+    cluster: ClusterClient<Client<true>>;
     bot: Bot;
 }
 
@@ -104,8 +105,11 @@ export class Bot extends EventEmitter {
     /* Turing API manager */
     public readonly turing: TuringAPI;
 
-    /* Conversation & session manager, in charge of managing Microsoft sessions & conversations with the bot */
+    /* Conversation & session manager, in charge of managing conversations with the bot */
     public readonly conversation: ConversationManager;
+
+    /* Web-hook manager; for custom characters with the bot */
+    public readonly webhook: WebhookManager;
 
     /* Replicate API manager */
     public readonly replicate: ReplicateManager;
@@ -154,6 +158,7 @@ export class Bot extends EventEmitter {
         this.conversation = new ConversationManager(this);
         this.replicate = new ReplicateManager(this);
         this.db = new ClientDatabaseManager(this);
+        this.webhook = new WebhookManager(this);
         this.command = new CommandManager(this);
         this.logger = new ShardLogger(this);
         this.image = new ImageManager(this);
@@ -352,7 +357,7 @@ export class Bot extends EventEmitter {
                 this.stop(1);
             });
 
-        this.logger.info(`Started on ${chalk.bold(this.client.user!.tag)}.`);
+        this.logger.info(`Started on ${chalk.bold(this.client.user.tag)}.`);
 
         if (!this.started) {
             this.once("started", () => {

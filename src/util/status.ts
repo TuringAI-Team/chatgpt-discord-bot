@@ -70,7 +70,7 @@ export const chooseStatusMessage = async (bot: Bot): Promise<void> => {
 
     /* The bot is under maintenance */
     if (status.type === "maintenance") {
-        return void bot.client.user!.setPresence({
+        return void bot.client.user.setPresence({
             status: "dnd",
 
             activities: [ {
@@ -81,7 +81,7 @@ export const chooseStatusMessage = async (bot: Bot): Promise<void> => {
 
     /* The bot is at another status, but not fully operational */
     } else if (status.type !== "operational") {
-        return void bot.client.user!.setPresence({
+        return void bot.client.user.setPresence({
             status: "idle",
 
             activities: [ {
@@ -103,12 +103,12 @@ export const chooseStatusMessage = async (bot: Bot): Promise<void> => {
     }
 
     /* Update the bot's activity & status. */
-    bot.client.user!.setPresence({
+    bot.client.user.setPresence({
         status: "online",
 
         activities: [ {
             type: message.type,
-            name: `${result!} » @${bot.client.user!.username}`
+            name: `${result!} » @${bot.client.user.username}`
         } ]
     });
 }

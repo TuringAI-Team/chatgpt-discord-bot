@@ -42,7 +42,7 @@ export const IntroductionPages: IntroductionPage[] = [
 
         build: (builder, { author, bot }) => builder
             .setTitle("Hey there 👋")
-            .setDescription(`Hey <@${author.id}>, my name is **${bot.client.user!.username}**, and I'm the ultimate AI-powered Discord bot. 🚀\n*Below you can see some of my features, and benefits over other bots you might find on Discord*.`)
+            .setDescription(`Hey <@${author.id}>, my name is **${bot.client.user.username}**, and I'm the ultimate AI-powered Discord bot. 🚀\n*Below you can see some of my features, and benefits over other bots you might find on Discord*.`)
             .addFields([
                 {
                     name: "Completely free ✨",
@@ -71,7 +71,7 @@ export const IntroductionPages: IntroductionPage[] = [
         design: { title: "Image generation", emoji: "🖼️", description: "Overview of the image generation features in the bot" },
 
         build: (builder, { bot }) => builder
-            .setDescription(`${bot.client.user!.username} isn't just meant for chatting; you can also generate images using \`/imagine generate\`.`)
+            .setDescription(`${bot.client.user.username} isn't just meant for chatting; you can also generate images using \`/imagine generate\`.`)
             .addFields([
                 {
                     name: "Come up with a good prompt 🤔",
@@ -95,7 +95,7 @@ export const IntroductionPages: IntroductionPage[] = [
         design: { title: "Various LLMs", emoji: "💬", description: "Information about the growing list of language models the bot supports" },
 
         build: (builder, { bot }) => builder
-            .setDescription(`${bot.client.user!.username} isn't only limited to **ChatGPT**; we also offer various other language models, including **GPT-4**, **Claude** and **Alpaca**.`)
+            .setDescription(`${bot.client.user.username} isn't only limited to **ChatGPT**; we also offer various other language models, including **GPT-4**, **Claude** and **Alpaca**.`)
             .addFields([
                 {
                     name: "Constantly growing selection 📈",
@@ -118,7 +118,7 @@ export const IntroductionPages: IntroductionPage[] = [
             .addFields([
                 {
                     name: "Longer messages 🆙",
-                    value: `With **Premium**, ${bot.client.user!.username} will be able to generate way longer messages; so that you can generate even more creative stories!`
+                    value: `With **Premium**, ${bot.client.user.username} will be able to generate way longer messages; so that you can generate even more creative stories!`
                 },
 
                 {

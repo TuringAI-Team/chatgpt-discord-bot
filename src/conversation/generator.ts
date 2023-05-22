@@ -1,16 +1,16 @@
-import { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle, ChannelType, ComponentEmojiResolvable, ComponentType, DiscordAPIError, DMChannel, EmbedBuilder, Guild, InteractionReplyOptions, Message, MessageCreateOptions, MessageEditOptions, PermissionsString, Role, TextChannel, User } from "discord.js";
+import { ActionRowBuilder, AttachmentBuilder, BaseGuildTextChannel, ButtonBuilder, ButtonInteraction, ButtonStyle, ChannelType, ComponentEmojiResolvable, ComponentType, DiscordAPIError, DMChannel, EmbedBuilder, Guild, InteractionReplyOptions, Message, MessageCreateOptions, MessageEditOptions, MessageReplyOptions, PermissionsString, Role, TextChannel, User, WebhookMessageCreateOptions } from "discord.js";
 
+import { DatabaseInfo, DatabaseUserInfraction, UserSubscriptionType } from "../db/managers/user.js";
 import { ChatNoticeMessage, MessageType, ResponseMessage } from "../chat/types/message.js";
 import { LoadingIndicator, LoadingIndicatorManager } from "../db/types/indicator.js";
 import { check as moderate, ModerationResult } from "./moderation/moderation.js";
-import { DatabaseInfo, DatabaseUserInfraction, UserSubscriptionType } from "../db/managers/user.js";
+import { PlanCreditViewers, PlanCreditVisility } from "../db/managers/plan.js";
 import { ChatSettingsModel, ChatSettingsModels } from "./settings/model.js";
 import { ChatGeneratedInteraction, Conversation } from "./conversation.js";
-import { addReaction, removeReaction } from "./utils/reaction.js";
 import { ChatModel, ModelCapability } from "../chat/types/model.js";
 import { buildBanNotice } from "../util/moderation/moderation.js";
+import { addReaction, removeReaction } from "./utils/reaction.js";
 import { buildIntroductionPage } from "../util/introduction.js";
-import { RestrictionType } from "../db/types/restriction.js";
 import { ChatGuildData } from "../chat/types/options.js";
 import { ChatSettingsTones } from "./settings/tone.js";
 import ImagineCommand from "../commands/imagine.js";
@@ -25,7 +25,6 @@ import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generat
 import { ErrorResponse, ErrorType } from "../command/response/error.js";
 import { handleError } from "../util/moderation/error.js";
 import { GPTAPIError } from "../error/gpt/api.js";
-import { PlanCreditViewers, PlanCreditVisility } from "../db/managers/plan.js";
 
 /* Permissions required by the bot to function correctly */
 const BOT_REQUIRED_PERMISSIONS: { [key: string]: PermissionsString } = {
@@ -52,6 +51,21 @@ export interface GeneratorOptions {
 
 	/* Whether the user used the Continue button */
 	button?: GeneratorButtonType;
+}
+
+export enum GeneratorSendType {
+	/* A partial reply */
+	Partial,
+
+	/* The final version of the message */
+	Final
+}
+
+export type GeneratorSendOptions = Pick<GeneratorOptions, "message"> & {
+	response: Response;
+	reply: Message | null;
+	db: DatabaseInfo;
+	type: GeneratorSendType;
 }
 
 export class Generator {
@@ -140,8 +154,8 @@ export class Generator {
 			if (moderation !== null && (moderation.flagged || moderation.blocked)) embeds.push(new EmbedBuilder()
 				.setDescription(
 					!moderation.blocked
-						? `${moderation.source === "user" ? "Your message" : `**${this.bot.client.user!.username}**'s response`} may violate our **usage policies**. *If you use the bot as intended, you can ignore this notice.*`
-						: `${moderation.source === "user" ? "Your message" : `**${this.bot.client.user!.username}**'s response`} violates our **usage policies**. *If you continue to abuse the bot, we may have to take moderative actions*.`
+						? `${moderation.source === "user" ? "Your message" : `**${this.bot.client.user.username}**'s response`} may violate our **usage policies**. *If you use the bot as intended, you can ignore this notice.*`
+						: `${moderation.source === "user" ? "Your message" : `**${this.bot.client.user.username}**'s response`} violates our **usage policies**. *If you continue to abuse the bot, we may have to take moderative actions*.`
 				)
 				.setColor(moderation.blocked ? "Red" : "Orange")
 			);
@@ -242,7 +256,7 @@ export class Generator {
 	 * @param button Button interaction to handle
 	 */
 	public async handleButtonInteraction(button: ButtonInteraction): Promise<void> {
-		if (button.message.author.id !== this.bot.client.user!.id) return;
+		if (button.message.author.id !== this.bot.client.user.id) return;
 
 		if (button.customId === "acknowledge-warning" || button.customId === "ignore" || button.customId === "send" || button.customId.startsWith("introduction-page-selector")) return;
 		if (button.channelId === this.bot.app.config.channels.error.channel || button.channelId === this.bot.app.config.channels.moderation.channel) return;
@@ -377,10 +391,10 @@ export class Generator {
 		if (message.channel.type === ChannelType.DM) return "dm";
 
 		if (message.reference && message.reference.messageId && message.channel.messages.cache.get(message.reference.messageId) && message.channel.messages.cache.get(message.reference.messageId)!.interaction) return "interactionReply";
-		if (message.mentions.repliedUser !== null && message.mentions.repliedUser.id === this.bot.client.user!.id && message.mentions.users.get(this.bot.client.user!.id)) return "reply";
+		if (message.mentions.repliedUser !== null && message.mentions.repliedUser.id === this.bot.client.user.id && message.mentions.users.get(this.bot.client.user.id)) return "reply";
 
-		if (message.content.startsWith(`<@${this.bot.client.user!.id}>`) || message.content.startsWith(`<@!${this.bot.client.user!.id}>`) || message.content.endsWith(`<@${this.bot.client.user!.id}>`) || message.content.endsWith(`<@!${this.bot.client.user!.id}>`)) return "user";
-		else if (message.content.includes(`<@${this.bot.client.user!.id}>`)) return "inMessage";
+		if (message.content.startsWith(`<@${this.bot.client.user.id}>`) || message.content.startsWith(`<@!${this.bot.client.user.id}>`) || message.content.endsWith(`<@${this.bot.client.user.id}>`) || message.content.endsWith(`<@!${this.bot.client.user.id}>`)) return "user";
+		else if (message.content.includes(`<@${this.bot.client.user.id}>`)) return "inMessage";
 		
 		const roles: Role[] = Array.from(message.mentions.roles.values());
 		const mentionedRole: boolean = roles.find(r => !r.editable && ([ "ChatGPT", "Turing" ].includes(r.name))) != undefined;
@@ -443,7 +457,7 @@ export class Generator {
 		if (mentions === "inMessage") return void await addReaction(this.bot, message, "👋").catch(() => {});
 
 		/* Get the user & guild data from the database, if available. */
-		let db = await this.bot.db.users.fetchData(author, guild);
+		const db = await this.bot.db.users.fetchData(author, guild);
 
 		const banned: DatabaseUserInfraction | null = this.bot.db.users.banned(db.user);
 		const unread: DatabaseUserInfraction[] = this.bot.db.users.unread(db.user);
@@ -608,7 +622,7 @@ export class Generator {
 		/* If the user attached images to their messages, but doesn't have Premium access, ignore their request. */
 		if (attachedImages && !premium) return void await new Response()
 			.addEmbed(builder => builder
-				.setDescription(`🖼️ **${this.bot.client.user!.username}** will be able to view your images with **Premium**.\n**Premium** *also includes further benefits, view \`/premium\` for more*. ✨`)
+				.setDescription(`🖼️ **${this.bot.client.user.username}** will be able to view your images with **Premium**.\n**Premium** *also includes further benefits, view \`/premium\` for more*. ✨`)
 				.setColor("Orange")
 			).send(message);
 
@@ -639,7 +653,7 @@ export class Generator {
 		if (moderation !== null && moderation.blocked) return;
 
 		/* Reply message placeholder */
-		let reply: Message = null!;
+		let reply: Message | null = null;
 
 		/* Response data */
 		let final: ChatGeneratedInteraction = null!;
@@ -647,7 +661,7 @@ export class Generator {
 		let queued: boolean = false;
 
 		/* Whether partial results should be shown, and how often they should be updated */
-		const partial: boolean = this.bot.db.settings.get(db.user, "chat:partialMessages");
+		const partial: boolean = this.bot.db.settings.get<boolean>(db.user, "chat:partialMessages") && premium;
 		const updateTime: number = this.bot.db.users.canUsePremiumFeatures(db) ? 2500 : 5500;
 
 		let typingTimer: NodeJS.Timer | null = setInterval(async () => {
@@ -661,7 +675,9 @@ export class Generator {
 			if (data === null || (!partial && (data.type === "Chat" || data.type === "ChatNotice"))) return;
 
 			/* Generate a nicely formatted embed. */
-			const response: Response | null = await this.process(conversation, data, options, db, [ moderation ], null, true);
+			const response: Response | null = await this.process(
+				conversation, data, options, db, [ moderation ], null, true
+			);
 
 			/* Send an initial reply placeholder. */
 			if (reply === null && final === null && !queued && (partial || (!partial && (data.type !== "Chat" && data.type !== "ChatNotice")))) {
@@ -677,22 +693,18 @@ export class Generator {
 					typingTimer = null;
 				}
 
-				try {
-					reply = await message.reply(response.get() as MessageCreateOptions);
-				} catch (_) {
-					try {
-						reply = await message.channel.send(response.get() as MessageCreateOptions);
-					} catch (_) {
-						reply = null!;
-					}
-				}
+				reply = await this.send({
+					message, reply, response, db, type: GeneratorSendType.Partial
+				});
 
 				queued = false;
 
 			} else if (reply !== null && !queued && (partial || (!partial && (data.type !== "Chat" && data.type !== "ChatNotice")))) {	
 				try {
 					/* Edit the sent message. */
-					if (reply !== null && response !== null) await reply.edit(response.get() as MessageEditOptions);
+					if (reply !== null && response !== null) reply = await this.send({
+						message, reply, response, db, type: GeneratorSendType.Partial
+					});
 
 				} catch (error) {
 					reply = null!;
@@ -735,8 +747,7 @@ export class Generator {
 
 		/* Information about the guild the user invoked the bot on, if applicable */
 		const guildData: ChatGuildData | null = model.hasCapability(ModelCapability.GuildOnly)
-			? await this.guildData(message, author, mentions)
-			: null;
+			? await this.guildData(message, author, mentions) : null;
 
 		/* Which loading emoji to use */
 		const loadingIndicator: LoadingIndicator = LoadingIndicatorManager.getFromUser(conversation.manager.bot, db.user);
@@ -782,7 +793,7 @@ export class Generator {
 
 			if (error instanceof GPTGenerationError && error.options.data.type === GPTGenerationErrorType.Empty) return await sendError(new Response()
 				.addEmbed(builder => builder
-					.setDescription(`**${this.bot.client.user!.username}**'s response was empty for this prompt, *please try again* 😔`)
+					.setDescription(`**${this.bot.client.user.username}**'s response was empty for this prompt, *please try again* 😔`)
 					.setColor("Red")
 				), false);
 
@@ -840,18 +851,20 @@ export class Generator {
 
 			/* If the output is empty for some reason, set a placeholder message. */
 			if (final.output.text.length === 0) {
-				final.output.text = `**${this.bot.client.user!.username}**'s response was empty for this prompt, *please try again* 😔`;
+				final.output.text = `**${this.bot.client.user.username}**'s response was empty for this prompt, *please try again* 😔`;
 				final.output.type = MessageType.Notice;
 			}
 
 			/* Gemerate a nicely formatted embed. */
-			const response: Response | null = final !== null ? await this.process(conversation, final.output, options, db, [ moderation, final.moderation ], final, false) : null;
+			const response: Response | null = final !== null ? await this.process(
+				conversation, final.output, options, db, [ moderation, final.moderation ], final, false
+			) : null;
 
 			/* If the embed failed to generate, send an error message. */
 			if (response === null) return await sendError(new Response()
 				.addEmbed(builder => builder
 					.setTitle("Uh-oh... 😬")
-					.setDescription(`It seems like **${this.bot.client.user!.username}** had trouble generating the formatted message for your request.`)
+					.setDescription(`It seems like we had trouble generating the reply for your request.`)
 					.setColor("Red")
 				));
 
@@ -860,32 +873,10 @@ export class Generator {
 				await new Promise(resolve => setTimeout(resolve, 500));
 			}
 
-			const editOrSend = async (response: Response): Promise<Message> => {
-				try {
-					if (reply !== null) {
-						try {
-							return await reply.edit(response.get() as MessageEditOptions);
-						} catch (_) {
-							return await message.reply(response.get() as MessageCreateOptions);
-						}
-					} else {
-						return await message.reply(response.get() as MessageCreateOptions);
-					}
-				} catch (_) {
-					/* Add an "author" embed to the message, in order to indicate who actually triggered this message. */
-					const res = response
-						.addEmbed(builder => builder
-							.setAuthor({ name: author.tag, iconURL: author.displayAvatarURL() })
-							.setDescription(content)
-							.setColor("Red")
-						);
-
-					return await message.channel.send(res.get() as MessageCreateOptions);
-				}
-			}
-
 			/* Edit & send the final message. */
-			reply = await editOrSend(response);
+			reply = await this.send({
+				message, reply, response, db, type: GeneratorSendType.Final
+			});
 
 			/* Update the reply message in the history entry, if the conversation wasn't reset. */
 			if (conversation.history.length > 0) conversation.history[conversation.history.length - 1].reply = reply;
@@ -914,10 +905,43 @@ export class Generator {
 			}
 
 			await handleError(this.bot, {
-				error: error as Error,
-				reply: false,
-				message				
+				error: error as Error, title: "Failed to send reply", reply: false, message				
 			});
 		}
     }
+
+	private async send({ message, reply, response, db }: GeneratorSendOptions): Promise<Message | null> {
+		/* If the message was sent on a guild, ... */
+		if (db.guild && message.channel instanceof BaseGuildTextChannel) {
+			/* Custom character mode */
+			const mode = this.bot.webhook.mode(db.guild);
+
+			if (mode !== "off") {
+				/* Get the webhook to use for this channel. */
+				const webhook = await this.bot.webhook.fetch(message.channel);
+				const raw = response.get() as WebhookMessageCreateOptions;
+
+				const data: WebhookMessageCreateOptions = {
+					...this.bot.webhook.base(db.guild),
+					...raw as WebhookMessageCreateOptions
+				};
+
+				if (reply !== null) return await this.bot.webhook.edit(message.channel as BaseGuildTextChannel, reply, webhook, data);
+				else return await this.bot.webhook.send(message.channel as BaseGuildTextChannel, webhook, data);
+			}
+		}
+
+		try {
+			if (reply !== null) return await reply.edit(response.get() as MessageEditOptions);
+			else return await message.reply(response.get() as MessageReplyOptions);
+
+		} catch (_) {
+			try {
+				if (reply !== null) return await message.reply(response.get() as MessageCreateOptions);
+				return await message.channel.send(response.get() as MessageCreateOptions);
+			} catch (_) {
+				return null;
+			}
+		}
+	}
 }

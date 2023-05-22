@@ -80,7 +80,7 @@ export abstract class Utils {
 	public static cleanContent(bot: Bot, content: string): string {
 		return content
 			/* Remove the bot mention. */ 
-			.replaceAll(`<@${bot.client.user!.id}>`, "")
+			.replaceAll(`<@${bot.client.user.id}>`, "")
 
 			/* Remove any leading & trailing whitespace. */
 			.trim();

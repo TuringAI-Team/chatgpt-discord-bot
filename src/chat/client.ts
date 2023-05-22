@@ -125,11 +125,6 @@ export class ChatClient {
 
     /**
      * Get the formatted initial prompt, for the specified model type & tone.
-     * 
-     * @param client Chat client
-     * @param conversation The conversation that is connected with this prompt & completion
-     * @param type Type of the prompt
-     * 
      * @returns Final, formatted prompt
      */
     public async initialPrompt<T = any>(options: ModelGenerationOptions, data?: T): Promise<string> {

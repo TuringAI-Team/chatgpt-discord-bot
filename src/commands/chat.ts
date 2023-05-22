@@ -19,11 +19,11 @@ export default class ChatCommand extends Command {
     public async run(): CommandResponse {
         return new Response()
 			.addEmbed(builder => builder
-				.setDescription(`\`/chat\` has been removed in favor of mentioning <@${this.bot.client.user!.id}> with your prompt directly. This allows you to do multi-line prompts, attach text attachments & *images* (**premium-only ✨**) and more to come in the future.`)
+				.setDescription(`\`/chat\` has been removed in favor of mentioning <@${this.bot.client.user.id}> with your prompt directly. This allows you to do multi-line prompts, attach text attachments & *images* (**premium-only ✨**) and more to come in the future.`)
 				.addFields([
 					{
 						name: "How can I use it?",
-						value: `To use the bot, simply ping <@${this.bot.client.user!.id}> with your prompt in a message.\n*e.g. \`@${this.bot.client.user!.username} What is your name?\`*`
+						value: `To use the bot, simply ping <@${this.bot.client.user.id}> with your prompt in a message.\n*e.g. \`@${this.bot.client.user.username} What is your name?\`*`
 					},
 
 					{
