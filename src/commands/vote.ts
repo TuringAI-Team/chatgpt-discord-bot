@@ -2,6 +2,7 @@ import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, SlashComman
 
 import { CONVERSATION_COOLDOWN_MODIFIER, CONVERSATION_DEFAULT_COOLDOWN } from "../conversation/conversation.js";
 import { Command, CommandResponse } from "../command/command.js";
+import { Cooldown } from "../conversation/utils/cooldown.js";
 import { DatabaseInfo } from "../db/managers/user.js";
 import { Response } from "../command/response.js";
 import { Bot } from "../bot/bot.js";
@@ -19,7 +20,7 @@ export default class VoteCommand extends Command {
 		const fields = [
 			{
 				key: "Way lower cool-down ⏰",
-				value: `The cool-down between messages can get a bit annoying. By voting, it'll be reduced to only **${Math.round((CONVERSATION_DEFAULT_COOLDOWN.time! * CONVERSATION_COOLDOWN_MODIFIER.voter) / 1000)}** seconds.`
+				value: `The cool-down between messages can get a bit annoying. By voting, it'll be reduced to only **${Math.round(Cooldown.calculate(CONVERSATION_DEFAULT_COOLDOWN.time, CONVERSATION_COOLDOWN_MODIFIER.voter) / 1000)}** seconds.`
 			},
 
 			{

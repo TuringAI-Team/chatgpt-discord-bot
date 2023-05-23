@@ -46,7 +46,7 @@ export interface TuringChatResult {
     response: string;
 }
 
-export type TuringVideoModelName = "damo" | "videocrafter"
+export type TuringVideoModelName = "damo" | "videocrafter" | "gen2"
 
 export interface TuringVideoModel {
     /* Name of the model */
@@ -65,6 +65,11 @@ export const TuringVideoModels: TuringVideoModel[] = [
     {
         name: "VideoCrafter",
         id: "videocrafter"
+    },
+
+    {
+        name: "Runway Gen-2",
+        id: "gen2"
     }
 ]
 
@@ -585,7 +590,8 @@ export class TuringAPI {
         const before: number = Date.now();
 
         /* Generate the video using the API. */
-        const url: string = await this.request<string>(`video/${name}`, "POST", options);
+        const raw: { url: string } | string = await this.request(`video/${name}`, "POST", options);
+        const url: string = typeof raw === "object" ? raw.url : raw;
 
         return {
             url, duration: Date.now() - before

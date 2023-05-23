@@ -20,7 +20,7 @@ export class Git {
     }
 
     private static async latestCommitHash(): Promise<string> {
-        return this.exec(`git rev-parse HEAD`);
+        return this.exec("git rev-parse HEAD");
     }
 
     public static async latestCommit(): Promise<GitCommit> {

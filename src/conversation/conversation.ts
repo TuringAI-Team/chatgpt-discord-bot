@@ -8,18 +8,18 @@ import { ChatSettingsTone, ChatSettingsTones } from "./settings/tone.js";
 import { MessageType, ResponseMessage } from "../chat/types/message.js";
 import { ChatInputImage, ImageBuffer } from "../chat/types/image.js";
 import { check, ModerationResult } from "./moderation/moderation.js";
+import { UserSubscriptionPlanType } from "../db/managers/user.js";
 import { Cooldown, CooldownModifier } from "./utils/cooldown.js";
 import { UserPlanChatExpense } from "../db/managers/plan.js";
-import { RestrictionType } from "../db/types/restriction.js";
 import { GenerationOptions, Session } from "./session.js";
 import { ChatDocument } from "../chat/types/document.js";
 import { ChatClientResult } from "../chat/client.js";
 import { ConversationManager } from "./manager.js";
+import { ChatModel } from "../chat/types/model.js";
 import { GPTAPIError } from "../error/gpt/api.js";
 import { GeneratorOptions } from "./generator.js";
 import { BotDiscordClient } from "../bot/bot.js";
 import { Utils } from "../util/utils.js";
-import { ChatModel } from "../chat/types/model.js";
 
 export interface ChatInput {
 	/* The input message itself; always given */
@@ -66,14 +66,25 @@ export interface ChatChargeOptions {
 }
 
 /* How many tries to allow to retry after an error occurred duration generation */
-const CONVERSATION_ERROR_RETRY_MAX_TRIES: number = 10
+const CONVERSATION_ERROR_RETRY_MAX_TRIES: number = 5
 
 /* Usual cool-down for interactions in the conversation */
-export const CONVERSATION_COOLDOWN_MODIFIER = {
-	free: 1,
-	voter: 0.6,
-	subscription: 0.1,
-	plan: 0
+export const CONVERSATION_COOLDOWN_MODIFIER: Record<UserSubscriptionPlanType, CooldownModifier> = {
+	free: {
+		multiplier: 1
+	},
+
+	voter: {
+		multiplier: 0.5
+	},
+
+	subscription: {
+		time: 15 * 1000
+	},
+
+	plan: {
+		multiplier: 0
+	}
 }
 
 export const CONVERSATION_DEFAULT_COOLDOWN: Required<Pick<CooldownModifier, "time">> = {
@@ -483,7 +494,7 @@ export class Conversation {
 	public cooldownTime(db: DatabaseInfo, model: ChatSettingsModel): number | null {
 		/* Subscription type of the user */
 		const type: UserSubscriptionType = this.manager.bot.db.users.type(db);
-		if (type.type === "plan" && type.location === "user") return null;
+		//if (type.type === "plan" && type.location === "user") return null;
 
 		if (type.type === "plan" && type.location === "guild") {
 			/* Cool-down, set by the server */
@@ -492,20 +503,19 @@ export class Conversation {
 		}
 		
 		/* Cool-down duration & modifier */
-		const baseModifier: number = model.options.cooldown && model.options.cooldown.time && model.premiumOnly
-			? 1
-			: CONVERSATION_COOLDOWN_MODIFIER[this.manager.bot.db.users.type(db).type];
+		const baseModifier: number = CONVERSATION_COOLDOWN_MODIFIER[type.type].multiplier && !model.premiumOnly
+			? CONVERSATION_COOLDOWN_MODIFIER[type.type].multiplier! : 1;
 
-		/* Cool-down modifier, set by the tone */
-		const toneModifier: number = model.options.cooldown && model.options.cooldown.multiplier
+		/* Cool-down modifier, set by the model */
+		const modelModifier: number = model.options.cooldown && model.options.cooldown.multiplier
 			? model.options.cooldown.multiplier
 			: 1;
 
 		const baseDuration: number = model.options.cooldown && model.options.cooldown.time && model.premiumOnly
 			? model.options.cooldown.time
-			: this.cooldown.options.time;
+			: CONVERSATION_COOLDOWN_MODIFIER[type.type].time ?? this.cooldown.options.time;
 
-		const finalDuration: number = baseDuration * baseModifier * toneModifier;
+		const finalDuration: number = baseDuration * baseModifier * modelModifier;
 		return Math.round(finalDuration);
 	}
 

@@ -1,6 +1,7 @@
 import { ActionRowBuilder, Awaitable, ButtonBuilder, ButtonStyle, ComponentEmojiResolvable, EmbedBuilder, MessageEditOptions, StringSelectMenuBuilder, StringSelectMenuInteraction, StringSelectMenuOptionBuilder, User } from "discord.js";
 
 import { CONVERSATION_COOLDOWN_MODIFIER, CONVERSATION_DEFAULT_COOLDOWN } from "../conversation/conversation.js";
+import { Cooldown } from "../conversation/utils/cooldown.js";
 import { Response } from "../command/response.js";
 import { Bot } from "../bot/bot.js";
 import { Utils } from "./utils.js";
@@ -60,7 +61,7 @@ export const IntroductionPages: IntroductionPage[] = [
                 },
 
                 {
-                    name: "... and more",
+                    name: "and more ...",
                     value: "Add the bot to your Discord server or try it out here, to see for yourself."
                 }
             ])
@@ -123,7 +124,7 @@ export const IntroductionPages: IntroductionPage[] = [
 
                 {
                     name: "Way lower cool-down ⏰",
-                    value: `Chat with **ChatGPT** for as long as you want - without being interrupted by an annoying cool-down! ⏰\nYour cool-down will be lowered to an amazing **${Math.floor((CONVERSATION_DEFAULT_COOLDOWN.time! * CONVERSATION_COOLDOWN_MODIFIER.subscription) / 1000)} seconds**, for all normal models.`
+                    value: `Chat with **ChatGPT** for as long as you want - without being interrupted by an annoying cool-down! ⏰\nYour cool-down will be lowered to an amazing **${Math.floor(Cooldown.calculate(CONVERSATION_DEFAULT_COOLDOWN.time, CONVERSATION_COOLDOWN_MODIFIER.subscription) / 1000)} seconds**, for all normal models.`
                 },
 
                 {

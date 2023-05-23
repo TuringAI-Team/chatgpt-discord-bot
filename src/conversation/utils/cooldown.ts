@@ -95,4 +95,15 @@ export class Cooldown extends EventEmitter {
         clearTimeout(this.timer!);
         return true;
     }
+
+    public calculate(other: CooldownModifier): number {
+        return Cooldown.calculate(this.options.time, other);
+    }
+
+    public static calculate(input: number, modifier: CooldownModifier): number {
+        if (modifier.multiplier) return input * modifier.multiplier;
+        else if (modifier.time) return modifier.time;
+
+        return -1;
+    }
 }

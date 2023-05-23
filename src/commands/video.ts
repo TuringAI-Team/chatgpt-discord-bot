@@ -100,7 +100,7 @@ export default class VideoCommand extends Command {
 			await this.bot.db.plan.expenseForVideo(db, result);
 
 			return new Response()
-				.setContent(`**${prompt}** — *${(result.duration / 1000).toFixed(1)} seconds*`)
+				.setContent(`**${prompt}** — using \`${model.name}\` — *${(result.duration / 1000).toFixed(1)} seconds*`)
 				.addAttachment(
 					new AttachmentBuilder(buffer.buffer).setName("output.mp4")
 				);

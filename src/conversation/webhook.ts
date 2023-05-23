@@ -46,7 +46,7 @@ export class WebhookManager {
             const error: DiscordAPIError = raw as DiscordAPIError;
 
             /* If the webhook doesn't exist anymore, delete it from the cache too. */
-            if (error.status === 404) await this.bot.db.cache.delete("webhooks", webhook.id);
+            if (error.status === 404) await this.bot.db.cache.delete("webhooks", channel.id);
             throw error;
         }
     }
