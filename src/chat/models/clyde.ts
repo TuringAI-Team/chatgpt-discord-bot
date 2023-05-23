@@ -8,15 +8,17 @@ import { ChatOutputImage, ImageBuffer } from "../types/image.js";
 import { ModelCapability, ModelType } from "../types/model.js";
 import { PartialResponseMessage } from "../types/message.js";
 import { ChatClient, PromptData } from "../client.js";
+import { UserPlan } from "../../db/managers/plan.js";
 import { ChatGPTModel } from "./chatgpt.js";
 import { Utils } from "../../util/utils.js";
 
 export interface ClydeUser {
     name: string;
     suffix: string | null;
-    "joined discord at": string;
+    "joined Discord at": string;
     "joined the server at": string;
-    "has premium subscription": string;
+    "Premium subscription": string;
+    "Premium pay-as-you-go plan": string;
     "has voted for the bot": string;
     nickname: string | null;
     roles: string | null;
@@ -77,18 +79,21 @@ const ClydeFormatters: ClydeFormatterPair[] = [
 
         output: {
             match: /<u:(.*?)>/gm,
-            replacer: async (_, { guild }, input) => {
+            replacer: async (conversation, { guild }, input) => {
+                if (input === "<u:SELF>") return `<@${conversation.manager.bot.client.user!.id}>`;
+
                 const username: string = input.replace("<u:", "").replace(">", "");
-    
                 const user: GuildMember | null = guild.members.cache.find(m => m.user.username === username) ?? null;
+
                 return user !== null ? `<@${user.id}>` : null;
             }
         },
 
         input: {
             match: /<@(\d+)>/gm,
-            replacer: async (_, { guild }, input) => {
+            replacer: async (conversation, { guild }, input) => {
                 const id: string = input.replace("<@", "").replace(">", "");
+                if (id === conversation.manager.bot.client.user!.id) return "<u:SELF>";
 
                 const user: GuildMember | null = guild.members.cache.find(m => m.user.id === id) ?? null;
                 return user !== null ? `<u:${user.user.username}>` : null;
@@ -225,12 +230,15 @@ export class ClydeModel extends ChatGPTModel {
         if (conversation.user.id === member.id) final.suffix = "user I'm talking to";
 
         const voted: number | null = this.client.session.manager.bot.db.users.voted(db);
-        const subscription: DatabaseSubscription | null = db.subscription;
 
-        final["has premium subscription"] = subscription !== null ? `yes, joined at ${new Date(subscription.since)} and expires at ${new Date(subscription.expires)}` : "no";
+        const subscription: DatabaseSubscription | null = db.subscription;
+        const plan: UserPlan | null = db.plan;
+
+        final["Premium subscription"] = subscription !== null ? `yes, joined at ${new Date(subscription.since)} and expires at ${new Date(subscription.expires)}` : "no";
+        final["Premium pay-as-you-go plan"] = plan !== null ? `yes, has used up $${plan.used} and a total of $${plan.total} charged up` : "no";
         final["has voted for the bot"] = voted !== null ? `yes, at ${new Date(voted)}` : "no";
 
-        final["joined discord at"] = member.user.createdAt.toISOString();
+        final["joined Discord at"] = member.user.createdAt.toISOString();
         if (member.joinedAt) final["joined the server at"] = member.joinedAt.toISOString();
 
         final.roles = roles.length > 1
@@ -242,11 +250,10 @@ export class ClydeModel extends ChatGPTModel {
         return final as ClydeUser;
     }
 
-    public async format(conversation: Conversation, guild: ChatGuildData, content: string, type: ClydeFormatterType = "output"): Promise<ClydeFormatterResult> {
+    public async format(conversation: Conversation, guild: ChatGuildData, content: string, type: ClydeFormatterType = "output", partial: boolean = false): Promise<ClydeFormatterResult> {
         /* Final, formatted output string */
         let final: ClydeFormatterResult = {
-            text: content,
-            images: []
+            text: content, images: []
         };
 
         /* Apply all formatters. */
@@ -261,12 +268,19 @@ export class ClydeModel extends ChatGPTModel {
                 /* Which string actually matched & we want to use */
                 const matched: string = match[0];
 
-                /* Formatter results */
-                const result: ClydeFormatterResult | string | null = await formatter.replacer(conversation, guild, matched);
+                /* If this was ran on a partially generated message, simply replace it with some placeholder stuff. */
+                if (partial) {
+                    final.text = final.text.replace(matched, "**...**");
 
-                if (result !== null) {
-                    final.text = final.text.replace(matched, typeof result === "string" ? result : result.text);
-                    if (typeof result === "object") final.images.push(...result.images);
+                /* Otherwise, ... */
+                } else {
+                     /* Formatter results */
+                    const result: ClydeFormatterResult | string | null = await formatter.replacer(conversation, guild, matched);
+
+                    if (result !== null) {
+                        final.text = final.text.replace(matched, typeof result === "string" ? result : result.text);
+                        if (typeof result === "object") final.images.push(...result.images);
+                    }
                 }
             }
         }
@@ -280,7 +294,8 @@ export class ClydeModel extends ChatGPTModel {
         options.prompt = cleanedPrompt.text;
 
         const progress = async (response: OpenAIPartialCompletionsJSON) => {
-            options.progress({ text: response.choices[0].delta.content! });
+            const final: ClydeFormatterResult = await this.format(options.conversation, options.guild!, response.choices[0].delta.content!, "output", true);
+            options.progress(final);
         };
 
         /* All users to include in the prompt */

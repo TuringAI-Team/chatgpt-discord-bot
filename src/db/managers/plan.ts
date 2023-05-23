@@ -2,7 +2,7 @@ import { StableHordeGenerationResult } from "../../image/types/image.js";
 import { DatabaseGuild, DatabaseInfo, DatabaseUser, UserSubscriptionType } from "./user.js";
 import { ChatInteraction } from "../../conversation/conversation.js";
 import { SummaryPrompt } from "../../commands/summarize.js";
-import { TuringVideoResult } from "../../turing/api.js";
+import { TuringVideoModel, TuringVideoResult } from "../../turing/api.js";
 import { ClientDatabaseManager } from "../cluster.js";
 import { YouTubeVideo } from "../../util/youtube.js";
 import { ImageDescription } from "./description.js";
@@ -228,10 +228,10 @@ export class PlanManager {
     }
 
     public async expenseForVideo(
-        entry: DatabaseEntry | DatabaseInfo, video: TuringVideoResult
+        entry: DatabaseEntry | DatabaseInfo, video: TuringVideoResult, model: TuringVideoModel
     ): Promise<UserPlanVideoExpense | null> {
         return this.expense(entry, {
-            type: "video", used: (video.duration / 1000) * 0.0023, data: { duration: video.duration }, bonus: 0.05
+            type: "video", used: model.id !== "gen2" ? (video.duration / 1000) * 0.0023 : 0.01, data: { duration: video.duration }, bonus: 0.05
         });
     }
 
@@ -242,7 +242,7 @@ export class PlanManager {
         const total: number = prompt.tokens + tokens;
 
         return this.expense(entry, {
-            type: "summary", used: (total / 1000) * 0.002, data: { tokens: total, url: video.url }, bonus: 0.15
+            type: "summary", used: (total / 1000) * 0.002, data: { tokens: total, url: video.url }, bonus: 0.10
         });
     }
 

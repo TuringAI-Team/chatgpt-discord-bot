@@ -97,7 +97,7 @@ export default class VideoCommand extends Command {
 
 			/* Increment the user's usage. */
 			await this.bot.db.users.incrementInteractions(db.user, "videos");
-			await this.bot.db.plan.expenseForVideo(db, result);
+			await this.bot.db.plan.expenseForVideo(db, result, model);
 
 			return new Response()
 				.setContent(`**${prompt}** — using \`${model.name}\` — *${(result.duration / 1000).toFixed(1)} seconds*`)

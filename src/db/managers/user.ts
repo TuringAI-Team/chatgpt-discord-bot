@@ -312,16 +312,16 @@ export class UserManager {
             plan: raw.plan ?? null,
             settings: raw.settings ?? this.db.settings.template(SettingsLocation.User),
             metadata: raw.metadata ?? this.metadataTemplate(),
-            roles: raw.roles,
-            voted: raw.voted ?? null
+            voted: raw.voted ?? null,
+            roles: raw.roles
         };
     
         return db;
     }
 
     private processUser(user: DatabaseUser): DatabaseUser {
+        user.plan = this.db.plan.active(user) ? this.db.plan.get(user) : null;
         user.subscription = this.subscription(user);
-        user.plan = this.db.plan.get(user);
 
         user.settings = this.db.settings.load(user);
         user.metadata = this.metadata(user);
