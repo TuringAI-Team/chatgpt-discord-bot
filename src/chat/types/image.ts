@@ -3,7 +3,8 @@ import { Utils } from "../../util/utils.js";
 import { TenorGIF } from "../../util/tenor.js";
 import { Bot } from "../../bot/bot.js";
 
-export type ChatImageType = "image" | "sticker" | "emoji" | "discord attachment link" | "tenor gif"
+export type ChatImageType = "image" | "sticker" | "emoji" | "Discord attachment link" | "tenor GIF"
+export const CHAT_IMAGE_TYPES: ChatImageType[] = [ "image", "sticker", "emoji", "Discord attachment link", "tenor GIF" ]
 
 export const ALLOWED_FILE_EXTENSIONS: string[] = [ "webp", "png", "jpeg", "jpg", "gif" ]
 
@@ -129,7 +130,7 @@ export const ChatImageAttachmentExtractors: ChatImageAttachmentExtractor[] = [
     },
 
     {
-        type: "discord attachment link",
+        type: "Discord attachment link",
         condition: ({ message }) => message.content.match(DISCORD_CDN_REGEX) !== null,
 
         extract: async ({ message }) => {
@@ -143,7 +144,7 @@ export const ChatImageAttachmentExtractors: ChatImageAttachmentExtractor[] = [
     },
 
     {
-        type: "tenor gif",
+        type: "tenor GIF",
         condition: ({ message }) => message.content.matchAll(TENOR_GIF_REGEX) !== null,
 
         extract: async ({ bot, message }) => {

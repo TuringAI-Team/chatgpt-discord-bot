@@ -73,28 +73,28 @@ export class App {
 		})
 			.then(data => this.config = data.default as any)
 			.catch(error => {
-				this.logger.error(`Failed to load configuration -> ${chalk.bold(error.message)}`);
+				this.logger.error("Failed to load configuration ->", error);
 				this.stop(1);
 			});
 
 		/* Initialize the database manager. */
 		await this.db.setup()
 			.catch(error => {
-				this.logger.error(`Failed to set up the database manager -> ${chalk.bold(error.message)}`);
+				this.logger.error("Failed to set up the database manager ->", error);
 				this.stop(1);
 			});
 
 		/* Initialize the cache manager. */
 		await this.cache.setup()
 			.catch(error => {
-				this.logger.error(`Failed to set up the cache manager -> ${chalk.bold(error.message)}`);
+				this.logger.error("Failed to set up the cache manager ->", error);
 				this.stop(1);
 			});
 
 		/* Finally, set up all clusters. */
 		await this.manager.setup()
 			.catch(error => {
-				this.logger.error(`Failed to set up the bot sharding manager -> ${chalk.bold(error.message)}`);
+				this.logger.error("Failed to set up the bot sharding manager ->", error);
 				this.stop(1);
 			});
 

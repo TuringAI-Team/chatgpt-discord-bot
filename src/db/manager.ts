@@ -1,19 +1,17 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
-import { Database } from "./types/db.js";
 import { type Bot } from "../bot/bot.js";
-import { type App } from "../app.js";
 import { Config } from "../config.js";
+import { type App } from "../app.js";
 
 export type DatabaseCollectionType = "users" | "conversations" | "guilds" | "interactions" | "images" | "descriptions"
-
 export type DatabaseManagerBot = Bot | App
 
 export class DatabaseManager<T extends DatabaseManagerBot = Bot> {
     public readonly bot: T;
 
     /* Supabase client */
-    public client: SupabaseClient<Database>;
+    public client: SupabaseClient;
     
     constructor(bot: T) {
         this.bot = bot;
@@ -28,10 +26,11 @@ export class DatabaseManager<T extends DatabaseManagerBot = Bot> {
         const { url, key } = this.config.db.supabase;
 
         /* Create the Supabase client. */
-        this.client = createClient<Database>(url, key.service);
+        this.client = createClient(url, key.service);
     }
 
     public collectionName(type: DatabaseCollectionType): string {
+        if (!this.config.db.supabase.collections) return type;
         return this.config.db.supabase.collections[type] ?? type;
     }
 

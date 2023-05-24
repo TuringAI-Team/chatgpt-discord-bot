@@ -272,11 +272,6 @@ export class Bot extends EventEmitter {
                     execute: () => this.ai.setup(this.app.config.openAI.key)
                 },
     
-                /*{
-                    name: "Nat playground",
-                    execute: async () => this.nat.setup()
-                },*/
-    
                 {
                     name: "Stable Horde",
                     execute: async () => this.image.setup()

@@ -1,17 +1,18 @@
-import { StableHordeGenerationResult } from "../../image/types/image.js";
-import { DatabaseGuild, DatabaseInfo, DatabaseUser, UserSubscriptionType } from "./user.js";
-import { ChatInteraction } from "../../conversation/conversation.js";
-import { SummaryPrompt } from "../../commands/summarize.js";
-import { TuringVideoModel, TuringVideoResult } from "../../turing/api.js";
-import { ClientDatabaseManager } from "../cluster.js";
-import { YouTubeVideo } from "../../util/youtube.js";
-import { ImageDescription } from "./description.js";
 import { ActionRowBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle, EmbedBuilder, GuildMember, InteractionReplyOptions } from "discord.js";
-import { Response } from "../../command/response.js";
-import { Utils } from "../../util/utils.js";
+
+import { DatabaseGuild, DatabaseInfo, DatabaseUser, UserSubscriptionType } from "./user.js";
+import { TuringVideoModel, TuringVideoModelName, TuringVideoResult } from "../../turing/api.js";
+import { StableHordeGenerationResult } from "../../image/types/image.js";
+import { ChatInteraction } from "../../conversation/conversation.js";
 import { ErrorResponse } from "../../command/response/error.js";
 import { CommandInteraction } from "../../command/command.js";
+import { SummaryPrompt } from "../../commands/summarize.js";
 import { ProgressBar } from "../../util/progressBar.js";
+import { ClientDatabaseManager } from "../cluster.js";
+import { YouTubeVideo } from "../../util/youtube.js";
+import { Response } from "../../command/response.js";
+import { ImageDescription } from "./description.js";
+import { Utils } from "../../util/utils.js";
 
 type DatabaseEntry = DatabaseUser | DatabaseGuild
 
@@ -59,6 +60,7 @@ export type UserPlanImageDescribeExpense = UserPlanExpense<{
 }>
 
 export type UserPlanVideoExpense = UserPlanExpense<{
+    model: TuringVideoModelName;
     duration: number;
 }>
 
@@ -161,20 +163,21 @@ export class PlanManager {
     }
 
     public async expense<T extends UserPlanExpense = UserPlanExpense>(
-        db: DatabaseEntry | DatabaseInfo, { type, used, data, bonus }: Pick<T, "type" | "used" | "data"> & { bonus?: UserPlanCreditBonusAmount }
+        db: DatabaseInfo, { type, used, data, bonus }: Pick<T, "type" | "used" | "data"> & { bonus?: UserPlanCreditBonusAmount }
     ): Promise<T | null> {
+        const userType = this.db.users.type(db);
+        const entry = db[userType.location]!;
+
+        /* Check whether the user/guild has actually configured to use this plan. */
+        if (!this.active(entry)) return null;
+
         /* The new expense */
         const expense: T = {
             type, used, data,
             time: Date.now()
         } as T;
 
-        const entry: DatabaseEntry = (db as any).user
-            ? (db as DatabaseInfo)[this.db.users.type(db as DatabaseInfo).location]!
-            : db as DatabaseEntry;
-
         /* The entry's current plan */
-        if (entry.plan === null) return null;
         const plan: UserPlan = this.get(entry)!;
 
         let additional: number = used;
@@ -183,7 +186,7 @@ export class PlanManager {
         /* Updated, total usage; limit their usage their minimum usage to 0 */
         const updatedUsage: number = Math.max(plan.used + additional, 0);
 
-        await this.db.users[this.location(entry) === PlanLocation.Guild ? "updateGuild" : "updateUser"](entry as any, {
+        await this.db.users[userType.location === "guild" ? "updateGuild" : "updateUser"](entry as any, {
             plan: {
                 ...plan,
 
@@ -196,7 +199,7 @@ export class PlanManager {
     }
 
     public async expenseForChat(
-        entry: DatabaseEntry | DatabaseInfo, { used, data }: Pick<UserPlanChatExpense, "used" | "data"> & { bonus?: UserPlanCreditBonusAmount }
+        entry: DatabaseInfo, { used, data }: Pick<UserPlanChatExpense, "used" | "data"> & { bonus?: UserPlanCreditBonusAmount }
     ): Promise<UserPlanChatExpense | null> {
         return this.expense(entry, {
             type: "chat", used, data
@@ -204,7 +207,7 @@ export class PlanManager {
     }
 
     public async expenseForImage(
-        entry: DatabaseEntry | DatabaseInfo, result: StableHordeGenerationResult
+        entry: DatabaseInfo, result: StableHordeGenerationResult
     ): Promise<UserPlanImageExpense | null> {
         return this.expense(entry, {
             type: "image", used: result.kudos / 4500, data: { kudos: result.kudos }, bonus: 0.10
@@ -212,7 +215,7 @@ export class PlanManager {
     }
 
     public async expenseForDallEImage(
-        entry: DatabaseEntry | DatabaseInfo, count: number
+        entry: DatabaseInfo, count: number
     ): Promise<UserPlanDallEExpense | null> {
         return this.expense(entry, {
             type: "dall-e", used: count * 0.02, data: { count }, bonus: 0.10
@@ -220,7 +223,7 @@ export class PlanManager {
     }
 
     public async expenseForImageDescription(
-        entry: DatabaseEntry | DatabaseInfo, result: ImageDescription
+        entry: DatabaseInfo, result: ImageDescription
     ): Promise<UserPlanImageDescribeExpense | null> {
         return this.expense(entry, {
             type: "describe", used: (result.duration / 1000) * 0.0023, data: { duration: result.duration }, bonus: 0.10
@@ -228,15 +231,15 @@ export class PlanManager {
     }
 
     public async expenseForVideo(
-        entry: DatabaseEntry | DatabaseInfo, video: TuringVideoResult, model: TuringVideoModel
+        entry: DatabaseInfo, video: TuringVideoResult, model: TuringVideoModel
     ): Promise<UserPlanVideoExpense | null> {
         return this.expense(entry, {
-            type: "video", used: model.id !== "gen2" ? (video.duration / 1000) * 0.0023 : 0.01, data: { duration: video.duration }, bonus: 0.05
+            type: "video", used: model.id !== "gen2" ? (video.duration / 1000) * 0.0023 : 0.01, data: { duration: video.duration, model: model.id }, bonus: 0.05
         });
     }
 
     public async expenseForSummary(
-        entry: DatabaseEntry | DatabaseInfo, video: YouTubeVideo, prompt: SummaryPrompt, tokens: number
+        entry: DatabaseInfo, video: YouTubeVideo, prompt: SummaryPrompt, tokens: number
     ): Promise<UserPlanSummaryExpense | null> {
         /* Total amount of tokens used and generated */
         const total: number = prompt.tokens + tokens;
@@ -403,7 +406,7 @@ export class PlanManager {
 				builder.setTitle(`${type.location === "guild" ? "The server's" : "Your"} pay-as-you-go plan 📊` );
 				builder.setDescription(displayMessage);
 
-			} else if (type.type === "subscription" && subscriptions[type.location] !== null) {
+			} else if (type.type === "subscription") {
 				const subscription = subscriptions[type.location]!;
 				builder.setTitle(`${type.location === "guild" ? "The server's" : "Your"} Premium subscription ✨`);
 

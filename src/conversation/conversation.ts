@@ -561,14 +561,14 @@ export class Conversation {
 		if (type.type !== "plan") return null;
 
 		const db = options.db[type.location];
-		if (!db || db.plan === null) return null;
+		if (!db || db.plan === null || !this.manager.bot.db.plan.active(db)) return null;
 
 		/* Calculated credit amount */
 		const amount: number | null = this.calculateChargeAmount(options);
 		if (amount === null) return null;
 
 		/* Add the charge to the user's plan. */
-		const charge = await this.manager.bot.db.plan.expenseForChat(db, {
+		const charge = await this.manager.bot.db.plan.expenseForChat(options.db, {
 			bonus: options.model.id === "gpt-4" ? 0.05 : 0.15,
 			used: amount,
 			

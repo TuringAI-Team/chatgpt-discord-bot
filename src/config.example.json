@@ -66,16 +66,6 @@
         "tenor": "Tenor API key"
     },
 
-    "nat": {
-        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36 Edg/111.0.1661.62",
-        "token": "OpenPlayground session token",
-
-        "auth": {
-            "noticeUat": "steal this from headers",
-            "uat": -1
-        }
-    },
-
     "stableHorde": {
         "key": "Stable Horde API key"
     },
@@ -94,6 +84,11 @@
                 "images": "images",
                 "keys": "keys"
             }
+        },
+        "redis": {
+            "url": "Redis URL",
+            "password": "Redis password",
+            "port": 12345
         }
     }
 }

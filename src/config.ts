@@ -97,20 +97,6 @@ export interface Config {
 	/* Various GIF APIs */
 	gif: {
 		tenor: string;
-	}
-
-	/* Nat playground API information & keys */
-	nat: {
-		/* User agent to fake */
-		userAgent: string;
-
-		/* Session token for authentication with Nat */
-		token: string;
-
-		/* Secrets related to Clerk authentication */
-		auth: {
-			uat: number;
-		}
 	};
 
 	/* Stable Horde API secrets & information */
@@ -129,9 +115,9 @@ export interface Config {
 				service: string;
 			};
 
-			collections: {
-				[key in DatabaseCollectionType]: string;
-			}
+			collections?: {
+				[key in DatabaseCollectionType]?: string;
+			};
 		};
 
 		redis: {
