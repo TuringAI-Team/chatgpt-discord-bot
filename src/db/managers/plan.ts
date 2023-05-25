@@ -226,7 +226,7 @@ export class PlanManager {
         entry: DatabaseInfo, result: ImageDescription
     ): Promise<UserPlanImageDescribeExpense | null> {
         return this.expense(entry, {
-            type: "describe", used: (result.duration / 1000) * 0.0023, data: { duration: result.duration }, bonus: 0.10
+            type: "describe", used: (Math.max(result.duration, 1000) / 1000) * 0.0023, data: { duration: result.duration }, bonus: 0.10
         });
     }
 
@@ -234,7 +234,7 @@ export class PlanManager {
         entry: DatabaseInfo, video: TuringVideoResult, model: TuringVideoModel
     ): Promise<UserPlanVideoExpense | null> {
         return this.expense(entry, {
-            type: "video", used: model.id !== "gen2" ? (video.duration / 1000) * 0.0023 : 0.01, data: { duration: video.duration, model: model.id }, bonus: 0.05
+            type: "video", used: (Math.max(video.duration, 1000) / 1000) * 0.0023, data: { duration: video.duration, model: model.id }, bonus: 0.05
         });
     }
 

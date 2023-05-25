@@ -46,7 +46,7 @@ export interface TuringChatResult {
     response: string;
 }
 
-export type TuringVideoModelName = "damo" | "videocrafter" | "gen2"
+export type TuringVideoModelName = "damo" | "videocrafter"
 
 export interface TuringVideoModel {
     /* Name of the model */
@@ -65,11 +65,6 @@ export const TuringVideoModels: TuringVideoModel[] = [
     {
         name: "VideoCrafter",
         id: "videocrafter"
-    },
-
-    {
-        name: "Runway Gen-2",
-        id: "gen2"
     }
 ]
 

@@ -56,23 +56,22 @@ export class CommandManager {
         if (this.commands.size === 0) throw new Error("Commands have not been loaded yet");
 
 		/* Information about each application command, as JSON */
-		const commandList: RESTPostAPIApplicationCommandsJSONBody[] = this.commands.filter(cmd => cmd.premiumOnly() || cmd.options.restriction.length === 0).map(cmd =>
+		const commandList: RESTPostAPIApplicationCommandsJSONBody[] = this.commands.filter(
+			cmd => cmd.premiumOnly() || cmd.planOnly() || cmd.subscriptionOnly() || cmd.options.restriction.length === 0
+		).map(cmd =>
 			(cmd.builder as SlashCommandBuilder).setDefaultPermission(true).toJSON()
 		);
 
-		/* REST API client */
-		const client: REST = new REST().setToken(this.bot.app.config.discord.token);
-
 		return new Promise(async (resolve, reject) => {
 			/* Register the serialized list of private commands to Discord. */
-			await client.put(Routes.applicationGuildCommands(this.bot.app.config.discord.id, this.bot.app.config.channels.moderation.guild), {
-				body: this.commands.filter(cmd => !cmd.premiumOnly() && cmd.options.restriction.length > 0).map(cmd =>
+			await this.bot.client.rest.put(Routes.applicationGuildCommands(this.bot.app.config.discord.id, this.bot.app.config.channels.moderation.guild), {
+				body: this.commands.filter(cmd => commandList.find(c => c.name === cmd.builder.name) === undefined).map(cmd =>
 					(cmd.builder as SlashCommandBuilder).setDefaultPermission(true).toJSON()
 				)
 			});
 
 			/* Register the serialized list of application commands to Discord. */
-			await client.put(Routes.applicationCommands(this.bot.app.config.discord.id), {
+			await this.bot.client.rest.put(Routes.applicationCommands(this.bot.app.config.discord.id), {
 				body: commandList
 			})
 				.then(() => resolve(commandList.length))
@@ -104,7 +103,7 @@ export class CommandManager {
 		const name: string = this.commandName(interaction, command);
 
 		/* If the cool-down entry doesn't exist yet, return nothing. */
-		if ((await this.bot.db.cache.get("cooldown", name)) == undefined) return null;
+		if ((await this.bot.db.cache.get("cooldown", name)) === null) return null;
 		return (await this.bot.db.cache.get("cooldown", name))!;
 	}
 
@@ -181,6 +180,7 @@ export class CommandManager {
 				{ name: `Premium 🌟 also includes many additional benefits; view /premium for more.`, value: "" }
 			]).catch(() => {});
 		}
+
 		/* Try to complete the options. */
 		try {
 			const data: CommandOptionChoice[] = await command.complete(interaction, db);
@@ -232,7 +232,7 @@ export class CommandManager {
 			).setEphemeral(true).send(interaction);
 
 		/* If this command is Premium-only and the user doesn't have a subscription, ... */
-		if (command.premiumOnly() && !subscription.premium) {
+		if ((command.planOnly() || command.premiumOnly()) && !subscription.premium) {
 			/* Which Premium type this command is restricted to */
 			const type = command.planOnly() && command.premiumOnly()
 				? null : command.planOnly() ? "plan" : "subscription";
@@ -290,7 +290,7 @@ export class CommandManager {
 		}
 
 		/* If the command is marked as private, do some checks to make sure only privileged users are able to execute this command. */
-		if (!command.premiumOnly()) {
+		if (!(command.planOnly() || command.subscriptionOnly())) {
 			/* Whether the user can execute this command */
 			const canExecute: boolean = this.bot.db.role.canExecuteCommand(db.user, command);
 

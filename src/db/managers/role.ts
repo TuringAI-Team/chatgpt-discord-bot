@@ -67,9 +67,9 @@ export class UserRoleManager {
         if (this.owner(user)) return true;
 
         if (command.premiumOnly()) {
-            if (command.restricted([ "subscription", "plan" ])) return this.db.users.type({ user }).premium;
-            else if (command.restricted([ "subscription" ])) return this.db.users.type({ user }).type === "subscription";
-            else if (command.restricted([ "plan" ])) return this.db.users.type({ user }).type === "plan";
+            if (command.premiumOnly()) return this.db.users.type({ user }).premium;
+            else if (command.subscriptionOnly()) return this.db.users.type({ user }).type === "subscription";
+            else if (command.planOnly()) return this.db.users.type({ user }).type === "plan";
         }
 
         return this.has(user, command.options.restriction as UserRole[], UserHasRoleCheck.Some);
