@@ -494,7 +494,7 @@ export class Conversation {
 	public cooldownTime(db: DatabaseInfo, model: ChatSettingsModel): number | null {
 		/* Subscription type of the user */
 		const type: UserSubscriptionType = this.manager.bot.db.users.type(db);
-		//if (type.type === "plan" && type.location === "user") return null;
+		if (type.type === "plan" && type.location === "user") return null;
 
 		if (type.type === "plan" && type.location === "guild") {
 			/* Cool-down, set by the server */
