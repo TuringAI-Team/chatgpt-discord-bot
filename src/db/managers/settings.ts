@@ -7,6 +7,7 @@ import { CONVERSATION_DEFAULT_COOLDOWN, Conversation } from "../../conversation/
 import { DatabaseInfo, DatabaseUser, DatabaseSettings, DatabaseGuild } from "./user.js";
 import { LoadingIndicatorManager, LoadingIndicators } from "../types/indicator.js";
 import { GENERATION_SIZES, getAspectRatio } from "../../commands/imagine.js";
+import { ChatSettingsPlugins } from "../../conversation/settings/plugin.js";
 import { STABLE_HORDE_AVAILABLE_MODELS } from "../../image/types/model.js";
 import { ChatSettingsModels } from "../../conversation/settings/model.js";
 import { ChatSettingsTones } from "../../conversation/settings/tone.js";
@@ -42,7 +43,7 @@ export interface SettingsCategory {
     emoji: DisplayEmoji;
 }
 
-export type SettingsCategoryName = "general" | "image" | "video" | "chat" | "premium" | "limits" | "character" | "alan"
+export type SettingsCategoryName = "general" | "image" | "video" | "chat" | "premium" | "limits" | "plugins" | "character" | "alan"
 export type SettingKeyAndCategory = `${SettingsCategoryName}:${SettingsName}`
 
 export const SettingCategories: SettingsCategory[] = [
@@ -68,6 +69,12 @@ export const SettingCategories: SettingsCategory[] = [
         name: "Limits",
         type: "limits",
         emoji: { fallback: "‼️" }
+    },
+
+    {
+        name: "Plugins",
+        type: "plugins",
+        emoji: { fallback: "🚀" }
     },
 
     {
@@ -349,7 +356,11 @@ type MultipleChoiceSettingsObject = {
 }
 
 interface MultipleChoiceSettingOptionData {
+    /* Which choices to display */
     choices: ChoiceSettingOptionChoice[];
+
+    /* How many options can be selected, maximum */
+    max?: number;
 }
 
 export class MultipleChoiceSettingsOption extends SettingsOption<MultipleChoiceSettingsObject, BaseSettingsOptionData & MultipleChoiceSettingOptionData> {
@@ -385,8 +396,8 @@ export class MultipleChoiceSettingsOption extends SettingsOption<MultipleChoiceS
                 new StringSelectMenuBuilder()
                     .setCustomId(this.customID())
                     .setPlaceholder(`${this.data.name} ${Emoji.display(this.data.emoji)}${enabled.length > 0 ? ` (${enabled.length} selected)` : ""}`)
-                    .addOptions(...this.data.choices.map(({ name, value, description, restricted }) => ({
-                        emoji: enabled.includes(value) ? "<:blurple_check:1105178019020165161>" : undefined,
+                    .addOptions(...this.data.choices.map(({ name, value, description, restricted, emoji }) => ({
+                        emoji: enabled.includes(value) ? "<:blurple_check:1105178019020165161>" : emoji ? typeof emoji === "object" ? Emoji.display(emoji, true) : emoji : undefined,
                         description: restricted ? `${description ?? ""} (${restricted}-only)` : description,
                         label: name, value
                     }) as SelectMenuComponentOptionData))
@@ -413,7 +424,7 @@ export class RoleSettingsOption extends SettingsOption<Snowflake, RoleSettingsOp
         /* All available roles on the guild */
         const roles = Array.from(guild.guild.roles.cache.values())
             .filter(role => role.hoist && !role.managed)
-            .slice(undefined, 25);
+            .slice(undefined, 20);
 
         return builder
             .addComponents(
@@ -430,7 +441,7 @@ export class RoleSettingsOption extends SettingsOption<Snowflake, RoleSettingsOp
                             label: role.name,
                             value: role.id,
                             default: current === role.id
-                        })).slice(undefined, 20),
+                        })),
                         
                         { label: "(none)", description: this.data.noneTooltip, value: "0" }
                     ])
@@ -853,13 +864,34 @@ export const SettingOptions: SettingsOption[] = [
         emoji: { fallback: "👤" },
         description: "Character avatar URL",
         location: SettingsLocation.Guild,
-        default: "https://app.turing.sh/icons/neon.png", min: 0, max: 256,
+        default: "https://app.turing.sh/icons/neon.png", min: 0, max: 1024,
         placeholder: "https://app.turing.sh/icons/neon.png",
 
         explanation: {
             description: "This setting changes the avatar of the custom character, set it to any valid image URL to see it in the chat."
         }
     }),
+
+    new MultipleChoiceSettingsOption({
+        key: "list",
+        name: "Which plugins to use",
+        category: "plugins",
+        emoji: { fallback: "🛠️" },
+        description: "Which ChatGPT/GPT-4 plugins to enable",
+        location: SettingsLocation.User,
+        max: 3,
+
+        explanation: {
+            description: "This setting changes the avatar of the custom character, set it to any valid image URL to see it in the chat."
+        },
+
+        choices: ChatSettingsPlugins.map(plugin => ({
+            name: plugin.options.name,
+            description: plugin.options.description,
+            value: plugin.id,
+            emoji: plugin.options.emoji !== null ? plugin.options.emoji as DisplayEmoji : undefined,
+        }))
+    })
 ]
 
 interface SettingsPageBuilderOptions {
@@ -1207,7 +1239,17 @@ export class UserSettingsManager {
                     
                     option.data.choices.forEach(c => {
                         updated[c.value] = newValueName === c.value ? !previous[newValueName] : previous[c.value];
-                    })
+                    });
+
+                    if (option.data.max && Object.values(updated).filter(Boolean).length > option.data.max) {
+                        return void await new Response()
+                            .addEmbed(builder => builder
+                                .setDescription(`The option **${option.data.name}**${option.data.emoji ? ` ${typeof option.data.emoji === "object" ? Emoji.display(option.data.emoji, true) : option.data.emoji}` : ""} is limited to **${option.data.max}** selected choices at a time.`)
+                                .setColor("Red")
+                            )
+                            .setEphemeral(true)
+                        .send(interaction);
+                    }
                     
                     changes[key] = updated;
                 }

@@ -18,6 +18,9 @@ export enum ModelType {
     /* OpenAI ChatGPT API */
     OpenAIChat,
 
+    /* OpenAI ChatGPT API with plugin support */
+    OpenAIPlugins,
+
     /* OpenAI's completion API */
     OpenAICompletion,
 

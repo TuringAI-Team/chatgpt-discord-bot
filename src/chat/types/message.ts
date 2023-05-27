@@ -55,4 +55,6 @@ export type ChatNoticeMessage = ResponseMessage & {
 	notice: string;
 }
 
+export type PartialChatNoticeMessage = Partial<Pick<ChatNoticeMessage, "raw" | "type" | "images">> & Pick<ChatNoticeMessage, "text" | "display" | "notice">
+
 export type PartialResponseMessage = Partial<Pick<ResponseMessage, "raw" | "type" | "images">> & Pick<ResponseMessage, "text" | "display">

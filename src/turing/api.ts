@@ -2,10 +2,12 @@ import { fetchEventSource } from "@waylaidwanderer/fetch-event-source";
 import { Awaitable } from "discord.js";
 import { inspect } from "util";
 
+import { ChatSettingsPlugin, ChatSettingsPluginIdentifier } from "../conversation/settings/plugin.js";
 import { ChoiceSettingOptionChoice, MultipleChoiceSettingsOption } from "../db/managers/settings.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
 import { ChatOutputImage, ImageBuffer } from "../chat/types/image.js";
 import { Conversation } from "../conversation/conversation.js";
+import { OpenAIChatMessage } from "../openai/types/chat.js";
 import { MetricsType } from "../db/managers/metrics.js";
 import { ChatInputImage } from "../chat/types/image.js";
 import { DatabaseUser } from "../db/managers/user.js";
@@ -13,7 +15,12 @@ import { GPTAPIError } from "../error/gpt/api.js";
 import { Utils } from "../util/utils.js";
 import { Bot } from "../bot/bot.js";
 
-type TuringAPIPath = `cache/${string}` | "imgs/filter" | "imgs/dalle" | `text/${string}` | `video/${TuringVideoModelName}` | `text/alan/${TuringAlanChatModel}` | `chart/${MetricsType}`
+type TuringAPIPath = 
+    `cache/${string}`
+    | "imgs/filter" | "imgs/dalle"
+    | `text/${string}` | `text/alan/${TuringAlanChatModel}` | `text/plugins/${TuringChatPluginsModel}`
+    | `video/${TuringVideoModelName}`
+    | `chart/${MetricsType}`
 
 interface TuringAPIFilterResult {
     isNsfw: boolean;
@@ -422,6 +429,42 @@ export interface TuringChartResult {
 
 export type TuringTrackingType = "topgg"
 
+interface TuringChatPluginsBody {
+    messages: OpenAIChatMessage[];
+    pluginList: ChatSettingsPluginIdentifier[];
+}
+
+export type TuringChatPluginsModel = "chatgpt" | "gpt-4"
+
+export interface TuringChatPluginsOptions {
+    /* Which model to use */
+    model: TuringChatPluginsModel;
+
+    /* OpenAI chat messages to send to the model */
+    messages: OpenAIChatMessage[];
+
+    /* Plugins to use for this request */
+    plugins: ChatSettingsPlugin[];
+
+    /* Progress callback to call when a new token is generated */
+    progress: (result: TuringChatPluginsPartialData) => Awaitable<void>;
+
+    /* User, who initiated this chat request */
+    user: DatabaseUser;
+}
+
+export interface TuringChatPluginsPartialData {
+    result: string;
+    extra: string | {};
+    done: boolean;
+    thought: string | null;
+    tool: string | null;
+    credits: number;
+    error: any | null;
+}
+
+export type TuringChatPluginsResult = TuringChatPluginsPartialData
+
 export class TuringAPI {
     private readonly bot: Bot;
 
@@ -472,7 +515,7 @@ export class TuringAPI {
         const imageModifier = this.bot.db.settings.get(user, "alan:imageModifier");
 
         /* Enabled Alan plugins */
-        const plugins: string[] = Object.entries(this.bot.db.settings.get(user, "alan:plugins") as MultipleChoiceSettingsOption)
+        const plugins: string[] = Object.entries(this.bot.db.settings.get<any>(user, "alan:plugins"))
             .filter(([ _, enabled ]) => enabled)
             .map(([ key ]) => key);
 
@@ -606,6 +649,91 @@ export class TuringAPI {
         return this.request("imgs/filter", "POST", {
             prompt, model
         });
+    }
+
+    public async chatPlugins({ messages, model, plugins, progress }: TuringChatPluginsOptions): Promise<TuringChatPluginsResult> {
+        /* Latest message of the stream */
+        let latest: TuringChatPluginsPartialData | null = null;
+
+        /* Whether the generation is finished */
+        let done: boolean = false;
+
+        /* Request body for the API */
+        const body: TuringChatPluginsBody = {
+            messages,
+            pluginList: plugins.map(p => p.id)
+        };
+
+        /* Make the request to OpenAI's API. */
+        await new Promise<void>(async (resolve, reject) => {
+            const controller: AbortController = new AbortController();
+
+            const abortTimer: NodeJS.Timeout = setTimeout(() => {
+                controller.abort();
+                reject(new TypeError("Request timed out"));
+            }, 30 * 1000);
+
+            try {
+                await fetchEventSource(this.url(`text/plugins/${model}`), {
+                    headers: this.headers() as any,
+                    body: JSON.stringify(body),
+                    mode: "cors",
+                    signal: controller.signal,
+                    method: "POST",
+
+                    onclose: () => {
+                        if (!done) {
+                            done = true;
+
+                            controller.abort();
+                            resolve();
+                        }
+                    },
+                    
+                    onerror: (error) => {
+                        clearTimeout(abortTimer);
+                        throw error;
+                    },
+        
+                    onopen: async (response) => {
+                        clearTimeout(abortTimer);
+
+                        /* If the request failed for some reason, throw an exception. */
+                        if (response.status !== 200) {
+                            const error = await this.error(response, `text/plugins/${model}`, true);
+
+                            controller.abort();
+                            reject(error);
+                        }
+                    },
+
+                    onmessage: async (event) => {
+                        console.log(event.data)
+
+                        /* Response data */
+                        const data: TuringChatPluginsPartialData = JSON.parse(event.data);
+                        if (!data || !data.result) return;
+
+                        latest = data;
+                        if (progress !== undefined) progress(latest);
+                    },
+                });
+
+            } catch (error) {
+                if (error instanceof GPTAPIError) return reject(error);
+
+                reject(new GPTGenerationError({
+                    type: GPTGenerationErrorType.Other,
+                    cause: error as Error
+                }));
+            }
+        });
+
+        if (latest === null) throw new GPTGenerationError({
+            type: GPTGenerationErrorType.Empty
+        });
+
+        return latest;
     }
 
     public async chat(options: TuringChatOptions): Promise<TuringChatResult> {

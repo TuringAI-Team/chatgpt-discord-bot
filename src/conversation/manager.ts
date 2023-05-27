@@ -1,6 +1,5 @@
 import { APIUser, Collection, Snowflake, User } from "discord.js";
 
-import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
 import { Conversation } from "./conversation.js";
 import { Generator } from "./generator.js";
 import { Session } from "./session.js";
@@ -41,8 +40,7 @@ export class ConversationManager {
     public async setup(): Promise<void> {
         /* Create a new session. */
         this.session = new Session(this, {
-            token: this.bot.app.config.openAI.key,
-            type: "openai"
+            token: this.bot.app.config.openAI.key
         });
 
         /* Try to initialize the session. */
@@ -70,7 +68,7 @@ export class ConversationManager {
         if (this.has(user)) return this.get(user)!;
 
         /* Create a new conversation. */
-        const conversation: Conversation = new Conversation(this, this.session, user);
+        const conversation: Conversation = new Conversation(this, user);
         this.conversations.set(user.id, conversation);
 
         /* If the conversation hasn't been loaded yet, try to load it from the database. */
@@ -87,7 +85,7 @@ export class ConversationManager {
         conversation.history = [];
 
         /* Remove the conversation from the collection, let Node do the rest. */
-        this.conversations.delete(conversation.user.id);
+        this.conversations.delete(conversation.id);
     }
 
     /**
@@ -107,6 +105,6 @@ export class ConversationManager {
      * @returns Whether the user already has a session running
      */
     public has(user: User): boolean {
-        return this.conversations.get(user.id) != undefined && this.conversations.get(user.id)!.active;
+        return this.get(user) !== null && this.get(user)!.active;
     }
 }

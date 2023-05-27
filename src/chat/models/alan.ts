@@ -1,8 +1,8 @@
-import { ChatAnalyzedImage, ChatInputImage, ChatOutputImage } from "../types/image.js";
+import { TuringAlanImageGenerator, TuringAlanImageGenerators, TuringAlanResult } from "../../turing/api.js";
 import { ChatResetOptions, GPTImageAnalyzeOptions, ModelGenerationOptions } from "../types/options.js";
+import { ChatAnalyzedImage, ChatInputImage, ChatOutputImage } from "../types/image.js";
 import { ChatModel, ModelCapability, ModelType } from "../types/model.js";
 import { MessageType, PartialResponseMessage } from "../types/message.js";
-import { TuringAlanImageGenerator, TuringAlanImageGenerators, TuringAlanResult } from "../../turing/api.js";
 import { ChatClient, PromptData } from "../client.js";
 import { Utils } from "../../util/utils.js";
 

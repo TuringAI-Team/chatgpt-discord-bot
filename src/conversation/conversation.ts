@@ -125,7 +125,7 @@ export class Conversation {
 	/* The conversation's database entry */
 	public db: DatabaseConversation | null;
 
-	constructor(manager: ConversationManager, session: Session, user: User) {
+	constructor(manager: ConversationManager, user: User) {
 		this.manager = manager;
 
 		this.cooldown = new Cooldown({ time: CONVERSATION_DEFAULT_COOLDOWN.time! });

@@ -421,13 +421,58 @@ Current date & time: ${context.time}, ${context.date}
         history: { maxTokens: 4097 },
 
         billing: {
-            type: ChatSettingsModelBillingType.Custom,
-            amount: 0
+            type: ChatSettingsModelBillingType.Custom, amount: 0
         },
 
         prompt: {
             type: ChatSettingsModelPromptType.Raw,
             builder: ({ options }) => options.prompt
+        }
+    }),
+
+    new ChatSettingsModel({
+        name: "ChatGPT + Plugins",
+        description: "The ChatGPT model with plugin support",
+        emoji: { display: "<:chatgpt:1097849346164281475>", fallback: "😐" },
+        restricted: "plan",
+        type: ModelType.OpenAIPlugins,
+        history: { maxTokens: 2048 },
+
+        billing: {
+            type: ChatSettingsModelBillingType.Custom, amount: 0
+        },
+
+        prompt: {
+            builder: ({ context }) => `
+I am ChatGPT, a large language model trained by OpenAI, released in November 2022.
+I must provide engaging & entertaining responses.
+
+Current date & time: ${context.time}, ${context.date}
+Knowledge cut-off: September 2021
+`
+        }
+    }),
+
+    new ChatSettingsModel({
+        name: "GPT-4 + Plugins",
+        description: "The GPT-4 model with plugin support",
+        emoji: { fallback: "✨" },
+        restricted: "plan",
+        type: ModelType.OpenAIPlugins,
+        history: { maxTokens: 2048 },
+
+        billing: {
+            type: ChatSettingsModelBillingType.Custom, amount: 0
+        },
+
+        prompt: {
+            builder: ({ context }) => `
+I am GPT-4, a new GPT model by OpenAI released on the 14th March 2023. I am an improved version of ChatGPT, and provide more advanced and complex replies.
+I must provide engaging & entertaining responses.
+
+Current date & time: ${context.time}, ${context.date}
+Knowledge cut-off: September 2021
+`
         }
     }),
 

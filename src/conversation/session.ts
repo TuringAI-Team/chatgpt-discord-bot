@@ -89,7 +89,6 @@ export interface SessionSubscription {
 
 
 export interface ChatCredentials {
-    type: string;
     token: string;
 }
 

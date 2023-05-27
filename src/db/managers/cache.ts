@@ -88,6 +88,8 @@ export class CacheManager {
             this.db.bot.logger.error(
                 `Failed to ${chalk.bold(action)} in cache collection ${chalk.bold(collection)} for key ${chalk.bold(key)} ->`, error
             );
+
+            throw error;
         }
     }
 }
