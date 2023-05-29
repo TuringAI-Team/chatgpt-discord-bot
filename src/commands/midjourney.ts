@@ -8,16 +8,16 @@ import { LoadingIndicatorManager } from "../db/types/indicator.js";
 import { Conversation } from "../conversation/conversation.js";
 import { ErrorResponse } from "../command/response/error.js";
 import { DatabaseInfo } from "../db/managers/user.js";
+import { CooldownData } from "../command/cooldown.js";
 import { Response } from "../command/response.js";
 import { Utils } from "../util/utils.js";
 import { Bot } from "../bot/bot.js";
-import { CooldownData } from "../command/cooldown.js";
 
 export default class MidjourneyCommand extends Command {
 	constructor(bot: Bot) {
 		super(bot, new SlashCommandBuilder()
 			.setName("mj")
-			.setDescription("Generate beautiful images using Midjourney")
+			.setDescription("Generate beautiful images using MJ")
 			.addStringOption(builder => builder
 				.setName("prompt")
 				.setDescription("The possibilities are endless... 💫")
