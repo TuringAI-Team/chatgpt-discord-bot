@@ -151,7 +151,6 @@ export default class MidjourneyCommand extends Command {
 		if (action === "upscale" || action === "variation") {
 			/* Get the current cool-down of the command. */
 			const cooldown: CooldownData | null = await this.currentCooldown(interaction);
-			console.log(cooldown)
 			
 			/* If the user is currently on cool-down for this command, ... */
 			if (cooldown !== null && cooldown.createdAt) {
@@ -222,9 +221,9 @@ export default class MidjourneyCommand extends Command {
 				(button.data as any).disabled = true;
 			});
 
-			/*await interaction.message.edit({
+			await interaction.message.edit({
 				embeds: [ EmbedBuilder.from(interaction.message.embeds[0]).setImage(`attachment://${id}.png`) ], components: [ row ]
-			});*/
+			});
 
 			await interaction.deferUpdate();
 

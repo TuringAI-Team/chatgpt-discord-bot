@@ -721,8 +721,6 @@ export class TuringAPI {
 
                     onmessage: async (event) => {
                         try {
-                            console.log(event.data)
-
                             /* Response data */
                             const data: MidjourneyPartialResult = JSON.parse(event.data);
                             if (!data) return;
