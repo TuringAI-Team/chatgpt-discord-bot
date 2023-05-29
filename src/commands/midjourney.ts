@@ -34,9 +34,9 @@ export default class MidjourneyCommand extends Command {
 			)
 		, {
 			cooldown: {
-				free: 30 * 1000,
-				voter: 20 * 1000,
-				subscription: 15 * 1000
+				free: 60 * 1000,
+				voter: 50 * 1000,
+				subscription: 25 * 1000
 			}
 		});
 	}
@@ -72,7 +72,7 @@ export default class MidjourneyCommand extends Command {
 		if (!result.done && !result.queued) embed.setDescription(`${result.status !== null && result.status > 0 ? `${result.status * 100}%` : "Generating"} **...** ${loadingEmoji}`);
 		else if (result.queued) embed.setDescription(`Waiting in position \`#${result.queued + 1}\` **...** ${loadingEmoji}`);
 
-		if (result.image && result.id) {
+		if (result.image) {
 			const buffer = await Utils.fetchBuffer(result.image);
 
 			if (buffer) {
@@ -188,9 +188,6 @@ export default class MidjourneyCommand extends Command {
 					}
 				})
 			);
-
-			/* Remove the variation row from the message. */
-			if (action === "variation") components = [ components[1] ];
 
 			await interaction.message.edit({
 				embeds: [ EmbedBuilder.from(interaction.message.embeds[0]).setImage("attachment://output.png") ], components
