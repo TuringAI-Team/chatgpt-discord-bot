@@ -269,8 +269,8 @@ export class Generator {
 		const action: string = parts[0];
 		const id: string = parts[1];
 
-		if (id !== "-1" && id !== button.user.id && !action.startsWith("i:view")) return void await button.deferUpdate();
-		if (action !== "delete" && action !== "check-vote" && action !== "continue" && !action.startsWith("image:")) return;
+		if (id !== "-1" && id !== button.user.id && !action.startsWith("i-view")) return void await button.deferUpdate();
+		if (action !== "delete" && action !== "check-vote" && action !== "continue" && !action.startsWith("i-")) return;
 
 		/* Get the user's conversation. */
 		const conversation: Conversation = await this.bot.conversation.create(button.user);
@@ -279,8 +279,8 @@ export class Generator {
 		const db: DatabaseInfo = await this.bot.db.users.fetchData(button.user, button.guild);
 
 		/* If the user interacted generated image, ... */
-		if (action.startsWith("i:")) {
-			return await (this.bot.command.get<ImagineCommand>("imagine")).handleButtonInteraction(button, conversation, action.replace("i:", ""), parts);
+		if (action.startsWith("i-")) {
+			return await (this.bot.command.get<ImagineCommand>("imagine")).handleButtonInteraction(button, conversation, action.replace("i-", ""), parts);
 
 		/* If the user requsted to delete this interaction response, ... */
 		} else if (action === "delete") {

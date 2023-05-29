@@ -73,8 +73,8 @@ export default class MidjourneyCommand extends Command {
 			const buffer = await Utils.fetchBuffer(result.image);
 
 			if (buffer) {
-				response.addAttachment(new AttachmentBuilder(buffer.buffer).setName(`${result.id}.png`));
-				embed.setImage(`attachment://${result.id}.png`);
+				response.addAttachment(new AttachmentBuilder(buffer.buffer).setName("output.png"));
+				embed.setImage("attachment://output.png");
 			}
 		}
 
@@ -190,7 +190,7 @@ export default class MidjourneyCommand extends Command {
 			if (action === "variation") components = [ components[1] ];
 
 			await interaction.message.edit({
-				embeds: [ EmbedBuilder.from(interaction.message.embeds[0]).setImage(`attachment://${id}.png`) ], components
+				embeds: [ EmbedBuilder.from(interaction.message.embeds[0]).setImage("attachment://output.png") ], components
 			});
 
 			await interaction.deferReply();
@@ -222,7 +222,7 @@ export default class MidjourneyCommand extends Command {
 			});
 
 			await interaction.message.edit({
-				embeds: [ EmbedBuilder.from(interaction.message.embeds[0]).setImage(`attachment://${interaction.message.attachments.at(0)!.name}`) ], components: [ row ]
+				embeds: [ EmbedBuilder.from(interaction.message.embeds[0]).setImage("attachment://output.png") ], components: [ row ]
 			});
 
 			await interaction.deferUpdate();
