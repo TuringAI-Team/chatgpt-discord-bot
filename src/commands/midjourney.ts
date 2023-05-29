@@ -42,12 +42,12 @@ export default class MidjourneyCommand extends Command {
 	}
 
 	private async build(interaction: CommandInteraction | ButtonInteraction, result: MidjourneyPartialResult | MidjourneyResult, db: DatabaseInfo): Promise<Response> {
-		if (result.error && result.error.includes("too many images")) return new ErrorResponse({
+		if (result.error && result.error.includes("many images")) return new ErrorResponse({
 			message: "**We are currently dealing with too much traffic**; *please try your request again later*."
 		});
 
 		if (result.error && result.error.includes("Flagged")) return new ErrorResponse({
-			message: "**Your prompt was blocked by Midjourney's moderation filters**; *please try out a different prompt*."
+			message: "**Your prompt was blocked by the moderation filters**; *please try out a different prompt*."
 		});
 
 		if (result.error) return new ErrorResponse({
