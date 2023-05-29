@@ -443,7 +443,7 @@ export default class ImagineCommand extends Command {
 
 			row.addComponents(
 				new ButtonBuilder()
-					.setCustomId(`image:view:${conversation.user.id}:${result.id}:${image.id}`)
+					.setCustomId(`i:view:${conversation.user.id}:${result.id}:${image.id}`)
 					.setStyle(ButtonStyle.Secondary)
 					.setLabel(`U${index + 1}`)
 			);
@@ -456,7 +456,7 @@ export default class ImagineCommand extends Command {
 		return new ActionRowBuilder<ButtonBuilder>()
 			.addComponents(RATE_ACTIONS.map(action =>
 				new ButtonBuilder()
-					.setCustomId(`image:rate:${conversation.user.id}:${result.id}:${action.value}`)
+					.setCustomId(`i:rate:${conversation.user.id}:${result.id}:${action.value}`)
 					.setStyle(ButtonStyle.Secondary)
 					.setEmoji(action.emoji)
 			));

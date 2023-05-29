@@ -222,7 +222,7 @@ export default class MidjourneyCommand extends Command {
 			});
 
 			await interaction.message.edit({
-				embeds: [ EmbedBuilder.from(interaction.message.embeds[0]).setImage(`attachment://${id}.png`) ], components: [ row ]
+				embeds: [ EmbedBuilder.from(interaction.message.embeds[0]).setImage(`attachment://${interaction.message.attachments.at(0)!.name}`) ], components: [ row ]
 			});
 
 			await interaction.deferUpdate();
