@@ -65,9 +65,12 @@ export default class MidjourneyCommand extends Command {
 			.setColor(result.done ? this.bot.branding.color : "Orange")
 			.setFooter({ text: "We are not affiliated with Midjourney.", iconURL: "https://cdn.discordapp.com/avatars/936929561302675456/4a79ea7cd151474ff9f6e08339d69380.png" });
 
-		embed.setTitle(`**${Utils.truncate(result.prompt, 150)}** — @${interaction.user.username}${result.action ? ` ${result.action === "upscale" ? "🔎" : "🔄"}` : ""}`);
+		console.log(result)
 
-		if (!result.done) embed.setDescription(`${result.status !== null && result.status > 0 ? `${result.status * 100}%` : "Generating"} **...** ${loadingEmoji}`);
+		embed.setTitle(`**${result.prompt ? Utils.truncate(result.prompt, 150): "..."}** — @${interaction.user.username}${result.action ? ` ${result.action === "upscale" ? "🔎" : "🔄"}` : ""}`);
+
+		if (!result.done && !result.queued) embed.setDescription(`${result.status !== null && result.status > 0 ? `${result.status * 100}%` : "Generating"} **...** ${loadingEmoji}`);
+		else if (result.queued) embed.setDescription(`Waiting in position \`#${result.queued + 1}\` **...** ${loadingEmoji}`);
 
 		if (result.image && result.id) {
 			const buffer = await Utils.fetchBuffer(result.image);

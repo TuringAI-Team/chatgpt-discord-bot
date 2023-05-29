@@ -526,6 +526,7 @@ export interface MidjourneyPartialResult {
     action?: MidjourneyAction;
     number?: number;
     jobId?: string;
+    queued?: number;
 }
 
 export type MidjourneyResult = Required<MidjourneyPartialResult>
