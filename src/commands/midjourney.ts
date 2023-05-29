@@ -65,8 +65,6 @@ export default class MidjourneyCommand extends Command {
 			.setColor(result.done ? this.bot.branding.color : "Orange")
 			.setFooter({ text: "We are not affiliated with Midjourney.", iconURL: "https://cdn.discordapp.com/avatars/936929561302675456/4a79ea7cd151474ff9f6e08339d69380.png" });
 
-		console.log(result)
-
 		embed.setTitle(`**${result.prompt ? Utils.truncate(result.prompt, 150): "..."}** — @${interaction.user.username}${result.action ? ` ${result.action === "upscale" ? "🔎" : "🔄"}` : ""}`);
 
 		if (!result.done && !result.queued) embed.setDescription(`${result.status !== null && result.status > 0 ? `${result.status * 100}%` : "Generating"} **...** ${loadingEmoji}`);
