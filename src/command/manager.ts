@@ -1,9 +1,9 @@
-import { ActionRowBuilder, AutocompleteInteraction, ComponentType, ButtonStyle, ButtonBuilder, ChatInputCommandInteraction, Collection, InteractionResponse, Message, SlashCommandBuilder, MessageContextMenuCommandInteraction, CommandInteraction, BaseInteraction } from "discord.js";
+import { ActionRowBuilder, AutocompleteInteraction, ComponentType, ButtonStyle, ButtonBuilder, ChatInputCommandInteraction, Collection, InteractionResponse, Message, SlashCommandBuilder, MessageContextMenuCommandInteraction, CommandInteraction, BaseInteraction, ButtonInteraction } from "discord.js";
 import { RESTPostAPIApplicationCommandsJSONBody, Routes } from "discord-api-types/v10";
 import { DiscordAPIError, REST } from "@discordjs/rest";
 
 import { Command, CommandOptionChoice, CommandRestrictionType, CommandSpecificCooldown } from "./command.js";
-import { DatabaseInfo, DatabaseUserInfraction } from "../db/managers/user.js";
+import { DatabaseInfo, DatabaseUserInfraction, UserSubscriptionType } from "../db/managers/user.js";
 import { handleError } from "../util/moderation/error.js";
 import { Bot, BotStatus } from "../bot/bot.js";
 import { CooldownData } from "./cooldown.js";
@@ -87,7 +87,7 @@ export class CommandManager {
 		return found;
 	}
 
-	private commandName(interaction: CommandInteraction, command: Command): string {
+	private commandName(interaction: CommandInteraction | ButtonInteraction, command: Command): string {
 		return `${interaction.user.id}-${interaction instanceof ChatInputCommandInteraction && interaction.options.getSubcommand(false) ? `${command.builder.name}-${interaction.options.getSubcommand(true)}` : command.builder.name}`;
 	}
 
@@ -97,14 +97,16 @@ export class CommandManager {
 	 * @param interaction Interaction user to check
 	 * @param command Command to check
 	 */
-	public async cooldown(interaction: ChatInputCommandInteraction, command: Command): Promise<CooldownData | null> {
+	public async cooldown(interaction: ChatInputCommandInteraction | ButtonInteraction, command: Command): Promise<CooldownData | null> {
 		/* If the command doesn't have a cool-down time set, abort. */
 		if (command.options.cooldown === null) return null;
 		const name: string = this.commandName(interaction, command);
 
-		/* If the cool-down entry doesn't exist yet, return nothing. */
-		if ((await this.bot.db.cache.get("cooldown", name)) === null) return null;
-		return (await this.bot.db.cache.get("cooldown", name))!;
+		/* Cached cool-down entry */
+		const cached: CooldownData | null = await this.bot.db.cache.get("cooldown", name) ?? null;
+		if (cached === null || (cached.createdAt + cached.duration) < Date.now()) return null;
+
+		return cached;
 	}
 
 	private cooldownDuration(command: Command, db: DatabaseInfo): number | null {
@@ -127,7 +129,7 @@ export class CommandManager {
 	 * @param interaction Interaction user to set cool-down for 
 	 * @param command Command to set cool-down for
 	 */
-	public async applyCooldown(interaction: ChatInputCommandInteraction, db: DatabaseInfo, command: Command): Promise<void> {
+	public async applyCooldown(interaction: ChatInputCommandInteraction | ButtonInteraction, db: DatabaseInfo, command: Command): Promise<void> {
 		/* If the command doesn't have a cool-down time set, abort. */
 		if (!command.options.cooldown || this.bot.app.config.discord.owner.includes(interaction.user.id)) return;
 		const name: string = this.commandName(interaction, command);
@@ -141,19 +143,48 @@ export class CommandManager {
 			createdAt: Date.now(), duration
 		});
 
+		await this.bot.db.metrics.changeCooldownMetric({ [name]: "+1" });
+		await this.bot.db.users.incrementInteractions(db, "cooldown_messages");
+
 		/* Delete the user's cooldown from the database, once it expires. */
 		setTimeout(async () => {
 			await this.bot.db.cache.delete("cooldown", name);
 		}, duration);
 	}
 
-	public async removeCooldown(interaction: CommandInteraction, command: Command<any>): Promise<void> {
+	public async removeCooldown(interaction: CommandInteraction | ButtonInteraction, command: Command): Promise<void> {
 		const name: string = this.commandName(interaction, command);
 		await this.bot.db.cache.delete("cooldown", name);
 	}
 
 	public hasCooldownExpired(cooldown: CooldownData): boolean {
 		return cooldown.createdAt + cooldown.duration < Date.now();
+	}
+
+	public cooldownMessage(interaction: CommandInteraction | MessageContextMenuCommandInteraction | ButtonInteraction, command: Command, db: DatabaseInfo, cooldown: CooldownData): Response {
+		/* Subscription type of the user & guild */
+		const subscription = this.bot.db.users.type(db);
+
+		/* Send an informative message about the cool-down. */
+		const response: Response = new Response()
+			.addEmbed(builder => builder
+				.setTitle("Whoa-whoa... slow down ⌛")
+				.setDescription(`This ${interaction instanceof MessageContextMenuCommandInteraction ? "context menu action" : "command"} is currently on cool-down. You can use it again <t:${Math.floor((cooldown.createdAt + cooldown.duration) / 1000)}:R>.`)
+				.setColor("Yellow")
+			)
+			.setEphemeral(true);
+
+		if (typeof command.options.cooldown === "object" && !subscription.premium) {
+			/* How long the cool-down will be, if the user has Premium */
+			const duration: number = (command.options.cooldown as CommandSpecificCooldown).subscription;
+
+			response.addEmbed(builder => builder
+				.setDescription(`✨ By buying **[Premium](${Utils.shopURL()})**, the cool-down will be lowered to **${Math.floor(duration / 1000)} seconds** only.\n**Premium** *also includes further benefits, view \`/premium\` for more*. ✨`)
+				.setColor("Orange")
+			);
+		}
+
+		return response;
 	}
 
 	/**
@@ -249,33 +280,11 @@ export class CommandManager {
 
 		/* If the user is currently on cool-down for this command, ... */
 		if (command.options.cooldown !== null && cooldown !== null && cooldown.createdAt) {
-			/* Send an informative message about the cool-down. */
-			const response: Response = new Response()
-				.addEmbed(builder => builder
-					.setTitle("Whoa-whoa... slow down ⌛")
-					.setDescription(`This ${interaction instanceof MessageContextMenuCommandInteraction ? "context menu action" : "command"} is currently on cool-down. You can use it again <t:${Math.floor((cooldown.createdAt + cooldown.duration) / 1000)}:R>.`)
-					.setColor("Yellow")
-				)
-				.setEphemeral(true);
-
-			if (typeof command.options.cooldown === "object" && !subscription.premium) {
-				/* How long the cool-down will be, if the user has Premium */
-				const duration: number = (command.options.cooldown as CommandSpecificCooldown).subscription;
-
-				response.addEmbed(builder => builder
-					.setDescription(`✨ By buying **[Premium](${Utils.shopURL()})**, the cool-down will be lowered to **${Math.floor(duration / 1000)} seconds** only.\n**Premium** *also includes further benefits, view \`/premium\` for more*. ✨`)
-					.setColor("Orange")
-				);
-			}
+			/* Build the cool-down message. */
+			const response: Response = this.cooldownMessage(interaction, command, db, cooldown);
 
 			/* How long until the cool-down expires */
 			const delay: number = (cooldown.createdAt + cooldown.duration) - Date.now() - 1000;
-
-			await this.bot.db.metrics.changeCooldownMetric({
-				[command.builder.name]: "+1"
-			});
-
-			await this.bot.db.users.incrementInteractions(db.user, "cooldown_messages");
 
 			/* Send the notice message. */
 			return await response.send(interaction)
@@ -407,7 +416,7 @@ export class CommandManager {
 		if (response) await response.send(interaction);
 
 		/* Increment the user's interaction count. */
-		await this.bot.db.users.incrementInteractions(db.user, "commands");
+		await this.bot.db.users.incrementInteractions(db, "commands");
 
 		await this.bot.db.metrics.changeCommandsMetric({
 			[command.builder.name]: "+1"

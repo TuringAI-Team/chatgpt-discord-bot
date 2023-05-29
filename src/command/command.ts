@@ -1,11 +1,12 @@
 import { ContextMenuCommandBuilder, SlashCommandBuilder, SlashCommandSubcommandsOnlyBuilder } from "@discordjs/builders";
-import { AutocompleteInteraction, ChatInputCommandInteraction, ContextMenuCommandInteraction } from "discord.js";
+import { AutocompleteInteraction, ButtonInteraction, ChatInputCommandInteraction, ContextMenuCommandInteraction } from "discord.js";
 import { APIApplicationCommandOptionChoice } from "discord-api-types/v10";
 
 import { DatabaseInfo, UserSubscriptionPlanType } from "../db/managers/user.js";
 import { UserRole } from "../db/managers/role.js";
 import { Response } from "./response.js";
 import { Bot } from "../bot/bot.js";
+import { CooldownData } from "./cooldown.js";
 
 export type CommandBuilder = 
 	SlashCommandBuilder
@@ -81,11 +82,17 @@ export class Command<U extends ContextMenuCommandInteraction | ChatInputCommandI
 		return this.restricted("subscription");
 	}
 
-	/**
-	 * Reset the cool-down for this command.
-	 */
-	public async removeCooldown(interaction: ChatInputCommandInteraction): Promise<void> {
+
+	public async removeCooldown(interaction: ChatInputCommandInteraction | ButtonInteraction): Promise<void> {
 		return this.bot.command.removeCooldown(interaction, this as any);
+	}
+
+	public async applyCooldown(interaction: ChatInputCommandInteraction | ButtonInteraction, db: DatabaseInfo): Promise<void> {
+		return this.bot.command.applyCooldown(interaction, db, this as any);
+	}
+
+	public async currentCooldown(interaction: ChatInputCommandInteraction | ButtonInteraction): Promise<CooldownData | null> {
+		return this.bot.command.cooldown(interaction, this as any);
 	}
 
 

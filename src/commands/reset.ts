@@ -16,7 +16,7 @@ export default class ResetCommand extends Command {
 		);
     }
 
-    public async run(interaction: CommandInteraction, { user }: DatabaseInfo): CommandResponse {
+    public async run(interaction: CommandInteraction, db: DatabaseInfo): CommandResponse {
 		/* Get the user's conversation. */
 		const conversation: Conversation | null = this.bot.conversation.get(interaction.user);
 
@@ -37,8 +37,8 @@ export default class ResetCommand extends Command {
 
 		try {
 			/* Try to reset the conversation. */
-			await conversation.reset(user, false);
-			await this.bot.db.users.incrementInteractions(user, "resets");
+			await conversation.reset(db.user, false);
+			await this.bot.db.users.incrementInteractions(db, "resets");
 
 			return new Response()
 				.addEmbed(builder => builder

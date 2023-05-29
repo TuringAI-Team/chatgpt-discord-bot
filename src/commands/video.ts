@@ -96,7 +96,7 @@ export default class VideoCommand extends Command {
 			if (buffer === null) throw new Error("Video buffer is null");
 
 			/* Increment the user's usage. */
-			await this.bot.db.users.incrementInteractions(db.user, "videos");
+			await this.bot.db.users.incrementInteractions(db, "videos");
 			await this.bot.db.plan.expenseForVideo(db, result, model);
 
 			return new Response()

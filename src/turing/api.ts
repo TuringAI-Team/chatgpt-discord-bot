@@ -525,6 +525,7 @@ export interface MidjourneyPartialResult {
     id: string;
     action?: MidjourneyAction;
     number?: number;
+    jobId?: string;
 }
 
 export type MidjourneyResult = Required<MidjourneyPartialResult>
@@ -546,11 +547,122 @@ export type MidjourneyOptions = MidjourneyBody & {
 
 export type MidjourneyAction = "variation" | "upscale"
 
+export type TuringChatBingTone = "balanced"
+
+interface TuringChatBingOptions {
+    /* Conversation instance, that the API will use to remember the conversation */
+    conversation: Conversation;
+
+    /* Progress callback to call when a new token is generated */
+    progress: (result: TuringChatBingPartialResult) => Awaitable<void>;
+
+    /* Prompt to pass to Bing */
+    prompt: string;
+
+    /* Which Bing tone to use */
+    tone: TuringChatBingTone;
+}
+
+export interface TuringChatBingResult {
+    response: string;
+    done: boolean;
+}
+
+interface TuringChatBingBody {
+    prompt: string;
+    conversationId: string;
+    tone?: TuringChatBingTone;
+}
+
+export type TuringChatBingPartialResult = Pick<TuringChatBingResult, "response">
+
 export class TuringAPI {
     private readonly bot: Bot;
 
     constructor(bot: Bot) {
         this.bot = bot;
+    }
+
+    public async bing({ prompt, conversation, tone, progress }: TuringChatBingOptions): Promise<TuringChatBingResult> {
+        /* Latest message of the stream */
+        let latest: TuringChatBingPartialResult | null = null;
+
+        /* Whether the generation is finished */
+        let done: boolean = false;
+
+        /* Request body for the API */
+        const body: TuringChatBingBody = {
+            conversationId: conversation.id,
+            prompt, tone
+        };
+
+        await new Promise<void>(async (resolve, reject) => {
+            const controller: AbortController = new AbortController();
+
+            const abortTimer: NodeJS.Timeout = setTimeout(() => {
+                controller.abort();
+                reject(new TypeError("Request timed out"));
+            }, 90 * 1000);
+
+            try {
+                await fetchEventSource(this.url("text/bing"), {
+                    headers: this.headers() as any,
+                    body: JSON.stringify(body),
+                    mode: "cors",
+                    signal: controller.signal,
+                    method: "POST",
+
+                    onclose: () => {
+                        if (!done) {
+                            done = true;
+
+                            controller.abort();
+                            resolve();
+                        }
+                    },
+                    
+                    onerror: (error) => {
+                        clearTimeout(abortTimer);
+                        throw error;
+                    },
+        
+                    onopen: async (response) => {
+                        clearTimeout(abortTimer);
+
+                        /* If the request failed for some reason, throw an exception. */
+                        if (response.status !== 200) {
+                            const error = await this.error(response, "text/bing", true);
+
+                            controller.abort();
+                            reject(error);
+                        }
+                    },
+
+                    onmessage: async (event) => {
+                        /* Response data */
+                        const data: TuringChatBingPartialResult = JSON.parse(event.data);
+                        if (!data || !data.response) return;
+
+                        latest = data;
+                        if (progress !== undefined) progress(latest);
+                    },
+                });
+
+            } catch (error) {
+                if (error instanceof GPTAPIError) return reject(error);
+
+                reject(new GPTGenerationError({
+                    type: GPTGenerationErrorType.Other,
+                    cause: error as Error
+                }));
+            }
+        });
+
+        if (latest === null) throw new GPTGenerationError({
+            type: GPTGenerationErrorType.Empty
+        });
+
+        return latest;
     }
 
     public async imagine({ prompt, model, progress, action, id, number }: MidjourneyOptions): Promise<MidjourneyResult> {
@@ -565,7 +677,6 @@ export class TuringAPI {
             prompt, model, id, number
         };
 
-        /* Make the request to OpenAI's API. */
         await new Promise<void>(async (resolve, reject) => {
             const controller: AbortController = new AbortController();
 
@@ -601,7 +712,7 @@ export class TuringAPI {
 
                         /* If the request failed for some reason, throw an exception. */
                         if (response.status !== 200) {
-                            const error = await this.error(response, "imgs/mj/imagine", true);
+                            const error = await this.error(response, `imgs/mj/${action ?? "imagine"}`, true);
 
                             controller.abort();
                             reject(error);
@@ -706,7 +817,6 @@ export class TuringAPI {
             pluginList: plugins
         };
 
-        /* Make the request to OpenAI's API. */
         await new Promise<void>(async (resolve, reject) => {
             const controller: AbortController = new AbortController();
 
@@ -827,7 +937,6 @@ export class TuringAPI {
             messages, pluginList: plugins.map(p => p.id)
         };
 
-        /* Make the request to OpenAI's API. */
         await new Promise<void>(async (resolve, reject) => {
             const controller: AbortController = new AbortController();
 

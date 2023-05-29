@@ -132,7 +132,7 @@ export default class TranslateContentContextMenuCommand extends ContextMenuComma
             )
             .setEphemeral(true);
 
-        await this.bot.db.users.incrementInteractions(db.user, "translations");
+        await this.bot.db.users.incrementInteractions(db, "translations");
 
         return new Response()
             .addEmbed(builder => builder

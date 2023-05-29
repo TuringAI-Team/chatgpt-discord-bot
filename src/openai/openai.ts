@@ -51,7 +51,6 @@ export class OpenAIManager {
             /* Whether the generation is finished */
             let done: boolean = false;
 
-            /* Make the request to OpenAI's API. */
             await new Promise<void>(async (resolve, reject) => {
                 const controller: AbortController = new AbortController();
 
@@ -200,7 +199,6 @@ export class OpenAIManager {
             /* Whether the generation is finished */
             let done: boolean = false;
 
-            /* Make the request to OpenAI's API. */
             await new Promise<void>(async (resolve, reject) => {
                 const controller: AbortController = new AbortController();
 

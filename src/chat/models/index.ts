@@ -6,6 +6,7 @@ import { TuringModel } from "./turing.js";
 import { ClydeModel } from "./clyde.js";
 import { DummyModel } from "./dummy.js";
 import { GPT3Model } from "./gpt-3.js";
+import { BingModel } from "./bing.js";
 
 export const ChatModels = [
     TuringAlanModel,
@@ -15,5 +16,6 @@ export const ChatModels = [
     TuringModel,
     ClydeModel,
     DummyModel,
+    BingModel,
     GPT3Model
 ]

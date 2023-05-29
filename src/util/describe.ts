@@ -88,7 +88,7 @@ export const runDescribeAction = async (conversation: Conversation, db: Database
             )
         .send(interaction);
 
-        await conversation.manager.bot.db.users.incrementInteractions(db.user, "image_descriptions");
+        await conversation.manager.bot.db.users.incrementInteractions(db, "image_descriptions");
         await conversation.manager.bot.db.plan.expenseForImageDescription(db, description);
 
         await new Response()

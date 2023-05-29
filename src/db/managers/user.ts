@@ -538,11 +538,11 @@ export class UserManager {
      * Increment the user's amount of interactions with the bot.
      * @param user User to increment interaction count for
      */
-    public async incrementInteractions(user: DatabaseUser, key: keyof DatabaseInteractionStatistics, increment: number = 1): Promise<void> {
-        const updated: DatabaseInteractionStatistics = user.interactions;
+    public async incrementInteractions(db: DatabaseInfo, key: keyof DatabaseInteractionStatistics, increment: number = 1): Promise<void> {
+        const updated: DatabaseInteractionStatistics = db.user.interactions;
         updated[key] = (updated[key] ?? 0) + increment;
 
-        return void await this.updateUser(user, { interactions: updated });
+        return void await this.updateUser(db.user, { interactions: updated });
     }
 
     public userIcon({ user, guild }: DatabaseInfo): "⚒️" | "📊" | "✨" | "💫" | "✉️" | "📩" | "👤" {

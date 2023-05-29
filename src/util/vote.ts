@@ -40,7 +40,7 @@ export class VoteManager {
         });
 
         await this.bot.db.metrics.changeVoteMetric({ count: "+1" });
-        await this.bot.db.users.incrementInteractions(db, "votes");
+        await this.bot.db.users.incrementInteractions({ user: db }, "votes");
         
         if (this.bot.dev) this.bot.logger.debug(`User ${chalk.bold(user.tag)} has voted for the bot!`);
         return true;

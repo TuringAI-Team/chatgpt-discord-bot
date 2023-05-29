@@ -647,7 +647,7 @@ export default class ImagineCommand extends Command {
 			}
 
 			/* Increment the user's usage. */
-			await this.bot.db.users.incrementInteractions(db.user, "images");
+			await this.bot.db.users.incrementInteractions(db, "images");
 			
 			await this.bot.db.metrics.changeImageMetric({
 				models: { [model.name]: "+1" },

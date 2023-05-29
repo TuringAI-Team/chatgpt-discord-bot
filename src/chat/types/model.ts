@@ -39,6 +39,9 @@ export enum ModelType {
     /** Turing Alan model, utilizing various AI technologies */
     TuringAlan,
 
+    /** Turing Bing API */
+    TuringBing,
+
     /** Debug model provider */
     Dummy
 }

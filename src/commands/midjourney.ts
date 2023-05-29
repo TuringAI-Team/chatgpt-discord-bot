@@ -1,4 +1,4 @@
-import { ActionRow, ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonComponent, ButtonInteraction, ButtonStyle, EmbedBuilder, SlashCommandBuilder } from "discord.js";
+import { ActionRow, ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonComponent, ButtonInteraction, ButtonStyle, EmbedBuilder, InteractionResponse, SlashCommandBuilder } from "discord.js";
 
 import { MidjourneyAction, MidjourneyModelIdentifier, MidjourneyModels, MidjourneyPartialResult, MidjourneyResult } from "../turing/api.js";
 import { ModerationResult, checkImagePrompt } from "../conversation/moderation/moderation.js";
@@ -11,6 +11,7 @@ import { DatabaseInfo } from "../db/managers/user.js";
 import { Response } from "../command/response.js";
 import { Utils } from "../util/utils.js";
 import { Bot } from "../bot/bot.js";
+import { CooldownData } from "../command/cooldown.js";
 
 export default class MidjourneyCommand extends Command {
 	constructor(bot: Bot) {
@@ -110,7 +111,7 @@ export default class MidjourneyCommand extends Command {
 		return new ActionRowBuilder<ButtonBuilder>()
 			.addComponents(RATE_ACTIONS.map(action =>
 				new ButtonBuilder()
-					.setCustomId(`mj:rate:${interaction.user.id}:${result.id}:${result.number}:${action.value}`)
+					.setCustomId(`mj:rate:${interaction.user.id}:${result.jobId}:${result.number}:${action.value}`)
 					.setStyle(ButtonStyle.Secondary)
 					.setEmoji(action.emoji)
 			));
@@ -148,14 +149,46 @@ export default class MidjourneyCommand extends Command {
 		const index: number = parseInt(data.shift()!);
 
 		if (action === "upscale" || action === "variation") {
+			/* Get the current cool-down of the command. */
+			const cooldown: CooldownData | null = await this.currentCooldown(interaction);
+			console.log(cooldown)
+			
+			/* If the user is currently on cool-down for this command, ... */
+			if (cooldown !== null && cooldown.createdAt) {
+				/* Build the cool-down message. */
+				const response: Response = this.bot.command.cooldownMessage(interaction, this, db, cooldown);
+
+				/* How long until the cool-down expires */
+				const delay: number = (cooldown.createdAt + cooldown.duration) - Date.now() - 1000;
+
+				/* Send the notice message. */
+				return await response.send(interaction)
+					.then(message => {
+						if (message instanceof InteractionResponse) {
+							/* Delete the cool-down message again, after it has expired. */
+							setTimeout(async () => {
+								await interaction.deleteReply().catch(() => {});
+							}, delay);
+						}
+					});
+			}
+
+			await this.applyCooldown(interaction, db);
+
 			/* All components on the original message */
-			const components: ActionRow<ButtonComponent>[] = interaction.message.components as ActionRow<ButtonComponent>[];
+			let components: ActionRow<ButtonComponent>[] = interaction.message.components as ActionRow<ButtonComponent>[];
 
 			components.forEach(
 				row => row.components.forEach(button => {
-					if (button.customId === interaction.customId) (button.data as any).style = ButtonStyle.Primary;
+					if (button.customId === interaction.customId) {
+						(button.data as any).style = ButtonStyle.Primary;
+						(button.data as any).disabled = true;
+					}
 				})
 			);
+
+			/* Remove the variation row from the message. */
+			if (action === "variation") components = [ components[1] ];
 
 			await interaction.message.edit({
 				embeds: [ EmbedBuilder.from(interaction.message.embeds[0]).setImage(`attachment://${id}.png`) ], components
@@ -189,9 +222,9 @@ export default class MidjourneyCommand extends Command {
 				(button.data as any).disabled = true;
 			});
 
-			await interaction.message.edit({
+			/*await interaction.message.edit({
 				embeds: [ EmbedBuilder.from(interaction.message.embeds[0]).setImage(`attachment://${id}.png`) ], components: [ row ]
-			});
+			});*/
 
 			await interaction.deferUpdate();
 
@@ -200,6 +233,26 @@ export default class MidjourneyCommand extends Command {
 					[rating.value]: "+1"
 				}
 			});
+
+			/* Get the existing dataset entry. */
+			const { data: entry, error } = await this.bot.db.client
+				.from("dataset")
+				.select("*").eq("id", id)
+				.single();
+
+			if (entry === null || error) await interaction.deferUpdate();
+
+			/* Updated dataset entry */
+			const updated = {
+				...entry.data, rating: rating.value
+			};
+
+			await this.bot.db.client
+				.from("dataset")
+				.update({
+					data: updated
+				})
+				.eq("id", id).select("*");
 		}
 	}
 

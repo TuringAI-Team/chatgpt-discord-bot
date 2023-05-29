@@ -74,7 +74,7 @@ export default class DallECommand extends Command {
 			const result = await conversation.manager.bot.turing.generateImages(options);
 
 			/* Increment the user's usage. */
-			await this.bot.db.users.incrementInteractions(db.user, "images");
+			await this.bot.db.users.incrementInteractions(db, "images");
 
 			await this.bot.db.metrics.changeImageMetric({
 				models: {

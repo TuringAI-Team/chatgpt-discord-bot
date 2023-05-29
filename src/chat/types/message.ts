@@ -3,8 +3,7 @@ import { ChatOutputImage } from "./image.js";
 export enum MessageType {
 	Notice = "Notice",
 	ChatNotice = "ChatNotice",
-	Chat = "Chat",
-	Suggestion = "Suggestion"
+	Chat = "Chat"
 }
 
 export type MessageStopReason = "maxLength" | "stop"

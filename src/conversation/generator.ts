@@ -578,7 +578,7 @@ export class Generator {
 
 		/* Remaining cool-down time */
 		const remaining: number = conversation.cooldown.remaining;
-		if (conversation.cooldown.active) await this.bot.db.users.incrementInteractions(db.user, "cooldown_messages");
+		if (conversation.cooldown.active) await this.bot.db.users.incrementInteractions(db, "cooldown_messages");
 
 		/* If the command is on cool-down, don't run the request. */
 		if (conversation.cooldown.active && remaining > Math.min(conversation.cooldown.state.expiresIn! / 2, 10 * 1000)) {
@@ -849,7 +849,7 @@ export class Generator {
 		/* Try to send the response & generate a nice embed for the message. */
 		try {
 			/* If everything went well, increase the usage for the user too. */
-			await this.bot.db.users.incrementInteractions(db.user, "messages");
+			await this.bot.db.users.incrementInteractions(db, "messages");
 
 			/* If the output is empty for some reason, set a placeholder message. */
 			if (final.output.text.length === 0) {
