@@ -1,7 +1,7 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle, EmbedBuilder, GuildMember, InteractionReplyOptions } from "discord.js";
 
 import { DatabaseGuild, DatabaseInfo, DatabaseUser, UserSubscriptionType } from "./user.js";
-import { TuringVideoModel, TuringVideoModelName, TuringVideoResult } from "../../turing/api.js";
+import { MidjourneyResult, TuringVideoModel, TuringVideoModelName, TuringVideoResult } from "../../turing/api.js";
 import { StableHordeGenerationResult } from "../../image/types/image.js";
 import { ChatInteraction } from "../../conversation/conversation.js";
 import { ErrorResponse } from "../../command/response/error.js";
@@ -16,7 +16,7 @@ import { Utils } from "../../util/utils.js";
 
 type DatabaseEntry = DatabaseUser | DatabaseGuild
 
-type UserPlanExpenseType = "image" | "dall-e" | "video" | "summary" | "chat" | "describe"
+type UserPlanExpenseType = "image" | "dall-e" | "midjourney" | "video" | "summary" | "chat" | "describe"
 
 type UserPlanExpenseData = {
     [key: string]: string | number | boolean | UserPlanExpenseData;
@@ -53,6 +53,10 @@ export type UserPlanImageExpense = UserPlanExpense<{
 
 export type UserPlanDallEExpense = UserPlanExpense<{
     count: number;
+}>
+
+export type UserPlanMidjourneyExpense = UserPlanExpense<{
+    prompt: string;
 }>
 
 export type UserPlanImageDescribeExpense = UserPlanExpense<{
@@ -165,6 +169,9 @@ export class PlanManager {
     public async expense<T extends UserPlanExpense = UserPlanExpense>(
         db: DatabaseInfo, { type, used, data, bonus }: Pick<T, "type" | "used" | "data"> & { bonus?: UserPlanCreditBonusAmount }
     ): Promise<T | null> {
+        /* If no used amount of credit was actually specified, ignore this. */
+        if (used === 0) return null;
+
         const userType = this.db.users.type(db);
         const entry = db[userType.location]!;
 
@@ -219,6 +226,14 @@ export class PlanManager {
     ): Promise<UserPlanDallEExpense | null> {
         return this.expense(entry, {
             type: "dall-e", used: count * 0.02, data: { count }, bonus: 0.10
+        });
+    }
+
+    public async expenseForMidjourneyImage(
+        entry: DatabaseInfo, result: MidjourneyResult
+    ): Promise<UserPlanMidjourneyExpense | null> {
+        return this.expense(entry, {
+            type: "midjourney", used: result.credits, data: { prompt: result.prompt }, bonus: 0.15
         });
     }
 

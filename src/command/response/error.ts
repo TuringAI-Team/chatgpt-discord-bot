@@ -9,7 +9,7 @@ export enum ErrorType {
 
 interface ErrorResponseOptions {
     /* Interaction to reply to */
-    interaction: RepliableInteraction;
+    interaction?: RepliableInteraction;
 
     /* Command to reply to */
     command?: Command<any>;
@@ -49,7 +49,7 @@ export class ErrorResponse extends Response {
 
     public async send(interaction: CommandInteraction | MessageComponentInteraction<CacheType> | ModalSubmitInteraction | Message<boolean> | TextChannel | DMChannel | ThreadChannel<boolean>): Promise<Message<boolean> | InteractionResponse<boolean> | null> {
         /* Remove the cool-down from the executed command, if applicable. */
-        if (this.options.command) await this.options.command.removeCooldown(this.options.interaction as any);
+        if (this.options.command && this.options.interaction) await this.options.command.removeCooldown(this.options.interaction as any);
 
         return super.send(interaction);
     }

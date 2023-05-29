@@ -3,8 +3,8 @@ import { Awaitable } from "discord.js";
 import { inspect } from "util";
 
 import { ChatSettingsPlugin, ChatSettingsPluginIdentifier } from "../conversation/settings/plugin.js";
-import { ChoiceSettingOptionChoice, MultipleChoiceSettingsOption } from "../db/managers/settings.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
+import { ChoiceSettingOptionChoice } from "../db/managers/settings.js";
 import { ChatOutputImage, ImageBuffer } from "../chat/types/image.js";
 import { Conversation } from "../conversation/conversation.js";
 import { OpenAIChatMessage } from "../openai/types/chat.js";
@@ -21,6 +21,7 @@ type TuringAPIPath =
     | `text/${string}` | `text/alan/${TuringAlanChatModel}` | `text/plugins/${TuringChatPluginsModel}`
     | `video/${TuringVideoModelName}`
     | `chart/${MetricsType}`
+    | `imgs/mj/${"describe" | "imagine" | MidjourneyAction}`
 
 interface TuringAPIFilterResult {
     isNsfw: boolean;
@@ -154,7 +155,7 @@ type TuringAlanChatModel = "chatgpt"
 
 export interface TuringAlanImageGenerator {
     name: string;
-    type: "dall-e-2" | "kandinsky" | "stable-diffusion" | TuringAlanParameter;
+    type: "dall-e-2" | "kandinsky" | "stable-diffusion" | "midjourney" | TuringAlanParameter;
 }
 
 export const TuringAlanImageGenerators: TuringAlanImageGenerator[] = [
@@ -166,6 +167,11 @@ export const TuringAlanImageGenerators: TuringAlanImageGenerator[] = [
     {
         name: "Kandinsky",
         type: "kandinsky"
+    },
+
+    {
+        name: "Midjourney",
+        type: "midjourney"
     },
 
     {
@@ -374,7 +380,7 @@ export const MetricsCharts: MetricsChart[] = [
 
 		settings: {
 			filter: {
-				exclude: [ "steps", "counts" ]
+				exclude: [ "steps", "counts", "kudos" ]
 			}
 		}
 	},
@@ -414,6 +420,30 @@ export const MetricsCharts: MetricsChart[] = [
 			}
 		}
 	},
+
+	{
+		description: "Actions done using Midjourney",
+		name: "mj-actions",
+		type: "midjourney",
+
+		settings: {
+			filter: {
+				exclude: [ "rate" ]
+			}
+		}
+	},
+
+	{
+		description: "Ratings for Midjourney images",
+		name: "mj-ratings",
+		type: "midjourney",
+
+		settings: {
+			filter: {
+				exclude: [ "generation", "upscale", "variation" ]
+			}
+		}
+	}
 ]
 
 interface TuringChartOptions {
@@ -465,11 +495,154 @@ export interface TuringChatPluginsPartialData {
 
 export type TuringChatPluginsResult = TuringChatPluginsPartialData
 
+export type MidjourneyModelIdentifier = "5.1" | "5" | "niji" | "4" | "3" | "2" | "1"
+
+export interface MidjourneyModel {
+    /* Display name of the model */
+    name: string;
+
+    /* Identifier of the model, to use for the API */
+    id: MidjourneyModelIdentifier;
+}
+
+export const MidjourneyModels: MidjourneyModel[] = [
+    { name: "5.1", id: "5.1" },
+    { name: "5", id: "5" },
+    { name: "Niji (v5)", id: "niji" },
+    { name: "4", id: "4" },
+    { name: "3", id: "3" },
+    { name: "2", id: "2" },
+    { name: "1", id: "1" }
+]
+
+export interface MidjourneyPartialResult {
+    prompt: string;
+    status: number | null;
+    image?: string;
+    done: boolean;
+    credits: number;
+    error?: string;
+    id: string;
+    action?: MidjourneyAction;
+    number?: number;
+}
+
+export type MidjourneyResult = Required<MidjourneyPartialResult>
+
+interface MidjourneyBody {
+    prompt?: string;
+    model?: MidjourneyModelIdentifier;
+    number?: number;
+    id?: string;
+}
+
+export type MidjourneyOptions = MidjourneyBody & {
+    /* Progress callback to call when there's a new image generation status */
+    progress: (result: MidjourneyPartialResult) => Awaitable<void>;
+
+    /* Which action to perform otherwise */
+    action?: MidjourneyAction;
+}
+
+export type MidjourneyAction = "variation" | "upscale"
+
 export class TuringAPI {
     private readonly bot: Bot;
 
     constructor(bot: Bot) {
         this.bot = bot;
+    }
+
+    public async imagine({ prompt, model, progress, action, id, number }: MidjourneyOptions): Promise<MidjourneyResult> {
+        /* Latest message of the stream */
+        let latest: MidjourneyPartialResult | null = null;
+
+        /* Whether the generation is finished */
+        let done: boolean = false;
+
+        /* Request body for the API */
+        const body: MidjourneyBody = {
+            prompt, model, id, number
+        };
+
+        /* Make the request to OpenAI's API. */
+        await new Promise<void>(async (resolve, reject) => {
+            const controller: AbortController = new AbortController();
+
+            const abortTimer: NodeJS.Timeout = setTimeout(() => {
+                controller.abort();
+                reject(new TypeError("Request timed out"));
+            }, 90 * 1000);
+
+            try {
+                await fetchEventSource(this.url(`imgs/mj/${action ?? "imagine"}`), {
+                    headers: this.headers() as any,
+                    body: JSON.stringify(body),
+                    mode: "cors",
+                    signal: controller.signal,
+                    method: "POST",
+
+                    onclose: () => {
+                        if (!done) {
+                            done = true;
+
+                            controller.abort();
+                            resolve();
+                        }
+                    },
+                    
+                    onerror: (error) => {
+                        clearTimeout(abortTimer);
+                        throw error;
+                    },
+        
+                    onopen: async (response) => {
+                        clearTimeout(abortTimer);
+
+                        /* If the request failed for some reason, throw an exception. */
+                        if (response.status !== 200) {
+                            const error = await this.error(response, "imgs/mj/imagine", true);
+
+                            controller.abort();
+                            reject(error);
+                        }
+                    },
+
+                    onmessage: async (event) => {
+                        try {
+                            console.log(event.data)
+
+                            /* Response data */
+                            const data: MidjourneyPartialResult = JSON.parse(event.data);
+                            if (!data) return;
+
+                            latest = data;
+                            if (progress !== undefined && (!latest.done || latest.error)) progress(latest);
+                            
+                            if (data.error) controller.abort();
+
+                        } catch (error) {
+                            clearTimeout(abortTimer);
+                            throw error;
+                        } 
+                    }
+                });
+
+            } catch (error) {
+                if (error instanceof GPTAPIError) return reject(error);
+
+                reject(new GPTGenerationError({
+                    type: GPTGenerationErrorType.Other,
+                    cause: error as Error
+                }));
+            }
+        });
+
+        if (latest === null) throw new GPTGenerationError({
+            type: GPTGenerationErrorType.Empty
+        });
+
+        return latest;
     }
 
     public trackingURL(db: DatabaseUser, type: TuringTrackingType): `https://l.turing.sh/${TuringTrackingType}/${string}` {
@@ -636,15 +809,6 @@ export class TuringAPI {
         };
     }
 
-    public async setCache(key: string, value: string): Promise<void> {
-        return void await this.request(`cache/${key}`, "POST", { value });
-    }
-
-    public async getCache(key: string): Promise<string> {
-        const { response }: { response: string } = await this.request(`cache/${key}`, "GET");
-        return response;
-    }
-
     public async filter(prompt: string, model: string = "stable_diffusion"): Promise<TuringAPIFilterResult> {
         return this.request("imgs/filter", "POST", {
             prompt, model
@@ -660,8 +824,7 @@ export class TuringAPI {
 
         /* Request body for the API */
         const body: TuringChatPluginsBody = {
-            messages,
-            pluginList: plugins.map(p => p.id)
+            messages, pluginList: plugins.map(p => p.id)
         };
 
         /* Make the request to OpenAI's API. */
@@ -708,8 +871,6 @@ export class TuringAPI {
                     },
 
                     onmessage: async (event) => {
-                        console.log(event.data)
-
                         /* Response data */
                         const data: TuringChatPluginsPartialData = JSON.parse(event.data);
                         if (!data || !data.result) return;

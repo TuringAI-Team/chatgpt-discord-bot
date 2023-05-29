@@ -25,7 +25,6 @@ export class PluginsModel extends ChatModel {
 
         /* Construct the final, formatted response. */
         let final: string = result.result;
-
         if (result.tool !== null) final = `${final}\n\n(*used tool \`${result.tool}\`* 🛠️)`;
 
         return {

@@ -18,11 +18,11 @@ import { DisplayEmoji, Emoji } from "../../util/emoji.js";
 import { ClientDatabaseManager } from "../cluster.js";
 import { Response } from "../../command/response.js";
 import { Languages } from "../types/locale.js";
+import { Utils } from "../../util/utils.js";
 import { Bot } from "../../bot/bot.js";
 import { Snowflake } from "discord.js";
 import { Role } from "discord.js";
 import { Guild } from "discord.js";
-import { Utils } from "../../util/utils.js";
 
 export enum SettingsLocation {
     Guild = "guild",
@@ -344,7 +344,8 @@ export class ChoiceSettingsOption extends SettingsOption<string, BaseSettingsOpt
                             emoji: emoji ? typeof emoji === "string" ? emoji : Emoji.display(emoji, true) as ComponentEmojiResolvable : undefined,
                             description: restricted ? `${description ?? ""} (${restricted}-only)` : description,
                             default: value === current,
-                            label: name, value
+                            label: restricted ? `${name} ${restricted === "tester" ? "⚒️" : restricted === "plan" ? "📊" : restricted === "subscription" ? "💸" : "✨"}` : name,
+                            value
                         }))
                     ])
             );
@@ -399,7 +400,8 @@ export class MultipleChoiceSettingsOption extends SettingsOption<MultipleChoiceS
                     .addOptions(...this.data.choices.map(({ name, value, description, restricted, emoji }) => ({
                         emoji: enabled.includes(value) ? "<:blurple_check:1105178019020165161>" : emoji ? typeof emoji === "object" ? Emoji.display(emoji, true) : emoji : undefined,
                         description: restricted ? `${description ?? ""} (${restricted}-only)` : description,
-                        label: name, value
+                        label: restricted ? `${name} ${restricted === "tester" ? "⚒️" : restricted === "plan" ? "📊" : restricted === "subscription" ? "💸" : "✨"}` : name,
+                        value
                     }) as SelectMenuComponentOptionData))
             );
     }

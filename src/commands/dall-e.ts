@@ -47,11 +47,6 @@ export default class DallECommand extends Command {
 		/* Which prompt to use for generation */
 		const prompt: string = interaction.options.getString("prompt", true);
 
-		if (prompt.length > MAX_IMAGE_PROMPT_LENGTH) return new ErrorResponse({
-			interaction, command: this,
-			message: `The specified prompt is **too long**, it can't be longer than **${MAX_IMAGE_PROMPT_LENGTH}** characters`,
-		});
-
 		/* How many images to generate */
 		const count: number = interaction.options.getInteger("count") ?? 1;
 

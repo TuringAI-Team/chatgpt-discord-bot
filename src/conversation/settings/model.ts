@@ -358,7 +358,7 @@ Knowledge cut-off: September 2021, like ChatGPT
         }
     }),
 
-    new ChatSettingsModel({
+    /*new ChatSettingsModel({
         name: "Bard",
         emoji: { display: "<:bard:1108815821997879317>", fallback: "✨" },
         description: "Your creative and helpful collaborator, by Google",
@@ -368,7 +368,7 @@ Knowledge cut-off: September 2021, like ChatGPT
 
         billing: { type: ChatSettingsModelBillingType.Free, amount: 0 },
         prompt: { builder: () => "" }
-    }),
+    }),*/
 
     new ChatSettingsModel({
         name: "FastChat",
@@ -418,7 +418,7 @@ Current date & time: ${context.time}, ${context.date}
         emoji: { display: "<:turing_neon:1100498729414434878>", fallback: "🧑‍💻" },
         restricted: "plan",
         type: ModelType.TuringAlan,
-        history: { maxTokens: 4097 },
+        history: { maxTokens: 1024 },
 
         billing: {
             type: ChatSettingsModelBillingType.Custom, amount: 0

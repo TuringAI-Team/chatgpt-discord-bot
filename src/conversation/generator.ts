@@ -30,7 +30,8 @@ import { GPTAPIError } from "../error/gpt/api.js";
 const BOT_REQUIRED_PERMISSIONS: { [key: string]: PermissionsString } = {
 	"Add Reactions": "AddReactions",
 	"Use External Emojis": "UseExternalEmojis",
-	"Read Message History": "ReadMessageHistory"
+	"Read Message History": "ReadMessageHistory",
+	"Manage Webhooks": "ManageWebhooks"
 }
 
 export type MentionType = "interactionReply" | "reply" | "inMessage" | "user" | "role" | "dm"
@@ -268,8 +269,8 @@ export class Generator {
 		const action: string = parts[0];
 		const id: string = parts[1];
 
-		if (id !== "-1" && id !== button.user.id && !action.startsWith("i-view")) return void await button.deferUpdate();
-		if (action !== "delete" && action !== "check-vote" && action !== "continue" && !action.startsWith("i-")) return;
+		if (id !== "-1" && id !== button.user.id && !action.startsWith("image:view")) return void await button.deferUpdate();
+		if (action !== "delete" && action !== "check-vote" && action !== "continue" && !action.startsWith("image:")) return;
 
 		/* Get the user's conversation. */
 		const conversation: Conversation = await this.bot.conversation.create(button.user);
@@ -278,8 +279,8 @@ export class Generator {
 		const db: DatabaseInfo = await this.bot.db.users.fetchData(button.user, button.guild);
 
 		/* If the user interacted generated image, ... */
-		if (action.startsWith("i-")) {
-			return await (this.bot.command.get<ImagineCommand>("imagine")).handleButtonInteraction(button, conversation, action.replace("i-", ""), parts);
+		if (action.startsWith("image:")) {
+			return await (this.bot.command.get<ImagineCommand>("imagine")).handleButtonInteraction(button, conversation, action.replace("image:", ""), parts);
 
 		/* If the user requsted to delete this interaction response, ... */
 		} else if (action === "delete") {
@@ -782,15 +783,7 @@ export class Generator {
 		} catch (err) {
 			/* Figure out the generation error, that actually occurred */
 			const error: GPTGenerationError | GPTAPIError | DiscordAPIError | Error = err as Error;
-
-			if (error instanceof DiscordAPIError) {
-				await handleError(this.bot, {
-					message, error, reply: false,
-					title: "Discord API error"
-				}); 
-				
-				return;
-			}
+			if (error instanceof DiscordAPIError) return;
 
 			if (error instanceof GPTGenerationError && error.options.data.type === GPTGenerationErrorType.NoFreeSessions) return await sendError(new Response()
 				.addEmbed(builder => builder

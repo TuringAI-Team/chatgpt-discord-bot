@@ -19,43 +19,43 @@ interface StatusMessage {
 /* List of status messages to use */
 const messages: StatusMessage[] = [
     {
-        type: ActivityType.Playing,
         name: "Playing with ChatGPT",
+        type: ActivityType.Playing,
 
         template: () => "with ChatGPT"
     },
 
     {
-        type: ActivityType.Playing,
         name: "Playing with language models",
+        type: ActivityType.Playing,
 
-        template: () => "with LLMs"
+        template: () => "with AIs"
     },
 
     {
-        type: ActivityType.Playing,
         name: "Playing with Premium perks",
+        type: ActivityType.Playing,
 
         template: () => "with Premium perks"
     },
 
     {
-        type: ActivityType.Listening,
         name: "Listening to Conversations",
+        type: ActivityType.Listening,
 
         template: async (bot: Bot) => `${bot.statistics.conversations} conversations`
     },
 
     {
-        type: ActivityType.Watching,
         name: "Watching over Users",
+        type: ActivityType.Watching,
 
         template: async (bot: Bot) => `${bot.statistics.databaseUsers} users`
     },
 
     {
-        type: ActivityType.Watching,
         name: "Watching over Servers",
+        type: ActivityType.Watching,
 
         template: async (bot: Bot) => `over ${bot.statistics.guildCount} servers`
     }

@@ -115,7 +115,7 @@ export abstract class Utils {
 				],
 
 				process: user => ({
-					name: user.username,
+					name: user.tag,
 					created: user.createdTimestamp,
 					icon: user.displayAvatarURL()
 				})

@@ -76,7 +76,12 @@ const DEFAULT_GEN_OPTIONS: Partial<ImageGenerationOptions> = {
 	}
 };
 
-const RATE_ACTIONS: { emoji: string; value: number; }[] = [
+export interface RateAction {
+	emoji: string;
+	value: number
+}
+
+export const RATE_ACTIONS: RateAction[] = [
 	{ emoji: "😖", value: 0.2 },
 	{ emoji: "☹️",  value: 0.4 },
 	{ emoji: "😐", value: 0.6 },
@@ -438,7 +443,7 @@ export default class ImagineCommand extends Command {
 
 			row.addComponents(
 				new ButtonBuilder()
-					.setCustomId(`i-view:${conversation.user.id}:${result.id}:${image.id}`)
+					.setCustomId(`image:view:${conversation.user.id}:${result.id}:${image.id}`)
 					.setStyle(ButtonStyle.Secondary)
 					.setLabel(`U${index + 1}`)
 			);
@@ -451,7 +456,7 @@ export default class ImagineCommand extends Command {
 		return new ActionRowBuilder<ButtonBuilder>()
 			.addComponents(RATE_ACTIONS.map(action =>
 				new ButtonBuilder()
-					.setCustomId(`i-rate:${conversation.user.id}:${result.id}:${action.value}`)
+					.setCustomId(`image:rate:${conversation.user.id}:${result.id}:${action.value}`)
 					.setStyle(ButtonStyle.Secondary)
 					.setEmoji(action.emoji)
 			));
@@ -759,11 +764,6 @@ export default class ImagineCommand extends Command {
 			/* Which prompt to use for generation */
 			const prompt: string = interaction.options.getString("prompt", true);
 			const negativePrompt: string | null = interaction.options.getString("negative");
-
-			if (prompt.length > MAX_IMAGE_PROMPT_LENGTH || (negativePrompt ?? "").length > MAX_IMAGE_PROMPT_LENGTH) return new ErrorResponse({
-				interaction, command: this,
-				message: `The specified prompt is **too long**, it can't be longer than **${MAX_IMAGE_PROMPT_LENGTH}** characters`
-			});
 
 			if (action === "generate") {
 				/* Random seed, to reproduce the generated images in the future */
