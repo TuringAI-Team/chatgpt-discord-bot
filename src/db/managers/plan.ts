@@ -116,14 +116,37 @@ enum PlanLocation {
     User = "user"
 }
 
-export type PlanCreditVisility = "detailed" | "full" | "used" | "percentage" | "hide"
+export type PlanCreditVisibility = "detailed" | "full" | "used" | "percentage" | "hide"
+export type PlanCreditViewer = (plan: UserPlan, interaction: ChatInteraction) => string | null
 
-export const PlanCreditViewers: Record<PlanCreditVisility, (plan: UserPlan, interaction: ChatInteraction) => string | null> = {
+export const PlanCreditViewers: Record<PlanCreditVisibility, PlanCreditViewer> = {
     detailed: (plan, interaction) => `${interaction.output.raw?.usage ? `${interaction.output.raw.usage.completion} tokens •` : interaction.output.raw?.cost ? `$${interaction.output.raw.cost.toFixed(4)} •` : ""} $${plan.used.toFixed(2)} / $${plan.total.toFixed(2)}`,
     full: plan => `$${plan.used.toFixed(2)} / $${plan.total.toFixed(2)}`,
     used: plan => `$${plan.used.toFixed(2)}`,
     percentage: plan => plan.used > 0 ? `${(plan.used / plan.total * 100).toFixed(1)}%` : null,
     hide: () => null
+}
+
+export type PlanExpenseEntryViewer<T extends UserPlanExpense = any> = (
+    (expense: T & { data: NonNullable<T["data"]> }, plan: UserPlan) => string | null
+) | null
+
+export const PlanExpenseEntryViewers: {
+    image: PlanExpenseEntryViewer<UserPlanImageExpense>,
+    "dall-e": PlanExpenseEntryViewer<UserPlanDallEExpense>,
+    midjourney: PlanExpenseEntryViewer<UserPlanMidjourneyExpense>,
+    video: PlanExpenseEntryViewer<UserPlanVideoExpense>,
+    summary: PlanExpenseEntryViewer<UserPlanSummaryExpense>,
+    chat: PlanExpenseEntryViewer<UserPlanChatExpense>,
+    describe: PlanExpenseEntryViewer<UserPlanImageDescribeExpense>
+} = {
+    image: e => `used \`${e.data.kudos}\` kudos`,
+    "dall-e": e => `**${e.data.count}** images`,
+    midjourney: e => `prompt \`${e.data.prompt}\``,
+    video: e => `took **${e.data.duration} ms** using model \`${e.data.model}\``,
+    summary: e => `used **${e.data.tokens}** tokens`,
+    chat: e => `using \`${e.data.model}\`${e.data.tokens ? `, **${e.data.tokens.prompt}** prompt & **${e.data.tokens.completion}** completion tokens` : ""}`,
+    describe: e => `took **${e.data.duration} ms**`
 }
 
 export class PlanManager {
@@ -388,11 +411,19 @@ export class PlanManager {
 
 				if (expenses.length > 0) response.addEmbed(builder => builder
 					.setTitle("Previous expenses")
-					.setDescription("*This will show your last few expenses using the bot*.")
-					.addFields(expenses.map(expense => ({
-						name: `${Utils.titleCase(expense.type)}`,
-						value: `**$${Math.round(expense.used * Math.pow(10, 5)) / Math.pow(10, 5)}** — *<t:${Math.floor(expense.time / 1000)}:F>*`
-					})))
+					//.setDescription("*This will show your last few expenses using the bot*.")
+					.addFields(expenses.map(expense => {
+                        /* Formatter for this expense type */
+                        const viewer: PlanExpenseEntryViewer | null = PlanExpenseEntryViewers[expense.type];
+
+                        const formatted: string | null = viewer !== null
+                            ? viewer(expense, plan) : null;
+
+                        return {
+                            name: `${Utils.titleCase(expense.type)}${formatted !== null ? `— *${formatted}*` : ""}`,
+                            value: `**$${Math.round(expense.used * Math.pow(10, 5)) / Math.pow(10, 5)}** — *<t:${Math.floor(expense.time / 1000)}:F>*`
+                        };
+                    }))
 				);
 
 				/* Previous plan purchase history */
@@ -400,7 +431,7 @@ export class PlanManager {
 
 				if (history.length > 0) response.addEmbed(builder => builder
 					.setTitle("Previous charge-ups")
-					.setDescription("*This will show your last few charge-ups or granted credits*.")
+					//.setDescription("*This will show your last few charge-ups or granted credits*.")
 					.addFields(history.map(credit => ({
 						name: `${Utils.titleCase(credit.type)}${credit.gateway ? `— *using **\`${credit.gateway}\`***` : ""}`,
 						value: `**$${credit.amount.toFixed(2)}** — *<t:${Math.floor(credit.time / 1000)}:F>*`

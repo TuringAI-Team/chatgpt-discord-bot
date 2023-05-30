@@ -67,7 +67,7 @@ export default class MidjourneyCommand extends Command {
 
 		embed.setTitle(`**${result.prompt ? Utils.truncate(result.prompt, 150): "..."}** — @${interaction.user.username}${result.action ? ` ${result.action === "upscale" ? "🔎" : "🔄"}` : ""}`);
 
-		if (!result.done && !result.queued) embed.setDescription(`${result.status !== null && result.status > 0 ? `${result.status * 100}%` : "Generating"} **...** ${loadingEmoji}`);
+		if (!result.done && !result.queued) embed.setDescription(`${result.status !== null && result.status > 0 ? `${Math.floor(result.status * 100)}%` : "Generating"} **...** ${loadingEmoji}`);
 		else if (result.queued) embed.setDescription(`Waiting in position \`#${result.queued + 1}\` **...** ${loadingEmoji}`);
 
 		if (result.image) {
@@ -257,7 +257,7 @@ export default class MidjourneyCommand extends Command {
 		const conversation: Conversation = await this.bot.conversation.create(interaction.user);
 
 		/* Which generation model to use; otherwise pick the default one */
-		const model: MidjourneyModelIdentifier = interaction.options.getString("model") as MidjourneyModelIdentifier ?? "5";
+		const model: MidjourneyModelIdentifier = interaction.options.getString("model") as MidjourneyModelIdentifier ?? "5.1";
 
 		/* Which generation prompt to use as the input */
 		const prompt: string = interaction.options.getString("prompt", true);

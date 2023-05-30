@@ -4,7 +4,7 @@ import { DatabaseInfo, DatabaseUserInfraction, UserSubscriptionType } from "../d
 import { ChatNoticeMessage, MessageType, ResponseMessage } from "../chat/types/message.js";
 import { LoadingIndicator, LoadingIndicatorManager } from "../db/types/indicator.js";
 import { check as moderate, ModerationResult } from "./moderation/moderation.js";
-import { PlanCreditViewers, PlanCreditVisility } from "../db/managers/plan.js";
+import { PlanCreditViewers, PlanCreditVisibility } from "../db/managers/plan.js";
 import { ChatSettingsModel, ChatSettingsModels } from "./settings/model.js";
 import { ChatGeneratedInteraction, Conversation } from "./conversation.js";
 import { ChatModel, ModelCapability } from "../chat/types/model.js";
@@ -104,8 +104,8 @@ export class Generator {
 		const type: UserSubscriptionType = this.bot.db.users.type(db);
 
 		/* Whether the remaining credit should be shown in the toolbar */
-		const creditVisibility: PlanCreditVisility = type.type === "plan"
-			? this.bot.db.settings.get<PlanCreditVisility>(type.location === "user" ? db.user : db.guild!, "premium:toolbar")
+		const creditVisibility: PlanCreditVisibility = type.type === "plan"
+			? this.bot.db.settings.get<PlanCreditVisibility>(type.location === "user" ? db.user : db.guild!, "premium:toolbar")
 			: "hide";
 
 		/* If the received data includes generated images, display them. */
