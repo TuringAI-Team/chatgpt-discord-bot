@@ -2,7 +2,6 @@ import { SlashCommandBuilder } from "discord.js";
 
 import { Command, CommandInteraction, CommandResponse } from "../command/command.js";
 import { Conversation } from "../conversation/conversation.js";
-import { handleError } from "../util/moderation/error.js";
 import { DatabaseInfo } from "../db/managers/user.js";
 import { Response } from "../command/response.js";
 import { Bot } from "../bot/bot.js";
@@ -48,11 +47,8 @@ export default class ResetCommand extends Command {
 				.setEphemeral(true);
 
 		} catch (error) {
-			await handleError(this.bot, {
-				title: "Failed to reset the conversation",
-				message: await interaction.fetchReply().catch(() => undefined),
-				error: error as Error,
-				reply: false
+			await this.bot.moderation.error({
+				title: "Failed to reset the conversation", error: error
 			});
 
 			return new Response()

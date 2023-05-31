@@ -17,7 +17,7 @@ export type CommandBuilder =
 export type CommandInteraction = ChatInputCommandInteraction
 export type CommandOptionChoice<T = string | number> = APIApplicationCommandOptionChoice<T>
 
-export type CommandResponse = Promise<Response | undefined>
+export type CommandResponse = Promise<Response | undefined | void>
 
 export type CommandRestrictionType = (UserRole | UserSubscriptionPlanType)[]
 

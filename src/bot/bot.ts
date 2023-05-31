@@ -4,6 +4,8 @@ import EventEmitter from "events";
 import chalk from "chalk";
 
 import { ConversationManager } from "../conversation/manager.js";
+import { ModerationManager } from "../moderation/moderation.js";
+import { InteractionManager } from "../interaction/manager.js";
 import { ReplicateManager } from "../chat/other/replicate.js";
 import { WebhookManager } from "../conversation/webhook.js";
 import { StatusIncidentType } from "../util/statuspage.js";
@@ -96,6 +98,9 @@ export class Bot extends EventEmitter {
     /* Command manager, in charge of registering commands & handling interactions */
     public readonly command: CommandManager;
 
+    /* Interaction manager, in charge of handling various other interactions (buttons, modals, etc.) */
+    public readonly interaction: InteractionManager;
+
     /* Database manager, in charge of managing the database connection & updates */
     public readonly db: ClientDatabaseManager;
 
@@ -107,6 +112,9 @@ export class Bot extends EventEmitter {
 
     /* Conversation & session manager, in charge of managing conversations with the bot */
     public readonly conversation: ConversationManager;
+
+    /* Moderation handler; for all stuff related to moderation & logging */
+    public readonly moderation: ModerationManager;
 
     /* Web-hook manager; for custom characters with the bot */
     public readonly webhook: WebhookManager;
@@ -156,6 +164,8 @@ export class Bot extends EventEmitter {
 
         /* Set up various classes & services. */
         this.conversation = new ConversationManager(this);
+        this.interaction = new InteractionManager(this);
+        this.moderation = new ModerationManager(this);
         this.replicate = new ReplicateManager(this);
         this.db = new ClientDatabaseManager(this);
         this.webhook = new WebhookManager(this);
@@ -257,6 +267,11 @@ export class Bot extends EventEmitter {
                 {
                     name: "Load Discord commands",
                     execute: async () => this.command.loadAll()
+                },
+
+                {
+                    name: "Load Discord interactions",
+                    execute: async () => this.interaction.loadAll()
                 },
     
                 {

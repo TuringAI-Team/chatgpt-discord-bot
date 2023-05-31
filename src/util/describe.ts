@@ -1,13 +1,11 @@
 import { Attachment, MessageContextMenuCommandInteraction, ChatInputCommandInteraction } from "discord.js";
 import chalk from "chalk";
 
-import { ModerationResult, checkDescribeResult } from "../conversation/moderation/moderation.js";
 import { ALLOWED_FILE_EXTENSIONS, ChatImageType } from "../chat/types/image.js";
 import { LoadingResponse } from "../command/response/loading.js";
 import { Conversation } from "../conversation/conversation.js";
 import { NoticeResponse } from "../command/response/notice.js";
 import { DatabaseInfo } from "../db/managers/user.js";
-import { handleError } from "./moderation/error.js";
 import { Response } from "../command/response.js";
 import { Utils } from "./utils.js";
 
@@ -76,8 +74,8 @@ export const runDescribeAction = async (conversation: Conversation, db: Database
             `User ${chalk.bold(interaction.user.tag)} described ${attachment.type} ${chalk.bold(attachment.url)} within ${chalk.bold(description.duration)}ms.`
         );
 
-        const moderation: ModerationResult = await checkDescribeResult({
-            conversation, db, content: description.result.description
+        const moderation = await conversation.manager.bot.moderation.check({
+            db, user: interaction.user, content: description.result.description, source: "describe"
         });
 
         if (moderation.blocked) return void await new Response()
@@ -102,9 +100,8 @@ export const runDescribeAction = async (conversation: Conversation, db: Database
         .send(interaction);
 
     } catch (error) {
-        await handleError(conversation.manager.bot, {
-            title: "Failed to describe image",
-            error: error as Error, reply: false
+        await conversation.manager.bot.moderation.error({
+            title: "Failed to describe image", error
         });
 
         return void await new NoticeResponse({

@@ -1,11 +1,9 @@
 import { AttachmentBuilder, SlashCommandBuilder } from "discord.js";
 
-import { ModerationResult, checkVideoPrompt } from "../conversation/moderation/moderation.js";
 import { TuringVideoModel, TuringVideoModels, TuringVideoOptions } from "../turing/api.js";
 import { Command, CommandInteraction, CommandResponse } from "../command/command.js";
 import { ErrorResponse, ErrorType } from "../command/response/error.js";
 import { Conversation } from "../conversation/conversation.js";
-import { handleError } from "../util/moderation/error.js";
 import { DatabaseInfo } from "../db/managers/user.js";
 import { ImageBuffer } from "../chat/types/image.js";
 import { Response } from "../command/response.js";
@@ -72,8 +70,8 @@ export default class VideoCommand extends Command {
 		/* Defer the reply, as this might take a while. */
 		await interaction.deferReply().catch(() => {});
 
-		const moderation: ModerationResult = await checkVideoPrompt({
-			conversation, db, content: prompt
+		const moderation = await this.bot.moderation.check({
+			db, user: interaction.user, content: prompt, source: "video"
 		});
 
 		if (moderation.blocked) return new ErrorResponse({
@@ -106,10 +104,8 @@ export default class VideoCommand extends Command {
 				);
 			
 		} catch (error) {
-			await handleError(this.bot, {
-				title: "Failed to generate video", 
-				error: error as Error,
-				reply: false
+			await this.bot.moderation.error({
+				title: "Failed to generate video", error
 			});
 
 			return new ErrorResponse({

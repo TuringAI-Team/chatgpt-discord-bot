@@ -162,111 +162,107 @@ export const IntroductionPages: IntroductionPage[] = [
     }
 ]
 
-const buildPageSelector = (bot: Bot, author: User, page: IntroductionPage): StringSelectMenuBuilder => {
-    return new StringSelectMenuBuilder()
-        .setCustomId(`introduction-page-selector:${author.id}`)
-        .setPlaceholder("Select a page...")
-        .addOptions(
-            IntroductionPages
-                .map(page => new StringSelectMenuOptionBuilder()
-                    .setLabel(`${page.design.title} [#${page.index + 1}]`)
-                    .setDescription(page.design.description)
-                    .setEmoji(page.design.emoji)
-                    .setValue(`${page.index}`)
+
+export class Introduction {
+    public static buttons(bot: Bot): ActionRowBuilder<ButtonBuilder> {
+        return new ActionRowBuilder<ButtonBuilder>()
+                .addComponents(
+                    new ButtonBuilder()
+                        .setURL(Utils.inviteLink(bot))
+                        .setLabel("Add me to your server")
+                        .setStyle(ButtonStyle.Link),
+    
+                    new ButtonBuilder()
+                        .setURL(Utils.supportInvite(bot))
+                        .setLabel("Support server")
+                        .setStyle(ButtonStyle.Link),
+    
+                    new ButtonBuilder()	
+                        .setURL("https://github.com/TuringAI-Team/chatgpt-discord-bot")
+                        .setEmoji("<:github:1097828013871222865>")
+                        .setStyle(ButtonStyle.Link),
+    
+                    new ButtonBuilder()	
+                        .setURL("https://bit.ly/chatgpt-whatsapp")
+                        .setEmoji("<:WhatsApp:1079831241601323078>")
+                        .setStyle(ButtonStyle.Link)
+                );
+    }
+
+    public static buildPageSelector(bot: Bot, author: User, page: IntroductionPage): StringSelectMenuBuilder {
+        return new StringSelectMenuBuilder()
+            .setCustomId(`general:docs:${author.id}`)
+            .setPlaceholder("Select a page...")
+            .addOptions(
+                IntroductionPages
+                    .map(page => new StringSelectMenuOptionBuilder()
+                        .setLabel(`${page.design.title} [#${page.index + 1}]`)
+                        .setDescription(page.design.description)
+                        .setEmoji(page.design.emoji)
+                        .setValue(`${page.index}`)
+                    )
+            );
+    }
+
+    public static async buildPage(bot: Bot, author: User, page: IntroductionPage = IntroductionPages[0], standalone: boolean = false): Promise<Response> {
+        /* Action component rows to add to the message */
+        const rows: ActionRowBuilder<any>[] = [
+            new ActionRowBuilder<ButtonBuilder>()
+                .addComponents(
+                    ...this.buttons(bot).components,
+    
+                    new ButtonBuilder()
+                        .setEmoji("🗑️")
+                        .setStyle(ButtonStyle.Danger)
+                        .setCustomId(`general:delete:${author.id}`)
                 )
+        ];
+    
+        if (!standalone) rows.push(new ActionRowBuilder<StringSelectMenuBuilder>()
+            .addComponents(this.buildPageSelector(bot, author, page))
         );
-}
+    
+        /* Build the page embed itself. */
+        const embed: EmbedBuilder = await page.build(new EmbedBuilder(), { author, bot });
+    
+        /* Set some other values for the embed. */
+        if (page.design.displayTitle ?? true) embed.setTitle(`${page.design.title} ${page.design.emoji}`);
+    
+        if (!standalone) embed.setFooter({ text: `${page.index + 1} / ${IntroductionPages.length}` });
+        embed.setColor(bot.branding.color);
+    
+        /* Final response */
+        const response: Response = new Response()
+            .addEmbed(embed);
+    
+        /* Add the selection menu for the pages. */
+        rows.forEach(row => response.addComponent(undefined!, row));
+    
+        return response;
+    }
 
-export const introductionButtons = (bot: Bot): ActionRowBuilder<ButtonBuilder> => {
-    return new ActionRowBuilder<ButtonBuilder>()
-			.addComponents(
-                new ButtonBuilder()
-                    .setURL(Utils.inviteLink(bot))
-                    .setLabel("Add me to your server")
-                    .setStyle(ButtonStyle.Link),
+    public static at(index: number | string): IntroductionPage {
+        const page: IntroductionPage | null = IntroductionPages.find(p => p.design.title === index) ?? null;
+        if (page !== null) return page;
+    
+        /* Actually parse the index into an integer. */
+        index = typeof index === "string" ? parseInt(index) : index;
+        return IntroductionPages[index];
+    }
 
-                new ButtonBuilder()
-                    .setURL(Utils.supportInvite(bot))
-                    .setLabel("Support server")
-                    .setStyle(ButtonStyle.Link),
-
-				new ButtonBuilder()	
-					.setURL("https://github.com/TuringAI-Team/chatgpt-discord-bot")
-					.setEmoji("<:github:1097828013871222865>")
-					.setStyle(ButtonStyle.Link),
-
-				new ButtonBuilder()	
-					.setURL("https://bit.ly/chatgpt-whatsapp")
-                    .setEmoji("<:WhatsApp:1079831241601323078>")
-					.setStyle(ButtonStyle.Link)
-			);
-}
-
-export const buildIntroductionPage = async (bot: Bot, author: User, page: IntroductionPage = IntroductionPages[0], standalone: boolean = false): Promise<Response> => {
-    /* Action component rows to add to the message */
-    const rows: ActionRowBuilder<any>[] = [
-        new ActionRowBuilder<ButtonBuilder>()
-            .addComponents(
-                ...introductionButtons(bot).components,
-
-                new ButtonBuilder()
-                    .setEmoji("🗑️")
-                    .setStyle(ButtonStyle.Danger)
-                    .setCustomId(`delete:${author.id}`)
-            )
-    ];
-
-    if (!standalone) rows.push(new ActionRowBuilder<StringSelectMenuBuilder>()
-        .addComponents(buildPageSelector(bot, author, page))
-    );
-
-    /* Build the page embed itself. */
-    const embed: EmbedBuilder = await page.build(new EmbedBuilder(), { author, bot });
-
-    /* Set some other values for the embed. */
-    if (page.design.displayTitle ?? true) embed.setTitle(`${page.design.title} ${page.design.emoji}`);
-
-    if (!standalone) embed.setFooter({ text: `${page.index + 1} / ${IntroductionPages.length}` });
-    embed.setColor(bot.branding.color);
-
-    /* Final response */
-    const response: Response = new Response()
-        .addEmbed(embed);
-
-    /* Add the selection menu for the pages. */
-    rows.forEach(row => response.addComponent(undefined!, row));
-
-    return response;
-}
-
-export const introductionPageAt = (index: number | string): IntroductionPage => {
-    const page: IntroductionPage | null = IntroductionPages.find(p => p.design.title === index) ?? null;
-    if (page !== null) return page;
-
-    /* Actually parse the index into an integer. */
-    index = typeof index === "string" ? parseInt(index) : index;
-    return IntroductionPages[index];
-}
-
-export const handleIntroductionPageSwitch = async (bot: Bot, interaction: StringSelectMenuInteraction): Promise<void> => {
-    /* Skip all other selection menu interactions. */
-    if (!interaction.customId.startsWith("introduction-page-selector")) return;
-
-    /* ID of the user this menu is intended for */
-    const authorID: string = interaction.customId.split(":").pop()!;
-    if (interaction.user.id !== authorID) return void await interaction.deferUpdate();
-
-    /* Index of the new page */
-    const index: number = parseInt(interaction.values[0]);
-
-    /* The new introduction page itself */
-    const page: IntroductionPage = IntroductionPages[index];
-
-    /* Build the introduction page. */
-    const response: Response = await buildIntroductionPage(bot, interaction.user, page);
-
-    await Promise.all([
-        interaction.deferUpdate(),
-        interaction.message.edit(response.get() as MessageEditOptions)
-    ]).catch(() => {});
+    public static async handleInteraction(bot: Bot, interaction: StringSelectMenuInteraction): Promise<void> {    
+        /* Index of the new page */
+        const index: number = parseInt(interaction.values[0]);
+    
+        /* The new introduction page itself */
+        const page: IntroductionPage = IntroductionPages[index];
+    
+        /* Build the introduction page. */
+        const response: Response = await this.buildPage(bot, interaction.user, page);
+    
+        await Promise.all([
+            interaction.deferUpdate(),
+            interaction.message.edit(response.get() as MessageEditOptions)
+        ]).catch(() => {});
+    }
 }

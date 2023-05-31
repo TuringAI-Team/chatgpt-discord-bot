@@ -1,5 +1,6 @@
 import { User } from "discord.js";
 
+import { InteractionHandler } from "../../interaction/handler.js";
 import { ClientDatabaseManager } from "../cluster.js";
 import { Command } from "../../command/command.js";
 import { BotStatus } from "../../bot/bot.js";
@@ -62,7 +63,7 @@ export class UserRoleManager {
         } else return user.roles.includes(role);
     }
 
-    public canExecuteCommand(user: DatabaseUser, command: Command, status?: BotStatus): boolean {
+    public canExecuteCommand(user: DatabaseUser, command: Command | InteractionHandler, status?: BotStatus): boolean {
         if (command.options.restriction.length === 0) return status ? status.type !== "maintenance" : true;
         if (this.owner(user)) return true;
 

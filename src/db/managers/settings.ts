@@ -1,5 +1,5 @@
 import { APIApplicationCommandOptionChoice, ActionRow, ActionRowBuilder, Awaitable, ButtonBuilder, ButtonComponent, ButtonInteraction, ButtonStyle, ComponentEmojiResolvable, GuildMember, Interaction, InteractionReplyOptions, InteractionUpdateOptions, ModalBuilder, SelectMenuComponentOptionData, StringSelectMenuBuilder, StringSelectMenuInteraction, TextChannel, TextInputBuilder, TextInputStyle } from "discord.js";
-import { ChatInputCommandInteraction } from "discord.js";
+import { ChatInputCommandInteraction, Guild, Role, Snowflake } from "discord.js";
 import chalk from "chalk";
 
 import { TuringAlanImageGenerators, TuringAlanImageModifiers, TuringAlanPlugins, TuringAlanSearchEngines, TuringVideoModels, alanOptions } from "../../turing/api.js";
@@ -9,6 +9,7 @@ import { LoadingIndicatorManager, LoadingIndicators } from "../types/indicator.j
 import { GENERATION_SIZES, getAspectRatio } from "../../commands/imagine.js";
 import { ChatSettingsPlugins } from "../../conversation/settings/plugin.js";
 import { STABLE_HORDE_AVAILABLE_MODELS } from "../../image/types/model.js";
+import { InteractionHandlerResponse } from "../../interaction/handler.js";
 import { ChatSettingsModels } from "../../conversation/settings/model.js";
 import { ChatSettingsTones } from "../../conversation/settings/tone.js";
 import { ErrorResponse } from "../../command/response/error.js";
@@ -20,9 +21,6 @@ import { Response } from "../../command/response.js";
 import { Languages } from "../types/locale.js";
 import { Utils } from "../../util/utils.js";
 import { Bot } from "../../bot/bot.js";
-import { Snowflake } from "discord.js";
-import { Role } from "discord.js";
-import { Guild } from "discord.js";
 
 export enum SettingsLocation {
     Guild = "guild",
@@ -1083,11 +1081,7 @@ export class UserSettingsManager {
             .addComponent(ActionRowBuilder<ButtonBuilder>, switcher);
     }
 
-    public async handleInteraction(interaction: ButtonInteraction | StringSelectMenuInteraction): Promise<void> {
-        /* Information about the interaction, e.g. update a setting or switch the page */
-        const data: string[] = interaction.customId.split(":");
-        data.shift();
-
+    public async handleInteraction(interaction: ButtonInteraction | StringSelectMenuInteraction, db: DatabaseInfo, data: string[]): InteractionHandlerResponse {
         /* Type of settings action */
         const type: "page" | "current" | "change" | "menu" | "explanation" = data.shift()! as any;
         data.shift();
@@ -1100,9 +1094,6 @@ export class UserSettingsManager {
             : interaction.customId.split(":");
 
         const origin: SettingsLocation = originRaw as any;
-
-        /* Database instances, guild & user */
-        const db: DatabaseInfo = await this.db.users.fetchData(interaction.user, interaction.guild);
 
         let entry: SettingsDatabaseEntry = origin === SettingsLocation.Both
             ? db[origin as "guild" | "user"]!
@@ -1118,15 +1109,15 @@ export class UserSettingsManager {
             const category: SettingsCategory | null = this.categories(origin).find(c => c.type === name) ?? null;
             if (category === null) return;
 
-            return void await interaction.reply((await this.buildPage({
+            return await this.buildPage({
                 category, interaction, db: entry
-            })).get() as InteractionReplyOptions);
+            });
         }
 
         if (Date.now() - interaction.message.createdTimestamp > 5 * 60 * 1000) {
-            return void await new ErrorResponse({
+            return new ErrorResponse({
                 interaction, message: `This settings menu can't be used anymore; run \`/settings\` again to continue`, emoji: "😔"
-            }).send(interaction);
+            });
         }
 
         /* Current settings category & index */
@@ -1358,8 +1349,8 @@ export class UserSettingsManager {
                 )
                 .setEphemeral(true);
 
-            await interaction.reply(response.get() as InteractionReplyOptions);
-
+            return response;
+            
         } else if (type === "current") {
             await interaction.deferUpdate();
         }

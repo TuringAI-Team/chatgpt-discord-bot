@@ -358,7 +358,7 @@ Knowledge cut-off: September 2021, like ChatGPT
         }
     }),
 
-    /*new ChatSettingsModel({
+    new ChatSettingsModel({
         name: "Bard",
         emoji: { display: "<:bard:1108815821997879317>", fallback: "✨" },
         description: "Your creative and helpful collaborator, by Google",
@@ -368,7 +368,7 @@ Knowledge cut-off: September 2021, like ChatGPT
 
         billing: { type: ChatSettingsModelBillingType.Free, amount: 0 },
         prompt: { builder: () => "" }
-    }),*/
+    }),
 
     new ChatSettingsModel({
         name: "Bing",

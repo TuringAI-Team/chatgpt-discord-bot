@@ -1,7 +1,6 @@
 import { APIEmbedField, ActionRowBuilder, EmbedBuilder, InteractionResponse, SlashCommandBuilder, StringSelectMenuBuilder } from "discord.js";
 import { YoutubeTranscriptError } from "youtube-transcript";
 
-import { ModerationResult, checkYouTubeQuery } from "../conversation/moderation/moderation.js";
 import { countChatMessageTokens, getPromptLength } from "../conversation/utils/length.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
 import { Command, CommandInteraction, CommandResponse } from "../command/command.js";
@@ -10,7 +9,6 @@ import { YouTubeSubtitle, YouTubeVideo } from "../util/youtube.js";
 import { LoadingIndicatorManager } from "../db/types/indicator.js";
 import { Conversation } from "../conversation/conversation.js";
 import { OpenAIChatMessage } from "../openai/types/chat.js";
-import { handleError } from "../util/moderation/error.js";
 import { LanguageManager } from "../db/types/locale.js";
 import { DatabaseInfo } from "../db/managers/user.js";
 import { Response } from "../command/response.js";
@@ -185,8 +183,8 @@ export default class SummarizeCommand extends Command {
 			interaction, command: this, message: "You specified an invalid YouTube query"
 		});
 
-		const moderation: ModerationResult = await checkYouTubeQuery({
-			conversation, db, content: query
+		const moderation = await this.bot.moderation.check({
+			db, user: interaction.user, content: query, source: "youTubeQuery"
 		});
 
 		/* If the message was flagged, send a warning message. */
@@ -281,8 +279,8 @@ export default class SummarizeCommand extends Command {
 					interaction: selection, command: this, message: `The video **${video.title}** doesn't have subtitles`, emoji: "😕"
 				});
 
-				await handleError(this.bot, {
-					error: error as Error, reply: false, title: "Failed to fetch video subtitles"
+				await this.bot.moderation.error({
+					error, title: "Failed to fetch video subtitles"
 				});
 
 				return new ErrorResponse({

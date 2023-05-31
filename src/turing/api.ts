@@ -10,7 +10,7 @@ import { Conversation } from "../conversation/conversation.js";
 import { OpenAIChatMessage } from "../openai/types/chat.js";
 import { MetricsType } from "../db/managers/metrics.js";
 import { ChatInputImage } from "../chat/types/image.js";
-import { DatabaseUser } from "../db/managers/user.js";
+import { DatabaseInfo, DatabaseUser } from "../db/managers/user.js";
 import { GPTAPIError } from "../error/gpt/api.js";
 import { Utils } from "../util/utils.js";
 import { Bot } from "../bot/bot.js";
@@ -170,7 +170,7 @@ export const TuringAlanImageGenerators: TuringAlanImageGenerator[] = [
     },
 
     {
-        name: "Midjourney",
+        name: "MJ",
         type: "midjourney"
     },
 
@@ -515,6 +515,8 @@ export const MidjourneyModels: MidjourneyModel[] = [
     { name: "1", id: "1" }
 ]
 
+export type MidjourneyMode = "fast" | "relax"
+
 export interface MidjourneyPartialResult {
     prompt: string;
     status: number | null;
@@ -536,9 +538,14 @@ interface MidjourneyBody {
     model?: MidjourneyModelIdentifier;
     number?: number;
     id?: string;
+    mode?: MidjourneyMode;
+    premium?: boolean;
 }
 
-export type MidjourneyOptions = MidjourneyBody & {
+export type MidjourneyOptions = Omit<MidjourneyBody, "mode" | "premium"> & {
+    /* Database instances, to determine whether to use the fast generation mode */
+    db: DatabaseInfo;
+
     /* Progress callback to call when there's a new image generation status */
     progress: (result: MidjourneyPartialResult) => Awaitable<void>;
 
@@ -666,16 +673,20 @@ export class TuringAPI {
         return latest;
     }
 
-    public async imagine({ prompt, model, progress, action, id, number }: MidjourneyOptions): Promise<MidjourneyResult> {
+    public async imagine({ db, prompt, model, progress, action, id, number }: MidjourneyOptions): Promise<MidjourneyResult> {
         /* Latest message of the stream */
         let latest: MidjourneyPartialResult | null = null;
+
+        /* Whether the user can use the fast mode */
+        const premium: boolean = this.bot.db.users.canUsePremiumFeatures(db);
+        const mode: MidjourneyMode =  premium ? "fast" : "relax";
 
         /* Whether the generation is finished */
         let done: boolean = false;
 
         /* Request body for the API */
         const body: MidjourneyBody = {
-            prompt, model, id, number
+            prompt, model, id, number, mode, premium
         };
 
         await new Promise<void>(async (resolve, reject) => {

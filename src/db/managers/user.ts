@@ -1,8 +1,8 @@
-import { Awaitable, Collection, Guild, Role, Snowflake, User } from "discord.js";
+import { Awaitable, Collection, Guild, GuildMember, Role, Snowflake, User } from "discord.js";
 import chalk from "chalk";
 
-import { DatabaseModerationResult } from "../../conversation/moderation/moderation.js";
 import { ChatInput, Conversation } from "../../conversation/conversation.js";
+import { DatabaseModerationResult } from "../../moderation/moderation.js";
 import { ResponseMessage } from "../../chat/types/message.js";
 import { ChatOutputImage } from "../../chat/types/image.js";
 import { DatabaseImage } from "../../image/types/image.js";
@@ -150,6 +150,7 @@ export interface UserSubscriptionType {
 
 export interface DatabaseInteractionStatistics {
     commands: number;
+    interactions: number;
     messages: number;
     images: number;
     translations: number;
@@ -286,7 +287,7 @@ export class UserManager {
             created: Date.now(),
             infractions: [],
             interactions: {
-                commands: 0, messages: 0, images: 0, resets: 0, translations: 0, votes: 0, image_descriptions: 0, cooldown_messages: 0, videos: 0
+                commands: 0, interactions: 0, messages: 0, images: 0, resets: 0, translations: 0, votes: 0, image_descriptions: 0, cooldown_messages: 0, videos: 0
             },
             subscription: null, plan: null, voted: null,
             settings: this.db.settings.template(SettingsLocation.User),
@@ -296,7 +297,7 @@ export class UserManager {
     }
 
     private async rawToUser(raw: RawDatabaseUser): Promise<DatabaseUser> {
-        const keys: (keyof DatabaseInteractionStatistics)[] = [ "commands", "images", "messages", "resets", "translations", "votes", "image_descriptions", "cooldown_messages", "videos" ];
+        const keys: (keyof DatabaseInteractionStatistics)[] = [ "commands", "interactions", "images", "messages", "resets", "translations", "votes", "image_descriptions", "cooldown_messages", "videos" ];
         const interactions: Partial<DatabaseInteractionStatistics> = {};
 
         for (const key of keys) {
@@ -585,8 +586,11 @@ export class UserManager {
 
                     /* If a role is actually set, make sure that the user has that role. */
                     if (restrictedRoleID !== "0") {
+                        const member: GuildMember | null = guild.members.cache.get(db.user.id) ?? null;
                         const role: Role | null = guild.roles.cache.get(restrictedRoleID) ?? null;
-                        if (role !== null) hasRestrictedRole = role.members.has(db.user.id);
+
+                        if (member !== null && member.permissions.has("ManageGuild")) hasRestrictedRole = true;
+                        else if (role !== null) hasRestrictedRole = role.members.has(db.user.id);
                     }
                 }
 

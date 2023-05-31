@@ -2,6 +2,7 @@ import { ActionRow, ActionRowBuilder, ButtonBuilder, ButtonComponent, ButtonInte
 
 import { Command, CommandInteraction, CommandResponse } from "../../command/command.js";
 import { MetricsChart, MetricsCharts, TuringChartResult } from "../../turing/api.js";
+import { InteractionHandlerResponse } from "../../interaction/handler.js";
 import { LoadingIndicatorManager } from "../../db/types/indicator.js";
 import { NoticeResponse } from "../../command/response/notice.js";
 import { ErrorResponse } from "../../command/response/error.js";
@@ -144,16 +145,9 @@ export default class MetricsCommand extends Command {
 			.addComponent(ActionRowBuilder<ButtonBuilder>, controls);
     }
 
-	public async handleInteraction(interaction: ButtonInteraction): Promise<void> {
-        /* Information about the interaction, e.g. update a setting or switch the page */
-        const data: string[] = interaction.customId.split(":");
-        data.shift();
-
+	public async handleInteraction(interaction: ButtonInteraction, db: DatabaseInfo, data: string[]): InteractionHandlerResponse {
         /* Type of settings action */
         const type: "page" | "refresh" | "time" = data.shift()! as any;
-
-        /* Database instances, guild & user */
-        const db: DatabaseInfo = await this.bot.db.users.fetchData(interaction.user, interaction.guild);
 
 		if (interaction.user.id !== interaction.message.interaction?.user.id) return void await new ErrorResponse({
 			interaction, message: `This chart menu doesn't belong to you; run \`/metrics view\` to use it yourself`, emoji: "😔"

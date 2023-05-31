@@ -41,7 +41,7 @@ export default class VoteCommand extends Command {
 		const row = new ActionRowBuilder<ButtonBuilder>()
 			.addComponents(
 				new ButtonBuilder()
-					.setCustomId("check-vote:-1")
+					.setCustomId("general:vote")
 					.setEmoji("🎉")
 					.setLabel("Check your vote")
 					.setStyle(ButtonStyle.Success),

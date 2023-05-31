@@ -2,7 +2,7 @@ import { Message } from "discord.js";
 import chalk from "chalk";
 
 import { ChatClient as ChatClient, ChatClientResult } from "../chat/client.js";
-import { ModerationResult } from "./moderation/moderation.js";
+import { ModerationResult } from "../moderation/moderation.js";
 import { ResponseMessage } from "../chat/types/message.js";
 import { DatabaseInfo } from "../db/managers/user.js";
 import { OpenAIManager } from "../openai/openai.js";

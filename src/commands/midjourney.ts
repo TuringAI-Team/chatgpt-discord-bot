@@ -1,14 +1,12 @@
 import { ActionRow, ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonComponent, ButtonInteraction, ButtonStyle, EmbedBuilder, InteractionResponse, SlashCommandBuilder } from "discord.js";
 
 import { MidjourneyAction, MidjourneyModelIdentifier, MidjourneyModels, MidjourneyPartialResult, MidjourneyResult } from "../turing/api.js";
-import { ModerationResult, checkImagePrompt } from "../conversation/moderation/moderation.js";
 import { Command, CommandInteraction, CommandResponse } from "../command/command.js";
 import { MAX_IMAGE_PROMPT_LENGTH, RATE_ACTIONS, RateAction } from "./imagine.js";
+import { InteractionHandlerResponse } from "../interaction/handler.js";
 import { LoadingIndicatorManager } from "../db/types/indicator.js";
-import { Conversation } from "../conversation/conversation.js";
 import { ErrorResponse } from "../command/response/error.js";
 import { DatabaseInfo } from "../db/managers/user.js";
-import { CooldownData } from "../command/cooldown.js";
 import { Response } from "../command/response.js";
 import { Utils } from "../util/utils.js";
 import { Bot } from "../bot/bot.js";
@@ -130,13 +128,7 @@ export default class MidjourneyCommand extends Command {
 		return rows;
 	}
 
-	public async handleInteraction(interaction: ButtonInteraction): Promise<void> {
-        /* Database instances, guild & user */
-        const db: DatabaseInfo = await this.bot.db.users.fetchData(interaction.user, interaction.guild);
-
-		const data: string[] = interaction.customId.split(":");
-		data.shift();
-
+	public async handleInteraction(interaction: ButtonInteraction, db: DatabaseInfo, data: string[]): InteractionHandlerResponse {
 		/* The action to perform */
 		const action: MidjourneyAction | "rate" = data.shift()! as any;
 
@@ -150,33 +142,8 @@ export default class MidjourneyCommand extends Command {
 		const index: number = parseInt(data.shift()!);
 
 		if (action === "upscale" || action === "variation") {
-			/* Get the current cool-down of the command. */
-			const cooldown: CooldownData | null = await this.currentCooldown(interaction);
-			
-			/* If the user is currently on cool-down for this command, ... */
-			if (cooldown !== null && cooldown.createdAt) {
-				/* Build the cool-down message. */
-				const response: Response = this.bot.command.cooldownMessage(interaction, this, db, cooldown);
-
-				/* How long until the cool-down expires */
-				const delay: number = (cooldown.createdAt + cooldown.duration) - Date.now() - 1000;
-
-				/* Send the notice message. */
-				return await response.send(interaction)
-					.then(message => {
-						if (message instanceof InteractionResponse) {
-							/* Delete the cool-down message again, after it has expired. */
-							setTimeout(async () => {
-								await interaction.deleteReply().catch(() => {});
-							}, delay);
-						}
-					});
-			}
-
-			await this.applyCooldown(interaction, db);
-
 			/* All components on the original message */
-			let components: ActionRow<ButtonComponent>[] = interaction.message.components as ActionRow<ButtonComponent>[];
+			const components: ActionRow<ButtonComponent>[] = interaction.message.components as ActionRow<ButtonComponent>[];
 
 			components.forEach(
 				row => row.components.forEach(button => {
@@ -195,16 +162,15 @@ export default class MidjourneyCommand extends Command {
 
 			/* Wait for the actual generation result. */
 			const result: MidjourneyResult = await this.bot.turing.imagine({
-				action, id, number: index,
+				action, id, number: index, db,
 				progress: result => this.progress(interaction, result, db)
 			});
 
 			await this.bot.db.metrics.changeMidjourneyMetric({ [action]: "+1" });
 			await this.bot.db.plan.expenseForMidjourneyImage(db, result);
 
-			const response = await this.build(interaction, result, db);
-			await response.send(interaction);
-
+			return await this.build(interaction, result, db);
+			
 		} else if (action === "rate") {
 			if (interaction.user.id !== userID) return void await interaction.deferUpdate();
 
@@ -254,16 +220,14 @@ export default class MidjourneyCommand extends Command {
 	}
 
     public async run(interaction: CommandInteraction, db: DatabaseInfo): CommandResponse {
-		const conversation: Conversation = await this.bot.conversation.create(interaction.user);
-
 		/* Which generation model to use; otherwise pick the default one */
 		const model: MidjourneyModelIdentifier = interaction.options.getString("model") as MidjourneyModelIdentifier ?? "5.1";
 
 		/* Which generation prompt to use as the input */
 		const prompt: string = interaction.options.getString("prompt", true);
 
-		const moderation: ModerationResult | null = await checkImagePrompt({
-			conversation, db, content: prompt, nsfw: false, model: "midjourney"
+		const moderation = await this.bot.moderation.checkImagePrompt({
+			db, user: interaction.user, content: prompt, nsfw: false, model: "midjourney"
 		});
 
 		/* If the message was flagged, send a warning message. */
@@ -277,7 +241,7 @@ export default class MidjourneyCommand extends Command {
 
 		/* Wait for the actual generation result. */
 		const result: MidjourneyResult = await this.bot.turing.imagine({
-			prompt, model, progress: result => this.progress(interaction, result, db)
+			prompt, model, db, progress: result => this.progress(interaction, result, db)
 		});
 
 		await this.bot.db.metrics.changeMidjourneyMetric({ generation: "+1" });

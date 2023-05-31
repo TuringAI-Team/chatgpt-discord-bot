@@ -3,17 +3,17 @@ import { ActionRowBuilder, AttachmentBuilder, BaseGuildTextChannel, ButtonBuilde
 import { DatabaseInfo, DatabaseUserInfraction, UserSubscriptionType } from "../db/managers/user.js";
 import { ChatNoticeMessage, MessageType, ResponseMessage } from "../chat/types/message.js";
 import { LoadingIndicator, LoadingIndicatorManager } from "../db/types/indicator.js";
-import { check as moderate, ModerationResult } from "./moderation/moderation.js";
 import { PlanCreditViewers, PlanCreditVisibility } from "../db/managers/plan.js";
 import { ChatSettingsModel, ChatSettingsModels } from "./settings/model.js";
 import { ChatGeneratedInteraction, Conversation } from "./conversation.js";
+import { InteractionHandlerRunOptions } from "../interaction/handler.js";
+import { ChatInteractionHandlerData } from "../interactions/chat.js";
 import { ChatModel, ModelCapability } from "../chat/types/model.js";
-import { buildBanNotice } from "../util/moderation/moderation.js";
 import { addReaction, removeReaction } from "./utils/reaction.js";
-import { buildIntroductionPage } from "../util/introduction.js";
+import { ModerationResult } from "../moderation/moderation.js";
 import { ChatGuildData } from "../chat/types/options.js";
 import { ChatSettingsTones } from "./settings/tone.js";
-import ImagineCommand from "../commands/imagine.js";
+import { Introduction } from "../util/introduction.js";
 import { format } from "../chat/utils/formatter.js";
 import { Response } from "../command/response.js";
 import { OtherPrompts } from "../chat/client.js";
@@ -22,8 +22,7 @@ import { Utils } from "../util/utils.js";
 import { Emoji } from "../util/emoji.js";
 
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
-import { ErrorResponse, ErrorType } from "../command/response/error.js";
-import { handleError } from "../util/moderation/error.js";
+import { ErrorResponse } from "../command/response/error.js";
 import { GPTAPIError } from "../error/gpt/api.js";
 
 /* Permissions required by the bot to function correctly */
@@ -155,8 +154,8 @@ export class Generator {
 			if (moderation !== null && (moderation.flagged || moderation.blocked)) embeds.push(new EmbedBuilder()
 				.setDescription(
 					!moderation.blocked
-						? `${moderation.source === "user" ? "Your message" : `**${this.bot.client.user.username}**'s response`} may violate our **usage policies**. *If you use the bot as intended, you can ignore this notice.*`
-						: `${moderation.source === "user" ? "Your message" : `**${this.bot.client.user.username}**'s response`} violates our **usage policies**. *If you continue to abuse the bot, we may have to take moderative actions*.`
+						? `${moderation.source === "chatUser" ? "Your message" : `**${this.bot.client.user.username}**'s response`} may violate our **usage policies**. *If you use the bot as intended, you can ignore this notice.*`
+						: `${moderation.source === "chatUser" ? "Your message" : `**${this.bot.client.user.username}**'s response`} violates our **usage policies**. *If you continue to abuse the bot, we may have to take moderative actions*.`
 				)
 				.setColor(moderation.blocked ? "Red" : "Orange")
 			);
@@ -205,7 +204,7 @@ export class Generator {
 
 			buttons.push(
 				new ButtonBuilder()
-					.setCustomId(`user:${conversation.id}`)
+					.setCustomId(`chat:user:${conversation.id}`)
 					.setDisabled(true)
 					.setEmoji(this.bot.db.users.userIcon(db))
 					.setLabel(conversation.user.tag)
@@ -256,89 +255,18 @@ export class Generator {
 	 * Handle interactions with the suggested response buttons on messages.
 	 * @param button Button interaction to handle
 	 */
-	public async handleButtonInteraction(button: ButtonInteraction): Promise<void> {
-		if (button.message.author.id !== this.bot.client.user.id) return;
-
-		if (button.customId === "acknowledge-warning" || button.customId === "ignore" || button.customId === "send" || button.customId.startsWith("introduction-page-selector")) return;
-		if (button.channelId === this.bot.app.config.channels.error.channel || button.channelId === this.bot.app.config.channels.moderation.channel) return;
-
-		const parts: string[] = button.customId.split(":");
-		if (parts.length === 1) return;
-
-		/* Get the user identifier and action this button is meant for. */
-		const action: string = parts[0];
-		const id: string = parts[1];
-
-		if (id !== "-1" && id !== button.user.id && !action.startsWith("i-view")) return void await button.deferUpdate();
-		if (action !== "delete" && action !== "check-vote" && action !== "continue" && !action.startsWith("i-")) return;
+	public async handleInteraction({ interaction, db, data: { action } }: InteractionHandlerRunOptions<ButtonInteraction, ChatInteractionHandlerData>): Promise<void> {
+		if (interaction.message.author.id !== this.bot.client.user.id) return;
 
 		/* Get the user's conversation. */
-		const conversation: Conversation = await this.bot.conversation.create(button.user);
-
-		/* Get the user's database entry. */
-		const db: DatabaseInfo = await this.bot.db.users.fetchData(button.user, button.guild);
-
-		/* If the user interacted generated image, ... */
-		if (action.startsWith("i-")) {
-			return await (this.bot.command.get<ImagineCommand>("imagine")).handleButtonInteraction(button, conversation, action.replace("i-", ""), parts);
-
-		/* If the user requsted to delete this interaction response, ... */
-		} else if (action === "delete") {
-			return void await button.message.delete().catch(() => {});
-
-		/* Check if the user has voted for the bot, ... */
-		} else if (action === "check-vote") {
-			/* When the user already voted for the bot, if applicable */
-			const when: number | null = this.bot.db.users.voted(db.user);
-
-			if (when !== null) return void await button.reply(
-				new Response()
-					.addEmbed(builder => builder
-						.setDescription(`You have already voted for the bot <t:${Math.round(when / 1000)}:R>, thank you for your support! 🎉`)
-						.setColor(this.bot.branding.color)
-					)
-					.setEphemeral(true)
-				.get() as InteractionReplyOptions
-			);
-
-			await button.deferReply({
-				ephemeral: true
-			});
-
-			try {
-				/* Try to check whether the user voted for the bot using the top.gg API. */
-				const voted: boolean = await this.bot.vote.voted(button.user, db.user);
-
-				if (!voted) return void new ErrorResponse({
-					interaction: button, message: "You haven't voted for the bot yet", emoji: "😕"
-				}).send(button);
-				
-
-				return void await new Response()
-					.addEmbed(builder => builder
-						.setDescription(`Thank you for voting for the bot! 🎉`)
-						.setColor(this.bot.branding.color)
-					)
-					.setEphemeral(true)
-				.send(button);
-
-			} catch (error) {
-				await handleError(this.bot, {
-					error: error as Error, reply: false, title: "Failed to check whether the user has voted"
-				});
-
-				return void new ErrorResponse({
-					interaction: button, type: ErrorType.Error, message: "It seems like something went wrong while trying to check whether you've voted for the bot."
-				}).send(button);
-			}
-		}
+		const conversation: Conversation = await this.bot.conversation.create(interaction.user);
 
 		/* Remaining cool-down time */
 		const remaining: number = (conversation.cooldown.state.startedAt! + conversation.cooldown.state.expiresIn!) - Date.now();
 
 		/* If the command is on cool-down, don't run the request. */
 		if (conversation.cooldown.active && remaining > Math.min(conversation.cooldown.state.expiresIn! / 2, 10 * 1000)) {
-			const reply = await button.reply({
+			const reply = await interaction.reply({
 				embeds: conversation.cooldownMessage(db),
 				ephemeral: true
 			}).catch(() => null);
@@ -347,7 +275,7 @@ export class Generator {
 
 			/* Once the cool-down is over, delete the invocation and reply message. */
 			setTimeout(async () => {
-				await button.deleteReply().catch(() => {});
+				await interaction.deleteReply().catch(() => {});
 			}, remaining);
 
 			return;
@@ -359,17 +287,17 @@ export class Generator {
 				.setColor("Red")
 			)
 			.setEphemeral(true)
-		.send(button);
+		.send(interaction);
 
 		/* Continue generating the cut-off message. */
 		if (action === "continue") {
-			await button.deferUpdate();
+			await interaction.deferUpdate();
 
 			await this.handle({
 				button: GeneratorButtonType.Continue,
 				content: OtherPrompts.Continue,
-				message: button.message,
-				author: button.user
+				message: interaction.message,
+				author: interaction.user
 			});
 		}
 	}
@@ -464,7 +392,7 @@ export class Generator {
 		const unread: DatabaseUserInfraction[] = this.bot.db.users.unread(db.user);
 
 		/* If the user is banned from the bot, send a notice message. */
-		if (banned !== null) return void buildBanNotice(this.bot, db.user, banned).send(message);
+		if (banned !== null) return void await this.bot.moderation.buildBanNotice(banned).send(message);
 
 		if (unread.length > 0) {
 			const row = new ActionRowBuilder<ButtonBuilder>()
@@ -547,10 +475,8 @@ export class Generator {
 					.setColor("Red")
 				).send(message);
 
-			await handleError(this.bot, {
-				message,
-				reply: false,
-				error: error as Error
+			await this.bot.moderation.error({
+				error, title: "Failed to set up conversation session"
 			});
 
 			return void await new Response()
@@ -566,7 +492,7 @@ export class Generator {
 
 		/* If the user sen't an empty message, respond with the introduction message. */
 		if (content.length === 0 && !attachedImages && !attachedDocuments) {
-			const page: Response = await buildIntroductionPage(this.bot, author);
+			const page: Response = await Introduction.buildPage(this.bot, author);
 			return void await page.send(options.message);
 		}
 
@@ -643,15 +569,19 @@ export class Generator {
 		conversation.generating = true;
 
 		/* If the message content was not provided by another source, check it for profanity & ask the user if they want to execute the request anyways. */
-		const moderation: ModerationResult | null = content.length > 0 && !options.button ? await moderate({
-			conversation, db, content, message,
-			source: "user"
+		const moderation = content.length > 0 && !options.button ? await this.bot.moderation.check({
+			db, user: author, content, source: "chatUser"
 		}) : null;
 
 		conversation.generating = false;
 
 		/* If the message was flagged, stop this request. */
-		if (moderation !== null && moderation.blocked) return;
+		if (moderation !== null && moderation.blocked) {
+			return void await new ErrorResponse({
+				message: "Your message violates our **usage policies**. *If you violate the usage policies, we may have to take moderative actions; otherwise, you can ignore this notice*.",
+				color: "Red", emoji: null
+			}).send(message);
+		}
 
 		/* Reply message placeholder */
 		let reply: Message | null = null;
@@ -812,9 +742,8 @@ export class Generator {
 				), false);
 
 			if (error instanceof GPTAPIError && error.isServerSide()) {
-				await handleError(this.bot, {
-					message, error, reply: false,
-					title: "Server-side error"
+				await this.bot.moderation.error({
+					error, title: "Server-side error"
 				});
 
 				return await sendError(new Response()
@@ -827,8 +756,8 @@ export class Generator {
 			}
 
 			/* Try to handle the error & log the error message. */
-			await handleError(this.bot, {
-				message, error, reply: false
+			await this.bot.moderation.error({
+				error, title: "Failed to generate message"
 			});
 
 			return await sendError(new Response()
@@ -906,8 +835,8 @@ export class Generator {
 				} catch (_) {}
 			}
 
-			await handleError(this.bot, {
-				error: error as Error, title: "Failed to send reply", reply: false, message				
+			await this.bot.moderation.error({
+				error, title: "Failed to send reply"				
 			});
 		}
     }

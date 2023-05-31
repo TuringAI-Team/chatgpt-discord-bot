@@ -6,20 +6,20 @@ import { Response } from "../command/response.js";
 
 import { DatabaseImage, ImageGenerationCheckData, ImageGenerationOptions, ImageGenerationPrompt, ImageGenerationResult, StableHordeGenerationResult } from "../image/types/image.js";
 import { StableHordeConfigModel, StableHordeModel, STABLE_HORDE_AVAILABLE_MODELS } from "../image/types/model.js";
-import { checkImagePrompt, ModerationResult } from "../conversation/moderation/moderation.js";
 import { StableHordeGenerationFilter, STABLE_HORDE_FILTERS } from "../image/types/filter.js";
 import { ImageGenerationSamplers, ImageGenerationSampler } from "../image/types/image.js";
 import { PremiumUpsellResponse, PremiumUpsellType } from "../command/response/premium.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
-import { sendImageModerationMessage } from "../util/moderation/moderation.js";
+import { ImagineInteractionHandlerData } from "../interactions/imagine.js";
 import { ErrorResponse, ErrorType } from "../command/response/error.js";
+import { InteractionHandlerResponse } from "../interaction/handler.js";
 import { renderIntoSingleImage } from "../image/utils/renderer.js";
 import { LoadingIndicatorManager } from "../db/types/indicator.js";
 import { StableHordeAPIError } from "../error/gpt/stablehorde.js";
 import { LoadingResponse } from "../command/response/loading.js";
+import { ModerationResult } from "../moderation/moderation.js";
 import { Conversation } from "../conversation/conversation.js";
 import { OpenAIChatMessage } from "../openai/types/chat.js";
-import { handleError } from "../util/moderation/error.js";
 import { StorageImage } from "../db/managers/storage.js";
 import { DatabaseInfo } from "../db/managers/user.js";
 import { Utils } from "../util/utils.js";
@@ -310,20 +310,20 @@ export default class ImagineCommand extends Command {
 		return response;
 	}
 
-	private async formatImageResponse(conversation: Conversation, image: DatabaseImage, result: ImageGenerationResult, self: boolean): Promise<Response> {
+	private async formatImageResponse(db: DatabaseInfo, image: DatabaseImage, result: ImageGenerationResult, self: boolean): Promise<Response> {
 		const storage: StorageImage = await this.bot.image.getImageData(result);
 
 		const response: Response = new Response()
 			.addEmbed(builder => builder
 				.setTitle(`${this.bot.image.displayPrompt(image.options.prompt)} 🔍`)
 				.setImage(storage.url)
-				.setColor(conversation.manager.bot.branding.color)
+				.setColor(this.bot.branding.color)
 			)
 			.setEphemeral(!self);
 
 		if (self) response.addComponent(ActionRowBuilder<ButtonBuilder>, builder => builder.addComponents(
 			new ButtonBuilder()
-				.setCustomId(`delete:${conversation.id}`)
+				.setCustomId(`general:delete:${db.user.id}`)
 				.setStyle(ButtonStyle.Danger)
 				.setEmoji("🗑️")
 		));
@@ -443,7 +443,7 @@ export default class ImagineCommand extends Command {
 
 			row.addComponents(
 				new ButtonBuilder()
-					.setCustomId(`i-view:${conversation.user.id}:${result.id}:${image.id}`)
+					.setCustomId(`i:view:${conversation.user.id}:${result.id}:${image.id}`)
 					.setStyle(ButtonStyle.Secondary)
 					.setLabel(`U${index + 1}`)
 			);
@@ -452,72 +452,29 @@ export default class ImagineCommand extends Command {
 		return rows;
 	}
 
-	private createRatingRow(conversation: Conversation, result: StableHordeGenerationResult): ActionRowBuilder<ButtonBuilder> {
-		return new ActionRowBuilder<ButtonBuilder>()
-			.addComponents(RATE_ACTIONS.map(action =>
-				new ButtonBuilder()
-					.setCustomId(`i-rate:${conversation.user.id}:${result.id}:${action.value}`)
-					.setStyle(ButtonStyle.Secondary)
-					.setEmoji(action.emoji)
-			));
-	}
-
 	private createRows(conversation: Conversation, result: StableHordeGenerationResult): ActionRowBuilder<ButtonBuilder>[] {
-		/* TODO: Work on a proper rating row, per image */
 		return this.createViewRows(conversation, result);
 	}
 
-	public async handleButtonInteraction(button: ButtonInteraction, conversation: Conversation, action: string, parts: string[]): Promise<void> {
+	public async handleButtonInteraction(button: ButtonInteraction, db: DatabaseInfo, data: ImagineInteractionHandlerData): InteractionHandlerResponse {
 		if (button.component.style === ButtonStyle.Success) return void await button.deferUpdate();
 
 		/* Image ID associated with this action */
-		const imageID: string = parts[2];
+		const imageID: string = data.imageID!;
 
 		/* The image itself */
 		const image: DatabaseImage | null = await this.bot.db.users.getImage(imageID);
 
-		/* The user rated an image */
-		if (action === "rate" && image !== null) {
-			/* Given rating score */
-			const score: number = parseFloat(parts[3]);
-	
-			/* If the image has already been rated, skip. */
-			if (image.rating !== null) return void await button.deferUpdate();
-			await button.deferUpdate();
-	
-			/* Original result embed */
-			const embed: EmbedBuilder = EmbedBuilder.from(button.message.embeds[0]);
-
-			embed.setImage(`attachment://${image.id}.png`);
-			embed.setTitle(`${Utils.truncate(embed.data.title!, 95)} — ${button.component.emoji!.name!}`);
-	
-			await Promise.all([
-				button.message.edit({
-					components: button.message.components.slice(1),
-					embeds: [ embed ]
-				}),
-	
-				this.bot.db.users.updateImage({
-					...image,
-					rating: score
-				})
-			]);
-
 		/* The user wants to view an image */
-		} else if (action === "view" && image !== null) {
+		if (data.action === "view" && image !== null) {
 			/* ID of generation result of the given image, associated with this action */
-			const resultID: string = parts[3];
+			const resultID: string = data.resultID!;
 			const result: ImageGenerationResult = image.results.find(i => i.id === resultID)!;
 
-			await button.reply(
-				(await this.formatImageResponse(conversation, image, result, conversation.id === parts[1]))
-				.get() as InteractionReplyOptions
-			);
-
-			return;
+			return await this.formatImageResponse(db, image, result, db.user.id === data.id);
 
 		/* The user wants to cancel an image generation request */
-		} else if (action === "cancel") {
+		} else if (data.action === "cancel") {
 			await button.deferUpdate();
 
 			/* Just blindly try to cancel the image generation, what could go wrong? */
@@ -667,8 +624,9 @@ export default class ImagineCommand extends Command {
 		} catch (error) {
 			/* If the image generation was blocked by Stable Horde itself, show a notice to the user. */
 			if (error instanceof StableHordeAPIError && (error.isBlocked() || error.violatesTermsOfService())) {
-				await sendImageModerationMessage({
-					content: prompt.prompt, conversation, db, notice: error.violatesTermsOfService() ? "violates Terms of Service" : undefined,
+				await this.bot.moderation.sendImageModerationMessage({
+					content: prompt.prompt, user: interaction.user, db,
+					notice: error.violatesTermsOfService() ? "violates Terms of Service" : undefined,
 					result: { blocked: true, flagged: true, source: "image" }
 				});
 
@@ -687,10 +645,8 @@ export default class ImagineCommand extends Command {
 			/* If the request got cancelled, delete the interaction & clean up, if possible. */
 			if (error instanceof GPTGenerationError && error.options.data.type === GPTGenerationErrorType.Cancelled) return void await cancel(error.options.data.data as any);
 
-			await handleError(this.bot, {
-				title: "Failed to generate image using Stable Horde", 
-				error: error as Error,
-				reply: false
+			await this.bot.moderation.error({
+				title: "Failed to generate image using Stable Horde", error
 			});
 
 			return new ErrorResponse({
@@ -794,8 +750,8 @@ export default class ImagineCommand extends Command {
 				/* Defer the reply, as this might take a while. */
 				await interaction.deferReply().catch(() => {});
 
-				const moderation: ModerationResult | null = await checkImagePrompt({
-					conversation, db, content: prompt, nsfw, model: model.name
+				const moderation: ModerationResult | null = await this.bot.moderation.checkImagePrompt({
+					db, user: interaction.user, content: prompt, nsfw, model: model.name
 				});
 
 				/* If the message was flagged, send a warning message. */
@@ -821,8 +777,8 @@ export default class ImagineCommand extends Command {
 				await interaction.deferReply().catch(() => {});
 
 				/* If the message content was not provided by another source, check it for profanity & ask the user if they want to execute the request anyways. */
-				const moderation: ModerationResult | null = await checkImagePrompt({
-					conversation, db, content: prompt, nsfw, model: "stable_diffusion"
+				const moderation: ModerationResult | null = await this.bot.moderation.checkImagePrompt({
+					db, user: interaction.user, content: prompt, nsfw
 				});
 
 				/* If the message was flagged, send a warning message. */

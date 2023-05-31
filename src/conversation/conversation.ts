@@ -7,17 +7,17 @@ import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generat
 import { ChatSettingsTone, ChatSettingsTones } from "./settings/tone.js";
 import { MessageType, ResponseMessage } from "../chat/types/message.js";
 import { ChatInputImage, ImageBuffer } from "../chat/types/image.js";
-import { check, ModerationResult } from "./moderation/moderation.js";
 import { UserSubscriptionPlanType } from "../db/managers/user.js";
 import { Cooldown, CooldownModifier } from "./utils/cooldown.js";
+import { ModerationResult } from "../moderation/moderation.js";
 import { UserPlanChatExpense } from "../db/managers/plan.js";
-import { GenerationOptions, Session } from "./session.js";
 import { ChatDocument } from "../chat/types/document.js";
 import { ChatClientResult } from "../chat/client.js";
 import { ConversationManager } from "./manager.js";
 import { ChatModel } from "../chat/types/model.js";
 import { GPTAPIError } from "../error/gpt/api.js";
 import { GeneratorOptions } from "./generator.js";
+import { GenerationOptions } from "./session.js";
 import { BotDiscordClient } from "../bot/bot.js";
 import { Utils } from "../util/utils.js";
 
@@ -401,14 +401,11 @@ export class Conversation {
 		if (data === null) throw new Error("What.");
 
 		/* Check the generated message using the moderation endpoint, again. */
-		const moderation: ModerationResult | null = await check({
-			conversation: this, db: options.db,
+		const moderation: ModerationResult | null = await this.manager.bot.moderation.check({
+			user: this.user, db: options.db,
 
 			content: data.output.text,
-			message: options.message,
-			source: "bot",
-			
-			reply: false
+			source: "chatUser"
 		});
 
 		const result: ChatInteraction = {

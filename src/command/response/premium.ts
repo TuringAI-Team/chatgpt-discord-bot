@@ -21,7 +21,7 @@ export class PremiumUpsellResponse extends Response {
         super();
 
         this.addEmbed(builder => builder
-            .setDescription(`${PremiumUpsells[options.type]}. **Premium 🌟** also gives you many additional benefits; view \`/premium\` for more.`) 
+            .setDescription(`${PremiumUpsells[options.type]}. **Premium ✨** also gives you many additional benefits; view \`/premium\` for more.`) 
             .setColor("Orange")
         );
 

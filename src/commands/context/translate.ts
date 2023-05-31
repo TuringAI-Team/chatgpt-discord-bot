@@ -1,6 +1,5 @@
 import { ContextMenuCommandBuilder, Message, MessageContextMenuCommandInteraction } from "discord.js";
 
-import { ModerationResult, checkTranslationPrompt } from "../../conversation/moderation/moderation.js";
 import { LanguageManager, UserLanguage } from "../../db/types/locale.js";
 import { ContextMenuCommand } from "../../command/types/context.js";
 import { LoadingResponse } from "../../command/response/loading.js";
@@ -14,19 +13,6 @@ import { Utils } from "../../util/utils.js";
 import { Bot } from "../../bot/bot.js";
 
 
-/* ChatGPT prompt used to translate the given input text */
-const generateTranslatorPrompt = (target: string): string =>
-`
-Your task is to translate the given input text by the user to "${target}", and guess the input language too. Follow all instructions closely.
-
-You will only output the resulting translated text, and detected input language in a minified JSON object on a single line, structured like so:
-"content": Translate the input text input into the language "${target}", and put it into this value. Make sure to translate it verbatim, keep the meaning, slang, slurs & typos all the same, just translate it all into ${target}. Keep the same writing style consistently.
-"input": Display name of the detected input language (guess it from the input, e.g. "English", "German" or "Russian")
-
-You must translate the given text by the user to the language "${target}".
-The user will now give you a message to translate, your goal is to apply the above rules and output a minified JSON object on a single line, without additional explanations or text. Do not add any other properties to the JSON object.
-You must attempt to translate the message into "${target}".
-`.trim();
 
 interface ChatTranslationResult {
     content: string;
@@ -46,6 +32,21 @@ export default class TranslateContentContextMenuCommand extends ContextMenuComma
         });
 	}
 
+    /* ChatGPT prompt used to translate the given input text */
+    private generateTranslatorPrompt(target: string): string {
+        return `
+Your task is to translate the given input text by the user to "${target}", and guess the input language too. Follow all instructions closely.
+
+You will only output the resulting translated text, and detected input language in a minified JSON object on a single line, structured like so:
+"content": Translate the input text input into the language "${target}", and put it into this value. Make sure to translate it verbatim, keep the meaning, slang, slurs & typos all the same, just translate it all into ${target}. Keep the same writing style consistently.
+"input": Display name of the detected input language (guess it from the input, e.g. "English", "German" or "Russian")
+
+You must translate the given text by the user to the language "${target}".
+The user will now give you a message to translate, your goal is to apply the above rules and output a minified JSON object on a single line, without additional explanations or text. Do not add any other properties to the JSON object.
+You must attempt to translate the message into "${target}".
+`.trim();
+    }
+
     public async run(interaction: MessageContextMenuCommandInteraction, db: DatabaseInfo): CommandResponse {
         /* The user's conversation */
         const conversation: Conversation = await this.bot.conversation.create(interaction.user);
@@ -63,8 +64,8 @@ export default class TranslateContentContextMenuCommand extends ContextMenuComma
 			color: "Red"
 		});
 
-        let moderation: ModerationResult = await checkTranslationPrompt({
-            conversation, db, content, source: "translationPrompt"
+        let moderation = await this.bot.moderation.check({
+            db, user: interaction.user, content, source: "translationPrompt"
         });
 
         if (moderation.blocked) return new Response()
@@ -81,7 +82,7 @@ export default class TranslateContentContextMenuCommand extends ContextMenuComma
         /* Messages to pass to ChatGPT */
         const messages: OpenAIChatMessage[] = [
             {
-                content: generateTranslatorPrompt(modelTarget),
+                content: this.generateTranslatorPrompt(modelTarget),
                 role: "system"
             },
 
@@ -120,8 +121,8 @@ export default class TranslateContentContextMenuCommand extends ContextMenuComma
 			color: "Red"
 		});
 
-        moderation = await checkTranslationPrompt({
-            conversation, db, content, source: "translationResult"
+        moderation = await this.bot.moderation.check({
+            db, user: interaction.user, content, source: "translationResult"
         });
 
         if (moderation !== null && moderation.blocked) return new Response()

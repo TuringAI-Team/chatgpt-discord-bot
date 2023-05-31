@@ -1,10 +1,8 @@
 import { AttachmentBuilder, SlashCommandBuilder } from "discord.js";
 
-import { ModerationResult, checkImagePrompt } from "../conversation/moderation/moderation.js";
 import { Command, CommandInteraction, CommandResponse } from "../command/command.js";
 import { ErrorResponse, ErrorType } from "../command/response/error.js";
 import { Conversation } from "../conversation/conversation.js";
-import { handleError } from "../util/moderation/error.js";
 import { MAX_IMAGE_PROMPT_LENGTH } from "./imagine.js";
 import { DatabaseInfo } from "../db/managers/user.js";
 import { TuringImageOptions } from "../turing/api.js";
@@ -53,8 +51,8 @@ export default class DallECommand extends Command {
 		/* Defer the reply, as this might take a while. */
 		await interaction.deferReply().catch(() => {});
 
-		const moderation: ModerationResult | null = await checkImagePrompt({
-			conversation, db, content: prompt, nsfw: false
+		const moderation = await this.bot.moderation.checkImagePrompt({
+			db, user: interaction.user, content: prompt, nsfw: false, model: "dall-e"
 		});
 
 		/* If the message was flagged, send a warning message. */
@@ -104,10 +102,8 @@ export default class DallECommand extends Command {
 				color: "Orange", emoji: null
 			});
 
-			await handleError(this.bot, {
-				title: "Failed to generate DALL·E images", 
-				error: error as Error,
-				reply: false
+			await this.bot.moderation.error({
+				title: "Failed to generate DALL·E images", error
 			});
 
 			return new ErrorResponse({

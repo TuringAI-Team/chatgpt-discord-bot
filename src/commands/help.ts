@@ -1,6 +1,6 @@
 import { SlashCommandBuilder } from "discord.js";
 
-import { IntroductionPage, IntroductionPages, buildIntroductionPage, introductionPageAt } from "../util/introduction.js";
+import { IntroductionPage, IntroductionPages, Introduction } from "../util/introduction.js";
 import { Command, CommandInteraction, CommandResponse } from "../command/command.js";
 import { Bot } from "../bot/bot.js";
 
@@ -21,7 +21,7 @@ export default class HelpCommand extends Command {
 	}
 
     public async run(interaction: CommandInteraction): CommandResponse {
-		const page: IntroductionPage = introductionPageAt(interaction.options.getInteger("page") ?? 0);
-		return buildIntroductionPage(this.bot, interaction.user, page);
+		const page: IntroductionPage = Introduction.at(interaction.options.getInteger("page") ?? 0);
+		return Introduction.buildPage(this.bot, interaction.user, page);
     }
 }

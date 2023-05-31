@@ -13,7 +13,6 @@ import { ChatGenerationOptions, ModelGenerationOptions } from "./types/options.j
 import { ChatInput, ChatInteraction } from "../conversation/conversation.js";
 import { ChatModel, ModelCapability, ModelType } from "./types/model.js";
 import { OpenAIChatMessage } from "../openai/types/chat.js";
-import { handleError } from "../util/moderation/error.js";
 import { LanguageManager } from "../db/types/locale.js";
 import { Session } from "../conversation/session.js";
 import { Utils } from "../util/utils.js";
@@ -400,9 +399,8 @@ export class ChatClient {
                     text: `Failed to look at **\`${attachment.name}\`**, continuing`
                 });
 
-                await handleError(this.session.manager.bot, {
-                    title: "Failed to analyze image",
-                    error: error as Error, reply: false
+                await this.session.manager.bot.moderation.error({
+                    title: "Failed to analyze image", error
                 });
                 
                 await setTimeout(5000);
@@ -443,9 +441,8 @@ export class ChatClient {
                     text: `Failed to fetch a text document, continuing`
                 });
 
-                await handleError(this.session.manager.bot, {
-                    title: "Failed to fetch a text document",
-                    error: error as Error, reply: false
+                await this.session.manager.bot.moderation.error({
+                    title: "Failed to fetch a text document", error
                 });
                 
                 await setTimeout(5000);

@@ -1,7 +1,7 @@
 import { ActionRowBuilder, ButtonBuilder, EmbedBuilder, SlashCommandBuilder } from "discord.js";
 
 import { Command, CommandInteraction, CommandResponse } from "../command/command.js";
-import { introductionButtons } from "../util/introduction.js";
+import { Introduction } from "../util/introduction.js";
 import { getInfo } from "discord-hybrid-sharding";
 import { Response } from "../command/response.js";
 import { Bot } from "../bot/bot.js";
@@ -60,6 +60,6 @@ export default class StatisticsCommand extends Command {
 
         return new Response()
             .addEmbed(builder)
-			.addComponent(ActionRowBuilder<ButtonBuilder>, introductionButtons(this.bot));
+			.addComponent(ActionRowBuilder<ButtonBuilder>, Introduction.buttons(this.bot));
     }
 }

@@ -1,7 +1,6 @@
 import { SlashCommandBuilder } from "discord.js";
 
 import { Command, CommandInteraction, CommandResponse } from "../../command/command.js";
-import { buildGuildOverview } from "../../util/moderation/moderation.js";
 import { DatabaseGuild } from "../../db/managers/user.js";
 import { Response } from "../../command/response.js";
 import { Utils } from "../../util/utils.js";
@@ -43,6 +42,6 @@ export default class GuildCommand extends Command {
 			)
 			.setEphemeral(true);
 
-		return await buildGuildOverview(this.bot, target, db);
+		return await this.bot.moderation.buildGuildOverview(target, db);
     }
 }

@@ -1,10 +1,10 @@
-import { ActionRowBuilder, AutocompleteInteraction, ComponentType, ButtonStyle, ButtonBuilder, ChatInputCommandInteraction, Collection, InteractionResponse, Message, SlashCommandBuilder, MessageContextMenuCommandInteraction, CommandInteraction, BaseInteraction, ButtonInteraction } from "discord.js";
+import { ActionRowBuilder, AutocompleteInteraction, ComponentType, ButtonStyle, ButtonBuilder, ChatInputCommandInteraction, Collection, InteractionResponse, Message, SlashCommandBuilder, MessageContextMenuCommandInteraction, CommandInteraction, ButtonInteraction } from "discord.js";
 import { RESTPostAPIApplicationCommandsJSONBody, Routes } from "discord-api-types/v10";
-import { DiscordAPIError, REST } from "@discordjs/rest";
+import { DiscordAPIError } from "@discordjs/rest";
 
-import { Command, CommandOptionChoice, CommandRestrictionType, CommandSpecificCooldown } from "./command.js";
-import { DatabaseInfo, DatabaseUserInfraction, UserSubscriptionType } from "../db/managers/user.js";
-import { handleError } from "../util/moderation/error.js";
+import { Command, CommandOptionChoice, CommandSpecificCooldown } from "./command.js";
+import { DatabaseInfo, DatabaseUserInfraction } from "../db/managers/user.js";
+import { InteractionHandler, InteractionHandlerClassType } from "../interaction/handler.js";
 import { Bot, BotStatus } from "../bot/bot.js";
 import { CooldownData } from "./cooldown.js";
 import { Response } from "./response.js";
@@ -87,8 +87,9 @@ export class CommandManager {
 		return found;
 	}
 
-	private commandName(interaction: CommandInteraction | ButtonInteraction, command: Command): string {
-		return `${interaction.user.id}-${interaction instanceof ChatInputCommandInteraction && interaction.options.getSubcommand(false) ? `${command.builder.name}-${interaction.options.getSubcommand(true)}` : command.builder.name}`;
+	public commandName(interaction: CommandInteraction | InteractionHandlerClassType, command: Command | InteractionHandler): string {
+		if (command instanceof InteractionHandler) return `${interaction.user.id}-${command.builder.data.name}-${command.builder.data.type}`;
+		else return `${interaction.user.id}-${interaction instanceof ChatInputCommandInteraction && interaction.options.getSubcommand(false) ? `${command.builder.name}-${interaction.options.getSubcommand(true)}` : command.builder.name}`;
 	}
 
 	/**
@@ -97,7 +98,7 @@ export class CommandManager {
 	 * @param interaction Interaction user to check
 	 * @param command Command to check
 	 */
-	public async cooldown(interaction: ChatInputCommandInteraction | ButtonInteraction, command: Command): Promise<CooldownData | null> {
+	public async cooldown(interaction: ChatInputCommandInteraction | InteractionHandlerClassType, command: Command | InteractionHandler): Promise<CooldownData | null> {
 		/* If the command doesn't have a cool-down time set, abort. */
 		if (command.options.cooldown === null) return null;
 		const name: string = this.commandName(interaction, command);
@@ -109,7 +110,7 @@ export class CommandManager {
 		return cached;
 	}
 
-	private cooldownDuration(command: Command, db: DatabaseInfo): number | null {
+	public cooldownDuration(command: Command | InteractionHandler, db: DatabaseInfo): number | null {
 		/* If the specific command doesn't have a cool-down set, return a default one. */
 		if (!command.options.cooldown) return 3000;
 
@@ -129,7 +130,7 @@ export class CommandManager {
 	 * @param interaction Interaction user to set cool-down for 
 	 * @param command Command to set cool-down for
 	 */
-	public async applyCooldown(interaction: ChatInputCommandInteraction | ButtonInteraction, db: DatabaseInfo, command: Command): Promise<void> {
+	public async applyCooldown(interaction: ChatInputCommandInteraction | InteractionHandlerClassType, db: DatabaseInfo, command: Command | InteractionHandler): Promise<void> {
 		/* If the command doesn't have a cool-down time set, abort. */
 		if (!command.options.cooldown || this.bot.app.config.discord.owner.includes(interaction.user.id)) return;
 		const name: string = this.commandName(interaction, command);
@@ -152,7 +153,7 @@ export class CommandManager {
 		}, duration);
 	}
 
-	public async removeCooldown(interaction: CommandInteraction | ButtonInteraction, command: Command): Promise<void> {
+	public async removeCooldown(interaction: CommandInteraction | InteractionHandlerClassType, command: Command | InteractionHandler): Promise<void> {
 		const name: string = this.commandName(interaction, command);
 		await this.bot.db.cache.delete("cooldown", name);
 	}
@@ -161,7 +162,7 @@ export class CommandManager {
 		return cooldown.createdAt + cooldown.duration < Date.now();
 	}
 
-	public cooldownMessage(interaction: CommandInteraction | MessageContextMenuCommandInteraction | ButtonInteraction, command: Command, db: DatabaseInfo, cooldown: CooldownData): Response {
+	public cooldownMessage(interaction: CommandInteraction | MessageContextMenuCommandInteraction | InteractionHandlerClassType, command: Command | InteractionHandler, db: DatabaseInfo, cooldown: CooldownData): Response {
 		/* Subscription type of the user & guild */
 		const subscription = this.bot.db.users.type(db);
 
@@ -169,7 +170,7 @@ export class CommandManager {
 		const response: Response = new Response()
 			.addEmbed(builder => builder
 				.setTitle("Whoa-whoa... slow down ⌛")
-				.setDescription(`This ${interaction instanceof MessageContextMenuCommandInteraction ? "context menu action" : "command"} is currently on cool-down. You can use it again <t:${Math.floor((cooldown.createdAt + cooldown.duration) / 1000)}:R>.`)
+				.setDescription(`This ${command instanceof InteractionHandler ? "action" : interaction instanceof MessageContextMenuCommandInteraction ? "context menu action" : "command"} is currently on cool-down. You can use it again <t:${Math.floor((cooldown.createdAt + cooldown.duration) / 1000)}:R>.`)
 				.setColor("Yellow")
 			)
 			.setEphemeral(true);
@@ -218,8 +219,8 @@ export class CommandManager {
 			await interaction.respond(data);
 
 		} catch (error) {
-			await handleError(this.bot, {
-				error: error as Error, reply: false, title: "Failed to auto-complete interaction"
+			await this.bot.moderation.error({
+				error: error as Error, title: "Failed to auto-complete interaction"
 			});
 
 			/* Respond to the interaction with an error message. */
@@ -322,17 +323,9 @@ export class CommandManager {
 		const unread: DatabaseUserInfraction[] = this.bot.db.users.unread(db.user);
 
 		/* If the user is banned from the bot, send a notice message. */
-		if (banned !== null && !command.options.always) return void await new Response()
-			.addEmbed(builder => builder
-				.setTitle(`You have been banned **permanently** from the bot 😔`)
-				.addFields({
-					name: "Reason",
-					value: banned.reason ?? "Inappropriate use of the bot"
-				})
-				.setFooter({ text: "View /support on how to appeal this ban" })
-				.setTimestamp(banned.when)
-				.setColor("Red")
-			).setEphemeral(true).send(interaction);
+		if (banned !== null && !command.options.always) return void await 
+			this.bot.moderation.buildBanNotice(banned).setEphemeral(true)
+		.send(interaction);
 
 		if (unread.length > 0) {
 			const row = new ActionRowBuilder<ButtonBuilder>()
@@ -389,7 +382,7 @@ export class CommandManager {
 		}
 
 		/* Reply to the original interaction */
-		let response: Response | undefined;
+		let response: Response | undefined | void;
 
 		/* Try to execute the command handler. */
 		try {
@@ -406,9 +399,8 @@ export class CommandManager {
 				)
 				.setEphemeral(true);
 
-			await handleError(this.bot, {
-				title: `Error while executing command \`${command.builder instanceof SlashCommandBuilder ? "/" : ""}${command.builder.name}\``,
-				error: error as Error, reply: false
+			await this.bot.moderation.error({
+				title: `Error while executing command \`${command.builder instanceof SlashCommandBuilder ? "/" : ""}${command.builder.name}\``, error
 			});
 		}
 
