@@ -1,7 +1,6 @@
 import { Guild, GuildMember, SlashCommandBuilder } from "discord.js";
 import { setTimeout as delay } from "timers/promises";
 import { getInfo } from "discord-hybrid-sharding";
-import prettyBytes from "pretty-bytes";
 import chalk from "chalk";
 import dayjs from "dayjs";
 

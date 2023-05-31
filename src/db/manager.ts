@@ -26,7 +26,11 @@ export class DatabaseManager<T extends DatabaseManagerBot = Bot> {
         const { url, key } = this.config.db.supabase;
 
         /* Create the Supabase client. */
-        this.client = createClient(url, key.service);
+        this.client = createClient(url, key.service, {
+            auth: {
+                persistSession: false
+            }            
+        });
     }
 
     public collectionName(type: DatabaseCollectionType): string {

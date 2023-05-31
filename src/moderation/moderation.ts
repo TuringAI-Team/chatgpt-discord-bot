@@ -28,7 +28,11 @@ const FlagToEmoji: Record<string, string> = {
     translationPrompt: "🌐",
     translationResult: "🌐",
     youTubeQuery: "▶️",
-    chatUser: "👤"
+    chatUser: "👤",
+
+    /* Backwards compatibility with old flags */
+    user: "👤",
+    bot: "🤖" 
 }
 
 const FlagToName: Record<string, string> = {

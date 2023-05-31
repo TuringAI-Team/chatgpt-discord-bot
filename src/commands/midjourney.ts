@@ -203,7 +203,7 @@ export default class MidjourneyCommand extends Command {
 				.select("*").eq("id", id)
 				.single();
 
-			if (entry === null || error) await interaction.deferUpdate();
+			if (entry === null || error) return void await interaction.deferUpdate();
 
 			/* Updated dataset entry */
 			const updated = {
