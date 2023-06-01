@@ -106,7 +106,7 @@ export class CommandManager {
 		const name: string = this.commandName(interaction, command);
 
 		const existing: RunningData | null = await this.bot.db.cache.get("commands", name);
-		if (existing === null || (existing.since + 60 * 1000) < Date.now()) return null;
+		if (existing === null || !existing.since || !existing.channel || (existing.since + 60 * 1000) < Date.now()) return null;
 
 		return existing;
 	}
@@ -117,7 +117,7 @@ export class CommandManager {
 		
 		if (status) {
 			await this.bot.db.cache.set("commands", name, {
-				started: Date.now(),
+				since: Date.now(),
 				channel: interaction.channelId
 			});
 		} else {
@@ -467,6 +467,6 @@ export class CommandManager {
 			[command.builder.name]: "+1"
 		});
 
-		await this.setRunning(interaction, command, false);
+		//await this.setRunning(interaction, command, false);
 	}
 }
