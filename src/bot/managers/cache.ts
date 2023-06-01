@@ -6,7 +6,7 @@ import { App } from "../../app.js";
 /* How long to cache database entries for, by default */
 const DATABASE_CACHE_TTL: number = 30 * 60
 
-export type CacheType = DatabaseCollectionType | "cooldown" | "webhooks"
+export type CacheType = DatabaseCollectionType | "cooldown" | "commands" | "webhooks"
 export type CacheValue = any[] | { [key: string]: any }
 
 const CacheDuration: Partial<Record<CacheType, number>> = {

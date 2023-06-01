@@ -1,8 +1,8 @@
 import { AnySelectMenuInteraction, ButtonInteraction, ModalSubmitInteraction } from "discord.js";
 
 import { DatabaseInfo, UserSubscriptionPlanType } from "../db/managers/user.js";
-import { CommandCooldown, CommandRestrictionType } from "../command/command.js";
-import { CooldownData } from "../command/cooldown.js";
+import { CommandCooldown, CommandOptions, CommandRestrictionType } from "../command/command.js";
+import { CooldownData } from "../command/types/cooldown.js";
 import { Response } from "../command/response.js";
 import { UserRole } from "../db/managers/role.js";
 import { Bot } from "../bot/bot.js";
@@ -10,19 +10,7 @@ import { Bot } from "../bot/bot.js";
 export type InteractionHandlerClassType = ButtonInteraction | AnySelectMenuInteraction | ModalSubmitInteraction
 export type InteractionHandlerResponse = Promise<Response | undefined | void>
 
-export interface InteractionHandlerOptions {
-	/* How long the cool-down between executions of the command should be */
-	cooldown?: CommandCooldown | null;
-
-	/* Whether the action works when someone is banned from the bot */
-	always?: boolean;
-
-	/* Whether the action requires the bot to be fully started */
-	waitForStart?: boolean;
-
-	/* Which roles the action should be restricted to */
-	restriction?: CommandRestrictionType;
-}
+export type InteractionHandlerOptions = Pick<CommandOptions, "always" | "cooldown" | "restriction" | "synchronous" | "waitForStart">
 
 export enum InteractionType {
 	Button, StringSelectMenu, Modal
@@ -126,8 +114,8 @@ export abstract class InteractionHandler<T extends InteractionHandlerClassType =
 		return this.bot.command.removeCooldown(interaction, this as any);
 	}
 
-	public async applyCooldown(interaction: T, db: DatabaseInfo): Promise<void> {
-		return this.bot.command.applyCooldown(interaction, db, this as any);
+	public async applyCooldown(interaction: T, db: DatabaseInfo, time?: number): Promise<void> {
+		return this.bot.command.applyCooldown(interaction, db, this as any, time);
 	}
 
 	public async currentCooldown(interaction: T): Promise<CooldownData | null> {

@@ -6,7 +6,7 @@ import { DatabaseInfo, UserSubscriptionPlanType } from "../db/managers/user.js";
 import { UserRole } from "../db/managers/role.js";
 import { Response } from "./response.js";
 import { Bot } from "../bot/bot.js";
-import { CooldownData } from "./cooldown.js";
+import { CooldownData } from "./types/cooldown.js";
 
 export type CommandBuilder = 
 	SlashCommandBuilder
@@ -44,6 +44,9 @@ export interface CommandOptions {
 
 	/* Which roles the command should be restricted to */
 	restriction?: CommandRestrictionType;
+
+	/* Whether only one "instance" of this command can be running at the same time */
+	synchronous?: boolean;
 }
 
 export class Command<U extends ContextMenuCommandInteraction | ChatInputCommandInteraction = ChatInputCommandInteraction> {
@@ -55,7 +58,7 @@ export class Command<U extends ContextMenuCommandInteraction | ChatInputCommandI
     /* Other command options */
     public readonly options: Required<CommandOptions>;
 
-	constructor(bot: Bot, builder: CommandBuilder, options?: CommandOptions, defaultOptions: CommandOptions = { long: false, cooldown: null, restriction: [], waitForStart: false } as any) {
+	constructor(bot: Bot, builder: CommandBuilder, options?: CommandOptions, defaultOptions: CommandOptions = { long: false, cooldown: null, restriction: [], waitForStart: false, synchronous: false }) {
 		this.bot = bot;
 		this.builder = builder;
 

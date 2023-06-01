@@ -2,11 +2,12 @@ import { ActionRowBuilder, ComponentType, ButtonStyle, ButtonBuilder, ChatInputC
 import { DiscordAPIError } from "@discordjs/rest";
 
 import { DatabaseInfo, DatabaseUserInfraction } from "../db/managers/user.js";
-import { CooldownData } from "../command/cooldown.js";
+import { CooldownData } from "../command/types/cooldown.js";
 import { Response } from "../command/response.js";
 import { AnyInteractionHandlerValues, InteractionHandler, InteractionHandlerClassType, InteractionHandlerRunOptions, InteractionValidationError } from "./handler.js";
 import { Bot, BotStatus } from "../bot/bot.js";
 import { Utils } from "../util/utils.js";
+import { RunningData } from "../command/types/running.js";
 
 export class InteractionManager {
 	protected readonly bot: Bot;
@@ -136,8 +137,11 @@ export class InteractionManager {
 				.setColor("Orange")
 			).setEphemeral(true).send(interaction);
 
-		/* Get the current cool-down of the command. */
+		/* Get the current cool-down of the handler. */
 		const cooldown: CooldownData | null = await this.bot.command.cooldown(interaction, handler);
+
+		/* Check whether the user already has an instance of this handler running. */
+		const running: RunningData | null = await this.bot.command.running(interaction, handler);
 
 		/* Get the database entry of the user. */
 		let db: DatabaseInfo = await this.bot.db.users.fetchData(interaction.user, interaction.guild);
@@ -170,7 +174,13 @@ export class InteractionManager {
 			return void await response.send(interaction);
 		}
 
-		/* If the user is currently on cool-down for this command, ... */
+		/* If the user already has an instance of this handler running, ... */
+		if (running !== null) {
+			const response = this.bot.command.runningMessage(interaction, handler, running);
+			return void await response.send(interaction);
+		}
+
+		/* If the user is currently on cool-down for this handler, ... */
 		if (handler.options.cooldown !== null && cooldown !== null && cooldown.createdAt) {
 			/* Build the cool-down message. */
 			const response: Response = this.bot.command.cooldownMessage(interaction, handler, db, cooldown);
@@ -190,7 +200,7 @@ export class InteractionManager {
 				});
 		}
 
-		/* If the command is marked as private, do some checks to make sure only privileged users are able to execute this command. */
+		/* If the handler is marked as private, do some checks to make sure only privileged users are able to execute this handler. */
 		if (!(handler.planOnly() || handler.subscriptionOnly())) {
 			/* Whether the user can execute this command */
 			const canExecute: boolean = this.bot.db.role.canExecuteCommand(db.user, handler);
@@ -218,7 +228,7 @@ export class InteractionManager {
 				.setColor("Red")
 			).setEphemeral(true).send(interaction);
 
-		/* If the user doesn't have a cool-down set for the command yet, ... */
+		/* If the user doesn't have a cool-down set for the handler yet, ... */
 		if (handler.options.cooldown !== null && cooldown === null) {
 			await this.bot.command.applyCooldown(interaction, db, handler);
 		
@@ -230,8 +240,10 @@ export class InteractionManager {
 		/* Reply to the original interaction */
 		let response: Response | undefined | void;
 
-		/* Try to execute the command handler. */
+		/* Try to execute the interaction handler. */
 		try {
+			await this.bot.command.setRunning(interaction, handler, true);
+
 			response = await handler.run({
 				interaction, db, data: data.data, raw: data.raw
 			});
@@ -254,5 +266,7 @@ export class InteractionManager {
 		await this.bot.db.metrics.changeCommandsMetric({
 			[handler.builder.data.name]: "+1"
 		});
+
+		await this.bot.command.setRunning(interaction, handler, false);
 	}
 }

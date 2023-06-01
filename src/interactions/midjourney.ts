@@ -17,16 +17,12 @@ export class MidjourneyInteractionHandler extends InteractionHandler<ButtonInter
             undefined,
 
             {
-                cooldown: {
-                    free: 60 * 1000,
-                    voter: 50 * 1000,
-                    subscription: 25 * 1000
-                }
+                synchronous: true
             }
         );
     }
 
     public async run({ raw, interaction, db }: InteractionHandlerRunOptions<ButtonInteraction>): InteractionHandlerResponse {
-        return this.bot.command.get<MidjourneyCommand>("mj").handleInteraction(interaction, db, raw);
+        return this.bot.command.get<MidjourneyCommand>("mj").handleInteraction(this, interaction, db, raw);
     }
 }

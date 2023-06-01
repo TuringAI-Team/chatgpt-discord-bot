@@ -13,6 +13,7 @@ import { DatabaseInfo } from "../db/managers/user.js";
 import { Response } from "../command/response.js";
 import { Utils } from "../util/utils.js";
 import { Bot } from "../bot/bot.js";
+import { MidjourneyInteractionHandler } from "../interactions/midjourney.js";
 
 export default class MidjourneyCommand extends Command {
 	constructor(bot: Bot) {
@@ -38,7 +39,9 @@ export default class MidjourneyCommand extends Command {
 				free: 5 * 60 * 1000,
 				voter: 4 * 50 * 1000,
 				subscription: 2 * 60 * 1000
-			}
+			},
+
+			synchronous: true
 		});
 	}
 
@@ -155,7 +158,7 @@ export default class MidjourneyCommand extends Command {
 		});
 	}
 
-	public async handleInteraction(interaction: ButtonInteraction, db: DatabaseInfo, data: string[]): InteractionHandlerResponse {
+	public async handleInteraction(handler: MidjourneyInteractionHandler, interaction: ButtonInteraction, db: DatabaseInfo, data: string[]): InteractionHandlerResponse {
 		/* The action to perform */
 		const action: MidjourneyAction | "rate" | "cancel" = data.shift()! as any;
 
@@ -188,6 +191,10 @@ export default class MidjourneyCommand extends Command {
 			await interaction.deferReply();
 
 			try {
+				if (!this.bot.db.users.canUsePremiumFeatures(db)) {
+					await handler.applyCooldown(interaction, db, action === "upscale" ? 30 * 1000 : 60 * 1000);
+				}
+
 				/* Wait for the actual generation result. */
 				const result: MidjourneyResult = await this.bot.turing.imagine({
 					action, id, number: index, db,

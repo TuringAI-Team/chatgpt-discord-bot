@@ -113,6 +113,7 @@ type MidjourneyMetricsEntry = MetricsEntry<"midjourney", {
     upscale: number;
     variation: number;
     rate: Record<number, number>;
+    credits: number;
 }>
 
 export class DatabaseMetricsManager<T extends DatabaseManagerBot> {

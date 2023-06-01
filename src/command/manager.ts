@@ -6,9 +6,10 @@ import { Command, CommandOptionChoice, CommandSpecificCooldown } from "./command
 import { DatabaseInfo, DatabaseUserInfraction } from "../db/managers/user.js";
 import { InteractionHandler, InteractionHandlerClassType } from "../interaction/handler.js";
 import { Bot, BotStatus } from "../bot/bot.js";
-import { CooldownData } from "./cooldown.js";
+import { CooldownData } from "./types/cooldown.js";
 import { Response } from "./response.js";
 import { Utils } from "../util/utils.js";
+import { RunningData } from "./types/running.js";
 
 export class CommandManager {
 	protected readonly bot: Bot;
@@ -93,6 +94,45 @@ export class CommandManager {
 	}
 
 	/**
+	 * Check whether an instance of this command is already running.
+	 * 
+	 * @param interaction Interaction user to check
+	 * @param command Command to check
+	 * 
+	 * @returns Whether an instance of this command is already running
+	 */
+	public async running(interaction: ChatInputCommandInteraction | InteractionHandlerClassType, command: Command | InteractionHandler): Promise<RunningData | null> {
+		if (!command.options.synchronous) return null;
+		
+		const name: string = this.commandName(interaction, command);
+		return await this.bot.db.cache.get("commands", name);
+	}
+
+	public async setRunning(interaction: ChatInputCommandInteraction | InteractionHandlerClassType, command: Command | InteractionHandler, status: boolean): Promise<void> {
+		if (!command.options.synchronous) return;
+		const name: string = this.commandName(interaction, command);
+		
+		if (status) {
+			await this.bot.db.cache.set("commands", name, {
+				started: Date.now(),
+				channel: interaction.channelId
+			});
+		} else {
+			await this.bot.db.cache.delete("commands", name);
+		} 
+	}
+
+	public runningMessage(interaction: ChatInputCommandInteraction | InteractionHandlerClassType, command: Command | InteractionHandler, running: RunningData): Response {
+		return new Response()
+			.addEmbed(builder => builder
+				.setTitle("Whoa-whoa... slow down ⌛")
+				.setDescription(`You already have this ${command instanceof InteractionHandler ? "action" : interaction instanceof MessageContextMenuCommandInteraction ? "context menu action" : "command"} running in ${running.channel !== null ? `<#${running.channel}>` : "**DMs**"}. *Wait for that execution to finish first, before running it again*.`)
+				.setColor("Yellow")
+			)
+			.setEphemeral(true);
+	}
+
+	/**
 	 * Get the current cool-down for the specific command, for the user who executed this interaction.
 	 * 
 	 * @param interaction Interaction user to check
@@ -130,13 +170,13 @@ export class CommandManager {
 	 * @param interaction Interaction user to set cool-down for 
 	 * @param command Command to set cool-down for
 	 */
-	public async applyCooldown(interaction: ChatInputCommandInteraction | InteractionHandlerClassType, db: DatabaseInfo, command: Command | InteractionHandler): Promise<void> {
+	public async applyCooldown(interaction: ChatInputCommandInteraction | InteractionHandlerClassType, db: DatabaseInfo, command: Command | InteractionHandler, time?: number): Promise<void> {
 		/* If the command doesn't have a cool-down time set, abort. */
 		if (!command.options.cooldown || this.bot.app.config.discord.owner.includes(interaction.user.id)) return;
 		const name: string = this.commandName(interaction, command);
 		
 		/* How long the cool-down should last */
-		const duration: number | null = this.cooldownDuration(command, db);
+		const duration: number | null = time ?? this.cooldownDuration(command, db);
 		if (duration === null) return;
 
 		/* Update the database entry for the user & the executed command. */
@@ -248,6 +288,9 @@ export class CommandManager {
 		/* Get the current cool-down of the command. */
 		const cooldown: CooldownData | null = await this.cooldown(interaction, command);
 
+		/* Check whether the user already has an instance of this command running. */
+		const running: RunningData | null = await this.running(interaction, command);
+
 		/* Get the database entry of the user. */
 		let db: DatabaseInfo = await this.bot.db.users.fetchData(interaction.user, interaction.guild);
 		const subscription = this.bot.db.users.type(db);
@@ -276,6 +319,12 @@ export class CommandManager {
 				)
 				.setEphemeral(true);
 
+			return void await response.send(interaction);
+		}
+
+		/* If the user already has an instance of this command running, ... */
+		if (running !== null) {
+			const response = this.runningMessage(interaction, command, running);
 			return void await response.send(interaction);
 		}
 
@@ -386,6 +435,7 @@ export class CommandManager {
 
 		/* Try to execute the command handler. */
 		try {
+			await this.setRunning(interaction, command, true);
 			response = await command.run(interaction as any, db);
 
 		} catch (error) {
@@ -413,5 +463,7 @@ export class CommandManager {
 		await this.bot.db.metrics.changeCommandsMetric({
 			[command.builder.name]: "+1"
 		});
+
+		await this.setRunning(interaction, command, false);
 	}
 }

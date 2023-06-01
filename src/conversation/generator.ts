@@ -267,8 +267,7 @@ export class Generator {
 		/* If the command is on cool-down, don't run the request. */
 		if (conversation.cooldown.active && remaining > Math.min(conversation.cooldown.state.expiresIn! / 2, 10 * 1000)) {
 			const reply = await interaction.reply({
-				embeds: conversation.cooldownMessage(db),
-				ephemeral: true
+				embeds: conversation.cooldownMessage(db), ephemeral: true
 			}).catch(() => null);
 
 			if (reply === null) return;
