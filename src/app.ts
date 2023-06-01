@@ -1,5 +1,3 @@
-import chalk from "chalk";
-
 import { CacheManager } from "./bot/managers/cache.js";
 import { AppDatabaseManager } from "./db/app.js";
 import { BotManager } from "./bot/manager.js";

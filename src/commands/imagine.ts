@@ -476,6 +476,7 @@ export default class ImagineCommand extends Command {
 		/* The user wants to cancel an image generation request */
 		} else if (data.action === "cancel") {
 			await button.deferUpdate();
+			if (data.id !== db.user.id) return;
 
 			/* Just blindly try to cancel the image generation, what could go wrong? */
 			await this.bot.image.cancelImageGeneration(imageID, "button").catch(() => {});

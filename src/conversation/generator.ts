@@ -9,7 +9,6 @@ import { ChatGeneratedInteraction, Conversation } from "./conversation.js";
 import { InteractionHandlerRunOptions } from "../interaction/handler.js";
 import { ChatInteractionHandlerData } from "../interactions/chat.js";
 import { ChatModel, ModelCapability } from "../chat/types/model.js";
-import { addReaction, removeReaction } from "./utils/reaction.js";
 import { ModerationResult } from "../moderation/moderation.js";
 import { ChatGuildData } from "../chat/types/options.js";
 import { ChatSettingsTones } from "./settings/tone.js";
@@ -17,12 +16,13 @@ import { Introduction } from "../util/introduction.js";
 import { format } from "../chat/utils/formatter.js";
 import { Response } from "../command/response.js";
 import { OtherPrompts } from "../chat/client.js";
+import { Reaction } from "./utils/reaction.js";
 import { Bot, BotStatus } from "../bot/bot.js";
 import { Utils } from "../util/utils.js";
 import { Emoji } from "../util/emoji.js";
 
+import { ErrorResponse, ErrorResponseOptions, ErrorType } from "../command/response/error.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
-import { ErrorResponse } from "../command/response/error.js";
 import { GPTAPIError } from "../error/gpt/api.js";
 
 /* Permissions required by the bot to function correctly */
@@ -383,7 +383,7 @@ export class Generator {
 		}
 
 		/* If the user mentioned the bot somewhere in the message (and not at the beginning), react with a nice emoji. */
-		if (mentions === "inMessage") return void await addReaction(this.bot, message, "👋").catch(() => {});
+		if (mentions === "inMessage") return void await Reaction.add(this.bot, message, "👋");
 
 		/* Get the user & guild data from the database, if available. */
 		const db = await this.bot.db.users.fetchData(author, guild);
@@ -455,7 +455,7 @@ export class Generator {
 				.addEmbed(builder => builder
 					.setDescription("Your assigned session is currently starting up ⏳")
 					.setColor("Yellow")
-			).send(message).catch(() => {});
+			).send(message);
 
 			/* Initialize the user's conversation, if not done already. */
 			if (!conversation.active) await conversation.init();
@@ -467,24 +467,13 @@ export class Generator {
 					.setColor("Yellow")
 			).send(message);
 
-			if (error instanceof GPTGenerationError && error.options.data.type === GPTGenerationErrorType.NoFreeSessions) return void await new Response()
-				.addEmbed(builder => builder
-					.setTitle("Uh-oh... 😬")
-					.setDescription("We are currently dealing with *a lot* of traffic & are **not** able to process your message at this time.")
-					.setFooter({ text: "Please try again later." })
-					.setColor("Red")
-				).send(message);
-
 			await this.bot.moderation.error({
 				error, title: "Failed to set up conversation session"
 			});
 
-			return void await new Response()
-				.addEmbed(builder => builder
-					.setTitle("Uh-oh... 😬")
-					.setDescription("It seems like we experienced an issue while trying to resume your conversation.\n*The developers have been notified*.")
-					.setColor("Red")
-				).send(message).catch(() => {});
+			return void await new ErrorResponse({
+				message: "It seems like we experienced an issue while trying to resume your conversation."
+			}).send(message);
 		}
 
 		const attachedImages: boolean = (await conversation.manager.session.client.findMessageImageAttachments(message)).length > 0;
@@ -519,16 +508,16 @@ export class Generator {
 				await reply.delete().catch(() => {});
 			}, remaining);
 
-			await addReaction(this.bot, message, "🐢");
+			await Reaction.add(this.bot, message, "🐢");
 			return;
 
 		/* If the remaining time is negligible, wait for the cool-down to expire. */
 		} else if (conversation.cooldown.active) {
 			conversation.generating = true;
 
-			await addReaction(this.bot, message, "⌛");
+			await Reaction.add(this.bot, message, "⌛");
 			await new Promise<void>(resolve => setTimeout(resolve, remaining));
-			await removeReaction(this.bot, message, "⌛");
+			await Reaction.remove(this.bot, message, "⌛");
 
 			conversation.generating = false;
 		}
@@ -669,19 +658,19 @@ export class Generator {
 		 * Update the existing reply or send a new reply, to show the error message.
 		 * @param response Response to send
 		 */
-		const sendError = async (response: Response, notice: boolean = true): Promise<void> => {
+		const sendError = async (options: ErrorResponseOptions): Promise<void> => {
+			clearInterval(updateTimer);
+
 			/* Wait for the queued message to be sent. */
 			while (queued) {
 				await new Promise(resolve => setTimeout(resolve, 500));
 			}
 
 			try {
-				clearInterval(updateTimer);
-				if (notice) response.embeds[0].setDescription(`${response.embeds[0].data.description}\n_If you continue to experience issues, join the **[support server](${Utils.supportInvite(this.bot)})**_.`);
+				const response = new ErrorResponse(options);
 
 				if (reply === null) await response.send(message);
 				else await reply.edit(response.get() as MessageEditOptions);
-
 			} catch (_) {}
 		}
 
@@ -695,7 +684,7 @@ export class Generator {
 
 		/* Start the generation process. */
 		try {
-			if (mentions !== "dm") await addReaction(this.bot, message, loadingEmoji);
+			if (mentions !== "dm") await Reaction.add(this.bot, message, loadingEmoji);
 			await message.channel.sendTyping();
 
 			/* Send the request to the selected chat model. */
@@ -715,44 +704,29 @@ export class Generator {
 			const error: GPTGenerationError | GPTAPIError | DiscordAPIError | Error = err as Error;
 			if (error instanceof DiscordAPIError) return;
 
-			if (error instanceof GPTGenerationError && error.options.data.type === GPTGenerationErrorType.NoFreeSessions) return await sendError(new Response()
-				.addEmbed(builder => builder
-					.setTitle("Uh-oh... 😬")
-					.setDescription("We are currently dealing with *a lot* of traffic & are **not** able to process your message at this time 😔")
-					.setFooter({ text: "Please try again later." })
-					.setColor("Red")
-				), false);
+			if (error instanceof GPTGenerationError && error.options.data.type === GPTGenerationErrorType.Empty) return await sendError({
+				message: `**${this.bot.client.user.username}**'s response was empty for this prompt, *please try again*`,
+				emoji: "😔"
+			});
 
-			if (error instanceof GPTGenerationError && error.options.data.type === GPTGenerationErrorType.Empty) return await sendError(new Response()
-				.addEmbed(builder => builder
-					.setDescription(`**${this.bot.client.user.username}**'s response was empty for this prompt, *please try again* 😔`)
-					.setColor("Red")
-				), false);
+			if (error instanceof GPTGenerationError && error.options.data.type === GPTGenerationErrorType.Length) return await sendError({
+				message: `Your message is too long for **${settingsModel.options.name}**. ${Emoji.display(settingsModel.options.emoji, true)}\n\n*Try resetting your conversation, and sending shorter messages to the bot, in order to avoid reaching the limit*.`,
+				emoji: null
+			});
 
-			if (error instanceof GPTGenerationError && error.options.data.type === GPTGenerationErrorType.Length) return await sendError(new Response()
-				.addEmbed(builder => builder
-					.setDescription(`Your message is too long for **${settingsModel.options.name}**. ${Emoji.display(settingsModel.options.emoji, true)}\n\n*Try resetting your conversation, and sending shorter messages to the bot, in order to avoid reaching the limit*.`)
-					.setColor("Red")
-				), false);
-
-			if (error instanceof GPTGenerationError && error.options.data.type === GPTGenerationErrorType.Busy) return await sendError(new Response()
-				.addEmbed(builder => builder
-					.setDescription("You already have a request running in your conversation, *wait for it to finish* 😔")
-					.setColor("Red")
-				), false);
+			if (error instanceof GPTGenerationError && error.options.data.type === GPTGenerationErrorType.Busy) return await sendError({
+				message: "You already have a request running in your conversation, *wait for it to finish*", emoji: "😔"
+			});
 
 			if (error instanceof GPTAPIError && error.isServerSide()) {
 				await this.bot.moderation.error({
 					error, title: "Server-side error"
 				});
 
-				return await sendError(new Response()
-					.addEmbed(builder => builder
-						.setTitle("Uh-oh... 😬")
-						.setDescription(`**${settingsModel.options.name}** ${Emoji.display(settingsModel.options.emoji, true)} is currently experiencing *server-side* issues.`)
-						.setColor("Red")
-					)
-				);
+				return await sendError({
+					message: `**${settingsModel.options.name}** ${Emoji.display(settingsModel.options.emoji, true)} is currently experiencing *server-side* issues.`,
+					type: ErrorType.Error
+				});
 			}
 
 			/* Try to handle the error & log the error message. */
@@ -760,19 +734,17 @@ export class Generator {
 				error, title: "Failed to generate message"
 			});
 
-			return await sendError(new Response()
-				.addEmbed(builder => builder
-					.setTitle("Uh-oh... 😬")
-					.setDescription("It seems like we had trouble generating a response for your message.")
-					.setColor("Red")
-				));
+			return await sendError({
+				message: "It seems like we had trouble generating a response for your message.",
+				type: ErrorType.Error
+			});
 
 		} finally {
 			/* Clean up the timers. */
 			if (typingTimer !== null) clearInterval(typingTimer);
 			clearInterval(updateTimer);
 
-			if (mentions !== "dm") await removeReaction(this.bot, message, loadingEmoji);
+			if (mentions !== "dm") await Reaction.remove(this.bot, message, loadingEmoji);
 		}
 
 		/* Try to send the response & generate a nice embed for the message. */
@@ -792,12 +764,10 @@ export class Generator {
 			) : null;
 
 			/* If the embed failed to generate, send an error message. */
-			if (response === null) return await sendError(new Response()
-				.addEmbed(builder => builder
-					.setTitle("Uh-oh... 😬")
-					.setDescription(`It seems like we had trouble generating the reply for your request.`)
-					.setColor("Red")
-				));
+			if (response === null) return await sendError({
+				message: "It seems like we had trouble generating the reply for your message.",
+				type: ErrorType.Error
+			});
 
 			/* Wait for the queued message to be sent. */
 			while (queued) {

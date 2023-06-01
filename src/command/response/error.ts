@@ -7,7 +7,7 @@ export enum ErrorType {
     Error, Other
 }
 
-interface ErrorResponseOptions {
+export interface ErrorResponseOptions {
     /* Interaction to reply to */
     interaction?: RepliableInteraction;
 

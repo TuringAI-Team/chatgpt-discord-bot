@@ -157,7 +157,7 @@ export const AutoModerationFilters: AutoModerationFilter[] = [
         action: { reason: "Homophobic content", type: "block" },
 
         blocked: [
-            { words: [ "trannie", "tranny", "faggot", "fagget", "mrlol" ] }
+            { words: [ "trannie", "tranny", "faggot", "fagget" ] }
         ]
     })
 ]

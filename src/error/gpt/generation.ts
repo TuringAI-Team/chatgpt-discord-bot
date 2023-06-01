@@ -1,14 +1,8 @@
 import { GPTError, GPTErrorType } from "./base.js";
 
 export enum GPTGenerationErrorType {
-    /* The Microsoft account got rate-limited */
-    RateLimit,
-
     /* The account is unusable */
     SessionUnusable,
-
-    /* No session is available at the moment */
-    NoFreeSessions,
 
     /* The conversation could not be created properly */
     Conversation,

@@ -75,7 +75,7 @@ export const CONVERSATION_COOLDOWN_MODIFIER: Record<UserSubscriptionPlanType, Co
 	},
 
 	voter: {
-		multiplier: 0.5
+		time: 120 * 1000
 	},
 
 	subscription: {
@@ -566,7 +566,7 @@ export class Conversation {
 
 		/* Add the charge to the user's plan. */
 		const charge = await this.manager.bot.db.plan.expenseForChat(options.db, {
-			bonus: options.model.id === "gpt-4" ? 0.05 : 0.15,
+			bonus: options.model.id === "gpt-4" ? 0.05 : 0.20,
 			used: amount,
 			
 			data: {

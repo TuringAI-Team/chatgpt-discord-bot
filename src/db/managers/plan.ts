@@ -1,7 +1,7 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle, EmbedBuilder, GuildMember, InteractionReplyOptions } from "discord.js";
 
-import { DatabaseGuild, DatabaseInfo, DatabaseUser, UserSubscriptionType } from "./user.js";
 import { MidjourneyResult, TuringVideoModel, TuringVideoModelName, TuringVideoResult } from "../../turing/api.js";
+import { DatabaseGuild, DatabaseInfo, DatabaseUser, UserSubscriptionType } from "./user.js";
 import { StableHordeGenerationResult } from "../../image/types/image.js";
 import { ChatInteraction } from "../../conversation/conversation.js";
 import { ErrorResponse } from "../../command/response/error.js";
@@ -90,7 +90,7 @@ interface UserPlanCredit {
     amount: number;
 }
 
-export type UserPlanCreditBonusAmount = 0.05 | 0.10 | 0.15
+export type UserPlanCreditBonusAmount = 0.05 | 0.10 | 0.15 | 0.20
 
 /* How many expense entries can be in the history, maximum */
 export const PLAN_MAX_EXPENSE_HISTORY: number = 500
@@ -229,10 +229,10 @@ export class PlanManager {
     }
 
     public async expenseForChat(
-        entry: DatabaseInfo, { used, data }: Pick<UserPlanChatExpense, "used" | "data"> & { bonus?: UserPlanCreditBonusAmount }
+        entry: DatabaseInfo, { used, data, bonus }: Pick<UserPlanChatExpense, "used" | "data"> & { bonus?: UserPlanCreditBonusAmount }
     ): Promise<UserPlanChatExpense | null> {
         return this.expense(entry, {
-            type: "chat", used, data
+            type: "chat", used, data, bonus
         });
     }
 

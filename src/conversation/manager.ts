@@ -49,15 +49,6 @@ export class ConversationManager {
     }
 
     /**
-     * Shut down all of the sessions.
-     */
-    public async stop(): Promise<void> {
-        /* Shut down the session. */
-        await this.session.stop();
-        this.active = false;
-    }
-
-    /**
      * Create a new conversation for the specified Discord user, bound to the specified thread.
      * @param user Discord user to create a session for
      * 

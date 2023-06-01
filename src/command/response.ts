@@ -1,13 +1,15 @@
 import { EmbedBuilder, ComponentBuilder, Message, InteractionReplyOptions, TextChannel, AttachmentBuilder, MessageCreateOptions, CommandInteraction, MessageComponentInteraction, DMChannel, InteractionResponse, ThreadChannel, MessageEditOptions, InteractionUpdateOptions, ButtonInteraction, ModalSubmitInteraction } from "discord.js";
 import { APIActionRowComponent, APIActionRowComponentTypes } from "discord-api-types/v10";
 
-type Component = APIActionRowComponentTypes | APIActionRowComponent<APIActionRowComponentTypes>;
+type Component = APIActionRowComponentTypes | APIActionRowComponent<APIActionRowComponentTypes>
 
 export enum ResponseType {
 	FollowUp,
 	Edit,
     Send
 }
+
+export type ResponseSendClass = MessageComponentInteraction | CommandInteraction | ModalSubmitInteraction | Message | TextChannel | DMChannel | ThreadChannel
 
 export class Response {
 	/* Content of the message */
@@ -90,7 +92,7 @@ export class Response {
 	}
 
 	/* Edit the original interaction reply. */
-	public async send(interaction: MessageComponentInteraction | CommandInteraction | ModalSubmitInteraction | Message | TextChannel | DMChannel | ThreadChannel): Promise<InteractionResponse | Message | null> {
+	public async send(interaction: ResponseSendClass): Promise<InteractionResponse | Message | null> {
 		try {
 			if (interaction instanceof MessageComponentInteraction || interaction instanceof CommandInteraction || interaction instanceof ButtonInteraction || interaction instanceof ModalSubmitInteraction) {
 				/* If the interaction token has expired, don't try to edit the message. */

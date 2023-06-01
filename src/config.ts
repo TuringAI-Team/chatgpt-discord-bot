@@ -82,10 +82,15 @@ export interface Config {
 		/* API key */
 		key: string;
 
+		urls: {
+			prod: string;
+			dev?: string;
+		}
+
 		/* Various CAPTCHA verification keys */
 		captchas: {
 			turnstile: string;
-		}
+		};
 	}
 
 	/* OCR.space API information */

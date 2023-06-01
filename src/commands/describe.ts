@@ -20,7 +20,7 @@ export default class DescribeCommand extends Command {
 		, {
 			cooldown: {
                 free: 3 * 60 * 1000,
-                voter: 1.75 * 60 * 1000,
+                voter: 2 * 60 * 1000,
                 subscription: 30 * 1000
             }
 		});

@@ -1,17 +1,19 @@
 import { fetchEventSource } from "@waylaidwanderer/fetch-event-source";
 import { Awaitable } from "discord.js";
+import { EventEmitter } from "events";
 import { inspect } from "util";
 
 import { ChatSettingsPlugin, ChatSettingsPluginIdentifier } from "../conversation/settings/plugin.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
 import { ChoiceSettingOptionChoice } from "../db/managers/settings.js";
 import { ChatOutputImage, ImageBuffer } from "../chat/types/image.js";
+import { DatabaseInfo, DatabaseUser } from "../db/managers/user.js";
 import { Conversation } from "../conversation/conversation.js";
 import { OpenAIChatMessage } from "../openai/types/chat.js";
 import { MetricsType } from "../db/managers/metrics.js";
 import { ChatInputImage } from "../chat/types/image.js";
-import { DatabaseInfo, DatabaseUser } from "../db/managers/user.js";
 import { GPTAPIError } from "../error/gpt/api.js";
+import { StreamBuilder } from "../util/stream.js";
 import { Utils } from "../util/utils.js";
 import { Bot } from "../bot/bot.js";
 
@@ -477,13 +479,13 @@ export interface TuringChatPluginsOptions {
     plugins: ChatSettingsPlugin[];
 
     /* Progress callback to call when a new token is generated */
-    progress: (result: TuringChatPluginsPartialData) => Awaitable<void>;
+    progress: (result: TuringChatPluginsPartialResult) => Awaitable<void>;
 
     /* User, who initiated this chat request */
     user: DatabaseUser;
 }
 
-export interface TuringChatPluginsPartialData {
+export interface TuringChatPluginsPartialResult {
     result: string;
     extra: string | {};
     done: boolean;
@@ -493,7 +495,7 @@ export interface TuringChatPluginsPartialData {
     error: any | null;
 }
 
-export type TuringChatPluginsResult = TuringChatPluginsPartialData
+export type TuringChatPluginsResult = TuringChatPluginsPartialResult
 
 export type MidjourneyModelIdentifier = "5.1" | "5" | "niji" | "4" | "3" | "2" | "1"
 
@@ -584,93 +586,31 @@ interface TuringChatBingBody {
 
 export type TuringChatBingPartialResult = Pick<TuringChatBingResult, "response">
 
-export class TuringAPI {
+export class TuringAPI extends EventEmitter {
     private readonly bot: Bot;
 
     constructor(bot: Bot) {
+        super();
         this.bot = bot;
     }
 
     public async bing({ prompt, conversation, tone, progress }: TuringChatBingOptions): Promise<TuringChatBingResult> {
-        /* Latest message of the stream */
-        let latest: TuringChatBingPartialResult | null = null;
+        return await new StreamBuilder<
+            TuringChatBingBody, TuringChatBingPartialResult, TuringChatBingResult
+        >({
+            body: {
+                conversationId: conversation.id,
+                prompt, tone
+            },
 
-        /* Whether the generation is finished */
-        let done: boolean = false;
+            error: response => this.error(response, "text/bing", true),
+            headers: this.headers(), progress,
+            url: this.url("text/bing")
+        }).run();
+    }
 
-        /* Request body for the API */
-        const body: TuringChatBingBody = {
-            conversationId: conversation.id,
-            prompt, tone
-        };
-
-        await new Promise<void>(async (resolve, reject) => {
-            const controller: AbortController = new AbortController();
-
-            const abortTimer: NodeJS.Timeout = setTimeout(() => {
-                controller.abort();
-                reject(new TypeError("Request timed out"));
-            }, 90 * 1000);
-
-            try {
-                await fetchEventSource(this.url("text/bing"), {
-                    headers: this.headers() as any,
-                    body: JSON.stringify(body),
-                    mode: "cors",
-                    signal: controller.signal,
-                    method: "POST",
-
-                    onclose: () => {
-                        if (!done) {
-                            done = true;
-
-                            controller.abort();
-                            resolve();
-                        }
-                    },
-                    
-                    onerror: (error) => {
-                        clearTimeout(abortTimer);
-                        throw error;
-                    },
-        
-                    onopen: async (response) => {
-                        clearTimeout(abortTimer);
-
-                        /* If the request failed for some reason, throw an exception. */
-                        if (response.status !== 200) {
-                            const error = await this.error(response, "text/bing", true);
-
-                            controller.abort();
-                            reject(error);
-                        }
-                    },
-
-                    onmessage: async (event) => {
-                        /* Response data */
-                        const data: TuringChatBingPartialResult = JSON.parse(event.data);
-                        if (!data || !data.response) return;
-
-                        latest = data;
-                        if (progress !== undefined) progress(latest);
-                    },
-                });
-
-            } catch (error) {
-                if (error instanceof GPTAPIError) return reject(error);
-
-                reject(new GPTGenerationError({
-                    type: GPTGenerationErrorType.Other,
-                    cause: error as Error
-                }));
-            }
-        });
-
-        if (latest === null) throw new GPTGenerationError({
-            type: GPTGenerationErrorType.Empty
-        });
-
-        return latest;
+    public async cancelImagineRequest(id: string): Promise<void> {
+        this.emit("cancelled", id);
     }
 
     public async imagine({ db, prompt, model, progress, action, id, number }: MidjourneyOptions): Promise<MidjourneyResult> {
@@ -696,6 +636,20 @@ export class TuringAPI {
                 controller.abort();
                 reject(new TypeError("Request timed out"));
             }, 90 * 1000);
+
+            /* Image generation cancel listener */
+            const listener = (cancelledID: string) => {
+                if (latest === null || latest.id !== cancelledID) return;
+
+                clearInterval(abortTimer);
+                reject(new GPTGenerationError<string>({ type: GPTGenerationErrorType.Cancelled }));
+
+                this.off("cancelled", listener);
+                controller.abort();
+            }
+
+            controller.signal.addEventListener("abort", () => this.off("cancelled", listener));
+            this.on("cancelled", listener);
 
             try {
                 await fetchEventSource(this.url(`imgs/mj/${action ?? "imagine"}`), {
@@ -799,101 +753,35 @@ export class TuringAPI {
     }
 
     public async alan({ prompt, conversation, user, progress, image }: TuringAlanOptions): Promise<TuringAlanResult> {
-        /* Latest message of the stream */
-        let latest: TuringAlanResult | null = null;
-
-        /* Whether the generation is finished */
-        let done: boolean = false;
-
         /* Various settings */
         const imageModifier = this.bot.db.settings.get(user, "alan:imageModifier");
+        const pluginList = this.bot.db.settings.get<any>(user, "alan:plugins");
 
         /* Enabled Alan plugins */
-        const plugins: string[] = Object.entries(this.bot.db.settings.get<any>(user, "alan:plugins"))
+        const plugins: string[] = Object.entries(pluginList)
             .filter(([ _, enabled ]) => enabled)
             .map(([ key ]) => key);
 
-        /* Request body for the API */
-        const body: TuringAlanBody = {
-            userName: conversation.user.username,
-            conversationId: conversation.id,
-            message: prompt,
-            imageGenerator: this.bot.db.settings.get(user, "alan:imageGenerator"),
-            imageModificator: imageModifier !== "none" ? `controlnet-${imageModifier}` : imageModifier,
-            searchEngine: this.bot.db.settings.get(user, "alan:searchEngine"),
-            photodescription: image.output && image.output.prompt ? image.output.prompt : null,
-            photo: image.output && image.output.url ? image.output.url : image.input ? image.input.url : undefined,
-            videoGenerator: "none",
-            pluginList: plugins
-        };
+        return await new StreamBuilder<
+            TuringAlanBody, TuringAlanResult
+        >({
+            body: {
+                userName: conversation.user.username,
+                conversationId: conversation.id,
+                message: prompt,
+                imageGenerator: this.bot.db.settings.get(user, "alan:imageGenerator"),
+                imageModificator: imageModifier !== "none" ? `controlnet-${imageModifier}` : imageModifier,
+                searchEngine: this.bot.db.settings.get(user, "alan:searchEngine"),
+                photodescription: image.output && image.output.prompt ? image.output.prompt : null,
+                photo: image.output && image.output.url ? image.output.url : image.input ? image.input.url : undefined,
+                videoGenerator: "none",
+                pluginList: plugins
+            },
 
-        await new Promise<void>(async (resolve, reject) => {
-            const controller: AbortController = new AbortController();
-
-            const abortTimer: NodeJS.Timeout = setTimeout(() => {
-                controller.abort();
-                reject(new TypeError("Request timed out"));
-            }, 90 * 1000);
-
-            try {
-                await fetchEventSource(this.url("text/alan/chatgpt"), {
-                    headers: this.headers() as any,
-                    body: JSON.stringify(body),
-                    mode: "cors",
-                    signal: controller.signal,
-                    method: "POST",
-
-                    onclose: () => {
-                        if (!done) {
-                            done = true;
-
-                            controller.abort();
-                            resolve();
-                        }
-                    },
-                    
-                    onerror: (error) => {
-                        clearTimeout(abortTimer);
-                        throw error;
-                    },
-        
-                    onopen: async (response) => {
-                        clearTimeout(abortTimer);
-
-                        /* If the request failed for some reason, throw an exception. */
-                        if (response.status !== 200) {
-                            const error = await this.error(response, "text/alan/chatgpt", true);
-
-                            controller.abort();
-                            reject(error);
-                        }
-                    },
-
-                    onmessage: async (event) => {        
-                        /* Response data */
-                        const data: TuringAlanResult = JSON.parse(event.data);
-                        if (!data || !data.result) return;
-
-                        latest = data;
-                        if (progress !== undefined) progress(latest);
-                    },
-                });
-
-            } catch (error) {
-                if (error instanceof GPTAPIError) return reject(error);
-
-                reject(new GPTGenerationError({
-                    type: GPTGenerationErrorType.Other,
-                    cause: error as Error
-                }));
-            }
-        });
-
-        if (latest === null) throw new GPTGenerationError({
-            type: GPTGenerationErrorType.Empty
-        });
-
-        return latest;
+            error: response => this.error(response, "text/alan/chatgpt", true),
+            headers: this.headers(), progress,
+            url: this.url("text/alan/chatgpt")
+        }).run();
     }
 
     public async generateImages(options: TuringImageOptions): Promise<TuringImageResult> {
@@ -936,84 +824,17 @@ export class TuringAPI {
     }
 
     public async chatPlugins({ messages, model, plugins, progress }: TuringChatPluginsOptions): Promise<TuringChatPluginsResult> {
-        /* Latest message of the stream */
-        let latest: TuringChatPluginsPartialData | null = null;
+        return await new StreamBuilder<
+            TuringChatPluginsBody, TuringChatPluginsPartialResult, TuringChatPluginsResult
+        >({
+            body: {
+                messages, pluginList: plugins.map(p => p.id)
+            },
 
-        /* Whether the generation is finished */
-        let done: boolean = false;
-
-        /* Request body for the API */
-        const body: TuringChatPluginsBody = {
-            messages, pluginList: plugins.map(p => p.id)
-        };
-
-        await new Promise<void>(async (resolve, reject) => {
-            const controller: AbortController = new AbortController();
-
-            const abortTimer: NodeJS.Timeout = setTimeout(() => {
-                controller.abort();
-                reject(new TypeError("Request timed out"));
-            }, 30 * 1000);
-
-            try {
-                await fetchEventSource(this.url(`text/plugins/${model}`), {
-                    headers: this.headers() as any,
-                    body: JSON.stringify(body),
-                    mode: "cors",
-                    signal: controller.signal,
-                    method: "POST",
-
-                    onclose: () => {
-                        if (!done) {
-                            done = true;
-
-                            controller.abort();
-                            resolve();
-                        }
-                    },
-                    
-                    onerror: (error) => {
-                        clearTimeout(abortTimer);
-                        throw error;
-                    },
-        
-                    onopen: async (response) => {
-                        clearTimeout(abortTimer);
-
-                        /* If the request failed for some reason, throw an exception. */
-                        if (response.status !== 200) {
-                            const error = await this.error(response, `text/plugins/${model}`, true);
-
-                            controller.abort();
-                            reject(error);
-                        }
-                    },
-
-                    onmessage: async (event) => {
-                        /* Response data */
-                        const data: TuringChatPluginsPartialData = JSON.parse(event.data);
-                        if (!data || !data.result) return;
-
-                        latest = data;
-                        if (progress !== undefined) progress(latest);
-                    },
-                });
-
-            } catch (error) {
-                if (error instanceof GPTAPIError) return reject(error);
-
-                reject(new GPTGenerationError({
-                    type: GPTGenerationErrorType.Other,
-                    cause: error as Error
-                }));
-            }
-        });
-
-        if (latest === null) throw new GPTGenerationError({
-            type: GPTGenerationErrorType.Empty
-        });
-
-        return latest;
+            error: response => this.error(response, `text/plugins/${model}`, true),
+            headers: this.headers(), progress,
+            url: this.url(`text/plugins/${model}`)
+        }).run();
     }
 
     public async chat(options: TuringChatOptions): Promise<TuringChatResult> {
@@ -1054,7 +875,11 @@ export class TuringAPI {
     }
 
     private url(path: TuringAPIPath): string {
-        return `http://212.227.227.178:3231/${path}`;
+        const base: string = this.bot.app.config.turing.urls.dev && this.bot.dev
+            ? this.bot.app.config.turing.urls.dev ?? this.bot.app.config.turing.urls.prod
+            : this.bot.app.config.turing.urls.prod;
+
+        return `${base}/${path}`;
     }
 
     private async error(response: Response, path: TuringAPIPath, dry: true): Promise<GPTAPIError>;

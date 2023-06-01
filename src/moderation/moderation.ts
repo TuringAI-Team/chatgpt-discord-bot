@@ -10,6 +10,7 @@ import { FindResult, Utils } from "../util/utils.js";
 import { Response } from "../command/response.js";
 import { Config } from "../config.js";
 import { Bot } from "../bot/bot.js";
+import { ErrorHandlingOptions } from "./error.js";
 
 const ActionToEmoji: Record<string, string> = {
 	warn: "⚠️",
@@ -123,11 +124,6 @@ export interface ModerationResult {
 
 export type DatabaseModerationResult = ModerationResult & { reference: string }
 export type SerializedModerationResult = ModerationResult
-
-interface ErrorHandlingOptions {
-    error: Error | unknown;
-    title?: string;
-}
 
 export class ModerationManager {
     private readonly bot: Bot;
@@ -692,24 +688,8 @@ export class ModerationManager {
     /**
      * Handle a thrown error & send a notice message to the logging channel on Discord.
      */
-    public async error({ error: err, title }: ErrorHandlingOptions): Promise<void> {
-        /* Get the moderation channel. */
-        const channel = await this.channel("error");
-
-        /* The actual error that occured */
-        const error: Error = err as Error;
-
-        const reply = new Response()
-            .addEmbed(builder => builder
-                .setTitle("An error occurred ⚠️")
-                .setDescription(`${title !== undefined ? `*${title}*\n\n` : ""}\`\`\`\n${Utils.truncate(error.toString(), 300)}\n\n${error.stack!.split("\n").slice(1).join("\n")}\n\`\`\``)
-                .setFooter({ text: `Cluster #${this.bot.data.id + 1}` })
-                .setTimestamp()
-                .setColor("Red")
-            );
-
-        /* Send the error message to the channel. */
-        await reply.send(channel);
+    public async error(options: ErrorHandlingOptions) {
+        return this.bot.error.handle(options);
     }
 
     /**
@@ -718,7 +698,7 @@ export class ModerationManager {
     * @throws An error, if the channel could not be found
     * @returns The logging channel
     */
-    private async channel(type: keyof Config["channels"]): Promise<TextChannel> {
+    public async channel(type: keyof Config["channels"]): Promise<TextChannel> {
        const {
            guild: guildID, channel: channelID
        } = this.bot.app.config.channels[type];

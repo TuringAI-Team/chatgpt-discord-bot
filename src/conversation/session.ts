@@ -220,28 +220,6 @@ export class Session {
     }
 
     /**
-     * Shut down the session & make it unusable.
-     * @param permanent Whether to disable the session for the entire run-time of the bot
-     */
-    public async stop(status: StopState = StopState.Normal): Promise<void> {
-        this.locked = true;
-
-        switch (status) {
-            case StopState.Permanent:
-                this.manager.bot.logger.debug(`Session ${chalk.bold(this.id)} has been disabled permanently.`);
-                this.state = SessionState.Disabled;
-
-                break;
-
-            case StopState.Normal:
-                this.state = SessionState.Inactive;
-                break;
-        }
-
-        this.locked = false;
-    }
-
-    /**
      * Get information about maximum usage limits of the session.
      * @returns Session subscription information
      */

@@ -13,6 +13,7 @@ import { BotClusterManager, BotData } from "./manager.js";
 import { ClientDatabaseManager } from "../db/cluster.js";
 import { chooseStatusMessage } from "../util/status.js";
 import { CommandManager } from "../command/manager.js";
+import { ErrorManager } from "../moderation/error.js";
 import { OpenAIManager } from "../openai/openai.js";
 import { ImageManager } from "../image/manager.js";
 import { ShardLogger } from "../util/logger.js";
@@ -116,6 +117,9 @@ export class Bot extends EventEmitter {
     /* Moderation handler; for all stuff related to moderation & logging */
     public readonly moderation: ModerationManager;
 
+    /* Error handler; for saving & handling errors that occur */
+    public readonly error: ErrorManager;
+
     /* Web-hook manager; for custom characters with the bot */
     public readonly webhook: WebhookManager;
 
@@ -170,6 +174,7 @@ export class Bot extends EventEmitter {
         this.db = new ClientDatabaseManager(this);
         this.webhook = new WebhookManager(this);
         this.command = new CommandManager(this);
+        this.error = new ErrorManager(this);
         this.logger = new ShardLogger(this);
         this.image = new ImageManager(this);
         this.turing = new TuringAPI(this);

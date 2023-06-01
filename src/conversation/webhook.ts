@@ -108,10 +108,13 @@ export class WebhookManager {
             name: this.webhookName(channel), reason: "Custom character webhook for the bot"
         });
 
-        return {
+        const data: Webhook = {
             token: webhook.token!,
             id: webhook.id
         };
+
+        await this.bot.db.cache.set("webhooks", channel.id, data);
+        return data;
     }
 
     public webhookName(channel: WebhookChannel): string {

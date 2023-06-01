@@ -239,16 +239,9 @@ export class InteractionManager {
 		} catch (error) {
 			if (error instanceof DiscordAPIError && error.code === 10062) return;
 
-			response = new Response()
-				.addEmbed(builder =>
-					builder.setTitle("An error occurred ⚠️")
-					    .setDescription(`It seems like something went wrong while trying to perform this action.\n_If you continue to experience issues, join our **[support server](${Utils.supportInvite(this.bot)})**_.`)
-						.setColor("Red")
-				)
-				.setEphemeral(true);
-
-			await this.bot.moderation.error({
-				title: `Error while performing action \`${handler.builder instanceof SlashCommandBuilder ? "/" : ""}${handler.builder.data.name}\``, error
+			return void await this.bot.error.handle({
+				title: `Error while performing action \`${handler.builder instanceof SlashCommandBuilder ? "/" : ""}${handler.builder.data.name}\``, error,
+				notice: "It seems like something went wrong while trying to perform this action.", original: interaction
 			});
 		}
 

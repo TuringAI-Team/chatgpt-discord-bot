@@ -1,11 +1,14 @@
 import { ActionRow, ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonComponent, ButtonInteraction, ButtonStyle, EmbedBuilder, InteractionResponse, SlashCommandBuilder } from "discord.js";
 
 import { MidjourneyAction, MidjourneyModelIdentifier, MidjourneyModels, MidjourneyPartialResult, MidjourneyResult } from "../turing/api.js";
+import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
 import { Command, CommandInteraction, CommandResponse } from "../command/command.js";
 import { MAX_IMAGE_PROMPT_LENGTH, RATE_ACTIONS, RateAction } from "./imagine.js";
 import { InteractionHandlerResponse } from "../interaction/handler.js";
 import { LoadingIndicatorManager } from "../db/types/indicator.js";
+import { NoticeResponse } from "../command/response/notice.js";
 import { ErrorResponse } from "../command/response/error.js";
+import { GPTDatabaseError } from "../error/gpt/db.js";
 import { DatabaseInfo } from "../db/managers/user.js";
 import { Response } from "../command/response.js";
 import { Utils } from "../util/utils.js";
@@ -32,9 +35,9 @@ export default class MidjourneyCommand extends Command {
 			)
 		, {
 			cooldown: {
-				free: 60 * 1000,
-				voter: 50 * 1000,
-				subscription: 25 * 1000
+				free: 5 * 60 * 1000,
+				voter: 4 * 50 * 1000,
+				subscription: 2 * 60 * 1000
 			}
 		});
 	}
@@ -80,6 +83,9 @@ export default class MidjourneyCommand extends Command {
 		if (result.done) {
 			const rows = this.buildToolbar(interaction, result as MidjourneyResult);
 			rows.forEach(row => response.addComponent(ActionRowBuilder<ButtonBuilder>, row));
+		} else {
+			const row = this.buildPendingRow(interaction, result);
+			if (row !== null) response.addComponent(ActionRowBuilder<ButtonBuilder>, row);
 		}
 
 		return response.addEmbed(embed);
@@ -116,21 +122,42 @@ export default class MidjourneyCommand extends Command {
 			));
 	}
 
+	private buildPendingRow(interaction: ButtonInteraction | CommandInteraction, result: MidjourneyPartialResult): ActionRowBuilder<ButtonBuilder> | null {
+		const row = new ActionRowBuilder<ButtonBuilder>();
+
+		if (result.image) row
+			.addComponents(
+				new ButtonBuilder()
+					.setCustomId(`mj:cancel:${interaction.user.id}:${result.id}`)
+					.setStyle(ButtonStyle.Danger)
+					.setLabel("Cancel")
+					.setEmoji("🗑️")
+			);
+
+		return row.components.length > 0 ? row : null;
+	}
+
 	private buildToolbar(interaction: ButtonInteraction | CommandInteraction, result: MidjourneyResult): ActionRowBuilder<ButtonBuilder>[] {
 		const rows: ActionRowBuilder<ButtonBuilder>[] = [];
 
 		if (result.action !== "upscale") {
-			if (result.action !== "variation") rows.push(this.buildRow(interaction, result, "variation"));
 			rows.push(this.buildRow(interaction, result, "upscale"));
+			if (result.action !== "variation") rows.push(this.buildRow(interaction, result, "variation"));
 		}
 
 		if (result.action === "upscale") rows.push(this.buildRatingRow(interaction, result));
 		return rows;
 	}
 
+	private buildCancelResponse(): Response {
+		return new NoticeResponse({
+			color: "Red", message: "Cancelled ❌"
+		});
+	}
+
 	public async handleInteraction(interaction: ButtonInteraction, db: DatabaseInfo, data: string[]): InteractionHandlerResponse {
 		/* The action to perform */
-		const action: MidjourneyAction | "rate" = data.shift()! as any;
+		const action: MidjourneyAction | "rate" | "cancel" = data.shift()! as any;
 
 		/* ID of the user this action is for */
 		const userID: string = data.shift()! as any;
@@ -160,16 +187,29 @@ export default class MidjourneyCommand extends Command {
 
 			await interaction.deferReply();
 
-			/* Wait for the actual generation result. */
-			const result: MidjourneyResult = await this.bot.turing.imagine({
-				action, id, number: index, db,
-				progress: result => this.progress(interaction, result, db)
-			});
+			try {
+				/* Wait for the actual generation result. */
+				const result: MidjourneyResult = await this.bot.turing.imagine({
+					action, id, number: index, db,
+					progress: result => this.progress(interaction, result, db)
+				});
 
-			await this.bot.db.metrics.changeMidjourneyMetric({ [action]: "+1" });
-			await this.bot.db.plan.expenseForMidjourneyImage(db, result);
+				await this.bot.db.metrics.changeMidjourneyMetric({ [action]: "+1" });
+				await this.bot.db.plan.expenseForMidjourneyImage(db, result);
 
-			return await this.build(interaction, result, db);
+				return await this.build(interaction, result, db);
+
+			} catch (error) {
+				if (error instanceof GPTGenerationError && error.options.data.type === GPTGenerationErrorType.Cancelled) {
+					return this.buildCancelResponse();
+				}
+	
+				throw error;
+			}
+
+		} else if (action === "cancel") {
+			if (interaction.user.id !== userID) return void await interaction.deferUpdate();
+			await this.bot.turing.cancelImagineRequest(id);
 			
 		} else if (action === "rate") {
 			if (interaction.user.id !== userID) return void await interaction.deferUpdate();
@@ -203,7 +243,9 @@ export default class MidjourneyCommand extends Command {
 				.select("*").eq("id", id)
 				.single();
 
-			if (entry === null || error) return void await interaction.deferUpdate();
+			if (entry === null || error) throw new GPTDatabaseError({
+				collection: "dataset" as any, raw: error
+			});
 
 			/* Updated dataset entry */
 			const updated = {
@@ -226,6 +268,8 @@ export default class MidjourneyCommand extends Command {
 		/* Which generation prompt to use as the input */
 		const prompt: string = interaction.options.getString("prompt", true);
 
+		await interaction.deferReply();
+
 		const moderation = await this.bot.moderation.checkImagePrompt({
 			db, user: interaction.user, content: prompt, nsfw: false, model: "midjourney"
 		});
@@ -237,16 +281,23 @@ export default class MidjourneyCommand extends Command {
 			color: "Orange", emoji: null
 		});
 
-		await interaction.deferReply();
+		try {
+			/* Wait for the actual generation result. */
+			const result: MidjourneyResult = await this.bot.turing.imagine({
+				prompt, model, db, progress: result => this.progress(interaction, result, db)
+			});
 
-		/* Wait for the actual generation result. */
-		const result: MidjourneyResult = await this.bot.turing.imagine({
-			prompt, model, db, progress: result => this.progress(interaction, result, db)
-		});
+			await this.bot.db.metrics.changeMidjourneyMetric({ generation: "+1" });
+			await this.bot.db.plan.expenseForMidjourneyImage(db, result);
 
-		await this.bot.db.metrics.changeMidjourneyMetric({ generation: "+1" });
-		await this.bot.db.plan.expenseForMidjourneyImage(db, result);
+			return await this.build(interaction, result, db);
 
-		return await this.build(interaction, result, db);
+		} catch (error) {
+			if (error instanceof GPTGenerationError && error.options.data.type === GPTGenerationErrorType.Cancelled) {
+				return this.buildCancelResponse();
+			}
+
+			throw error;
+		}
     }
 }
