@@ -103,9 +103,12 @@ export class CommandManager {
 	 */
 	public async running(interaction: ChatInputCommandInteraction | InteractionHandlerClassType, command: Command | InteractionHandler): Promise<RunningData | null> {
 		if (!command.options.synchronous) return null;
-		
 		const name: string = this.commandName(interaction, command);
-		return await this.bot.db.cache.get("commands", name);
+
+		const existing: RunningData | null = await this.bot.db.cache.get("commands", name);
+		if (existing === null || (existing.since + 60 * 1000) < Date.now()) return null;
+
+		return existing;
 	}
 
 	public async setRunning(interaction: ChatInputCommandInteraction | InteractionHandlerClassType, command: Command | InteractionHandler, status: boolean): Promise<void> {

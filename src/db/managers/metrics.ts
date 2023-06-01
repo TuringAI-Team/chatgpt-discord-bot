@@ -229,7 +229,7 @@ export class AppDatabaseMetricsManager extends DatabaseMetricsManager<App> {
         if (typeof value === "string") {
             if ([ "+", "-" ].includes(value.slice(undefined, 1))) {
                 /* Previous number value for this metric */
-                const previousValue: number = existing !== null && existing[key] != undefined ? parseInt(existing[key].toString()) : 0;
+                const previousValue: number = existing !== null && existing[key] != undefined ? parseFloat(existing[key].toString()) : 0;
 
                 const operator: "+" | "-" = value.slice(undefined, 1) as any;
                 const newNumber: string = value.slice(1);

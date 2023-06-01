@@ -201,8 +201,9 @@ export default class MidjourneyCommand extends Command {
 					progress: result => this.progress(interaction, result, db)
 				});
 
-				await this.bot.db.metrics.changeMidjourneyMetric({ [action]: "+1" });
+				await this.bot.db.metrics.changeMidjourneyMetric({ [action]: "+1", credits: `+${result.credits}` });
 				await this.bot.db.plan.expenseForMidjourneyImage(db, result);
+				await this.bot.db.users.incrementInteractions(db, "images");
 
 				return await this.build(interaction, result, db);
 
@@ -294,8 +295,9 @@ export default class MidjourneyCommand extends Command {
 				prompt, model, db, progress: result => this.progress(interaction, result, db)
 			});
 
-			await this.bot.db.metrics.changeMidjourneyMetric({ generation: "+1" });
+			await this.bot.db.metrics.changeMidjourneyMetric({ generation: "+1", credits: `+${result.credits}` });
 			await this.bot.db.plan.expenseForMidjourneyImage(db, result);
+			await this.bot.db.users.incrementInteractions(db, "images");
 
 			return await this.build(interaction, result, db);
 
