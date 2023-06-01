@@ -105,7 +105,7 @@ export class ImageManager extends EventEmitter {
 
         const matches: ((model: StableHordeModel, config: StableHordeConfigModel) => boolean)[] = [
             model => model.name === id,
-            (_, config) => config.name === "a",
+            (_, config) => config.name === id,
             model => model.description.includes(id)
         ]
 

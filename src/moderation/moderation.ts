@@ -8,9 +8,9 @@ import { InteractionHandlerResponse } from "../interaction/handler.js";
 import { AutoModerationFilter } from "./automod/filters.js";
 import { FindResult, Utils } from "../util/utils.js";
 import { Response } from "../command/response.js";
+import { ErrorHandlingOptions } from "./error.js";
 import { Config } from "../config.js";
 import { Bot } from "../bot/bot.js";
-import { ErrorHandlingOptions } from "./error.js";
 
 const ActionToEmoji: Record<string, string> = {
 	warn: "⚠️",
