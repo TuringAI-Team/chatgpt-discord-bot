@@ -389,7 +389,7 @@ export class Conversation {
 
 				}
 			}
-		} while (tries < CONVERSATION_ERROR_RETRY_MAX_TRIES && data === null && this.generating);
+		} while (tries < CONVERSATION_ERROR_RETRY_MAX_TRIES && data === null);
 
 		/* Unlock the conversation after generation has finished. */
 		this.generating = false;
@@ -401,7 +401,7 @@ export class Conversation {
 		if (data === null) throw new Error("What.");
 
 		/* Check the generated message using the moderation endpoint, again. */
-		const moderation: ModerationResult | null = await this.manager.bot.moderation.check({
+		const moderation: ModerationResult = await this.manager.bot.moderation.check({
 			user: this.user, db: options.db,
 
 			content: data.output.text,
@@ -647,8 +647,10 @@ export class Conversation {
 				id: this.id,
 				history: this.history.map(e => ({ ...e, trigger: null, reply: null })),
 				cluster: this.manager.bot.data.id
-			}
-		});
+			},
+
+			timeout: 5 * 1000
+		}).catch(() => {});
 	}
 
 	/* Previous message sent in the conversation */
