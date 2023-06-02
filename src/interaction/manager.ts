@@ -72,11 +72,15 @@ export class InteractionManager {
 		Object.entries(handler.template).forEach(([ key, type ], index) => {
 			const entry: string = raw[index];
 
-			if (!entry && type !== "any") throw new InteractionValidationError({
+			/* Whether this option is optional */
+			const optional: boolean = type.endsWith("?");
+			if (optional) type = type.replaceAll("?", "") as any;
+
+			if (!entry && !optional) throw new InteractionValidationError({
 				handler, key, error: "Not found"
 			});
 
-			if (!entry && type === "any") {
+			if (!entry && optional) {
 				final[key] = null;
 				return;
 			}
@@ -92,7 +96,7 @@ export class InteractionManager {
 				handler, key, error: "Invalid type"
 			});
 
-			final[key] = entry;
+			final[key] = parsed;
 		});
 
 		return final as AnyInteractionHandlerValues;

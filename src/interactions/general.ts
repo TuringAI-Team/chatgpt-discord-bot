@@ -28,7 +28,7 @@ export class GeneralInteractionHandler extends InteractionHandler<ButtonInteract
 
             {
                 action: "string",
-                id: "any"
+                id: "string?"
             }
         );
     }

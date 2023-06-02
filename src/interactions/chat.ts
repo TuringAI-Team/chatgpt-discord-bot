@@ -25,7 +25,7 @@ export class ChatInteractionHandler extends InteractionHandler<ButtonInteraction
 
             {
                 action: "string",
-                id: "any"
+                id: "string?"
             }
         );
     }

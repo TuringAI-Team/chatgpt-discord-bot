@@ -24,7 +24,7 @@ interface InteractionHandlerData {
 
 export type AnyInteractionHandlerValues = Record<string, string | number | boolean | null>
 
-type InteractionHandlerAllowedTypes = "number" | "string" | "boolean" | "any"
+type InteractionHandlerAllowedTypes = `${"number" | "string" | "boolean" | "any"}${"?" | ""}`
 type InteractionHandlerTemplate<T = { [key: string]: any }> = Record<keyof T, InteractionHandlerAllowedTypes>
 
 export interface InteractionHandlerRunOptions<T extends InteractionHandlerClassType = InteractionHandlerClassType, U = AnyInteractionHandlerValues> {

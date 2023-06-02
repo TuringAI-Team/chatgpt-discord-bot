@@ -1,65 +1,49 @@
-export interface StableHordeModel {
-    /* Name of the model */
-    name: string;
-
-    /* Description of the model */
-    description: string;
-
-    /* Summarized description of the model */
-    summary: string;
-
-    /* Whether the model is NSFW */
-    nsfw: boolean;
-
-    /* URLs of images showcasing the model */
-    showcases?: string[];
-}
-
 export interface StableHordeConfigModel {
-    /* Name of the model */
-    name: string;
+    /* Internal name of the model */
+    id: string;
 
     /* Display name of the model, as an overwrite */
-    displayName?: string;
+    name?: string;
 
     /* Description of the model, as an overwrite */
-    description?: string;
-
-    /* Summarized description of the model */
-    summary: string;
+    description: string;
 
     /* Whether the model should be restricted to Premium users */
     premium?: boolean;
 
     /* Whether the model counts as NSFW, as an overwrite */
-    nsfw?: boolean;
+    nsfw: boolean;
 
     /* Tags to add to the prompt for the model, if available */
     tags?: string[];
 }
 
-export const STABLE_HORDE_AVAILABLE_MODELS: StableHordeConfigModel[] = [
-    { name: "stable_diffusion", displayName: "Stable Diffusion", description: "Generalist image generation model, useful for all things", summary: "Generic model, useful for everything" },
-    { name: "Epic Diffusion", description: "General-purpose model focused on high-quality outputs with support for various styles", summary: "High quality outputs, various styles" },
-    { name: "Dreamlike Photoreal", description: "Photo-realistic image generation model", summary: "Photo-realistic images" },
-    { name: "Dreamlike Diffusion", description: "Stable Diffusion 1.5 fine-tuned on high quality art", summary: "Stable Diffusion 1.5 fine-tuned on high quality art, made by dreamlike.art", tags: [ "dreamlikeart" ] },
-    { name: "Dreamshaper", summary: "Good all-in-one model" },
-    { name: "Deliberate", nsfw: false, summary: "Ability to create 'anything you want'" },
-    { name: "Vivid Watercolors", summary: "Beatiful water-color images" },
-    { name: "Midjourney Diffusion", description: "Stable Diffusion fine-tuned on MidJourney images, cartoonish", tags: [ "mdjrny-v4 style" ], summary: "Cartoonish & realistic image generation" },
-    { name: "Project Unreal Engine 5", summary: "Images like out of Unreal Engine 5" },
-    { name: "Hentai Diffusion", tags: [ "anime", "hentai" ], summary: "Anime/hentai-focused model, consistent style" },
-    { name: "Grapefruit Hentai", tags: [ "anime", "hentai" ], summary: "The best hentai/anime model with bright and soft style" },
-    { name: "Papercut Diffusion", tags: [ "PaperCut" ], summary: "Paper cut images" },
-    { name: "Anything Diffusion", summary: "HQ anime images" },
-    { name: "Robo-Diffusion", tags: [ "nousr robot" ], summary: "Specialized in generating images of robots, NOTHING ELSE" },
-    { name: "ACertainThing", nsfw: true, summary: "Better than Anything Diffusion, focused on scenes" },
-    { name: "Realistic Vision", nsfw: false, summary: "Photorealistic humans" },
-    { name: "Redshift Diffusion", tags: [ "redshift style" ], summary: "High-quality 3D artworks" },
-    { name: "GTA5 Artwork Diffusion", tags: [ "gtav style" ], summary: "Trained on loading screens of GTA V, can generate GTA V content" },
-    { name: "App Icon Diffusion", tags: [ "IconsMi" ], summary: "App icon-like images" },
-    { name: "Cheese Daddys Landscape Mix", displayName: "Landscape Mix", summary: "Landscape images" },
-    { name: "ChromaV5", tags: [ "ChromaV5", "award winning photography", "extremely detailed", "artstation", "8k", "incredible art" ], summary: "Metallic/chrome images" },
-    { name: "Microworlds", description: "Micro-world image generator", tags: [ "microworld render style" ], summary: "Microworld NFT art" },
-    { name: "Arcane Diffusion", tags: [ "arcane style" ], summary: "Arcane TV show" }
+export type StableHordeModel = Omit<Required<StableHordeConfigModel>, "name"> & {
+    name: string | null;
+}
+
+export const StableHordeConfigModels: StableHordeConfigModel[] = [
+    { id: "stable_diffusion", name: "Stable Diffusion", description: "Generic model, useful for everything", nsfw: false },
+    { id: "Epic Diffusion", description: "High quality outputs, various styles", nsfw: false },
+    { id: "Dreamlike Photoreal", description: "Photo-realistic images", nsfw: false },
+    { id: "Dreamlike Diffusion", description: "Stable Diffusion 1.5 fine-tuned on high quality art, made by dreamlike.art", tags: [ "dreamlikeart" ], nsfw: false },
+    { id: "Dreamshaper", description: "Good all-in-one model", nsfw: false },
+    { id: "Deliberate", nsfw: false, description: "Ability to create 'anything you want'" },
+    { id: "Vivid Watercolors", description: "Beatiful water-color images", nsfw: false },
+    { id: "Midjourney Diffusion", description: "Stable Diffusion fine-tuned on MidJourney images, cartoonish", tags: [ "mdjrny-v4 style" ], nsfw: false },
+    { id: "Project Unreal Engine 5", description: "Images like out of Unreal Engine 5", nsfw: false },
+    { id: "Hentai Diffusion", tags: [ "anime", "hentai" ], description: "Anime/hentai-focused model, consistent style", nsfw: true },
+    { id: "Grapefruit Hentai", tags: [ "anime", "hentai" ], description: "The best hentai/anime model with bright and soft style", nsfw: true },
+    { id: "Papercut Diffusion", tags: [ "PaperCut" ], description: "Paper cut images", nsfw: false },
+    { id: "Anything Diffusion", description: "HQ anime images", nsfw: true },
+    { id: "Robo-Diffusion", name: "Robo Diffusion", tags: [ "nousr robot" ], description: "Specialized in generating beautiful images of robots", nsfw: false },
+    { id: "ACertainThing", nsfw: true, description: "Better than Anything Diffusion, focused on scenes" },
+    { id: "Realistic Vision", nsfw: false, description: "Photorealistic humans" },
+    { id: "Redshift Diffusion", tags: [ "redshift style" ], description: "High-quality 3D artworks", nsfw: false },
+    { id: "GTA5 Artwork Diffusion", tags: [ "gtav style" ], description: "Trained on loading screens of GTA V, can generate GTA V content", nsfw: false },
+    { id: "App Icon Diffusion", tags: [ "IconsMi" ], description: "App icon-like images", nsfw: false },
+    { id: "Cheese Daddys Landscape Mix", name: "Landscape Mix", description: "Landscape images", nsfw: false },
+    { id: "ChromaV5", tags: [ "ChromaV5", "award winning photography", "extremely detailed", "artstation", "8k", "incredible art" ], description: "Metallic/chrome images", nsfw: false },
+    { id: "Microworlds", description: "Micro-world image generator", tags: [ "microworld render style" ], nsfw: false },
+    { id: "Arcane Diffusion", tags: [ "arcane style" ], description: "Arcane TV show", nsfw: false }
 ]

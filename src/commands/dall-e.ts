@@ -3,7 +3,7 @@ import { AttachmentBuilder, SlashCommandBuilder } from "discord.js";
 import { Command, CommandInteraction, CommandResponse } from "../command/command.js";
 import { ErrorResponse, ErrorType } from "../command/response/error.js";
 import { Conversation } from "../conversation/conversation.js";
-import { MAX_IMAGE_PROMPT_LENGTH } from "./imagine.js";
+import { MaxImagePromptLength } from "./imagine.js";
 import { DatabaseInfo } from "../db/managers/user.js";
 import { TuringImageOptions } from "../turing/api.js";
 import { Response } from "../command/response.js";
@@ -19,7 +19,7 @@ export default class DallECommand extends Command {
 			.addStringOption(builder => builder
 				.setName("prompt")
 				.setDescription("The possibilities are endless... 💫")
-				.setMaxLength(MAX_IMAGE_PROMPT_LENGTH)
+				.setMaxLength(MaxImagePromptLength)
 				.setRequired(true)
 			)
 
@@ -35,7 +35,9 @@ export default class DallECommand extends Command {
 				free: 5 * 60 * 1000,
 				voter: 4 * 60 * 1000,
 				subscription: 2 * 60 * 1000
-			}
+			},
+
+			synchronous: true
 		});
 	}
 
@@ -87,7 +89,12 @@ export default class DallECommand extends Command {
 			await this.bot.db.plan.expenseForDallEImage(db, count);
 
 			const response =  new Response()
-				.setContent(`**${prompt}** — *${(result.duration / 1000).toFixed(1)} seconds*`);
+				.setContent(`**${prompt}** — *${(result.duration / 1000).toFixed(1)} seconds*`)
+				.addEmbed(builder => builder
+					.setTitle("This command is going soon ... 🧹")
+					.setDescription(`\`/dall-e\` used an outdated & worse model for image generation, compared to \`/mj\` and \`/imagine\`. \`/mj\` offers **beautiful & free** image generation; \`/imagine\` gives you access to **lots of models** for **free**. *\`/dall-e\` will be removed soon, in favor of the better alternatives mentioned.*`)
+					.setColor("Orange")
+				);
 
 			result.images.forEach((image, index) => response.addAttachment(
 				new AttachmentBuilder(image.buffer).setName(`result-${index}.png`)

@@ -1,10 +1,10 @@
 import { ButtonInteraction } from "discord.js";
 
 import { InteractionHandler, InteractionHandlerBuilder, InteractionHandlerResponse, InteractionHandlerRunOptions, InteractionType } from "../interaction/handler.js";
-import ImagineCommand from "../commands/imagine.js";
+import ImagineCommand, { StableHordeImageAction } from "../commands/imagine.js";
 import { Bot } from "../bot/bot.js";
 
-type ImagineInteractionAction = "view" | "cancel"
+type ImagineInteractionAction = StableHordeImageAction | "rate" | "cancel"
 
 export interface ImagineInteractionHandlerData {
     /* Which action to perform */
@@ -16,8 +16,8 @@ export interface ImagineInteractionHandlerData {
     /* ID of the entire image results */
     imageID: string;
 
-    /* ID of the single image result, optional */
-    resultID: string | null;
+    /* Index of the single image result, optional */
+    resultIndex: number | null;
 }
 
 export class ImagineInteractionHandler extends InteractionHandler<ButtonInteraction, ImagineInteractionHandlerData> {
@@ -34,12 +34,16 @@ export class ImagineInteractionHandler extends InteractionHandler<ButtonInteract
                 action: "string",
                 id: "string",
                 imageID: "string",
-                resultID: "any"
+                resultIndex: "number?"
+            },
+
+            {
+                synchronous: true
             }
         );
     }
 
     public async run({ data, interaction, db }: InteractionHandlerRunOptions<ButtonInteraction, ImagineInteractionHandlerData>): InteractionHandlerResponse {
-        return this.bot.command.get<ImagineCommand>("imagine").handleButtonInteraction(interaction, db, data);
+        return this.bot.command.get<ImagineCommand>("imagine").handleButtonInteraction(this, interaction, db, data);
     }
 }

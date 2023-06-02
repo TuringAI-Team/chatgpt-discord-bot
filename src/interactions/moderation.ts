@@ -28,7 +28,7 @@ export class ModerationInteractionHandler extends InteractionHandler<ButtonInter
             {
                 action: "string",
                 id: "string",
-                quickAction: "any"
+                quickAction: "string?"
             },
 
             {

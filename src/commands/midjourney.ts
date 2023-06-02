@@ -3,7 +3,8 @@ import { ActionRow, ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonCo
 import { MidjourneyAction, MidjourneyModelIdentifier, MidjourneyModels, MidjourneyPartialResult, MidjourneyResult } from "../turing/api.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
 import { Command, CommandInteraction, CommandResponse } from "../command/command.js";
-import { MAX_IMAGE_PROMPT_LENGTH, RATE_ACTIONS, RateAction } from "./imagine.js";
+import { MaxImagePromptLength, RateActions, RateAction } from "./imagine.js";
+import { MidjourneyInteractionHandler } from "../interactions/midjourney.js";
 import { InteractionHandlerResponse } from "../interaction/handler.js";
 import { LoadingIndicatorManager } from "../db/types/indicator.js";
 import { NoticeResponse } from "../command/response/notice.js";
@@ -13,7 +14,6 @@ import { DatabaseInfo } from "../db/managers/user.js";
 import { Response } from "../command/response.js";
 import { Utils } from "../util/utils.js";
 import { Bot } from "../bot/bot.js";
-import { MidjourneyInteractionHandler } from "../interactions/midjourney.js";
 
 export default class MidjourneyCommand extends Command {
 	constructor(bot: Bot) {
@@ -23,7 +23,7 @@ export default class MidjourneyCommand extends Command {
 			.addStringOption(builder => builder
 				.setName("prompt")
 				.setDescription("The possibilities are endless... 💫")
-				.setMaxLength(MAX_IMAGE_PROMPT_LENGTH)
+				.setMaxLength(MaxImagePromptLength)
 				.setRequired(true)
 			)
 			.addStringOption(builder => builder
@@ -105,7 +105,7 @@ export default class MidjourneyCommand extends Command {
 		for (let i = 0; i < 4; i++) {
 			buttons.push(
 				new ButtonBuilder()
-					.setLabel(`${type.at(0)!.toUpperCase()}${i + 1}`)
+					.setLabel(`${type.charAt(0).toUpperCase()}${i + 1}`)
 					.setCustomId(`mj:${type}:${interaction.user.id}:${result.id}:${i}`)
 					.setStyle(ButtonStyle.Secondary)
 			);
@@ -117,7 +117,7 @@ export default class MidjourneyCommand extends Command {
 
 	private buildRatingRow(interaction: ButtonInteraction | CommandInteraction, result: MidjourneyResult): ActionRowBuilder<ButtonBuilder> {
 		return new ActionRowBuilder<ButtonBuilder>()
-			.addComponents(RATE_ACTIONS.map(action =>
+			.addComponents(RateActions.map(action =>
 				new ButtonBuilder()
 					.setCustomId(`mj:rate:${interaction.user.id}:${result.jobId}:${result.number}:${action.value}`)
 					.setStyle(ButtonStyle.Secondary)
@@ -191,10 +191,6 @@ export default class MidjourneyCommand extends Command {
 			await interaction.deferReply();
 
 			try {
-				if (!this.bot.db.users.canUsePremiumFeatures(db)) {
-					await handler.applyCooldown(interaction, db, action === "upscale" ? 30 * 1000 : 60 * 1000);
-				}
-
 				/* Wait for the actual generation result. */
 				const result: MidjourneyResult = await this.bot.turing.imagine({
 					action, id, number: index, db,
@@ -204,6 +200,10 @@ export default class MidjourneyCommand extends Command {
 				await this.bot.db.metrics.changeMidjourneyMetric({ [action]: "+1", credits: `+${result.credits}` });
 				await this.bot.db.plan.expenseForMidjourneyImage(db, result);
 				await this.bot.db.users.incrementInteractions(db, "images");
+
+				if (!this.bot.db.users.canUsePremiumFeatures(db)) {
+					await handler.applyCooldown(interaction, db, action === "upscale" ? 30 * 1000 : 60 * 1000);
+				}
 
 				return await this.build(interaction, result, db);
 
@@ -223,7 +223,7 @@ export default class MidjourneyCommand extends Command {
 			if (interaction.user.id !== userID) return void await interaction.deferUpdate();
 
 			/* Find the corresponding rating action. */
-			const rating: RateAction = RATE_ACTIONS.find(r => r.emoji === interaction.component.emoji?.name)!;
+			const rating: RateAction = RateActions.find(r => r.emoji === interaction.component.emoji?.name)!;
 
 			/* All components on the original message */
 			const row: ActionRow<ButtonComponent> = interaction.message.components[0] as ActionRow<ButtonComponent>;

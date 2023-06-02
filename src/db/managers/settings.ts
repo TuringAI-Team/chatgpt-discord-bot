@@ -6,9 +6,9 @@ import { TuringAlanImageGenerators, TuringAlanImageModifiers, TuringAlanPlugins,
 import { CONVERSATION_DEFAULT_COOLDOWN, Conversation } from "../../conversation/conversation.js";
 import { DatabaseInfo, DatabaseUser, DatabaseSettings, DatabaseGuild } from "./user.js";
 import { LoadingIndicatorManager, LoadingIndicators } from "../types/indicator.js";
-import { GENERATION_SIZES, getAspectRatio } from "../../commands/imagine.js";
+import { GenerationSizes, getAspectRatio } from "../../commands/imagine.js";
 import { ChatSettingsPlugins } from "../../conversation/settings/plugin.js";
-import { STABLE_HORDE_AVAILABLE_MODELS } from "../../image/types/model.js";
+import { StableHordeConfigModels } from "../../image/types/model.js";
 import { InteractionHandlerResponse } from "../../interaction/handler.js";
 import { ChatSettingsModels } from "../../conversation/settings/model.js";
 import { ChatSettingsTones } from "../../conversation/settings/tone.js";
@@ -491,11 +491,11 @@ export const SettingOptions: SettingsOption[] = [
         description: "Which Stable Diffusion model to use",
         location: SettingsLocation.User,
 
-        choices: STABLE_HORDE_AVAILABLE_MODELS.map(model => ({
-			name: model.displayName ?? model.name,
+        choices: StableHordeConfigModels.map(model => ({
+			name: model.name ?? model.id,
             emoji: model.nsfw ? { fallback: "🔞" } : undefined,
             restricted: model.premium ? "premium" : undefined,
-			value: model.name
+			value: model.id
 		}))
     }),
 
@@ -507,7 +507,7 @@ export const SettingOptions: SettingsOption[] = [
         description: "How big the generated images should be",
         location: SettingsLocation.User,
 
-        choices: GENERATION_SIZES.map(({ width, height, premium }) => ({
+        choices: GenerationSizes.map(({ width, height, premium }) => ({
             name: `${width}x${height} (${getAspectRatio(width, height)})`,
             value: `${width}:${height}:${premium}`,
             restricted: premium ? "premium" : undefined,

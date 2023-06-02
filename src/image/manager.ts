@@ -5,14 +5,12 @@ import { Agent } from "https";
 
 import { DatabaseImage, ImageGenerationCheckData, ImageGenerationOptions, ImageGenerationPrompt, ImageGenerationResult, ImageGenerationStatusData, RawImageGenerationResult, StableHordeGenerationResult } from "./types/image.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
-import { StableHordeModel, STABLE_HORDE_AVAILABLE_MODELS, StableHordeConfigModel } from "./types/model.js";
+import { StableHordeModel, StableHordeConfigModels } from "./types/model.js";
 import { StableHordeAPIError } from "../error/gpt/stablehorde.js";
 import { StorageImage } from "../db/managers/storage.js";
 import { Utils } from "../util/utils.js";
 import { Bot } from "../bot/bot.js";
-
-/* URL of all available Stable Diffusion models */
-const SD_MODEL_URL: string = "https://raw.githubusercontent.com/db0/AI-Horde-image-model-reference/main/stable_diffusion.json"
+import { ImageBuffer } from "../chat/types/image.js";
 
 type StableHordeAPIPath = "find_user" | "status/models" | "generate/async" | `generate/check/${string}` | `generate/status/${string}` | `generate/rate/${string}`
 
@@ -87,32 +85,83 @@ interface StableHordeRatingAPIResponse {
     reward: number;
 }
 
+type StableHordeCancelReason = "button" | "timeOut"
+
+class ImageModelHelper {
+    private readonly manager: ImageManager;
+
+    constructor(manager: ImageManager) {
+        this.manager = manager;
+    }
+
+    private get(id: StableHordeModel | string): StableHordeModel {
+        if (typeof id === "object") return id;
+        else return this.manager.get(id)!;
+    }
+
+    public nsfw(id: StableHordeModel | string): boolean {
+        const model = this.get(id);
+        return model.nsfw;
+    }
+
+    public description(id: StableHordeModel | string): string {
+        const model = this.get(id);
+        return model.description;
+    }
+
+    public name(id: StableHordeModel | string): string {
+        const model = this.get(id);
+        return model.name ?? model.id;
+    }
+
+    public usable(id: StableHordeModel | string, interaction: Interaction): boolean {
+        const model = this.get(id);
+        const nsfw: boolean = this.nsfw(model);
+
+        if (interaction.channel === null || interaction.channel.type === ChannelType.DM) return true;
+        if (interaction.channel.type !== ChannelType.GuildText && nsfw) return false;
+
+        if (interaction.channel.type === ChannelType.GuildText && interaction.channel.nsfw && nsfw) return true;
+        else if (interaction.channel.type === ChannelType.GuildText && !interaction.channel.nsfw && nsfw) return false;
+
+        return true;
+    }
+
+    public display(id: StableHordeModel | string): string {
+        const model = this.get(id);
+        return `${this.name(model)}${this.nsfw(model) ? " 🔞" : ""} » ${this.description(model)}`;
+    }
+}
+
 export class ImageManager extends EventEmitter {
     private readonly bot: Bot;
 
     /* Available Stable Diffusion models */
     public readonly models: Collection<string, StableHordeModel>;
 
+    /* Helper with models */
+    public readonly model: ImageModelHelper;
+
     constructor(bot: Bot) {
         super();
 
         this.bot = bot;
         this.models = new Collection();
+
+        this.model = new ImageModelHelper(this);
     }
 
     public get(id: string): StableHordeModel | null {
-        if (!STABLE_HORDE_AVAILABLE_MODELS.find(m => m.name === id)) return null;
+        if (!StableHordeConfigModels.find(m => m.id === id)) return null;
 
-        const matches: ((model: StableHordeModel, config: StableHordeConfigModel) => boolean)[] = [
-            model => model.name === id,
-            model => model.description.includes(id)
+        const matches: ((model: StableHordeModel) => boolean)[] = [
+            model => model.id === id,
+            model => model.name === id
         ]
 
-        for (const model of this.models.values()) {
-            const config: StableHordeConfigModel = STABLE_HORDE_AVAILABLE_MODELS.find(m => m.name === id)!;
-            
+        for (const model of this.models.values()) {            
             for (const match of matches) {
-                if (match(model, config)) return model;
+                if (match(model)) return model;
                 else continue;
             }
         }
@@ -120,83 +169,13 @@ export class ImageManager extends EventEmitter {
         return null;
     }
 
-    /**
-     * Fetch all available Stable Diffusion models.
-     */
-    public async fetchModels(): Promise<void> {
-        const response = await fetch(SD_MODEL_URL);
-        const body: { [key: string]: StableHordeModel } = await response.json() as any;
-
-        for (const [ name, { description, nsfw, summary, showcases } ] of Object.entries(body)) {
-            this.models.set(name, {
-                description, name, nsfw, summary, showcases
-            });
-        }
-    }
-
-    public getModels(query?: string): StableHordeModel[] {
-        return Array.from(this.models.values())
-            .filter(model => STABLE_HORDE_AVAILABLE_MODELS.find(m => m.name === model.name))
-            .filter(model => query ? model.description.toLowerCase().includes(query) || model.name.toLowerCase().includes(query) : true);
-    }
-
-    /**
-     * Get a nicely-formatted display name for the specified model.
-     * @returns Formatted display name
-     */
-    public displayNameForModel(model: StableHordeModel): string {
-        const overwrite = STABLE_HORDE_AVAILABLE_MODELS.find(m => m.name === model.name) ?? null;
-        if (overwrite !== null && overwrite.displayName) return overwrite.displayName;
-
-        return Utils.titleCase(model.name.replaceAll("_", " "));
-    }
-
-    /**
-     * Get a nicely-formatted description for the specified model.
-     * @returns Formatted description
-     */
-    public descriptionForModel(model: StableHordeModel): string {
-        const overwrite = STABLE_HORDE_AVAILABLE_MODELS.find(m => m.name === model.name) ?? null;
-        if (overwrite !== null && overwrite.description) return overwrite.description;
-
-        return model.description;
-    }
-
-    /**
-     * Whether the specified model is marked as NSFW.
-     * @returns Whether it is marked as NSFW
-     */
-    public isModelNSFW(model: StableHordeModel): boolean {
-        const overwrite = STABLE_HORDE_AVAILABLE_MODELS.find(m => m.name === model.name) ?? null;
-        if (overwrite !== null && overwrite.nsfw != undefined) return overwrite.nsfw;
-
-        return model.nsfw;
-    }
-
-    /**
-     * Whether the specified model can be shown in a Discord channel.
-     * @returns Whether it can be shown
-     */
-    public shouldShowModel(interaction: Interaction, model: StableHordeModel): boolean {
-        const overwrite = STABLE_HORDE_AVAILABLE_MODELS.find(m => m.name === model.name) ?? null;
-        if (overwrite !== null && overwrite.nsfw != undefined) return !overwrite.nsfw;
-
-        if (interaction.channel === null || interaction.channel.type === ChannelType.DM) return true;
-        if (interaction.channel.type !== ChannelType.GuildText && model.nsfw) return false;
-
-        if (interaction.channel.type === ChannelType.GuildText && interaction.channel.nsfw && model.nsfw) return true;
-        else if (interaction.channel.type === ChannelType.GuildText && !interaction.channel.nsfw && model.nsfw) return false;
-
-        return true;
-    }
-
-    public shouldShowNSFW(channel: TextBasedChannel): boolean {
+    public nsfw(channel: TextBasedChannel): boolean {
         if (channel instanceof BaseGuildTextChannel) return channel.nsfw;
         else return true;
     }
 
     public displayPrompt(prompt: ImageGenerationPrompt, length: number = 250): string {
-        return `${prompt.ai ? "🤖 " : ""}${Utils.truncate(Utils.removeTrailing(prompt.tags ? prompt.prompt.replace(prompt.tags, "").trim() : prompt.prompt.trim(), ","), length)}`; 
+        return Utils.truncate(Utils.removeTrailing(prompt.tags ? prompt.prompt.replace(prompt.tags, "").trim() : prompt.prompt.trim(), ","), length); 
     }
 
     public async getImageData(image: ImageGenerationResult): Promise<StorageImage> {
@@ -208,10 +187,16 @@ export class ImageManager extends EventEmitter {
     }
 
     /**
-     * Fetch all models & set up the request manager for Stable Horde.
+     * Set up all models for Stable Horde.
      */
     public async setup(): Promise<void> {
-        await this.fetchModels();
+        for (const raw of StableHordeConfigModels) {
+            const final: StableHordeModel = {
+                name: null, tags: [], premium: false, ...raw
+            }
+
+            this.models.set(raw.id, final);
+        }
     }
 
     public async findUser(): Promise<StableHordeFindUserAPIResponse> {
@@ -237,7 +222,7 @@ export class ImageManager extends EventEmitter {
         return this.request<ImageGenerationStatusData>(`generate/status/${id}`, "GET");
     }
 
-    public async cancelImageGeneration<T extends string>(id: string, reason: T): Promise<void> {
+    public async cancelImageGeneration(id: string, reason: StableHordeCancelReason): Promise<void> {
         this.emit("cancelled", id, reason);
         await this.request(`generate/status/${id}`, "DELETE");
     }
@@ -260,8 +245,16 @@ export class ImageManager extends EventEmitter {
      * 
      * @returns Finished generation result 
      */
-    public async generate({ nsfw, model, params, prompt, shared, priority }: ImageGenerationOptions, progress?: (data: ImageGenerationCheckData) => Promise<void | void>, updateInterval: number = 3000): Promise<StableHordeGenerationResult> {
+    public async generate({ nsfw, model, params, prompt, shared, priority, source }: ImageGenerationOptions, progress?: (data: ImageGenerationCheckData) => Promise<void | void>, updateInterval: number = 3000): Promise<StableHordeGenerationResult> {
         const before: number = Date.now();
+
+        /* Img2Img input image */
+        let sourceBuffer: ImageBuffer | null = null;
+
+        /* Fetch the source input image, if applicable. */
+        if (source !== null) {
+            sourceBuffer = await Utils.fetchBuffer(source.url);
+        }
 
         /* Start the image generation request. */
         const { id } = await this.startImageGeneration({
@@ -270,9 +263,12 @@ export class ImageManager extends EventEmitter {
 
             params: params,
 
-            prompt: prompt.negative != undefined ? `${prompt.prompt} ### ${prompt.negative}` : prompt.prompt,
-            models: [ model.name ],
-            index: 0
+            prompt: prompt.negative ? `${prompt.prompt} ### ${prompt.negative}` : prompt.prompt,
+            models: [ model.id ],
+            index: 0,
+            
+            source_image: sourceBuffer !== null ? sourceBuffer.toString() : undefined,
+            source_processing: sourceBuffer !== null ? "img2img" : undefined
         }, !priority);
 
         /* Latest /generate/check update */

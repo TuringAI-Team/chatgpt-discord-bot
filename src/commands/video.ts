@@ -41,7 +41,8 @@ export default class VideoCommand extends Command {
 				subscription: 5 * 60 * 1000
 			},
 
-			restriction: [ "plan" ]
+			restriction: [ "plan" ],
+			synchronous: true
 		});
 	}
 

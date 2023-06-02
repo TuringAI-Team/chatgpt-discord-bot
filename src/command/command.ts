@@ -53,7 +53,7 @@ export class Command<U extends ContextMenuCommandInteraction | ChatInputCommandI
     protected readonly bot: Bot;
 
 	/* Data of the command */
-	public readonly builder: CommandBuilder;
+	public builder: CommandBuilder;
 
     /* Other command options */
     public readonly options: Required<CommandOptions>;

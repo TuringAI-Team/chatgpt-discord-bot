@@ -268,25 +268,7 @@ export class Bot extends EventEmitter {
         if (this.client.cluster.maintenance && this.dev) this.logger.debug("Started in maintenance mode.");
 
         this.client.cluster.on("ready", async () => {
-            const steps: BotSetupStep[] = [    
-                {
-                    name: "Load Discord commands",
-                    execute: async () => this.command.loadAll()
-                },
-
-                {
-                    name: "Load Discord interactions",
-                    execute: async () => this.interaction.loadAll()
-                },
-    
-                {
-                    name: "Register Discord commands",
-                    check: () => this.data.id === 0,
-                    execute: () => {
-                        this.command.register();
-                    }
-                },
-    
+            const steps: BotSetupStep[] = [ 
                 {
                     name: "OpenAI manager",
                     execute: () => this.ai.setup(this.app.config.openAI.key)
@@ -315,6 +297,22 @@ export class Bot extends EventEmitter {
                 {
                     name: "Scheduled tasks",
                     execute: () => this.task.setup()
+                },
+
+                {
+                    name: "Load Discord commands",
+                    execute: async () => this.command.loadAll()
+                },
+
+                {
+                    name: "Load Discord interactions",
+                    execute: async () => this.interaction.loadAll()
+                },
+
+                {
+                    name: "Register Discord commands",
+                    check: () => this.data.id === 0,
+                    execute: () => this.command.register()
                 },
 
                 {

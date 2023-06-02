@@ -15,9 +15,6 @@ export default class InteractionCreateEvent extends Event {
 			if (interaction.isChatInputCommand() || interaction.isMessageContextMenuCommand()) {
 				await this.bot.command.handleCommand(interaction as ChatInputCommandInteraction);
 
-			} else if (interaction.isAutocomplete()) {
-				await this.bot.command.handleCompletion(interaction as AutocompleteInteraction);
-
 			} else if (interaction.isStringSelectMenu() || interaction.isButton() || interaction.isModalSubmit()) {
 				await this.bot.interaction.handleInteraction(interaction);
 			}

@@ -22,7 +22,9 @@ export default class DescribeCommand extends Command {
                 free: 3 * 60 * 1000,
                 voter: 2 * 60 * 1000,
                 subscription: 30 * 1000
-            }
+            },
+
+            synchronous: true
 		});
     }
 

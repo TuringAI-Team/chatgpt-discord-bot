@@ -1,15 +1,15 @@
-import { ActionRowBuilder, AutocompleteInteraction, ComponentType, ButtonStyle, ButtonBuilder, ChatInputCommandInteraction, Collection, InteractionResponse, Message, SlashCommandBuilder, MessageContextMenuCommandInteraction, CommandInteraction, ButtonInteraction } from "discord.js";
+import { ActionRowBuilder, ComponentType, ButtonStyle, ButtonBuilder, ChatInputCommandInteraction, Collection, InteractionResponse, Message, SlashCommandBuilder, MessageContextMenuCommandInteraction, CommandInteraction, ButtonInteraction } from "discord.js";
 import { RESTPostAPIApplicationCommandsJSONBody, Routes } from "discord-api-types/v10";
 import { DiscordAPIError } from "@discordjs/rest";
 
-import { Command, CommandOptionChoice, CommandSpecificCooldown } from "./command.js";
-import { DatabaseInfo, DatabaseUserInfraction } from "../db/managers/user.js";
 import { InteractionHandler, InteractionHandlerClassType } from "../interaction/handler.js";
-import { Bot, BotStatus } from "../bot/bot.js";
+import { DatabaseInfo, DatabaseUserInfraction } from "../db/managers/user.js";
+import { Command, CommandSpecificCooldown } from "./command.js";
 import { CooldownData } from "./types/cooldown.js";
+import { RunningData } from "./types/running.js";
+import { Bot, BotStatus } from "../bot/bot.js";
 import { Response } from "./response.js";
 import { Utils } from "../util/utils.js";
-import { RunningData } from "./types/running.js";
 
 export class CommandManager {
 	protected readonly bot: Bot;
@@ -129,7 +129,7 @@ export class CommandManager {
 		return new Response()
 			.addEmbed(builder => builder
 				.setTitle("Whoa-whoa... slow down ⌛")
-				.setDescription(`You already have this ${command instanceof InteractionHandler ? "action" : interaction instanceof MessageContextMenuCommandInteraction ? "context menu action" : "command"} running in ${running.channel !== null ? `<#${running.channel}>` : "**DMs**"}. *Wait for that execution to finish first, before running it again*.`)
+				.setDescription(`You already have this ${command instanceof InteractionHandler ? "action" : interaction instanceof MessageContextMenuCommandInteraction ? "context menu action" : "command"} running in ${running.channel !== null ? `<#${running.channel}>` : "**DMs**"}, since <t:${Math.floor(running.since / 1000)}:R>. *Wait for that to finish first, before running this again*.`)
 				.setColor("Yellow")
 			)
 			.setEphemeral(true);
@@ -229,48 +229,6 @@ export class CommandManager {
 		}
 
 		return response;
-	}
-
-	/**
-     * Handle an auto-complete interaction.
-     * @param interaction Auto-completion interaction to handle 
-     */
-	public async handleCompletion(interaction: AutocompleteInteraction): Promise<void> {
-		/* Get the command, by its name. */
-		const command: Command = this.commands.get(interaction.commandName)!;
-		if (!command) return;
-		
-		if (command.options.waitForStart && !this.bot.started) return void await interaction.respond([
-			{ name: "The bot is currently reloading... ⏳", value: "" }
-		]).catch(() => {});
-
-		/* Get the database entry of the user. */
-		let db: DatabaseInfo = await this.bot.db.users.fetchData(interaction.user, interaction.guild);
-		const subscription = this.bot.db.users.type(db);
-
-		/* If this command is Premium-only and the user doesn't have a subscription, ... */
-		if ((command.options.restriction.includes("subscription") || command.options.restriction.includes("plan")) && !subscription.premium) {
-			return await interaction.respond([
-				{ name: `The command /${command.builder.name} is only available to Premium users.`, value: "" },
-				{ name: `Premium 🌟 also includes many additional benefits; view /premium for more.`, value: "" }
-			]).catch(() => {});
-		}
-
-		/* Try to complete the options. */
-		try {
-			const data: CommandOptionChoice[] = await command.complete(interaction, db);
-			await interaction.respond(data);
-
-		} catch (error) {
-			await this.bot.moderation.error({
-				error: error as Error, title: "Failed to auto-complete interaction"
-			});
-
-			/* Respond to the interaction with an error message. */
-			await interaction.respond([
-				{ name: "An error occured during auto-completion; the developers have been notified.", value: "" }
-			]).catch(() => {});
-		}
 	}
 
 	/**
@@ -467,6 +425,6 @@ export class CommandManager {
 			[command.builder.name]: "+1"
 		});
 
-		//await this.setRunning(interaction, command, false);
+		await this.setRunning(interaction, command, false);
 	}
 }

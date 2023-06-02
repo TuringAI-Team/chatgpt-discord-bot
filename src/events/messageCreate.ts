@@ -1,4 +1,5 @@
 import { Message } from "discord.js";
+import chalk from "chalk";
 
 import { Event } from "../event/event.js";
 import { Bot } from "../bot/bot.js";
@@ -17,8 +18,8 @@ export default class MessageCreateEvent extends Event {
 				author: message.author
 			});
 			
-		} catch (_) {
-			/* Stub */
+		} catch (error) {
+			this.bot.logger.debug(chalk.bold("Generation error"), "->", error);
 		}
 	}
 }

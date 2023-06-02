@@ -1,33 +1,33 @@
-import { ActionRowBuilder, AttachmentBuilder, AutocompleteInteraction, ButtonBuilder, ButtonInteraction, ButtonStyle, ChatInputCommandInteraction, EmbedBuilder, EmbedField, InteractionReplyOptions, SlashCommandBuilder } from "discord.js";
+import { ActionRow, ActionRowBuilder, Attachment, AttachmentBuilder, ButtonBuilder, ButtonComponent, ButtonInteraction, ButtonStyle, ChatInputCommandInteraction, EmbedBuilder, EmbedField, SlashCommandBuilder, User } from "discord.js";
 import { setTimeout as delay } from "timers/promises";
 
-import { Command, CommandInteraction, CommandOptionChoice, CommandResponse } from "../command/command.js";
+import { Command, CommandCooldown, CommandInteraction, CommandResponse } from "../command/command.js";
 import { Response } from "../command/response.js";
 
-import { DatabaseImage, ImageGenerationCheckData, ImageGenerationOptions, ImageGenerationPrompt, ImageGenerationResult, StableHordeGenerationResult } from "../image/types/image.js";
-import { StableHordeConfigModel, StableHordeModel, STABLE_HORDE_AVAILABLE_MODELS } from "../image/types/model.js";
+import { DatabaseImage, ImageGenerationCheckData, ImageGenerationOptions, ImageGenerationPrompt, ImageGenerationResult, ImageInput, StableHordeGenerationResult } from "../image/types/image.js";
 import { StableHordeGenerationFilter, STABLE_HORDE_FILTERS } from "../image/types/filter.js";
 import { ImageGenerationSamplers, ImageGenerationSampler } from "../image/types/image.js";
 import { PremiumUpsellResponse, PremiumUpsellType } from "../command/response/premium.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
-import { ImagineInteractionHandlerData } from "../interactions/imagine.js";
+import { StableHordeConfigModels, StableHordeModel } from "../image/types/model.js";
+import { ImagineInteractionHandler, ImagineInteractionHandlerData } from "../interactions/imagine.js";
 import { ErrorResponse, ErrorType } from "../command/response/error.js";
 import { InteractionHandlerResponse } from "../interaction/handler.js";
 import { renderIntoSingleImage } from "../image/utils/renderer.js";
 import { LoadingIndicatorManager } from "../db/types/indicator.js";
 import { StableHordeAPIError } from "../error/gpt/stablehorde.js";
-import { LoadingResponse } from "../command/response/loading.js";
 import { ModerationResult } from "../moderation/moderation.js";
-import { Conversation } from "../conversation/conversation.js";
-import { OpenAIChatMessage } from "../openai/types/chat.js";
 import { StorageImage } from "../db/managers/storage.js";
 import { DatabaseInfo } from "../db/managers/user.js";
 import { Utils } from "../util/utils.js";
 import { Bot } from "../bot/bot.js";
+import { ALLOWED_FILE_EXTENSIONS } from "../chat/types/image.js";
+import { NoticeResponse } from "../command/response/notice.js";
+import { CommandSpecificCooldown } from "../command/command.js";
 
 interface ImageGenerationProcessOptions {
-	interaction: CommandInteraction;
-	conversation: Conversation;
+	interaction: CommandInteraction | ButtonInteraction;
+	user: User;
 	filter: StableHordeGenerationFilter | null;
 	model: StableHordeModel;
 	guidance: number;
@@ -40,10 +40,12 @@ interface ImageGenerationProcessOptions {
 	db: DatabaseInfo;
 	prompt: ImageGenerationPrompt;
 	nsfw: boolean;
+	action: StableHordeImageAction | null;
+	source: ImageInput | null;
 }
 
 /* How long an image prompt can be, max. */
-export const MAX_IMAGE_PROMPT_LENGTH: number = 600
+export const MaxImagePromptLength: number = 600
 
 interface ImageGenerationSize {
 	width: number;
@@ -51,7 +53,7 @@ interface ImageGenerationSize {
 	premium: boolean;
 }
 
-export const GENERATION_SIZES: ImageGenerationSize[] = [
+export const GenerationSizes: ImageGenerationSize[] = [
 	{ width: 512,  height: 512,  premium: false },
 	{ width: 256,  height: 256,  premium: false },
 	{ width: 512,  height: 256,  premium: false },
@@ -63,7 +65,7 @@ export const GENERATION_SIZES: ImageGenerationSize[] = [
 	{ width: 1024, height: 1024, premium: true  }
 ]
 
-const DEFAULT_GEN_OPTIONS: Partial<ImageGenerationOptions> = {
+const DefaultGenerationOptions: Partial<ImageGenerationOptions> = {
 	params: {
 		clip_skip: 1, hires_fix: false,
 		post_processing: [], cfg_scale: 8, karras: true,
@@ -78,10 +80,10 @@ const DEFAULT_GEN_OPTIONS: Partial<ImageGenerationOptions> = {
 
 export interface RateAction {
 	emoji: string;
-	value: number
+	value: number;
 }
 
-export const RATE_ACTIONS: RateAction[] = [
+export const RateActions: RateAction[] = [
 	{ emoji: "😖", value: 0.2 },
 	{ emoji: "☹️",  value: 0.4 },
 	{ emoji: "😐", value: 0.6 },
@@ -89,39 +91,23 @@ export const RATE_ACTIONS: RateAction[] = [
 	{ emoji: "😍", value: 1.0 }
 ]
 
-const DEFAULT_PROMPT: Partial<ImageGenerationPrompt> & Required<Pick<ImageGenerationPrompt, "negative">> = {
+const DefaultPrompt: Partial<ImageGenerationPrompt> & Required<Pick<ImageGenerationPrompt, "negative">> = {
 	negative: "cropped, artifacts, lowres, cropped, artifacts, lowres, lowres, bad anatomy, bad hands, error, missing fingers, extra digit, fewer digits, awkward fingers, cropped, jpeg artifacts, worst quality, low quality, signature, blurry, extra ears, deformed, disfigured, mutation, extra limbs"
 }
 
-const MAX_STEP_COUNT = {
+const MaxStepGenerationCount = {
 	free: 50,
 	voter: 60,
 	subscription: 100,
 	plan: 100
 }
 
-/* ChatGPT prompt used to improve an image generation prompt & add additional tags */
-const generateImageGenerationAIPrompt = (models: StableHordeModel[]): string =>
-`
-Your task is to improve an image generation prompt for a Stable Diffusion model, and also choose a fitting Stable Difffusion model for the prompt, depending on its tags or setting. Follow all instructions closely.
+export type StableHordeImageAction = "upscale" | "variation"
 
-Available models:
-${models.map(m => `${m.name}: ${m.summary}`).join("\n")}
-
-You will only output the resulting prompt, model and additional tags in a minified JSON object on a single line, structured like so:
-"model": Name of the model to use, determined smartly using the setting, tags and goal. It must be a model from the list given above. If not sure or using default model, set to null.
-"prompt": The improved Stable Diffusion image generation prompt, fully optimized & some added keywords to improve the results. Keep it in keywords and half-sentences, not full sentences. Add many additional keywords to the prompt, to minimize the possibilities. Use commas to separate the keywords. You must add more detail & improve the prompt in general. Hallucinate & imagine new information.
-          Example prompt: car driving on road, realistic car, large forest next to road, night time, realistic lighting, dark atmosphere
-"negative": Structured like the "prompt", but instead should include things NOT to include the image. This is to further fine-tune image generation results. Do not prefix the keywords with "no". You do not have to include a negative prompt, set it to null if not applicable. Useful to get rid of common misconceptions, or possible mistakes by the AI.
-            Example negative prompt: blurry background, artifacts, bad anatomy, cropped, low resolution, (deformed)
-
-The user will now give you a Stable Diffusion image generation prompt, your goal is to apply the above rules and output a minified JSON object on a single line, without additional explanations or text. Do not add any other properties to the JSON object.
-`.trim();
-
-interface ImageGenerationAIPrompt {
-	model: string | null;
-	prompt: string;
-	negative: string | null;
+export const ImageGenerationCooldown: CommandSpecificCooldown = {
+	free: 100 * 1000,
+	voter: 80 * 1000,
+	subscription: 45 * 1000
 }
 
 /**
@@ -143,165 +129,124 @@ export default class ImagineCommand extends Command {
     constructor(bot: Bot) {
         super(bot,
             new SlashCommandBuilder()
-				.setName("imagine")
-				.setDescription("Generate AI images using Stable Diffusion")
+		, {
+			cooldown: ImageGenerationCooldown,
+			synchronous: true
+		});
 
-				.addSubcommand(builder => builder
-					.setName("generate")
-					.setDescription("Generate an image using Stable Diffusion")
+		this.builder = new SlashCommandBuilder()
+			.setName("imagine")
+			.setDescription("Generate AI images using Stable Diffusion")
 
-					.addStringOption(builder => builder
-						.setName("prompt")
-						.setDescription("The possibilities are endless... 💫")
-						.setMaxLength(MAX_IMAGE_PROMPT_LENGTH)
-						.setRequired(true)
-					)
-					.addStringOption(builder => builder
-						.setName("model")
-						.setDescription("Which image generation model to use")
-						.setAutocomplete(true)
-						.setRequired(false)
-					)
-					.addStringOption(builder => builder
-						.setName("filter")
-						.setDescription("Which filter to apply additionally")
-						.addChoices(...STABLE_HORDE_FILTERS.map(filter => ({
-							name: `${filter.name} ${filter.emoji}`,
-							value: `${filter.name}`
-						})))
-						.setRequired(false)
-					)
-					.addIntegerOption(builder => builder
-						.setName("count")
-						.setDescription("How many images to generate")
-						.setRequired(false)
-						.setMinValue(1)
-						.setMaxValue(4)
-					)
-					.addIntegerOption(builder => builder
-						.setName("steps")
-						.setDescription("How many steps to generate the images for")
-						.setRequired(false)
-						.setMinValue(5)
-						.setMaxValue(MAX_STEP_COUNT.subscription)
-					)
-					.addStringOption(builder => builder
-						.setName("negative")
-						.setDescription("Things to *not* include in the generated images")
-						.setRequired(false)
-					)
-					.addNumberOption(builder => builder
-						.setName("guidance")
-						.setDescription("Higher values will make the AI prioritize your prompt; lower values make the AI more creative")
-						.setMinValue(1)
-						.setMaxValue(24)
-						.setRequired(false)
-					)
-					.addStringOption(builder => builder
-						.setName("sampler")
-						.setDescription("The sampler is responsible for carrying out the denoising steps; they all have their pros and cons")
-						.setChoices(...ImageGenerationSamplers.map(name => ({
-							name: Utils.titleCase(name.replaceAll("_", " ")),
-							value: name
-						})))
-						.setRequired(false)
-					)
-					.addStringOption(builder => builder
-						.setName("seed")
-						.setDescription("Unique image generation seed, in order to reproduce image generation results")
-						.setMaxLength(40)
-						.setRequired(false)
-					)
-					.addStringOption(builder => builder
-						.setName("size")
-						.setDescription("How big the generated images should be")
-						.setRequired(false)
-						.addChoices(...GENERATION_SIZES.map(({ width, height, premium }) => ({
-							name: `${width}x${height} (${getAspectRatio(width, height)})${premium ? " 🌟" : ""}`,
-							value: `${width}:${height}:${premium ?? false}`
-						})))
-					)
-				)
-
-				.addSubcommand(builder => builder
-					.setName("ai")
-					.setDescription("Let ChatGPT magically improve your prompt & pick a model")
-					.addStringOption(builder => builder
-						.setName("prompt")
-						.setDescription("Watch ChatGPT do the rest... 🤖")
-						.setMaxLength(MAX_IMAGE_PROMPT_LENGTH)
-						.setRequired(true)
-					)
-					.addIntegerOption(builder => builder
-						.setName("count")
-						.setDescription("How many images to generate")
-						.setRequired(false)
-						.setMinValue(1)
-						.setMaxValue(4)
-					)
-					.addStringOption(builder => builder
-						.setName("sampler")
-						.setDescription("The sampler is responsible for carrying out the denoising steps; they all have their pros and cons")
-						.setChoices(...ImageGenerationSamplers.map(name => ({
-							name: Utils.titleCase(name.replaceAll("_", " ")),
-							value: name
-						})))
-						.setRequired(false)
-					)
-					.addStringOption(builder => builder
-						.setName("size")
-						.setDescription("How big the generated images should be")
-						.setRequired(false)
-						.addChoices(...GENERATION_SIZES.map(({ width, height, premium }) => ({
-							name: `${width}x${height} (${getAspectRatio(width, height)})${premium ? " 🌟" : ""}`,
-							value: `${width}:${height}:${premium ?? false}`
-						})))
-					)
-					.addIntegerOption(builder => builder
-						.setName("steps")
-						.setDescription("How many steps to generate the images for")
-						.setRequired(false)
-						.setMinValue(5)
-						.setMaxValue(MAX_STEP_COUNT.subscription)
-					)
-					.addNumberOption(builder => builder
-						.setName("guidance")
-						.setDescription("Higher values will make the AI prioritize your prompt; lower values make the AI more creative")
-						.setMinValue(1)
-						.setMaxValue(24)
-						.setRequired(false)
-					)
-				)
-		, { cooldown: {
-			free: 100 * 1000,
-			voter: 80 * 1000,
-			subscription: 45 * 1000
-		} });
+			.addStringOption(builder => builder
+				.setName("prompt")
+				.setDescription("The possibilities are endless... 💫")
+				.setMaxLength(MaxImagePromptLength)
+				.setRequired(true)
+			)
+			.addStringOption(builder => builder
+				.setName("model")
+				.setDescription("Which image generation model to use")
+				.setRequired(false)
+				.addChoices(...Array.from(this.bot.image.models.values()).map(model => ({
+					name: this.bot.image.model.display(model),
+					value: model.id
+				})))
+			)
+			.addStringOption(builder => builder
+				.setName("filter")
+				.setDescription("Which filter to apply additionally")
+				.addChoices(...STABLE_HORDE_FILTERS.map(filter => ({
+					name: `${filter.name} ${filter.emoji}`,
+					value: `${filter.name}`
+				})))
+				.setRequired(false)
+			)
+			.addStringOption(builder => builder
+				.setName("negative")
+				.setDescription("Things to *not* include in the generated images")
+				.setRequired(false)
+			)
+			.addIntegerOption(builder => builder
+				.setName("count")
+				.setDescription("How many images to generate")
+				.setRequired(false)
+				.setMinValue(1)
+				.setMaxValue(4)
+			)
+			.addIntegerOption(builder => builder
+				.setName("steps")
+				.setDescription("How many steps to generate the images for")
+				.setRequired(false)
+				.setMinValue(5)
+				.setMaxValue(MaxStepGenerationCount.subscription)
+			)
+			.addNumberOption(builder => builder
+				.setName("guidance")
+				.setDescription("Higher values will make the AI prioritize your prompt; lower values make the AI more creative")
+				.setMinValue(1)
+				.setMaxValue(24)
+				.setRequired(false)
+			)
+			.addStringOption(builder => builder
+				.setName("sampler")
+				.setDescription("The sampler is responsible for carrying out the denoising steps; they all have their pros and cons")
+				.setChoices(...ImageGenerationSamplers.map(name => ({
+					name: Utils.titleCase(name), value: name
+				})))
+				.setRequired(false)
+			)
+			.addStringOption(builder => builder
+				.setName("seed")
+				.setDescription("Unique image generation seed, in order to reproduce image generation results")
+				.setMaxLength(32)
+				.setRequired(false)
+			)
+			.addStringOption(builder => builder
+				.setName("size")
+				.setDescription("How big the generated images should be")
+				.setRequired(false)
+				.addChoices(...GenerationSizes.map(({ width, height, premium }) => ({
+					name: `${width}x${height} (${getAspectRatio(width, height)})${premium ? " 🌟" : ""}`,
+					value: `${width}:${height}:${premium ?? false}`
+				})))
+			)
+			.addAttachmentOption(builder => builder
+				.setName("source")
+				.setDescription("Source image to transform using the prompt")
+				.setRequired(false)
+			);
     }
 
-	private formatLoadingIndicator(conversation: Conversation, db: DatabaseInfo, options: ImageGenerationOptions, data: ImageGenerationCheckData, index: number, moderation: ModerationResult | null): Response | null {
+	private displayPrompt(user: User, prompt: ImageGenerationPrompt, action: StableHordeImageAction | null): string {
+		return `**${Utils.truncate(this.bot.image.displayPrompt(prompt), 150)}** — @${user.username}${action !== null ? ` ${action === "upscale" ? "🔎" : "🔄"}` : ""}`;
+	}
+
+	private formatPartialResponse(user: User, db: DatabaseInfo, options: ImageGenerationProcessOptions, data: ImageGenerationCheckData, moderation: ModerationResult | null): Response | null {
 		/* Whether images are currently being generated */
 		const busy: boolean = data.wait_time === 0;
 
 		/* The user's loading indicator */
 		const loadingEmoji: string = LoadingIndicatorManager.toString(
-			LoadingIndicatorManager.getFromUser(conversation.manager.bot, db.user)
+			LoadingIndicatorManager.getFromUser(this.bot, db.user)
 		);
 
 		const response = new Response()
 			.addEmbed(builder => builder
+				.setTitle(this.displayPrompt(user, options.prompt, options.action))
 				.setDescription(`${data.wait_time > 0 ? `**${data.wait_time}**s` : "**Generating**"} ... ${loadingEmoji}`)
-				.setColor(conversation.manager.bot.branding.color)
+				.setFooter({ text: "powered by Stable Horde" })
+				.setColor("Orange")
 			);
 
 		if (moderation !== null && moderation.flagged) response.addEmbed(builder => builder
 			.setDescription("Your prompt may violate our **usage policies**. *If you use the bot as intended, you can ignore this notice*.")
-			.setColor("Orange")
+			.setColor("Red")
 		);
 
 		if (!busy) response.addComponent(ActionRowBuilder<ButtonBuilder>, builder => builder.addComponents(
 			new ButtonBuilder()
-				.setCustomId(`i:cancel:${conversation.id}:${data.id}`)
+				.setCustomId(`i:cancel:${user.id}:${data.id}`)
 				.setStyle(ButtonStyle.Danger)
 				.setLabel("Cancel")
 				.setEmoji("🗑️")
@@ -310,38 +255,17 @@ export default class ImagineCommand extends Command {
 		return response;
 	}
 
-	private async formatImageResponse(db: DatabaseInfo, image: DatabaseImage, result: ImageGenerationResult, self: boolean): Promise<Response> {
-		const storage: StorageImage = await this.bot.image.getImageData(result);
-
-		const response: Response = new Response()
-			.addEmbed(builder => builder
-				.setTitle(`${this.bot.image.displayPrompt(image.options.prompt)} 🔍`)
-				.setImage(storage.url)
-				.setColor(this.bot.branding.color)
-			)
-			.setEphemeral(!self);
-
-		if (self) response.addComponent(ActionRowBuilder<ButtonBuilder>, builder => builder.addComponents(
-			new ButtonBuilder()
-				.setCustomId(`general:delete:${db.user.id}`)
-				.setStyle(ButtonStyle.Danger)
-				.setEmoji("🗑️")
-		));
-
-		return response;
-	}
-
-	private async formatResultResponse(conversation: Conversation, db: DatabaseInfo, options: ImageGenerationOptions, result: StableHordeGenerationResult, moderation: ModerationResult | null, censored: boolean): Promise<Response> {
+	private async formatResultResponse(user: User, db: DatabaseInfo, options: ImageGenerationOptions, result: StableHordeGenerationResult, moderation: ModerationResult | null, censored: boolean, action: StableHordeImageAction | null): Promise<Response> {
 		/* Render the results into a single image. */
 		const buffer: Buffer = await renderIntoSingleImage(this.bot, options, result);
 
 		const response = new Response()
 			.addEmbed(builder => builder
-				.setTitle(this.bot.image.displayPrompt(options.prompt))
+				.setTitle(this.displayPrompt(user, options.prompt, action))
 				.setImage(`attachment://${result.id}.png`)
 				.setFooter({ text: `${(result.duration / 1000).toFixed(1)}s • powered by Stable Horde` })
-				.setFields(this.formatFields(conversation, options, result))
-				.setColor(conversation.manager.bot.branding.color)
+				.setFields(this.formatFields(user, options, result))
+				.setColor(this.bot.branding.color)
 			)
 			.addAttachment(new AttachmentBuilder(buffer).setName(`${result.id}.png`));
 
@@ -356,24 +280,24 @@ export default class ImagineCommand extends Command {
 		);
 
 		/* Add the various message component rows. */
-		const rows = this.createRows(conversation, result);
+		const rows = this.buildToolbar(user, result, action);
 		
 		rows.forEach(row => response.addComponent(ActionRowBuilder<ButtonBuilder>, row));
 		return response;
 	}
 
-	private formatFields(conversation: Conversation, options: ImageGenerationOptions, result: StableHordeGenerationResult): EmbedField[] {
+	private formatFields(user: User, options: ImageGenerationOptions, result: StableHordeGenerationResult): EmbedField[] {
 		const fields: EmbedField[] = [];
 
-		if (options.model.name !== STABLE_HORDE_AVAILABLE_MODELS[0].name) fields.push(
+		if (options.model.id !== StableHordeConfigModels[0].id) fields.push(
 			{
 				name: "Model",
-				value: this.bot.image.displayNameForModel(options.model),
+				value: this.bot.image.model.name(options.model),
 				inline: true
 			}
 		);
 
-		if (options.params.width !== GENERATION_SIZES[0].width || options.params.height !== GENERATION_SIZES[0].height) fields.push(
+		if (options.params.width !== GenerationSizes[0].width || options.params.height !== GenerationSizes[0].height) fields.push(
 			{
 				name: "Size",
 				value: `${options.params.width}x${options.params.height}`,
@@ -381,7 +305,7 @@ export default class ImagineCommand extends Command {
 			}
 		);
 
-		if (options.params.steps !== DEFAULT_GEN_OPTIONS.params!.steps) fields.push(
+		if (options.params.steps !== DefaultGenerationOptions.params!.steps) fields.push(
 			{
 				name: "Steps",
 				value: `${options.params.steps!}`,
@@ -389,23 +313,15 @@ export default class ImagineCommand extends Command {
 			}
 		);
 
-		if (options.prompt.negative !== DEFAULT_PROMPT.negative) fields.push(
+		if (options.prompt.negative !== DefaultPrompt.negative) fields.push(
 			{
-				name: "Negative",
-				value: Utils.removeTrailing(options.prompt.negative!.replaceAll(DEFAULT_PROMPT.negative, "").trim(), ","),
+				name: "Negative prompt",
+				value: Utils.removeTrailing(options.prompt.negative!.replace(DefaultPrompt.negative, "").trim(), ","),
 				inline: true
 			}
 		);
 
-		if (result.images[0].seed) fields.push(
-			{
-				name: "Seed",
-				value: `\`${result.images[0].seed}\``,
-				inline: true
-			}
-		);
-
-		if (options.params.cfg_scale !== DEFAULT_GEN_OPTIONS.params!.cfg_scale) fields.push(
+		if (options.params.cfg_scale !== DefaultGenerationOptions.params!.cfg_scale) fields.push(
 			{
 				name: "Guidance",
 				value: `${options.params.cfg_scale}`,
@@ -413,7 +329,7 @@ export default class ImagineCommand extends Command {
 			}
 		);
 		
-		if (options.prompt.filter !== null) fields.push(
+		if (options.prompt.filter) fields.push(
 			{
 				name: "Filter",
 				value: `${options.prompt.filter.name} ${options.prompt.filter.emoji}`,
@@ -424,7 +340,37 @@ export default class ImagineCommand extends Command {
 		return fields;
 	}
 
-	private createViewRows(conversation: Conversation, result: StableHordeGenerationResult): ActionRowBuilder<ButtonBuilder>[] {
+	private async formatSingleImageResponse(user: User, db: DatabaseInfo, image: DatabaseImage, result: ImageGenerationResult): Promise<Response> {
+		const storage: StorageImage = await this.bot.image.getImageData(result);
+
+		const response: Response = new Response()
+			.addEmbed(builder => builder
+				.setTitle(this.displayPrompt(user, image.prompt, "upscale"))
+				.setImage(storage.url)
+				.setColor(this.bot.branding.color)
+				.setFooter({ text: "powered by Stable Horde" })
+			);
+
+		/* Add the rating row to the image. */
+		response.addComponent(ActionRowBuilder<ButtonBuilder>, this.buildRatingRow(user, image, result));
+
+		return response;
+	}
+
+	private buildRatingRow(user: User, image: DatabaseImage, result: ImageGenerationResult): ActionRowBuilder<ButtonBuilder> {
+		/* Index of the single generation result */
+		const index: number = image.results.findIndex(i => i.id === result.id)!;
+
+		return new ActionRowBuilder<ButtonBuilder>()
+			.addComponents(RateActions.map(action =>
+				new ButtonBuilder()
+					.setCustomId(`i:rate:${user.id}:${image.id}:${index}:${action.value}`)
+					.setStyle(ButtonStyle.Secondary)
+					.setEmoji(action.emoji)
+			));
+	}
+
+	private buildRow(user: User, result: StableHordeGenerationResult, action: StableHordeImageAction): ActionRowBuilder<ButtonBuilder>[] {
 		const rows: ActionRowBuilder<ButtonBuilder>[] = [];
 
 		/* How many images to display per row */
@@ -443,66 +389,153 @@ export default class ImagineCommand extends Command {
 
 			row.addComponents(
 				new ButtonBuilder()
-					.setCustomId(`i:view:${conversation.user.id}:${result.id}:${image.id}`)
-					.setStyle(ButtonStyle.Secondary)
-					.setLabel(`U${index + 1}`)
+					.setCustomId(`i:${action}:${user.id}:${result.id}:${index}`)
+					.setLabel(`${action.charAt(0).toUpperCase()}${index + 1}`)
+					.setStyle(image.censored ? ButtonStyle.Danger : ButtonStyle.Secondary)
+					.setDisabled(image.censored)
 			);
 		});
 
 		return rows;
 	}
 
-	private createRows(conversation: Conversation, result: StableHordeGenerationResult): ActionRowBuilder<ButtonBuilder>[] {
-		return this.createViewRows(conversation, result);
+	private buildToolbar(user: User, result: StableHordeGenerationResult, action: StableHordeImageAction | null): ActionRowBuilder<ButtonBuilder>[] {
+		const rows: ActionRowBuilder<ButtonBuilder>[] = [];
+		
+		if (action !== "upscale") {
+			rows.push(...this.buildRow(user, result, "upscale"));
+			if (action !== "variation") rows.push(...this.buildRow(user, result, "variation"));
+		}
+
+		return rows;
 	}
 
-	public async handleButtonInteraction(button: ButtonInteraction, db: DatabaseInfo, data: ImagineInteractionHandlerData): InteractionHandlerResponse {
-		if (button.component.style === ButtonStyle.Success) return void await button.deferUpdate();
+	public async handleButtonInteraction(handler: ImagineInteractionHandler, interaction: ButtonInteraction, db: DatabaseInfo, data: ImagineInteractionHandlerData): InteractionHandlerResponse {
+		if (interaction.component.style === ButtonStyle.Success) return void await interaction.deferUpdate();
 
 		/* Image ID associated with this action */
-		const imageID: string = data.imageID!;
+		const imageID: string = data.imageID;
 
 		/* The image itself */
 		const image: DatabaseImage | null = await this.bot.db.users.getImage(imageID);
+		if (image === null) return void await interaction.deferUpdate();
 
-		/* The user wants to view an image */
-		if (data.action === "view" && image !== null) {
+		if (data.action === "upscale" || data.action === "variation") {
+			/* All components on the original message */
+			const components: ActionRow<ButtonComponent>[] = interaction.message.components as ActionRow<ButtonComponent>[];
+
+			components.forEach(
+				row => row.components.forEach(button => {
+					if (button.customId === interaction.customId) {
+						(button.data as any).style = ButtonStyle.Primary;
+						(button.data as any).disabled = true;
+					}
+				})
+			);
+
+			await interaction.message.edit({
+				embeds: [ EmbedBuilder.from(interaction.message.embeds[0]).setImage(`attachment://${image.id}.png`), ...interaction.message.embeds.slice(1) ], components
+			});
+		}
+
+		/* The user wants to generate variations for an image */
+		if (data.action === "variation") {
+			/* The selected result to create variations for */
+			const result: ImageGenerationResult = image.results.find((_, index) => index === data.resultIndex)!;
+			const storage: StorageImage = await this.bot.image.getImageData(result);
+
+			/* Defer the reply, as this might take a while. */
+			await interaction.deferReply().catch(() => {});
+
+			const response = this.startImageGeneration({
+				interaction,
+				
+				...image.options,
+				filter: null, user: interaction.user,
+
+				guidance: image.options.params.cfg_scale!,
+				sampler: image.options.params.sampler_name!, seed: image.options.params.seed ?? null,
+				steps: image.options.params.steps!, count: image.options.params.n!, moderation: null, db, 
+				
+				source: { url: storage.url },
+				action: "variation",
+
+				size: {
+					width: image.options.params.width!,
+					height: image.options.params.height!,
+
+					premium: false
+				}
+			});
+
+			const type = this.bot.db.users.type(db);
+			
+			const duration: number | null = (ImageGenerationCooldown as any)[type.type] ?? null;
+			if (duration !== null) await handler.applyCooldown(interaction, db, duration);
+
+			return response;
+
+		/* The user wants to upscale an image */
+		} else if (data.action === "upscale" && image !== null && data.resultIndex !== null) {
 			/* ID of generation result of the given image, associated with this action */
-			const resultID: string = data.resultID!;
-			const result: ImageGenerationResult = image.results.find(i => i.id === resultID)!;
-
-			return await this.formatImageResponse(db, image, result, db.user.id === data.id);
+			const result: ImageGenerationResult = image.results.find((_, index) => index === data.resultIndex)!;
+			return await this.formatSingleImageResponse(interaction.user, db, image, result);
 
 		/* The user wants to cancel an image generation request */
 		} else if (data.action === "cancel") {
-			await button.deferUpdate();
+			await interaction.deferUpdate();
 			if (data.id !== db.user.id) return;
 
 			/* Just blindly try to cancel the image generation, what could go wrong? */
 			await this.bot.image.cancelImageGeneration(imageID, "button").catch(() => {});
+
+		/* The user wants to rate an upscaled image */
+		} else if (data.action === "rate") {
+			if (interaction.user.id !== db.user.id) return void await interaction.deferUpdate();
+
+			/* The selected result to rate */
+			const result: ImageGenerationResult = image.results.find((_, index) => index === data.resultIndex)!;
+
+			/* Find the corresponding rating action. */
+			const rating: RateAction = RateActions.find(r => r.emoji === interaction.component.emoji?.name)!;
+
+			/* All components on the original message */
+			const row: ActionRow<ButtonComponent> = interaction.message.components[0] as ActionRow<ButtonComponent>;
+
+			row.components.forEach(button => {
+				if (button.customId === interaction.customId) (button.data as any).style = ButtonStyle.Primary;
+				(button.data as any).disabled = true;
+			});
+
+			await interaction.message.edit({
+				embeds: interaction.message.embeds, components: [ row ]
+			});
+
+			await interaction.deferUpdate();
+
 		} else {
-			await button.deferUpdate();
+			await interaction.deferUpdate();
 		}
 	}
 
-	public async startImageGeneration({ interaction, filter, guidance, model, sampler, seed, size, conversation, count, steps, db, moderation, nsfw, prompt }: ImageGenerationProcessOptions): CommandResponse {
-		/* Generation index, used for the loading indicator */
-		let index: number = 0;
-
-		/* Additional tags to use for the generation, as specified by the model's configuration */
-		const overwrite: StableHordeConfigModel = STABLE_HORDE_AVAILABLE_MODELS.find(m => m.name === model.name)!;
-		const tags: string[] = overwrite.tags ?? [];
+	public async startImageGeneration(options: ImageGenerationProcessOptions): CommandResponse {
+		const {
+			interaction, filter, guidance, model, sampler, seed, size, user, count, steps, db, moderation, nsfw, prompt, source, action
+		} = options;
+		
+		const tags: string[] = [];
+		if (model.tags) tags.push(...model.tags);
 			
 		/* Add the filter to the prompt. */
 		if (filter !== null) tags.push(...filter.tags);
 
 		/* Final formatted prompt */
 		const formattedTags: string | null = tags.length > 0 ? tags.join(", ") : null;
-		const formattedPrompt: string = `${prompt.prompt}${formattedTags !== null ? `, ${formattedTags}` : ""}`;
+		const formattedPrompt: string = `${prompt.prompt}${formattedTags !== null && options.action !== "variation" ? `, ${formattedTags}` : ""}`;
 
 		/* Image generation options */
-		const options: ImageGenerationOptions = {
-			...DEFAULT_GEN_OPTIONS,
+		const body: ImageGenerationOptions = {
+			...DefaultGenerationOptions,
 
 			priority: true,
 			nsfw: nsfw,
@@ -510,9 +543,9 @@ export default class ImagineCommand extends Command {
 			model: model,
 
 			params: {
-				...DEFAULT_GEN_OPTIONS.params!,
+				...DefaultGenerationOptions.params!,
 
-				cfg_scale: guidance ?? DEFAULT_GEN_OPTIONS.params!.cfg_scale!,
+				cfg_scale: guidance ?? DefaultGenerationOptions.params!.cfg_scale!,
 				sampler_name: sampler,
 
 				seed_variation: seed !== null ? 1 : 1000,
@@ -520,17 +553,19 @@ export default class ImagineCommand extends Command {
 				
 				height: size.height,
 				width: size.width,
-
+				
+				denoising_strength: 0.5,
 				steps: steps,
 				n: count
 			},
 
 			prompt: {
 				prompt: formattedPrompt,
-				negative: prompt.negative ? `${prompt.negative}, ${DEFAULT_PROMPT.negative}` : DEFAULT_PROMPT.negative,
-				tags: formattedTags ?? undefined,
-				filter, ai: prompt.ai
-			}
+				negative: options.action === "variation" && prompt.negative ? prompt.negative : prompt.negative && options.action !== "variation" ? `${prompt.negative}, ${DefaultPrompt.negative}` : DefaultPrompt.negative,
+				tags: formattedTags ?? undefined, filter: filter ?? undefined
+			},
+
+			source
 		};
 
 		/* In-progress image generation updates */
@@ -563,13 +598,12 @@ export default class ImagineCommand extends Command {
 			if (this.bot.image.isImageGenerationCancelled(data) || cancelled) return;
 
 			/* Build the formatted loading indicator. */
-			const response: Response | null = this.formatLoadingIndicator(conversation, db, options, data, index, moderation);
+			const response: Response | null = this.formatPartialResponse(user, db, options, data, moderation);
 			generationData = data;
 
 			if (response !== null) {
 				try {
 					await interaction.editReply(response.get());
-					index++;
 				} catch (_) {}
 			}
 		}
@@ -581,7 +615,7 @@ export default class ImagineCommand extends Command {
 
 		try {
 			/* Generate the image. */
-			const result = await this.bot.image.generate(options, onProgress);
+			const result = await this.bot.image.generate(body, onProgress);
 			clearTimeout(idleTimer);
 			
 			/* Whether the generate images are still usable & whether only some of them were censored */
@@ -590,7 +624,7 @@ export default class ImagineCommand extends Command {
 
 			/* Add the generated results to the database. */
 			if (usable) {
-				await this.bot.db.users.updateImage(this.bot.image.toDatabase(interaction.user, options, prompt, result, nsfw));
+				await this.bot.db.users.updateImage(this.bot.image.toDatabase(interaction.user, body, prompt, result, nsfw));
 
 				/* Upload the generated images to the storage bucket. */
 				await this.bot.db.storage.uploadImages(result);
@@ -608,7 +642,7 @@ export default class ImagineCommand extends Command {
 			await this.bot.db.users.incrementInteractions(db, "images");
 			
 			await this.bot.db.metrics.changeImageMetric({
-				models: { [model.name]: "+1" },
+				models: { [model.id]: "+1" },
 				counts: { [count]: "+1" },
 				steps: { [steps]: "+1" },
 				kudos: `+${result.kudos}`
@@ -619,7 +653,7 @@ export default class ImagineCommand extends Command {
 			);
 
 			/* Generate the final message, showing the generated results. */
-			const final: Response = await this.formatResultResponse(conversation, db, options, result, moderation, censored);
+			const final: Response = await this.formatResultResponse(user, db, body, result, moderation, censored, action);
 			await final.send(interaction);
 
 		} catch (error) {
@@ -660,200 +694,116 @@ export default class ImagineCommand extends Command {
 		}
 	}
 
-	public async complete(interaction: AutocompleteInteraction): Promise<CommandOptionChoice<string | number>[]> {
-		/* Get all available Stable Diffusion models. */
-		const models: StableHordeModel[] = this.bot.image.getModels(interaction.options.getString("model", true).toLowerCase())
-			.filter(model => this.bot.image.shouldShowModel(interaction, model));
-
-		return models.map(model => ({
-			name: Utils.truncate(`${this.bot.image.displayNameForModel(model)}${this.bot.image.isModelNSFW(model) ? " 🔞" : ""} » ${this.bot.image.descriptionForModel(model)}`, 100),
-			value: model.name
-		}));
-	};
-
     public async run(interaction: ChatInputCommandInteraction, db: DatabaseInfo): CommandResponse {
 		const canUsePremiumFeatures: boolean = this.bot.db.users.canUsePremiumFeatures(db);
 		const subscriptionType = this.bot.db.users.type(db);
-
-		const conversation: Conversation = await this.bot.conversation.create(interaction.user);
-
-		/* Which sub-command to run */
-		const action: "generate" | "ai" = interaction.options.getSubcommand(true) as any;
-
-		if (action === "ai" && !canUsePremiumFeatures) return new PremiumUpsellResponse({
-			type: PremiumUpsellType.SDChatGPT
-		});
 		
-		if (action === "generate" || action === "ai") {
-			/* How many images to generate */
-			const count: number = 
-				interaction.options.getInteger("count")
-				?? this.bot.db.settings.get<number>(db.user, "image:count");
+		/* How many images to generate */
+		const count: number = 
+			interaction.options.getInteger("count")
+			?? this.bot.db.settings.get<number>(db.user, "image:count");
 
-			/* How many steps to generate the images with */
-			const steps: number =
-				interaction.options.getInteger("steps")
-				?? Math.min(this.bot.db.settings.get<number>(db.user, "image:steps"), MAX_STEP_COUNT[subscriptionType.type]);
+		/* How many steps to generate the images with */
+		const steps: number =
+			interaction.options.getInteger("steps")
+			?? Math.min(this.bot.db.settings.get<number>(db.user, "image:steps"), MaxStepGenerationCount[subscriptionType.type]);
 
-			/* To which scale the AI should follow the prompt; higher values mean that the AI will respect the prompt more */
-			const guidance: number = Math.round(interaction.options.getNumber("guidance") ?? DEFAULT_GEN_OPTIONS.params!.cfg_scale!);
+		/* To which scale the AI should follow the prompt; higher values mean that the AI will respect the prompt more */
+		const guidance: number = Math.round(interaction.options.getNumber("guidance") ?? DefaultGenerationOptions.params!.cfg_scale!);
 
-			/* Random seed, to reproduce the generated images in the future */
-			const sampler: ImageGenerationSampler = interaction.options.getString("sampler") ?? "k_euler";
+		/* Random seed, to reproduce the generated images in the future */
+		const sampler: ImageGenerationSampler = interaction.options.getString("sampler") ?? "k_euler";
 
-			/* If the user is trying to generate an image with more steps than possible for a normal user, send them a notice. */
-			if (steps > MAX_STEP_COUNT[subscriptionType.type] && !canUsePremiumFeatures) return new PremiumUpsellResponse({
-				type: PremiumUpsellType.SDSteps
-			});
+		/* If the user is trying to generate an image with more steps than possible for a normal user, send them a notice. */
+		if (steps > MaxStepGenerationCount[subscriptionType.type] && !canUsePremiumFeatures) return new PremiumUpsellResponse({
+			type: PremiumUpsellType.SDSteps
+		});
 
-			/* Size the images should be */
-			const rawSize: string[] = interaction.options.getString("size") ? interaction.options.getString("size", true).split(":") : this.bot.db.settings.get<string>(db.user, "image:size").split(":");
-			const size: ImageGenerationSize = { width: parseInt(rawSize[0]), height: parseInt(rawSize[1]), premium: rawSize[2] == "true" };
+		/* Size the images should be */
+		const rawSize: string[] = interaction.options.getString("size") ? interaction.options.getString("size", true).split(":") : this.bot.db.settings.get<string>(db.user, "image:size").split(":");
+		const size: ImageGenerationSize = { width: parseInt(rawSize[0]), height: parseInt(rawSize[1]), premium: rawSize[2] == "true" };
 
-			/* If the user is trying to generate an image with more steps than possible for a normal user, send them a notice. */
-			if (size.premium && !canUsePremiumFeatures) return new PremiumUpsellResponse({
-				type: PremiumUpsellType.SDSize
-			});
+		/* If the user is trying to generate an image with more steps than possible for a normal user, send them a notice. */
+		if (size.premium && !canUsePremiumFeatures) return new PremiumUpsellResponse({
+			type: PremiumUpsellType.SDSize
+		});
 
-			/* Whether NSFW content can be shown */
-			const nsfw: boolean = interaction.channel ? this.bot.image.shouldShowNSFW(interaction.channel) : false;
+		/* Whether NSFW content can be shown */
+		const nsfw: boolean = interaction.channel ? this.bot.image.nsfw(interaction.channel) : false;
 
-			/* Which prompt to use for generation */
-			const prompt: string = interaction.options.getString("prompt", true);
-			const negativePrompt: string | null = interaction.options.getString("negative");
+		/* Which prompt to use for generation */
+		const prompt: string = interaction.options.getString("prompt", true);
+		const negativePrompt: string | null = interaction.options.getString("negative");
 
-			if (action === "generate") {
-				/* Random seed, to reproduce the generated images in the future */
-				const seed: string | null = interaction.options.getString("seed") ?? null;
+		/* Random seed, to reproduce the generated images in the future */
+		const seed: string | null = interaction.options.getString("seed") ?? null;
 
-				/* Which filter to apply additionally */
-				const filter: StableHordeGenerationFilter | null = interaction.options.getString("filter") ? STABLE_HORDE_FILTERS.find(f => f.name === interaction.options.getString("filter", true))! : null;
+		/* Which filter to apply additionally */
+		const filterName: string | null = interaction.options.getString("filter");
+		
+		const filter: StableHordeGenerationFilter | null = filterName !== null
+			? STABLE_HORDE_FILTERS.find(f => f.name === filterName)! : null;
 
-				/* Which generation model to use; otherwise pick the default one */
-				const modelName: string = interaction.options.getString("model") ?? this.bot.db.settings.get<string>(db.user, "image:model");
+		/* Which generation model to use; otherwise pick the default one */
+		const modelName: string = interaction.options.getString("model") ?? this.bot.db.settings.get<string>(db.user, "image:model");
 
-				/* Try to get the Stable Horde model. */
-				const model: StableHordeModel | null = this.bot.image.get(modelName);
+		/* Try to get the Stable Horde model. */
+		const model: StableHordeModel | null = this.bot.image.get(modelName);
 
-				if (model === null) return new ErrorResponse({
-					interaction, command: this,
-					message: "You specified an invalid **Stable Diffusion** model"
-				});
+		if (model === null) return new ErrorResponse({
+			interaction, command: this,
+			message: "You specified an invalid **Stable Diffusion** model"
+		});
 
-				/* Whether the model should be shown */
-				const show: boolean = this.bot.image.shouldShowModel(interaction, model);
+		/* Whether the model should be shown */
+		const show: boolean = this.bot.image.model.usable(model, interaction);
 
-				if (!show) return new ErrorResponse({
-					interaction, command: this, emoji: "🔞",
-					message: "This **Stable Diffusion** model can only be used in **NSFW** channels"
-				});
+		if (!show) return new ErrorResponse({
+			interaction, command: this, emoji: "🔞",
+			message: "This **Stable Diffusion** model can only be used in **NSFW** channels"
+		});
 
-				/* Defer the reply, as this might take a while. */
-				await interaction.deferReply().catch(() => {});
+		/* Defer the reply, as this might take a while. */
+		await interaction.deferReply().catch(() => {});
 
-				const moderation: ModerationResult | null = await this.bot.moderation.checkImagePrompt({
-					db, user: interaction.user, content: prompt, nsfw, model: model.name
-				});
+		const moderation: ModerationResult = await this.bot.moderation.checkImagePrompt({
+			db, user: interaction.user, content: prompt, nsfw, model: model.id
+		});
 
-				/* If the message was flagged, send a warning message. */
-				if (moderation !== null && moderation.blocked) return new ErrorResponse({
-					interaction, command: this,
-					message: "Your image prompt was blocked by our filters.\nTry using the bot in a channel marked as **NSFW**, or using a different prompt.\n\n*If you violate the usage policies, we may have to take moderative actions; otherwise, you can ignore this notice*.",
-					color: "Orange", emoji: null
-				});
+		/* If the message was flagged, send a warning message. */
+		if (moderation.blocked) return new ErrorResponse({
+			interaction, command: this,
+			message: "Your image prompt was blocked by our filters.\n\n*If you violate the usage policies, we may have to take moderative actions; otherwise, you can ignore this notice*.",
+			color: "Orange", emoji: null
+		});
 
-				return this.startImageGeneration({
-					interaction, guidance, model, conversation, count, moderation, nsfw, sampler, seed, size, steps, db,
-					filter: filter,
-					
-					prompt: {
-						prompt: prompt,
-						negative: negativePrompt ?? undefined,
-						ai: false
-					} as any
-				});
+		/* Source attachment, specified in command options */
+		const sourceAttachment: Attachment | null = interaction.options.getAttachment("source", false);
 
-			} else if (action === "ai") {
-				/* Defer the reply, as this might take a while. */
-				await interaction.deferReply().catch(() => {});
+		if (sourceAttachment !== null) {
+			/* Extension of the source attachment */
+			const extension: string = Utils.fileExtension(sourceAttachment.name);
 
-				/* If the message content was not provided by another source, check it for profanity & ask the user if they want to execute the request anyways. */
-				const moderation: ModerationResult | null = await this.bot.moderation.checkImagePrompt({
-					db, user: interaction.user, content: prompt, nsfw
-				});
-
-				/* If the message was flagged, send a warning message. */
-				if (moderation !== null && moderation.blocked) return new ErrorResponse({
-					interaction, command: this,
-					message: "Your image prompt was blocked by our filters.\nTry using the bot in a channel marked as **NSFW**, or using a different prompt.\n\n*If you violate the usage policies, we may have to take moderative actions; otherwise, you can ignore this notice*.",
-					color: "Orange"
-				});
-
-				/* Which models to show as options to ChatGPT; this is reduced in order to save tokens */
-				const models: StableHordeModel[] = this.bot.image.getModels()
-					.filter(model => model.nsfw ? nsfw : true);
-					
-				/* Messages to pass to ChatGPT */
-				const messages: OpenAIChatMessage[] = [
-					{
-						content: generateImageGenerationAIPrompt(models),
-						role: "system"
-					},
-
-					{
-						content: prompt,
-						role: "assistant"
-					}
-				];
-
-				new LoadingResponse({
-					phrases: [
-						"Improving your prompt",
-						"Spicing up the scene",
-						"Working on the small details",
-						"Choosing an awesome model",
-						"Enhancing the small details"
-					]
-				}).send(interaction);
-
-				/* Generate the response from ChatGPT. */
-				const raw = await conversation.manager.session.ai.chat({
-					messages, model: "gpt-3.5-turbo", stream: true,
-					temperature: 0.7
-				});
-
-				const data: ImageGenerationAIPrompt | null = (content => {
-					try {
-						const result: ImageGenerationAIPrompt = JSON.parse(content);
-
-						if (!result.prompt) return null;
-						return result;
-
-					} catch (error) {}
-					return null;
-				})(raw.response.message.content);
-
-				if (data === null) return new ErrorResponse({
-					interaction, command: this,
-					message: "It seems like **ChatGPT** didn't come up with a prompt for this request.",
-					emoji: "😕"
-				});
-
-				/* Try to get the Stable Horde model. */
-				let model: StableHordeModel | null = data.model ? this.bot.image.get(data.model) : null;
-				if (model === null) model = this.bot.image.getModels().find(m => m.name === "stable_diffusion")!;
-
-				return this.startImageGeneration({
-					interaction, guidance, model, conversation, count, moderation, nsfw, sampler, size, steps, db,
-					filter: null, seed: null,
-					
-					prompt: {
-						prompt: data.prompt,
-						negative: data.negative ?? undefined,
-						ai: true
-					} as any
-				});
-			}
+			if (!ALLOWED_FILE_EXTENSIONS.includes(extension)) return void await new NoticeResponse({
+				message: `The **\`source\`** option only supports the following files » ${ALLOWED_FILE_EXTENSIONS.map(ext => `\`.${ext}\``).join(", ")} ❌`,
+				color: "Red"
+			}).send(interaction);
 		}
+
+		/* Source image to use for Image2Image */
+		const source: ImageInput | null = sourceAttachment !== null ? {
+			url: sourceAttachment.url
+		} : null;
+
+		return this.startImageGeneration({
+			interaction, guidance, model, count, moderation, nsfw, sampler, seed, size, steps, db,
+			filter: filter, user: interaction.user,
+			
+			prompt: {
+				prompt: prompt, negative: negativePrompt ?? undefined
+			},
+			
+			action: null, source: source
+		});
     }
 }
