@@ -159,12 +159,7 @@ export class ChatClient {
 
         /* The user's selected tone */
         const tone = options.conversation.tone(options.db);
-
-        /* If the prompt itself exceeds the length limit, throw an error. */
-        if (options.prompt.length >= 2000) throw new GPTGenerationError({
-            type: GPTGenerationErrorType.Length
-        });
-
+        
         const { type, location } = this.session.manager.bot.db.users.type(options.db);
 
         const limits = {

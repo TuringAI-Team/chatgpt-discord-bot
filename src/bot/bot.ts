@@ -1,4 +1,4 @@
-import { ActivityType, Awaitable, basename, Client, GatewayIntentBits, Partials } from "discord.js";
+import { ActivityType, Awaitable, basename, Client, GatewayIntentBits, Options, Partials } from "discord.js";
 import { ClusterClient, getInfo, IPCMessage, messageType } from "discord-hybrid-sharding";
 import EventEmitter from "events";
 import chalk from "chalk";
@@ -198,6 +198,18 @@ export class Bot extends EventEmitter {
                 Partials.Channel,
                 Partials.User
             ],
+
+            makeCache: Options.cacheWithLimits({
+                ...Options.DefaultMakeCacheSettings,
+
+                ReactionManager: 0,
+                MessageManager: 0,
+                
+                GuildMemberManager: {
+                    maxSize: 200,
+                    keepOverLimit: (member) => member.id === this.client.user.id,
+                }
+            }),
 
             presence: {
                 status: "idle",

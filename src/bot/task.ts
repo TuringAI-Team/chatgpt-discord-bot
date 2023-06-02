@@ -99,27 +99,6 @@ const BOT_TASKS: BotTask[] = [
 
             bot.statistics = data;
         }
-    },
-
-    {
-        name: "Check for dead clusters",
-
-        condition: bot => bot.data.id === 0,
-        interval: 10 * 1000,
-
-        callback: async bot => {
-            for (let i = 0; i < getInfo().CLUSTER_COUNT; i++) {
-                try {
-                    await bot.client.cluster.broadcastEval(((client: BotDiscordClient, context: BotStatistics) => {
-                        client.bot.statistics = context;
-                    }) as any, {
-                        timeout: 3 * 1000, cluster: i
-                    });
-                } catch (error) {
-                    bot.logger.error(`Cluster ${chalk.bold(`#${i +1}`)} is dead!`);
-                }
-            }
-        }
     }
 ]
 

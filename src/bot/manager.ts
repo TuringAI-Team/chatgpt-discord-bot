@@ -280,7 +280,7 @@ export class BotManager extends EventEmitter {
             
             restarts: {
                 interval: 60 * 60 * 1000,
-                max: 99
+                max: 999
             },
 
             queue: {
