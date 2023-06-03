@@ -471,7 +471,7 @@ export class Generator {
 			});
 
 			return void await new ErrorResponse({
-				message: "It seems like we experienced an issue while trying to resume your conversation."
+				message: "We experienced an issue while trying to resume your conversation.", type: ErrorType.Error
 			}).send(message);
 		}
 

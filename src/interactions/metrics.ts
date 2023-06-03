@@ -10,7 +10,7 @@ export class MetricsInteractionHandler extends InteractionHandler<ButtonInteract
             bot,
             
             new InteractionHandlerBuilder()
-                .setName("midjourney")
+                .setName("metrics")
                 .setDescription("Metrics viewer actions (page switching, changing time frame, etc.)")
                 .setType([ InteractionType.Button ])
         );

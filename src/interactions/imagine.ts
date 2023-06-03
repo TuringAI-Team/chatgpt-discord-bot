@@ -4,7 +4,7 @@ import { InteractionHandler, InteractionHandlerBuilder, InteractionHandlerRespon
 import ImagineCommand, { StableHordeImageAction } from "../commands/imagine.js";
 import { Bot } from "../bot/bot.js";
 
-type ImagineInteractionAction = StableHordeImageAction | "rate" | "cancel"
+type ImagineInteractionAction = StableHordeImageAction | "rate" | "redo" | "cancel"
 
 export interface ImagineInteractionHandlerData {
     /* Which action to perform */

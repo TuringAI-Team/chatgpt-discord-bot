@@ -407,6 +407,15 @@ export default class ImagineCommand extends Command {
 			if (action !== "variation") rows.push(...this.buildRow(user, result, "variation"));
 		}
 
+		if (rows[0] && action === null) {
+			rows[0].addComponents(
+				new ButtonBuilder()
+					.setEmoji("🔄")
+					.setCustomId(`i:redo:${user.id}:${result.id}`)
+					.setStyle(ButtonStyle.Secondary)
+			);
+		}
+
 		return rows;
 	}
 
@@ -420,7 +429,7 @@ export default class ImagineCommand extends Command {
 		const image: DatabaseImage | null = await this.bot.db.users.getImage(imageID);
 		if (image === null) return void await interaction.deferUpdate();
 
-		if (data.action === "upscale" || data.action === "variation") {
+		if (data.action === "upscale" || data.action === "variation" || data.action === "redo") {
 			/* All components on the original message */
 			const components: ActionRow<ButtonComponent>[] = interaction.message.components as ActionRow<ButtonComponent>[];
 
@@ -444,13 +453,13 @@ export default class ImagineCommand extends Command {
 			const result: ImageGenerationResult = image.results.find((_, index) => index === data.resultIndex)!;
 			const storage: StorageImage = await this.bot.image.getImageData(result);
 
-			/* Defer the reply, as this might take a while. */
-			await interaction.deferReply().catch(() => {});
+			await interaction.deferReply();
 
 			const response = this.startImageGeneration({
 				interaction,
 				
-				...image.options,
+				model: image.options.model,
+				nsfw: image.nsfw, prompt: image.prompt,
 				filter: null, user: interaction.user,
 
 				guidance: image.options.params.cfg_scale!,
@@ -459,6 +468,38 @@ export default class ImagineCommand extends Command {
 				
 				source: { url: storage.url },
 				action: "variation",
+
+				size: {
+					width: image.options.params.width!,
+					height: image.options.params.height!,
+
+					premium: false
+				}
+			});
+
+			const type = this.bot.db.users.type(db);
+			
+			const duration: number | null = (ImageGenerationCooldown as any)[type.type] ?? null;
+			if (duration !== null) await handler.applyCooldown(interaction, db, duration);
+
+			return response;
+
+		/* The user wants to re-do an image */
+		} else if (data.action === "redo") {
+			await interaction.deferReply();
+
+			const response = this.startImageGeneration({
+				interaction,
+				
+				model: image.options.model,
+				nsfw: image.nsfw, prompt: image.prompt,
+				filter: null, user: interaction.user,
+
+				guidance: image.options.params.cfg_scale!,
+				sampler: image.options.params.sampler_name!, seed: image.options.params.seed ?? null,
+				steps: image.options.params.steps!, count: image.options.params.n!, moderation: null, db, 
+				
+				action: null, source: null,
 
 				size: {
 					width: image.options.params.width!,
@@ -554,7 +595,7 @@ export default class ImagineCommand extends Command {
 				height: size.height,
 				width: size.width,
 				
-				denoising_strength: 0.5,
+				denoising_strength: 0.6,
 				steps: steps,
 				n: count
 			},
@@ -624,6 +665,7 @@ export default class ImagineCommand extends Command {
 
 			/* Add the generated results to the database. */
 			if (usable) {
+				console.log(prompt)
 				await this.bot.db.users.updateImage(this.bot.image.toDatabase(interaction.user, body, prompt, result, nsfw));
 
 				/* Upload the generated images to the storage bucket. */
