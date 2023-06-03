@@ -665,7 +665,6 @@ export default class ImagineCommand extends Command {
 
 			/* Add the generated results to the database. */
 			if (usable) {
-				console.log(prompt)
 				await this.bot.db.users.updateImage(this.bot.image.toDatabase(interaction.user, body, prompt, result, nsfw));
 
 				/* Upload the generated images to the storage bucket. */
