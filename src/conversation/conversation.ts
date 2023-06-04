@@ -75,7 +75,7 @@ export const CONVERSATION_COOLDOWN_MODIFIER: Record<UserSubscriptionPlanType, Co
 	},
 
 	voter: {
-		time: 45 * 1000
+		time: 75 * 1000
 	},
 
 	subscription: {
@@ -88,7 +88,7 @@ export const CONVERSATION_COOLDOWN_MODIFIER: Record<UserSubscriptionPlanType, Co
 }
 
 export const CONVERSATION_DEFAULT_COOLDOWN: Required<Pick<CooldownModifier, "time">> = {
-	time: 60 * 1000
+	time: 90 * 1000
 }
 
 export declare interface Conversation {

@@ -205,7 +205,7 @@ export const ChatSettingsModels: ChatSettingsModel[] = [
 
         billing: {
             type: ChatSettingsModelBillingType.Per1000Tokens,
-            amount: 0.001
+            amount: 0.0015
         },
 
         prompt: {
@@ -280,7 +280,7 @@ Knowledge cut-off: September 2021
         emoji: { display: "<:dolly:1100453639396524122>", fallback: "🐑" },
         settings: { model: "replicate/dolly-v2-12b" },
         history: { generation: 300, maxTokens: 2048 },
-        cooldown: { multiplier: 1.4 },
+        cooldown: { multiplier: 2.5 },
 
         billing: {
             type: ChatSettingsModelBillingType.PerSecond,
@@ -311,7 +311,7 @@ Current date & time: ${context.time}, ${context.date}
         emoji: { display: "<:stablelm:1100453631746113597>", fallback: "🦜" },
         settings: { model: "stability-ai/stablelm-tuned-alpha-7b" },
         history: { generation: 300, maxTokens: 4096 },
-        cooldown: { multiplier: 1.4 },
+        cooldown: { multiplier: 2.5 },
 
         billing: {
             type: ChatSettingsModelBillingType.PerSecond,
@@ -340,6 +340,7 @@ Current date & time: ${context.time}, ${context.date}
         description: "An open-source chatbot impressing GPT-4 with 90% ChatGPT quality",
         history: { messages: 3, maxTokens: 1500 },
         settings: { model: "vicuna" },
+        cooldown: { multiplier: 2.5 },
         type: ModelType.Turing,
 
         billing: {
@@ -362,7 +363,7 @@ Knowledge cut-off: September 2021, like ChatGPT
         name: "Bard",
         emoji: { display: "<:bard:1108815821997879317>", fallback: "✨" },
         description: "Your creative and helpful collaborator, by Google",
-        cooldown: { multiplier: 0.6 },
+        cooldown: { multiplier: 0.8 },
         settings: { model: "bard" },
         type: ModelType.Turing,
 
