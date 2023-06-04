@@ -1,7 +1,7 @@
 import { fetchEventSource } from "@waylaidwanderer/fetch-event-source";
 
-import { OpenAICompletionsBody, OpenAICompletionsData, OpenAICompletionsJSON, OpenAIUsageCompletionsData } from "./types/completions.js";
 import { OpenAIChatBody, OpenAIChatCompletionsData, OpenAIChatCompletionsJSON, OpenAIChatMessage, OpenAIPartialCompletionsJSON } from "./types/chat.js";
+import { OpenAICompletionsBody, OpenAICompletionsData, OpenAICompletionsJSON, OpenAIUsageCompletionsData } from "./types/completions.js";
 import { countChatMessageTokens, getPromptLength } from "../conversation/utils/length.js"
 import { GPTGenerationErrorType, GPTGenerationError } from "../error/gpt/generation.js";
 import { OpenAIModerationsData } from "./types/moderation.js";

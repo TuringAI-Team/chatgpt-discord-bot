@@ -4,7 +4,9 @@ import { Awaitable } from "discord.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
 import { GPTAPIError } from "../error/gpt/api.js";
 
-export interface StreamBuilderOptions<RequestBody, PartialResponseData, FinalResponseData> {
+type StreamSetFunction<PartialResponseData> = (value: PartialResponseData) => void
+
+export interface StreamBuilderOptions<RequestBody, PartialResponseData, FinalResponseData = PartialResponseData, ProcessedFinalResponseData = FinalResponseData> {
     /* Which URL to request */
     url: string;
 
@@ -18,26 +20,30 @@ export interface StreamBuilderOptions<RequestBody, PartialResponseData, FinalRes
     error: (response: Response) => Awaitable<Error | null>;
 
     /* The progress handler to use */
-    progress: (data: PartialResponseData) => Awaitable<void>;
+    progress?: (data: PartialResponseData, old: PartialResponseData | null, set: StreamSetFunction<PartialResponseData>) => Awaitable<void>;
 
     /* Check callback, to determine whether progress() should be called */
-    callback?: (data: PartialResponseData) => Awaitable<boolean>;
+    check?: (data: PartialResponseData) => Awaitable<boolean>;
+
+    /* Process & transform the final data */
+    process?: (data: FinalResponseData) => Awaitable<ProcessedFinalResponseData>;
 
     /* How long to wait, until the request automatically gets aborted after inactivity, in seconds */
     duration?: number;
 }
 
-export class StreamBuilder<RequestBody, PartialResponseData, FinalResponseData = PartialResponseData> {
-    private readonly options: Required<StreamBuilderOptions<RequestBody, PartialResponseData, FinalResponseData>>;
+export class StreamBuilder<RequestBody, PartialResponseData, FinalResponseData = PartialResponseData, ProcessedFinalResponseData = FinalResponseData> {
+    /* Various stream builder options */
+    private readonly options: StreamBuilderOptions<any, any> & Required<Omit<StreamBuilderOptions<any, any>, "process" | "progress">>;
 
-    constructor(options: StreamBuilderOptions<RequestBody, PartialResponseData, FinalResponseData>) {
+    constructor(options: StreamBuilderOptions<RequestBody, PartialResponseData, FinalResponseData, ProcessedFinalResponseData>) {
         this.options = {
-            duration: 0, callback: () => true,
+            duration: 0, check: () => true,
             ...options
         };
     }
 
-    public async run(): Promise<FinalResponseData> {
+    public async run(): Promise<ProcessedFinalResponseData> {
         /* Latest message of the stream */
         let latest: PartialResponseData | null = null;
 
@@ -51,6 +57,9 @@ export class StreamBuilder<RequestBody, PartialResponseData, FinalResponseData =
                 controller.abort();
                 reject(new TypeError("Request timed out"));
             }, this.options.duration * 1000) : null;
+
+            const setFunction: StreamSetFunction<PartialResponseData> =
+                value => latest = value;
 
             try {
                 await fetchEventSource(this.options.url, {
@@ -89,10 +98,16 @@ export class StreamBuilder<RequestBody, PartialResponseData, FinalResponseData =
                     onmessage: async (event) => {
                         /* Response data */
                         const data: PartialResponseData = JSON.parse(event.data);
-                        if (!data || !(await this.options.callback(data))) return;
+                        if (!data || !(await this.options.check(data))) return;
 
-                        latest = data;
-                        this.options.progress(latest);
+                        try {
+                            const old = latest;
+                            latest = data;
+
+                            if (this.options.progress) this.options.progress(data, old, setFunction);
+                        } catch (error) {
+                            throw error;
+                        }
                     },
                 });
 
@@ -110,6 +125,10 @@ export class StreamBuilder<RequestBody, PartialResponseData, FinalResponseData =
             type: GPTGenerationErrorType.Empty
         });
 
-        return latest as FinalResponseData;
+        /* Final (processed) data */
+        let final: ProcessedFinalResponseData = latest as ProcessedFinalResponseData;
+        if (this.options.process) final = await this.options.process(final);
+
+        return final;
     }
 }

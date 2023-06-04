@@ -72,7 +72,7 @@ export const IntroductionPages: IntroductionPage[] = [
         design: { title: "Image generation", emoji: "🖼️", description: "Overview of the image generation features in the bot" },
 
         build: (builder, { bot }) => builder
-            .setDescription(`${bot.client.user.username} isn't just meant for chatting; you can also generate images using \`/imagine generate\`.`)
+            .setDescription(`${bot.client.user.username} isn't just meant for chatting; you can also generate images using \`/imagine\` & \`/mj\`.`)
             .addFields([
                 {
                     name: "Come up with a good prompt 🤔",

@@ -9,13 +9,15 @@ import { ChoiceSettingOptionChoice } from "../db/managers/settings.js";
 import { ChatOutputImage, ImageBuffer } from "../chat/types/image.js";
 import { DatabaseInfo, DatabaseUser } from "../db/managers/user.js";
 import { Conversation } from "../conversation/conversation.js";
-import { OpenAIChatMessage } from "../openai/types/chat.js";
+import { OpenAIChatBody, OpenAIChatCompletionsData, OpenAIChatMessage, OpenAIPartialCompletionsJSON } from "../openai/types/chat.js";
 import { MetricsType } from "../db/managers/metrics.js";
 import { ChatInputImage } from "../chat/types/image.js";
 import { GPTAPIError } from "../error/gpt/api.js";
 import { StreamBuilder } from "../util/stream.js";
 import { Utils } from "../util/utils.js";
 import { Bot } from "../bot/bot.js";
+import { OpenAIUsageCompletionsData } from "../openai/types/completions.js";
+import { countChatMessageTokens, getPromptLength } from "../conversation/utils/length.js";
 
 type TuringAPIPath = 
     `cache/${string}`
@@ -586,12 +588,78 @@ interface TuringChatBingBody {
 
 export type TuringChatBingPartialResult = Pick<TuringChatBingResult, "response">
 
+export type TuringChatOpenAIBody = Pick<OpenAIChatBody, "model" | "messages" | "temperature"> & {
+    maxTokens?: number;
+}
+
 export class TuringAPI extends EventEmitter {
     private readonly bot: Bot;
 
     constructor(bot: Bot) {
         super();
         this.bot = bot;
+    }
+
+    public async openAI(options: TuringChatOpenAIBody, progress?: (data: OpenAIPartialCompletionsJSON) => Promise<void> | void): Promise<OpenAIChatCompletionsData> {
+        return await new StreamBuilder<
+            TuringChatOpenAIBody, OpenAIPartialCompletionsJSON, OpenAIPartialCompletionsJSON, OpenAIChatCompletionsData
+        >({
+            body: options,
+
+            error: response => this.error(response, "text/open-ai", true),
+            url: this.url("text/open-ai"),
+            headers: this.headers(),
+
+            progress: (data, old, set) => {
+                /* If an error occurred, stop generation at this point. */
+                if (data.choices[0].error !== undefined) {
+                    throw new GPTAPIError({
+                        endpoint: "/chat/completions",
+                        code: 400,
+                        id: data.choices[0].error.code,
+                        message: data.choices[0].error.message
+                    });
+                }
+
+                const updated: OpenAIPartialCompletionsJSON = {
+                    choices: [
+                        {
+                            delta: {
+                                content: old !== null && old.choices[0].delta.content ? `${old.choices[0].delta.content}${data.choices[0].delta.content}` : data.choices[0].delta.content,
+                                role: "assistant"
+                            },
+
+                            finish_reason: data.choices[0].finish_reason,
+                            index: data.choices[0].index,
+                            error: data.choices[0].error
+                        }
+                    ]
+                };
+
+                set(updated);
+                if (progress) progress(updated);
+            },
+
+            process: final => {
+                const usage: OpenAIUsageCompletionsData = {
+                    completion_tokens: getPromptLength(final.choices[0].delta.content!),
+                    prompt_tokens: countChatMessageTokens(options.messages),
+                    total_tokens: 0
+                }
+    
+                usage.total_tokens = usage.completion_tokens + usage.total_tokens;
+    
+                return {
+                    response: {
+                        message: final.choices[0].delta as OpenAIChatMessage,
+                        finish_reason: final.choices[0].finish_reason!,
+                        index: final.choices[0].index
+                    },
+    
+                    usage
+                };
+            }
+        }).run();
     }
 
     public async bing({ prompt, conversation, tone, progress }: TuringChatBingOptions): Promise<TuringChatBingResult> {

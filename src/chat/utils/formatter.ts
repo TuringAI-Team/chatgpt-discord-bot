@@ -9,11 +9,6 @@ interface MessageFormatter {
 /* Formatters to execute */
 const formatters: MessageFormatter[] = [
     {
-        name: "Format Markdown list entries",
-        execute: content => content.replace(/^[\*\-\+] (.*)$/gm, `• $1`)
-    },
-
-    {
         name: "Fix broken code blocks",
         execute: content => content.split("```").length % 2 === 0 ? `${content}\n\`\`\`` : null
     }

@@ -618,7 +618,7 @@ export class ModerationManager {
         const auto: AutoModerationActionData | null = await this.automod.execute({
             content, db, source,
             filterCallback: filter ? (_, action) => filter(action) : undefined
-        }); 
+        });
 
         /* If this moderation request is related to image generation, run the Turing API filter too. */
         const turing = (source === "image" || source === "video") && additional

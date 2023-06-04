@@ -168,7 +168,7 @@ export class Generator {
 			/* If the message got cut off, add a Continue button. */
 			if (data.raw && data.raw.finishReason === "maxLength" && model.options.name !== "GPT-4") buttons.push(
 				new ButtonBuilder()
-					.setCustomId(`continue:${conversation.id}`)
+					.setCustomId(`chat:continue:${conversation.id}`)
 					.setStyle(ButtonStyle.Success)
 					.setLabel("Continue")
 					.setEmoji("📜")

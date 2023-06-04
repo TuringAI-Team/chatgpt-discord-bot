@@ -205,7 +205,7 @@ export const ChatSettingsModels: ChatSettingsModel[] = [
 
         billing: {
             type: ChatSettingsModelBillingType.Per1000Tokens,
-            amount: 0.002
+            amount: 0.001
         },
 
         prompt: {
@@ -371,18 +371,6 @@ Knowledge cut-off: September 2021, like ChatGPT
     }),
 
     new ChatSettingsModel({
-        name: "Bing",
-        emoji: { display: "<:bing:1112695106072481802>", fallback: "🇧" },
-        description: "Microsoft's new AI",
-        cooldown: { multiplier: 1.2 },
-        type: ModelType.TuringBing,
-        restricted: "tester",
-
-        billing: { type: ChatSettingsModelBillingType.Free, amount: 0 },
-        prompt: { builder: () => "" }
-    }),
-
-    new ChatSettingsModel({
         name: "FastChat",
         description: "Open-source chat bot trained by fine-tuning FLAN-T5 XL on ShareGPT conversations",
         emoji: { display: "<:google:1102619904185733272>", fallback: "🔤" },
@@ -428,7 +416,7 @@ Current date & time: ${context.time}, ${context.date}
         name: "Alan",
         description: "A combination of various AIs, creating the ultimate chatbot",
         emoji: { display: "<:turing_neon:1100498729414434878>", fallback: "🧑‍💻" },
-        restricted: "plan",
+        cooldown: { time: 1.5 * 60 * 1000 },
         type: ModelType.TuringAlan,
         history: { maxTokens: 1024 },
 

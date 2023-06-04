@@ -22,26 +22,47 @@ export class ChatGPTModel extends ChatModel {
      * @param options Generation options
      * @returns Generated response
      */
-    protected async chat(options: ModelGenerationOptions, prompt: PromptData, progress?: (response: OpenAIPartialCompletionsJSON) => Promise<void> | void): Promise<OpenAIChatCompletionsData> {
-        const data: OpenAIChatCompletionsData = await this.client.session.ai.chat({
-            model: options.settings.options.settings.model ?? "gpt-3.5-turbo",
-            stream: options.partial,
-            stop: "User:",
+    protected async chat(options: ModelGenerationOptions, prompt: PromptData, progress: (response: OpenAIPartialCompletionsJSON) => Promise<void> | void): Promise<OpenAIChatCompletionsData> {
+        let data: OpenAIChatCompletionsData | null = null;
 
-            user: options.conversation.userIdentifier,
+        /* Turing ChatGPT API */
+        if (!options.settings.options.settings.model || options.settings.options.settings.model === "gpt-3.5-turbo") {
+        //if (false) {
+            data = await this.client.session.manager.bot.turing.openAI({
+                model: options.settings.options.settings.model ?? "gpt-3.5-turbo",
+                temperature: options.settings.options.settings.temperature ?? 0.5,
+                messages: Object.values(prompt.parts),
+                maxTokens: prompt.max
+            }, progress);
+        
+        /* Regular OpenAI API */
+        } else {
+            data = await this.client.session.ai.chat({
+                model: options.settings.options.settings.model ?? "gpt-3.5-turbo",
+                stream: options.partial,
+                stop: "User:",
+    
+                user: options.conversation.userIdentifier,
+    
+                temperature: options.settings.options.settings.temperature ?? 0.5,
+                max_tokens: isFinite(prompt.max) ? prompt.max : undefined,
+                messages: Object.values(prompt.parts),
+            }, progress);;
+        }
 
-            temperature: options.settings.options.settings.temperature ?? 0.5,
-            max_tokens: isFinite(prompt.max) ? prompt.max : undefined,
-            messages: Object.values(prompt.parts),
-        }, progress);
+        if (data === null || data.response.message.content.trim().length === 0) throw new GPTGenerationError({
+            type: GPTGenerationErrorType.Empty
+        });
 
-        if (data.response.message.content.trim().length === 0) throw new GPTGenerationError({ type: GPTGenerationErrorType.Empty });
         return data;
     }
 
     public async complete(options: ModelGenerationOptions): Promise<PartialResponseMessage> {
         const prompt: PromptData = await this.client.buildPrompt(options);
-        const data: OpenAIChatCompletionsData = await this.chat(options, prompt, response => options.progress({ text: response.choices[0].delta.content! }));
+
+        const data: OpenAIChatCompletionsData = await this.chat(
+            options, prompt, response => options.progress({ text: response.choices[0].delta.content! })
+        );
 
         return {
             raw: {

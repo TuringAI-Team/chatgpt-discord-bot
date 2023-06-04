@@ -72,6 +72,8 @@ You must pretend to "view" these text attachments, do not talk about the format 
     Continue: "Continue the message where you left off, don't add any additional explanations or repeat anything you said before."
 }
 
+/* Hard limit for the prompt generation loop */
+const PROMPT_GEN_LOOP_LIMIT: number = 50
 
 export class ChatClient {
     /* Session - in charge of this instance */
@@ -235,7 +237,12 @@ export class ChatClient {
             return final;
         }
 
+        /* Current iteration count, as a safety measure */
+        let i: number = 0;
+
         do {
+            i++;
+
             /* Which messages to use */
             let history: ChatInteraction[] = options.conversation.history;
             if (options.settings.options.history.messages) history = history.slice(-options.settings.options.history.messages);
@@ -296,7 +303,10 @@ export class ChatClient {
             /* If the prompt is too long, remove the oldest history entry & try again. */
             if (maxContextLength - tokens <= 0) options.conversation.history.shift();
             else break;
-        } while (maxContextLength - tokens <= 0);
+            
+        } while (maxContextLength - tokens <= 0 && i < PROMPT_GEN_LOOP_LIMIT);
+
+        if(i >= PROMPT_GEN_LOOP_LIMIT) throw new Error("Reached the prompt iteration limit");
 
         /* Update the maximum generation tokens, to avoid possible conflicts with the OpenAI API. */
         maxGenerationTokens = Math.min(
