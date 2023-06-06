@@ -731,7 +731,9 @@ export class TuringAPI extends EventEmitter {
                         if (!done) {
                             done = true;
 
+                            this.off("cancelled", listener);
                             controller.abort();
+                            
                             resolve();
                         }
                     },
