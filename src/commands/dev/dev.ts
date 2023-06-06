@@ -75,12 +75,12 @@ export default class DeveloperCommand extends Command {
 			const fields = [
 				{
 					key: "Running since 🕒",
-					value: `**${dayjs.duration(Date.now() - uptime).format("HH:mm:ss")}**`
+					value: `**${dayjs.duration(Date.now() - uptime).format("DD:HH:mm:ss")}**`
 				},
 
 				{
 					key: "Processed messages 💬",
-					value: `**\`${count}\`** (\`${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(SessionCostProducts[0].calculate({ completion: tokens, prompt: tokens }).completion)}\`)`
+					value: `**\`${count}\`**`
 				},
 
 				{
@@ -98,7 +98,7 @@ export default class DeveloperCommand extends Command {
 				const clusterUptime: number = uptimes[i];
 				const clusterGuilds: number = guilds[i];
 
-				if (clusterRunning) clusterDebug = `${clusterDebug}\n\`#${i + 1}\` • **${clusterGuilds}** guilds • **${dayjs.duration(Date.now() - clusterUptime).format("HH:mm:ss")}**`;
+				if (clusterRunning) clusterDebug = `${clusterDebug}\n\`#${i + 1}\` • **${clusterGuilds}** guilds • **${dayjs.duration(Date.now() - clusterUptime).format("DD:HH:mm:ss")}**`;
 				else clusterDebug = `${clusterDebug}\n\`#${i + 1}\` • **Reloading** ... ⌛`;
 			}
 

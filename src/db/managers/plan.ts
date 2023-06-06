@@ -16,7 +16,7 @@ import { Utils } from "../../util/utils.js";
 
 type DatabaseEntry = DatabaseUser | DatabaseGuild
 
-type UserPlanExpenseType = "image" | "dall-e" | "midjourney" | "video" | "summary" | "chat" | "describe"
+type UserPlanExpenseType = "image" | "dall-e" | "midjourney" | "video" | "summary" | "chat" | "describe" | "translate"
 
 type UserPlanExpenseData = {
     [key: string]: string | number | boolean | UserPlanExpenseData;
@@ -71,6 +71,15 @@ export type UserPlanVideoExpense = UserPlanExpense<{
 export type UserPlanSummaryExpense = UserPlanExpense<{
     tokens: number;
     url: string;
+}>
+
+export type UserPlanTranslateExpense = UserPlanExpense<{
+    tokens: {
+        prompt: number;
+        completion: number;
+    };
+
+    source: string;
 }>
 
 type UserPlanCreditType = "web" | "grant"
@@ -138,15 +147,17 @@ export const PlanExpenseEntryViewers: {
     video: PlanExpenseEntryViewer<UserPlanVideoExpense>,
     summary: PlanExpenseEntryViewer<UserPlanSummaryExpense>,
     chat: PlanExpenseEntryViewer<UserPlanChatExpense>,
-    describe: PlanExpenseEntryViewer<UserPlanImageDescribeExpense>
+    describe: PlanExpenseEntryViewer<UserPlanImageDescribeExpense>,
+    translate: PlanExpenseEntryViewer<UserPlanTranslateExpense>
 } = {
     image: e => `used \`${e.data.kudos}\` kudos`,
-    "dall-e": e => `**${e.data.count}** images`,
+    "dall-e": e => `**${e.data.count}** image${e.data.count > 1 ? "s" : ""}`,
     midjourney: e => `prompt \`${e.data.prompt}\``,
     video: e => `took **${e.data.duration} ms** using model \`${e.data.model}\``,
     summary: e => `used **${e.data.tokens}** tokens`,
     chat: e => `using \`${e.data.model}\`${e.data.tokens ? `, **${e.data.tokens.prompt}** prompt & **${e.data.tokens.completion}** completion tokens` : ""}`,
-    describe: e => `took **${e.data.duration} ms**`
+    describe: e => `took **${e.data.duration} ms**`,
+    translate: e => `translated from **\`${e.data.source}\`**, used **${e.data.tokens.prompt}** prompt & **${e.data.tokens.completion}** completion tokens`
 }
 
 export class PlanManager {
@@ -283,7 +294,18 @@ export class PlanManager {
         const total: number = prompt.tokens + tokens;
 
         return this.expense(entry, {
-            type: "summary", used: (total / 1000) * 0.002, data: { tokens: total, url: video.url }, bonus: 0.10
+            type: "summary", used: (total / 1000) * 0.0015, data: { tokens: total, url: video.url }, bonus: 0.10
+        });
+    }
+
+    public async expenseForTranslation(
+        entry: DatabaseInfo, tokens: Record<"prompt" | "completion", number>, source: string
+    ): Promise<UserPlanTranslateExpense | null> {
+        /* Total amount of tokens used and generated */
+        const total: number = tokens.prompt + tokens.completion;
+
+        return this.expense(entry, {
+            type: "translate", used: (total / 1000) * 0.0015, data: { tokens, source }, bonus: 0.10
         });
     }
 

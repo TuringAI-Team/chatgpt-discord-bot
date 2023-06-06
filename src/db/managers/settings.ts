@@ -776,7 +776,7 @@ export const SettingOptions: SettingsOption[] = [
 
     new ChoiceSettingsOption({
         key: "toolbar",
-        name: "Show credit in toolbar",
+        name: "How to show Pay-as-you-go credit in toolbar",
         category: "premium",
         emoji: { fallback: "🧰" },
         description: "Whether remaining & total credit should be shown in the tool-bar",
@@ -838,7 +838,7 @@ export const SettingOptions: SettingsOption[] = [
         ],
 
         explanation: {
-            description: "Using this setting, you can control if and how the configured custom character displays in chat.\n**To prevent impersonation & other possible issues with custom characters, the user who requested the message will be at the bottom of every reply.**"
+            description: "Using this setting, you can control if and how the configured custom character displays in chat.\n**Make sure to give the bot the `Manage webhooks` permission, in order to use this feature without any issues.**"
         }
     }),
 
@@ -891,7 +891,28 @@ export const SettingOptions: SettingsOption[] = [
             value: plugin.id,
             emoji: plugin.options.emoji !== null ? plugin.options.emoji as DisplayEmoji : undefined,
         }))
-    })
+    }),
+
+    new MultipleChoiceSettingsOption({
+        key: "excludedModels",
+        name: "Excluded models",
+        category: "premium",
+        emoji: { fallback: "⛔" },
+        description: "Which models to not include in the Pay-as-you-go charges",
+        location: SettingsLocation.Both,
+
+        explanation: {
+            description: "This setting disables **Pay-as-you-go** charges for all of the selected models. You will be subject to the regular cool-downs & limits for the specified models, without getting charged for your usage.\n\n🚧 **This feature is not available yet!** 🚧"
+        },
+
+        choices: ChatSettingsModels.filter(model => model.options.restricted === null).map(model => ({
+            name: model.options.name,
+            description: model.options.description,
+            restricted: model.options.restricted,
+            emoji: model.options.emoji,
+            value: model.id
+        }))
+    }),
 ]
 
 interface SettingsPageBuilderOptions {
@@ -1114,7 +1135,7 @@ export class UserSettingsManager {
             });
         }
 
-        if (Date.now() - interaction.message.createdTimestamp > 5 * 60 * 1000) {
+        if (Date.now() - interaction.message.createdTimestamp > 15 * 60 * 1000) {
             return new ErrorResponse({
                 interaction, message: `This settings menu can't be used anymore; run \`/settings\` again to continue`, emoji: "😔"
             });
@@ -1231,7 +1252,7 @@ export class UserSettingsManager {
                     const updated: Partial<MultipleChoiceSettingsObject> = {};
                     
                     option.data.choices.forEach(c => {
-                        updated[c.value] = newValueName === c.value ? !previous[newValueName] : previous[c.value];
+                        updated[c.value] = (newValueName === c.value ? !previous[newValueName] : previous[c.value]) ?? false;
                     });
 
                     if (option.data.max && Object.values(updated).filter(Boolean).length > option.data.max) {

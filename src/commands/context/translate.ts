@@ -1,5 +1,6 @@
 import { ContextMenuCommandBuilder, Message, MessageContextMenuCommandInteraction } from "discord.js";
 
+import { getPromptLength, countChatMessageTokens } from "../../conversation/utils/length.js";
 import { LanguageManager, UserLanguage } from "../../db/types/locale.js";
 import { ContextMenuCommand } from "../../command/types/context.js";
 import { LoadingResponse } from "../../command/response/loading.js";
@@ -88,9 +89,8 @@ The user will now give you a message to translate, your goal is to apply the abo
 
         if (moderation.blocked) return new Response()
             .addEmbed(builder => builder
-                .setTitle("What's this? 🤨")
                 .setDescription(`The message to translate violates our **usage policies**.\n\n*If you violate the usage policies, we may have to take moderative actions; otherwise, you can ignore this notice*.`)
-                .setColor("Orange")
+                .setColor("Red")
             )
             .setEphemeral(true);
 
@@ -111,11 +111,18 @@ The user will now give you a message to translate, your goal is to apply the abo
             ]
         }).send(interaction);
 
+        const tokens = {
+            prompt: countChatMessageTokens(messages),
+            completion: 0
+        };
+
         /* Generate the translation result using ChatGPT. */
         const raw = await this.bot.turing.openAI({
-            messages, model: "gpt-3.5-turbo", maxTokens: 800, temperature: 0
+            messages, model: "gpt-3.5-turbo", maxTokens: 4097 - tokens.prompt - 2, temperature: 0
         });
- 
+
+        tokens.completion = getPromptLength(raw.response.message.content);
+
         const data: ChatTranslationResult | null = (content => {
             try {
                 const result: ChatTranslationResult = JSON.parse(content);
@@ -157,6 +164,7 @@ The user will now give you a message to translate, your goal is to apply the abo
             .setEphemeral(true);
 
         await this.bot.db.users.incrementInteractions(db, "translations");
+        await this.bot.db.plan.expenseForTranslation(db, tokens, data.input);
 
         return new Response()
             .addEmbed(builder => builder

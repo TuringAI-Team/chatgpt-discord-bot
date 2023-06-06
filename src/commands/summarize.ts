@@ -88,9 +88,7 @@ export default class SummarizeCommand extends Command {
 				free: 5 * 60 * 1000,
 				voter: 4 * 60 * 1000,
 				subscription: 60 * 1000
-			},
-
-			restriction: [ "plan" ]
+			}
 		});
 	}
 
@@ -140,7 +138,7 @@ export default class SummarizeCommand extends Command {
 		const targetLanguage: string = LanguageManager.modelLanguageName(this.bot, db.user);
 
 		messages.push({
-			content: `You will be sent you a transcript of a YouTube video titled ${video.title} uploaded by ${video.author.name}, with the description """${Utils.truncate(video.description, 200)}""". You must summarize it in the language "${targetLanguage}", in ${type.prompt}. In the summary, only reference the video and not the transcript sent by the user."`,
+			content: `You will be sent a transcript of a YouTube video titled ${video.title} uploaded by ${video.author.name}, with the description """${Utils.truncate(video.description, 200)}""". You must summarize it${targetLanguage !== "English" ? ` in the language "${targetLanguage}",` : ""} in ${type.prompt}. In the summary, only reference the video and not the transcript sent by the user."`,
 			role: "system"
 		});
 
@@ -174,8 +172,6 @@ export default class SummarizeCommand extends Command {
 	}
 
     public async run(interaction: CommandInteraction, db: DatabaseInfo): CommandResponse {
-		const conversation: Conversation = await this.bot.conversation.create(interaction.user);
-
 		/* Query of the YouTube video to use */
 		const query: string = interaction.options.getString("query", true).trim();
 
@@ -255,10 +251,9 @@ export default class SummarizeCommand extends Command {
 				this.statusUpdateResponse(db, video, "Summarizing").send(interaction);
 
 				/* Generate the summarization result using ChatGPT. */
-				const raw = await conversation.manager.session.ai.chat({
+				const raw = await this.bot.turing.openAI({
 					messages: prompt.messages, model: "gpt-3.5-turbo",
-					stream: true, temperature: 0.6,
-					max_tokens: 4097 - prompt.tokens - 2
+					temperature: 0.6, maxTokens: 4097 - prompt.tokens - 2
 				});
 
 				/* Summary of the subtitles, by ChatGPT */

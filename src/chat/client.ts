@@ -32,6 +32,13 @@ type PromptParts = {
     Context?: OpenAIChatMessage;
 }
 
+interface PromptMessageBuildOptions {
+    prompt: string;
+    output?: string;
+    images?: ChatInputImage[];
+    documents?: ChatDocument[];
+}
+
 export interface PromptData {
     /* The formatted prompt; all parts concatenated */
     prompt: string;
@@ -214,14 +221,7 @@ export class ChatClient {
         const documentsPrompt = (documents: ChatDocument[]) => 
             documents.map((document, index) => `[${Utils.titleCase(document.type)} document #${index + 1} = name "${document.name}": """\n${document.content}\n"""]`).join("\n");
 
-        interface MessageBuildOptions {
-            prompt: string;
-            output?: string;
-            images?: ChatInputImage[];
-            documents?: ChatDocument[];
-        }
-
-        const buildMessage = ({ prompt, output, images, documents }: MessageBuildOptions) => {
+        const buildMessage = ({ prompt, output, images, documents }: PromptMessageBuildOptions) => {
             let final: string = "";
             final += `${tags.User()}\n`;
 
@@ -308,7 +308,7 @@ export class ChatClient {
 
         if(i >= PROMPT_GEN_LOOP_LIMIT) throw new Error("Reached the prompt iteration limit");
 
-        /* Update the maximum generation tokens, to avoid possible conflicts with the OpenAI API. */
+        /* Update the maximum generation tokens, to avoid possible conflicts with the model's limits. */
         maxGenerationTokens = Math.min(
             options.settings.options.history.maxTokens - tokens,
             maxGenerationTokens

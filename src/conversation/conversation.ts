@@ -529,14 +529,26 @@ export class Conversation {
 			);
 			
 		} else if (subscriptionType.premium && subscriptionType.location === "guild") {
-			additional.push(
-				new EmbedBuilder()
-					.setDescription(`✨ By buying **[Premium](${Utils.shopURL()})** for yourself, the cool-down will be lowered to only **a few seconds**, with **unlimited** messages per day.\n**Premium** *also includes further benefits, view \`/premium\` for more*. ✨`)
-					.setColor("Orange")
-			);
+			if (subscriptionType.type === "subscription") {
+				additional.push(
+					new EmbedBuilder()
+						.setDescription(`✨ By buying **[Premium](${Utils.shopURL()})** for yourself, the cool-down will be lowered to only **a few seconds**, with **unlimited** messages per day.\n**Premium** *also includes further benefits, view \`/premium\` for more*. ✨`)
+						.setColor("Orange")
+				);
+
+			} else if (subscriptionType.type === "plan") {
+				/* Cool-down, set by the server */
+				const guildCooldown: number = this.manager.bot.db.settings.get<number>(db.guild!, "limits:cooldown");
+
+				additional.push(
+					new EmbedBuilder()
+						.setDescription(`✨ The server owners have configured a cool-down of **${guildCooldown} seconds** for this server, using the **Pay-as-you-go 📊** plan.\n${db.user.subscription !== null || db.user.plan !== null ? `*You can configure the **priority** of Premium in \`/settings\`*.` : ""}`)
+						.setColor("Orange")
+				);
+			}
 		}
 
-		if (additional[0]) additional[0].setDescription(`${additional[0].data.description!}\n\nYou can also reduce your cool-down for **completely free**, by simply voting for us on **[top.gg](${this.manager.bot.vote.voteLink(db.user)})**. 📩\nAfter voting, run \`/vote\` and press the **Check your vote** button.`)
+		if (!subscriptionType.premium && additional[0]) additional[0].setDescription(`${additional[0].data.description!}\n\nYou can also reduce your cool-down for **completely free**, by simply voting for us on **[top.gg](${this.manager.bot.vote.voteLink(db.user)})**. 📩\nAfter voting, run \`/vote\` and press the **Check your vote** button.`)
 
 		this.manager.bot.db.metrics.changeCooldownMetric({
 			chat: "+1"

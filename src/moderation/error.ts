@@ -22,16 +22,17 @@ export class ErrorManager {
     /**
      * Build a formatted reply for the original invocation, to be shown to the users.
      */
-    public build(options: ErrorHandlingOptions & Required<Pick<ErrorHandlingOptions, "notice" | "original">>): Response {
+    public build(options: ErrorHandlingOptions & Required<Pick<ErrorHandlingOptions, "notice">>): Response {
         return new ErrorResponse({
             message: options.notice, type: ErrorType.Error
         });
     }
 
     public async handle(options: ErrorHandlingOptions & Required<Pick<ErrorHandlingOptions, "notice" | "original">>): Promise<Message | InteractionResponse | null>;
+    public async handle(options: ErrorHandlingOptions & Required<Pick<ErrorHandlingOptions, "notice">>): Promise<Response>;
     public async handle(options: ErrorHandlingOptions): Promise<void>;
 
-    public async handle({ error: err, title, notice, original }: ErrorHandlingOptions): Promise<Message | InteractionResponse | null | void> {
+    public async handle({ error: err, title, notice, original }: ErrorHandlingOptions): Promise<Message | InteractionResponse | Response | null | void> {
         /* Get the moderation channel. */
         const channel = await this.bot.moderation.channel("error");
 
@@ -57,6 +58,8 @@ export class ErrorManager {
         if (notice && original) {
             const response = this.build({ error: err, title, notice, original });
             return await response.send(original);
+        } else if (notice) {
+            return this.build({ error: err, title, notice });
         }
     }
 

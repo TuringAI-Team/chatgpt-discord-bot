@@ -466,13 +466,11 @@ export class Generator {
 					.setColor("Yellow")
 			).send(message);
 
-			await this.bot.moderation.error({
-				error, title: "Failed to set up conversation session"
+			const response = await this.bot.error.handle({
+				error, title: "Failed to set up conversation session", notice: "We experienced an issue while trying to resume your conversation."
 			});
 
-			return void await new ErrorResponse({
-				message: "We experienced an issue while trying to resume your conversation.", type: ErrorType.Error
-			}).send(message);
+			return void response.send(message);
 		}
 
 		const attachedImages: boolean = (await conversation.manager.session.client.findMessageImageAttachments(message)).length > 0;
@@ -657,7 +655,7 @@ export class Generator {
 		 * Update the existing reply or send a new reply, to show the error message.
 		 * @param response Response to send
 		 */
-		const sendError = async (options: ErrorResponseOptions): Promise<void> => {
+		const sendError = async (options: ErrorResponseOptions | Response): Promise<void> => {
 			clearInterval(updateTimer);
 
 			/* Wait for the queued message to be sent. */
@@ -666,7 +664,7 @@ export class Generator {
 			}
 
 			try {
-				const response = new ErrorResponse(options);
+				const response = options instanceof Response ? options : new ErrorResponse(options);
 
 				if (reply === null) await response.send(message);
 				else await reply.edit(response.get() as MessageEditOptions);
@@ -718,25 +716,19 @@ export class Generator {
 			});
 
 			if (error instanceof GPTAPIError && error.isServerSide()) {
-				await this.bot.moderation.error({
-					error, title: "Server-side error"
+				const response = await this.bot.error.handle({
+					error, title: "Server-side error", notice: `**${settingsModel.options.name}** ${Emoji.display(settingsModel.options.emoji, true)} is currently experiencing *server-side* issues.`
 				});
 
-				return await sendError({
-					message: `**${settingsModel.options.name}** ${Emoji.display(settingsModel.options.emoji, true)} is currently experiencing *server-side* issues.`,
-					type: ErrorType.Error
-				});
+				return await sendError(response);
 			}
 
 			/* Try to handle the error & log the error message. */
-			await this.bot.moderation.error({
-				error, title: "Failed to generate message"
+			const response = await this.bot.error.handle({
+				error, title: "Failed to generate message", notice: "It seems like we had trouble generating a response for your message."
 			});
 
-			return await sendError({
-				message: "It seems like we had trouble generating a response for your message.",
-				type: ErrorType.Error
-			});
+			return await sendError(response);
 
 		} finally {
 			/* Clean up the timers. */

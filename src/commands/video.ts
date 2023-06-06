@@ -87,6 +87,7 @@ export default class VideoCommand extends Command {
 		};
 
 		try {
+			if (Math.random() > 0) throw new Error("a");
 			/* Try to generate the actual video. */
 			const result = await this.bot.turing.generateVideo(options);
 
@@ -106,12 +107,7 @@ export default class VideoCommand extends Command {
 			
 		} catch (error) {
 			await this.bot.moderation.error({
-				title: "Failed to generate video", error
-			});
-
-			return new ErrorResponse({
-				interaction, command: this, type: ErrorType.Error,
-				message: "It seems like we encountered an error while trying to generate the video for you."
+				title: "Failed to generate video", error, notice: "It seems like we encountered an error while trying to generate the video for you.", original: interaction
 			});
 		}
     }

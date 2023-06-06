@@ -206,8 +206,8 @@ export class Bot extends EventEmitter {
                 MessageManager: 0,
                 
                 GuildMemberManager: {
-                    maxSize: 200,
                     keepOverLimit: (member) => member.id === this.client.user.id,
+                    maxSize: 200
                 }
             }),
 
