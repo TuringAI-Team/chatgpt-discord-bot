@@ -35,8 +35,6 @@ export default class ResetCommand extends Command {
 			.setEphemeral(true);
 
 		try {
-			if (Math.random() > 0) throw new Error("xd");
-
 			/* Try to reset the conversation. */
 			await conversation.reset(db.user, false);
 			await this.bot.db.users.incrementInteractions(db, "resets");
