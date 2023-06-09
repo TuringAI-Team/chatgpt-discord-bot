@@ -14,6 +14,7 @@ import { VOTE_DURATION } from "../../util/vote.js";
 import { SettingsLocation } from "./settings.js";
 import { GuildPlan, UserPlan } from "./plan.js";
 import { UserRoles } from "./role.js";
+import { DatabaseError } from "../../moderation/error.js";
 
 /* Type of moderation action */
 export type DatabaseUserInfractionType = "ban" | "unban" | "warn" | "moderation"
@@ -198,7 +199,7 @@ export interface DatabaseMessage {
     model: string;
 }
 
-type DatabaseAll = DatabaseUser | DatabaseConversation | DatabaseGuild | DatabaseMessage | DatabaseImage | ImageDescription
+type DatabaseAll = DatabaseUser | DatabaseConversation | DatabaseGuild | DatabaseMessage | DatabaseImage | ImageDescription | DatabaseError
 
 /* How often to save cached entries to the database */
 export const DB_CACHE_INTERVAL: number = 2.5 * 60 * 1000
@@ -214,13 +215,14 @@ export class UserManager {
         interactions: Collection<string, DatabaseMessage>;
         images: Collection<string, DatabaseImage>;
         descriptions: Collection<string, ImageDescription>;
+        errors: Collection<string, DatabaseError>;
     };
 
     constructor(db: ClientDatabaseManager) {
         this.db = db;
 
         /* Update collection types */
-        const updateCollections: (keyof typeof this.updates)[] = [ "users", "conversations", "guilds", "interactions", "images", "descriptions" ];
+        const updateCollections: (keyof typeof this.updates)[] = [ "users", "conversations", "guilds", "interactions", "images", "descriptions", "errors" ];
         const updates: Partial<typeof this.updates> = {};
 
         /* Create all update collections. */
@@ -232,7 +234,7 @@ export class UserManager {
     }
 
 
-    public async fetchFromCacheOrDatabase<T extends { id: string } | string, U extends DatabaseAll | Partial<DatabaseAll>, V>(
+    public async fetchFromCacheOrDatabase<T extends { id: string } | string, U extends DatabaseAll | Partial<DatabaseAll>, V = U>(
         type: DatabaseCollectionType,
         obj: T | Snowflake,
         converter?: (raw: V) => Awaitable<U>,
@@ -740,6 +742,17 @@ export class UserManager {
         await this.update("interactions", message.id, message);
     }
 
+    public async getError(id: string): Promise<DatabaseError | null> {
+        return this.fetchFromCacheOrDatabase<string, DatabaseError>(
+            "errors", id
+        );
+    }
+
+    public async updateError(error: DatabaseError): Promise<void> {
+        await this.setCache("errors", error.id, error);
+        await this.update("errors", error.id, error);
+    }
+
     public async updateImage(image: DatabaseImage): Promise<void> {
         /* Remove the `url` property from all image generation results, as it expires anyway. */
         const data: DatabaseImage = {
@@ -783,7 +796,7 @@ export class UserManager {
                             created: (e as any).created ? new Date((e as any).created).toISOString() : undefined
                     }, { onConflict: "id" });
 
-                /* If an error occured, log it to the console. */
+                /* If an error occurred, log it to the console. */
                 if (error !== null) {
                     this.db.bot.logger.error(`Something went wrong while trying to save ${chalk.bold(id)} to collection ${chalk.bold(type)} ->`, error);
 

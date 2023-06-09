@@ -71,12 +71,8 @@ export class GeneralInteractionHandler extends InteractionHandler<ButtonInteract
 					.setEphemeral(true);
 
 			} catch (error) {
-				await this.bot.moderation.error({
-					error, title: "Failed to check whether the user has voted"
-				});
-
-				return new ErrorResponse({
-					interaction, type: ErrorType.Error, message: "It seems like something went wrong while trying to check whether you've voted for the bot."
+				return await this.bot.error.handle({
+					error, title: "Failed to check whether the user has voted", notice: "It seems like something went wrong while trying to check whether you've voted for the bot."
 				});
 			}
 

@@ -36,6 +36,10 @@ export class GPTError<T> extends Error {
         this.options = opts;
     }
 
+    public get message(): string {
+        return this.toString();
+    }
+
     /**
      * Convert the error into a readable error message.
      * @returns Human-readable error message

@@ -258,7 +258,7 @@ export class Conversation {
 
 	/**
 	 * Apply the reset timer, to reset the conversation after inactivity.
-	 * @param updatedAt Time when the last interaction with this conversation occured, optional
+	 * @param updatedAt Time when the last interaction with this conversation occurred, optional
 	 */
 	private applyResetTimer(): void {
 		/* If a timer already exists, reset it. */

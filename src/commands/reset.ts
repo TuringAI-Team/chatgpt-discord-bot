@@ -17,9 +17,9 @@ export default class ResetCommand extends Command {
 
     public async run(interaction: CommandInteraction, db: DatabaseInfo): CommandResponse {
 		/* Get the user's conversation. */
-		const conversation: Conversation | null = this.bot.conversation.get(interaction.user);
+		const conversation: Conversation = await this.bot.conversation.create(interaction.user);
 
-		if (conversation === null || !conversation.previous) return new Response()
+		if (!conversation.previous) return new Response()
 			.addEmbed(builder => builder
 				.setDescription("You do not have an active conversation 😔")
 				.setColor("Red")
@@ -35,6 +35,8 @@ export default class ResetCommand extends Command {
 			.setEphemeral(true);
 
 		try {
+			if (Math.random() > 0) throw new Error("xd");
+
 			/* Try to reset the conversation. */
 			await conversation.reset(db.user, false);
 			await this.bot.db.users.incrementInteractions(db, "resets");
@@ -47,16 +49,9 @@ export default class ResetCommand extends Command {
 				.setEphemeral(true);
 
 		} catch (error) {
-			await this.bot.moderation.error({
-				title: "Failed to reset the conversation", error: error
+			return await this.bot.error.handle({
+				title: "Failed to reset the conversation", notice: "Something went wrong while trying to reset your conversation.", error: error
 			});
-
-			return new Response()
-				.addEmbed(builder =>
-					builder.setTitle("Failed to reset your conversation ⚠️")
-						.setDescription(`*The developers have been notified.*`)
-						.setColor("Red")
-				);
 		}
     }
 }

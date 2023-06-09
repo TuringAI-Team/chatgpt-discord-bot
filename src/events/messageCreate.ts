@@ -19,7 +19,7 @@ export default class MessageCreateEvent extends Event {
 			});
 			
 		} catch (error) {
-			this.bot.logger.debug(chalk.bold("Generation error"), "->", error);
+			this.bot.logger.error(chalk.bold("Generation error"), "->", error);
 		}
 	}
 }

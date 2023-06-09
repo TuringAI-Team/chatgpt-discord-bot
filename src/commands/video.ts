@@ -47,8 +47,6 @@ export default class VideoCommand extends Command {
 	}
 
     public async run(interaction: CommandInteraction, db: DatabaseInfo): CommandResponse {
-		const conversation: Conversation = await this.bot.conversation.create(interaction.user);
-
 		/* Which prompt to use for generation */
 		const prompt: string = interaction.options.getString("prompt", true);
 
@@ -75,11 +73,9 @@ export default class VideoCommand extends Command {
 			db, user: interaction.user, content: prompt, source: "video"
 		});
 
-		if (moderation.blocked) return new ErrorResponse({
-			interaction, command: this,
-			message: "Your video prompt was blocked by our filters. *If you violate the usage policies, we may have to take moderative actions; otherwise, you can ignore this notice*.",
-			color: "Orange", emoji: null
-		});
+		if (moderation.blocked) return await this.bot.moderation.message({
+            result: moderation, name: "Your video prompt"
+        });
 
 		/* Video generation options */
 		const options: TuringVideoOptions = {
@@ -106,8 +102,8 @@ export default class VideoCommand extends Command {
 				);
 			
 		} catch (error) {
-			await this.bot.moderation.error({
-				title: "Failed to generate video", error, notice: "It seems like we encountered an error while trying to generate the video for you.", original: interaction
+			return await this.bot.error.handle({
+				title: "Failed to generate video", notice: "It seems like we encountered an error while trying to generate the video for you.", error
 			});
 		}
     }

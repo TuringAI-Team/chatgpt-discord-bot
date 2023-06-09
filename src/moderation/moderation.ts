@@ -1,14 +1,13 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle, EmbedBuilder, Interaction, InteractionReplyOptions, MessageEditOptions, ModalActionRowComponentBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, User, StringSelectMenuBuilder, StringSelectMenuInteraction, Collection, Snowflake, TextChannel, Guild, Channel } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle, EmbedBuilder, Interaction, InteractionReplyOptions, MessageEditOptions, ModalActionRowComponentBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, User, StringSelectMenuBuilder, StringSelectMenuInteraction, Collection, Snowflake, TextChannel, Guild, Channel, Message, InteractionResponse } from "discord.js";
 import translate from "@iamtraction/google-translate";
 
 import { AutoModerationActionData, AutoModerationActionType, AutoModerationManager } from "./automod/automod.js";
 import { DatabaseUser, DatabaseUserInfraction, DatabaseInfo, DatabaseGuild } from "../db/managers/user.js";
 import { ModerationInteractionHandlerData } from "../interactions/moderation.js";
 import { InteractionHandlerResponse } from "../interaction/handler.js";
+import { Response, ResponseSendClass } from "../command/response.js";
 import { AutoModerationFilter } from "./automod/filters.js";
 import { FindResult, Utils } from "../util/utils.js";
-import { Response } from "../command/response.js";
-import { ErrorHandlingOptions } from "./error.js";
 import { Config } from "../config.js";
 import { Bot } from "../bot/bot.js";
 
@@ -93,6 +92,12 @@ export interface ModerationOptions {
     /* Other data */
     filter?: (action: AutoModerationFilter) => boolean;
     additional?: AdditionalModerationOptions;
+}
+
+export interface ModerationNoticeOptions {
+    result: ModerationResult;
+    original?: ResponseSendClass;
+    name: string;
 }
 
 type ImagePromptModerationOptions = Pick<ModerationOptions, "db" |  "user" | "content"> & AdditionalModerationOptions
@@ -592,9 +597,9 @@ export class ModerationManager {
         let result = await this.check({
             user, db, content, source: "image",
     
-            /* Check for all possibly flags, *except* for `sexual` flags to give people some freedom with their prompts. */ 
+            /* Check for all possible filters *except* for NSFW filters, to give people some freedom with their prompts. */ 
             filter: nsfw ? action => {
-                if (action.description === "Block sexual words" ) return true;
+                if (action.description === "Block sexual words") return true;
                 return false;
             } : undefined,
     
@@ -616,7 +621,7 @@ export class ModerationManager {
     public async check({ db, content, source, filter, additional, user }: ModerationOptions): Promise<ModerationResult> {
         /* Run the AutoMod filter on the message. */
         const auto: AutoModerationActionData | null = await this.automod.execute({
-            content, db, source,
+            content, db, source, bot: this.bot,
             filterCallback: filter ? (_, action) => filter(action) : undefined
         });
 
@@ -685,11 +690,28 @@ export class ModerationManager {
         return data;
     }
 
-    /**
-     * Handle a thrown error & send a notice message to the logging channel on Discord.
-     */
-    public async error(options: ErrorHandlingOptions) {
-        return this.bot.error.handle(options);
+    public async message(options: ModerationNoticeOptions & Required<Pick<ModerationNoticeOptions, "original">>): Promise<Message | InteractionResponse | null>;
+    public async message(options: ModerationNoticeOptions): Promise<Response>;
+
+    public async message({ result, original, name }: ModerationNoticeOptions): Promise<Response | Message | InteractionResponse | null> {
+        const response = new Response();
+
+        const embed = new EmbedBuilder()
+            .setTitle("What's this? 🤨")
+            .setFooter({ text: `discord.gg/${this.bot.app.config.discord.inviteCode} • Support server` })
+            .setColor("Red")
+            .setTimestamp();
+
+        if (result.auto && result.auto.type !== "block") {
+            if (result.auto.type === "warn") embed.setDescription(`${name} violates our **usage policies** & you have received a **warning**. *If you continue to violate the usage policies, we may have to take additional moderative actions*.`);
+            else if (result.auto.type === "ban") embed.setDescription(`${name} violates our **usage policies** & you have been **banned** from using the bot.`);
+        } else if (result.blocked) embed.setDescription(`${name} violates our **usage policies**. *If you violate the usage policies, we may have to take moderative actions; otherwise you can ignore this notice*.`);
+
+        response.addEmbed(embed);
+
+        /* Build a formatted response for the user, if requested. */
+        if (original) return await response.send(original);
+        else return response;
     }
 
     /**

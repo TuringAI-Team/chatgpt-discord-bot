@@ -255,14 +255,11 @@ export class InteractionManager {
 		} catch (error) {
 			if (error instanceof DiscordAPIError && error.code === 10062) return;
 
-			return void await this.bot.error.handle({
-				title: `Error while performing action \`${handler.builder instanceof SlashCommandBuilder ? "/" : ""}${handler.builder.data.name}\``, error,
-				notice: "It seems like something went wrong while trying to perform this action.", original: interaction
+			response = await this.bot.error.handle({
+				title: `Error while performing action \`${handler.builder.data.name}\``,
+				notice: "It seems like something went wrong while trying to perform this action.", error
 			});
 		}
-
-		/* Reply with the response, if one was given. */
-		if (response) await response.send(interaction);
 
 		/* Increment the user's interaction count. */
 		await this.bot.db.users.incrementInteractions(db, "interactions");
@@ -272,5 +269,8 @@ export class InteractionManager {
 		});
 
 		await this.bot.command.setRunning(interaction, handler, false);
+
+		/* Reply with the response, if one was given. */
+		if (response) await response.send(interaction);
 	}
 }

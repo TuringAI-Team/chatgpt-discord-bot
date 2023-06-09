@@ -404,7 +404,7 @@ export class ChatClient {
                     text: `Failed to look at **\`${attachment.name}\`**, continuing`
                 });
 
-                await this.session.manager.bot.moderation.error({
+                await this.session.manager.bot.error.handle({
                     title: "Failed to analyze image", error
                 });
                 
@@ -446,7 +446,7 @@ export class ChatClient {
                     text: `Failed to fetch a text document, continuing`
                 });
 
-                await this.session.manager.bot.moderation.error({
+                await this.session.manager.bot.error.handle({
                     title: "Failed to fetch a text document", error
                 });
                 

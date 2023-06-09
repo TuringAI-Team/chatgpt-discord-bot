@@ -58,11 +58,9 @@ export default class DallECommand extends Command {
 		});
 
 		/* If the message was flagged, send a warning message. */
-		if (moderation !== null && moderation.blocked) return new ErrorResponse({
-			interaction, command: this,
-			message: "Your image prompt was blocked by our filters. *If you violate the usage policies, we may have to take moderative actions; otherwise, you can ignore this notice*.",
-			color: "Orange", emoji: null
-		});
+		if (moderation.blocked) return await this.bot.moderation.message({
+            result: moderation, name: "Your image prompt"
+        });
 
 		/* Video generation options */
 		const options: TuringImageOptions = {
@@ -109,13 +107,8 @@ export default class DallECommand extends Command {
 				color: "Orange", emoji: null
 			});
 
-			await this.bot.moderation.error({
-				title: "Failed to generate DALL·E images", error
-			});
-
-			return new ErrorResponse({
-				interaction, command: this, type: ErrorType.Error,
-				message: "It seems like we encountered an error while trying to generate DALL·E images for you."
+			return await this.bot.error.handle({
+				title: "Failed to generate DALL·E images", notice: "It seems like we encountered an error while trying to generate DALL·E images for you.", error
 			});
 		}
     }

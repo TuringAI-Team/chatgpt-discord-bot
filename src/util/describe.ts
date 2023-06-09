@@ -78,13 +78,9 @@ export const runDescribeAction = async (conversation: Conversation, db: Database
             db, user: interaction.user, content: description.result.description, source: "describe"
         });
 
-        if (moderation.blocked) return void await new Response()
-            .addEmbed(builder => builder
-                .setTitle("What's this? 🤨")
-                .setDescription(`The image description violates our **usage policies**.\n\n*If you violate the usage policies, we may have to take moderative actions; otherwise, you can ignore this notice*.`)
-                .setColor("Orange")
-            )
-        .send(interaction);
+        if (moderation.blocked) return void await conversation.manager.bot.moderation.message({
+            result: moderation, original: interaction, name: "The image description"
+        });
 
         await conversation.manager.bot.db.users.incrementInteractions(db, "image_descriptions");
         await conversation.manager.bot.db.plan.expenseForImageDescription(db, description);
@@ -100,13 +96,8 @@ export const runDescribeAction = async (conversation: Conversation, db: Database
         .send(interaction);
 
     } catch (error) {
-        await conversation.manager.bot.moderation.error({
-            title: "Failed to describe image", error
+        await conversation.manager.bot.error.handle({
+            title: "Failed to describe image", notice: "Something went wrong while trying to describe the provided image.", original: interaction, error
         });
-
-        return void await new NoticeResponse({
-            message: "Something went wrong while trying to describe the provided image.\n*The developers have been notified*.",
-            color: "Red"
-        }).send(interaction);
     }
 }

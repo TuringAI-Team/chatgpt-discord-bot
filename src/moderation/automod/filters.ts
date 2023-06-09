@@ -1,6 +1,6 @@
 import { Awaitable } from "discord.js";
 
-import { AutoModerationWord, AutoModerationWordFilterOptions, AutoModerationFilterData, AutoModerationAction, AutoModerationFilterOptions, AutoModerationActionData } from "./automod.js";
+import { AutoModerationWord, AutoModerationWordFilterOptions, AutoModerationFilterData, AutoModerationAction, AutoModerationFilterOptions, AutoModerationActionData, AutoModerationActionType } from "./automod.js";
 
 export class AutoModerationFilter { 
     /* Description of the filter */
@@ -117,9 +117,35 @@ export class AutoModerationWordFilter extends AutoModerationFilter {
 		this.replacements.forEach((replacement, target) => (content = content.replace(target, replacement)));
 
 		return content
-			.replace(/ +(?= )/g, "")      /* Replace any where where there are more than 2 consecutive spaces. */
+			.replace(/ +(?= )/g, "")      /* Replace anywhere, where there are more than 2 consecutive spaces. */
 			.replace(/[^a-zA-Z\s]/g, ""); /* Remove non-alphabetical characters. */
 	}
+}
+
+class DeveloperModerationFilter extends AutoModerationFilter {
+    constructor() {
+        super({
+            description: "Development filter"
+        });
+    }
+
+    public async filter({ bot, content }: AutoModerationFilterData): Promise<AutoModerationAction | null> {
+        if (!bot.dev) return null;
+
+        /* Types of actions to take */
+        const types: AutoModerationActionType[] = [ "ban", "warn", "block", "flag" ];
+
+        const parts: string[] = content.split(":");
+        if (parts.length === 1 || parts[0] !== "testFlag") return null;
+
+        const type: string = parts[parts.length - 1];
+        if (!types.includes(type as AutoModerationActionType)) return null;
+
+        return {
+            type: type as AutoModerationActionType,
+            reason: "Development test flag"
+        };
+    }
 }
 
 export const AutoModerationFilters: AutoModerationFilter[] = [
@@ -148,7 +174,7 @@ export const AutoModerationFilters: AutoModerationFilter[] = [
         action: { reason: "Racist content", type: "block" },
 
         blocked: [
-            { words: [ "nigger", "n i g g e r", "black african monkey", "african monkey", "chink", "kike", "raghead", "wetback", "zipperhead", "slant eye", "porch monkey", "camel jockey", "sand nigger", "pickaninny", "jungle bunny", "tar baby" ] }
+            { words: [ "nigger", "n i g g e r", "black african monkey", "african monkey", "kike", "raghead", "wetback", "zipperhead", "slant eye", "porch monkey", "camel jockey", "sand nigger", "pickaninny", "jungle bunny", "tar baby" ] }
         ]
     }),
 
@@ -159,5 +185,7 @@ export const AutoModerationFilters: AutoModerationFilter[] = [
         blocked: [
             { words: [ "trannie", "tranny", "faggot", "fagget" ] }
         ]
-    })
+    }),
+
+    new DeveloperModerationFilter()
 ]

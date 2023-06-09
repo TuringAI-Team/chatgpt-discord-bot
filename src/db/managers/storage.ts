@@ -103,8 +103,8 @@ export class StorageManager {
     }
 
     /**
-     * Check whether an error occured while making a request, and throw an error if applicable.
-     * @param error Storage error that possibly occured
+     * Check whether an error occurred while making a request, and throw an error if applicable.
+     * @param error Storage error that possibly occurred
      * 
      * @throws A GPTDatabaseError, if needed
      */

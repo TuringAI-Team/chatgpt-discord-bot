@@ -1,4 +1,4 @@
-import { ActionRow, ActionRowBuilder, ButtonBuilder, ButtonComponent, ButtonInteraction, ButtonStyle, MessageEditOptions, SlashCommandBuilder, SlashCommandSubcommandBuilder, SlashCommandSubcommandGroupBuilder } from "discord.js";
+import { ActionRow, ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonComponent, ButtonInteraction, ButtonStyle, MessageEditOptions, SlashCommandBuilder, SlashCommandSubcommandBuilder, SlashCommandSubcommandGroupBuilder } from "discord.js";
 
 import { Command, CommandInteraction, CommandResponse } from "../../command/command.js";
 import { MetricsChart, MetricsCharts, TuringChartResult } from "../../turing/api.js";
@@ -134,10 +134,13 @@ export default class MetricsCommand extends Command {
         /* Final response */
         const response: Response = new Response()
 			.addEmbed(builder => builder
-				.setImage(result.url)
+				.setImage("attachment://chart.png")
 				.setTitle(`${chart.description} 📊`)
 				.setColor(this.bot.branding.color)
 				.setTimestamp(lastResetAt)
+			)
+			.addAttachment(new AttachmentBuilder(result.image.buffer)
+				.setName("chart.png")
 			);
 
         return response

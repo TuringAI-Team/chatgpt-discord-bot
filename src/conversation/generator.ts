@@ -154,8 +154,8 @@ export class Generator {
 			if (moderation !== null && (moderation.flagged || moderation.blocked)) embeds.push(new EmbedBuilder()
 				.setDescription(
 					!moderation.blocked
-						? `${moderation.source === "chatUser" ? "Your message" : `**${this.bot.client.user.username}**'s response`} may violate our **usage policies**. *If you use the bot as intended, you can ignore this notice.*`
-						: `${moderation.source === "chatUser" ? "Your message" : `**${this.bot.client.user.username}**'s response`} violates our **usage policies**. *If you continue to abuse the bot, we may have to take moderative actions*.`
+						? `${moderation.source === "chatUser" ? "Your message" : `**${this.bot.client.user.username}**'s response`} may violate our **usage policies**. *If you violate the usage policies, we may have to take moderative actions; otherwise you can ignore this notice.*`
+						: `${moderation.source === "chatUser" ? "Your message" : `**${this.bot.client.user.username}**'s response`} violates our **usage policies**. *If you continue to violate the usage policies, we may have to take moderative actions; otherwise you can ignore this notice.*.`
 				)
 				.setColor(moderation.blocked ? "Red" : "Orange")
 			);
@@ -563,10 +563,9 @@ export class Generator {
 
 		/* If the message was flagged, stop this request. */
 		if (moderation !== null && moderation.blocked) {
-			return void await new ErrorResponse({
-				message: "Your message violates our **usage policies**. *If you violate the usage policies, we may have to take moderative actions; otherwise, you can ignore this notice*.",
-				color: "Red", emoji: null
-			}).send(message);
+			return void await this.bot.moderation.message({
+				result: moderation, original: message, name: "Your message"
+			});
 		}
 
 		/* Reply message placeholder */
@@ -578,8 +577,8 @@ export class Generator {
 		let queued: boolean = false;
 
 		/* Whether partial results should be shown, and how often they should be updated */
-		const partial: boolean = this.bot.db.settings.get<boolean>(db.user, "chat:partialMessages") && premium;
-		const updateTime: number = this.bot.db.users.canUsePremiumFeatures(db) ? 2500 : 5500;
+		const partial: boolean = this.bot.db.settings.get<boolean>(db.user, "chat:partialMessages");
+		const updateTime: number = this.bot.db.users.canUsePremiumFeatures(db) ? 2500 : 5000;
 
 		let typingTimer: NodeJS.Timer | null = setInterval(async () => {
 			try {
@@ -796,7 +795,7 @@ export class Generator {
 				} catch (_) {}
 			}
 
-			await this.bot.moderation.error({
+			await this.bot.error.handle({
 				error, title: "Failed to send reply"				
 			});
 		}

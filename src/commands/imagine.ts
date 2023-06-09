@@ -665,7 +665,9 @@ export default class ImagineCommand extends Command {
 
 			/* Add the generated results to the database. */
 			if (usable) {
-				await this.bot.db.users.updateImage(this.bot.image.toDatabase(interaction.user, body, prompt, result, nsfw));
+				await this.bot.db.users.updateImage(
+					this.bot.image.toDatabase(interaction.user, body, prompt, result, nsfw)
+				);
 
 				/* Upload the generated images to the storage bucket. */
 				await this.bot.db.storage.uploadImages(result);
@@ -721,13 +723,8 @@ export default class ImagineCommand extends Command {
 			/* If the request got cancelled, delete the interaction & clean up, if possible. */
 			if (error instanceof GPTGenerationError && error.options.data.type === GPTGenerationErrorType.Cancelled) return void await cancel(error.options.data.data as any);
 
-			await this.bot.moderation.error({
-				title: "Failed to generate image using Stable Horde", error
-			});
-
-			return new ErrorResponse({
-				interaction, command: this, type: ErrorType.Error,
-				message: "It seems like we encountered an error while trying to generate the images for you."
+			return await this.bot.error.handle({
+				title: "Failed to generate image using Stable Horde", notice: "It seems like we encountered an error while trying to generate the images for you.", error
 			});
 				
 		} finally {
@@ -812,11 +809,9 @@ export default class ImagineCommand extends Command {
 		});
 
 		/* If the message was flagged, send a warning message. */
-		if (moderation.blocked) return new ErrorResponse({
-			interaction, command: this,
-			message: "Your image prompt was blocked by our filters.\n\n*If you violate the usage policies, we may have to take moderative actions; otherwise, you can ignore this notice*.",
-			color: "Orange", emoji: null
-		});
+		if (moderation.blocked) return await this.bot.moderation.message({
+            result: moderation, name: "Your image prompt"
+        });
 
 		/* Source attachment, specified in command options */
 		const sourceAttachment: Attachment | null = interaction.options.getAttachment("source", false);

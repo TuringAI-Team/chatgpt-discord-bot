@@ -283,11 +283,9 @@ export default class MidjourneyCommand extends Command {
 		});
 
 		/* If the message was flagged, send a warning message. */
-		if (moderation !== null && moderation.blocked) return new ErrorResponse({
-			interaction, command: this,
-			message: "**Your image prompt was blocked by our filters.**\n\n*If you violate the usage policies, we may have to take moderative actions; otherwise, you can ignore this notice*.",
-			color: "Orange", emoji: null
-		});
+		if (moderation.blocked) return await this.bot.moderation.message({
+            result: moderation, name: "Your image prompt"
+        });
 
 		try {
 			/* Wait for the actual generation result. */

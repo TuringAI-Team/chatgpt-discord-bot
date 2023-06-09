@@ -433,7 +433,6 @@ export class PlanManager {
 
 				if (expenses.length > 0) response.addEmbed(builder => builder
 					.setTitle("Previous expenses")
-					//.setDescription("*This will show your last few expenses using the bot*.")
 					.addFields(expenses.map(expense => {
                         /* Formatter for this expense type */
                         const viewer: PlanExpenseEntryViewer | null = PlanExpenseEntryViewers[expense.type];
@@ -453,7 +452,6 @@ export class PlanManager {
 
 				if (history.length > 0) response.addEmbed(builder => builder
 					.setTitle("Previous charge-ups")
-					//.setDescription("*This will show your last few charge-ups or granted credits*.")
 					.addFields(history.map(credit => ({
 						name: `${Utils.titleCase(credit.type)}${credit.gateway ? `— *using **\`${credit.gateway}\`***` : ""}`,
 						value: `**$${credit.amount.toFixed(2)}** — *<t:${Math.floor(credit.time / 1000)}:F>*`

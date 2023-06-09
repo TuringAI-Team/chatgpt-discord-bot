@@ -432,7 +432,7 @@ export const MetricsCharts: MetricsChart[] = [
 
 		settings: {
 			filter: {
-				exclude: [ "rate" ]
+				exclude: [ "rate", "credits" ]
 			}
 		}
 	},
@@ -455,10 +455,12 @@ interface TuringChartOptions {
     settings?: MetricsChartDisplaySettings;
 }
 
-type TuringRawChartResult = TuringChartResult
+interface TuringRawChartResult {
+    image: string;
+}
 
 export interface TuringChartResult {
-    url: string;
+    image: ImageBuffer;
 }
 
 export type TuringTrackingType = "topgg"
@@ -592,6 +594,14 @@ export type TuringChatOpenAIBody = Pick<OpenAIChatBody, "model" | "messages" | "
     maxTokens?: number;
 }
 
+interface TuringChatOpenAIErrorData {
+    success: false;
+
+    error: {
+        message: string;
+    };
+}
+
 export class TuringAPI extends EventEmitter {
     private readonly bot: Bot;
 
@@ -606,7 +616,14 @@ export class TuringAPI extends EventEmitter {
         >({
             body: options,
 
-            error: response => this.error(response, "text/open-ai", true),
+            error: async response => {
+                if (response.status === 400) return new GPTGenerationError({
+                    type: GPTGenerationErrorType.Moderation
+                });
+
+                return this.error(response, "text/open-ai", true);
+            },
+
             url: this.url("text/open-ai"),
             headers: this.headers(),
 
@@ -687,7 +704,7 @@ export class TuringAPI extends EventEmitter {
 
         /* Whether the user can use the fast mode */
         const premium: boolean = this.bot.db.users.canUsePremiumFeatures(db);
-        const mode: MidjourneyMode =  premium ? "fast" : "relax";
+        const mode: MidjourneyMode = premium ? "fast" : "relax";
 
         /* Whether the generation is finished */
         let done: boolean = false;
@@ -703,7 +720,7 @@ export class TuringAPI extends EventEmitter {
             const abortTimer: NodeJS.Timeout = setTimeout(() => {
                 controller.abort();
                 reject(new TypeError("Request timed out"));
-            }, 90 * 1000);
+            }, 120 * 1000);
 
             /* Image generation cancel listener */
             const listener = (cancelledID: string) => {
@@ -811,7 +828,7 @@ export class TuringAPI extends EventEmitter {
         });
 
         return {
-            url: result.url
+            image: ImageBuffer.load(result.image.replace("data:image/png;base64,", ""))
         };
     }
 

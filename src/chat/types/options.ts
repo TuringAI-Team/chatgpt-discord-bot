@@ -27,10 +27,10 @@ export type ModelGenerationOptions = Pick<ChatGenerationOptions, "conversation" 
 }
 
 export interface ChatGuildData {
-    /* Guild, where the chat interaction occured */
+    /* Guild, where the chat interaction occurred */
     guild: Guild;
 
-    /* Channel, where the chat interaction occured */
+    /* Channel, where the chat interaction occurred */
     channel: TextChannel;
 
     /* Owner of the guild, as a user */

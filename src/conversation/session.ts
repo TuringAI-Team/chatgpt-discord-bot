@@ -1,9 +1,9 @@
 import { Message } from "discord.js";
-import chalk from "chalk";
 
 import { ChatClient as ChatClient, ChatClientResult } from "../chat/client.js";
 import { ModerationResult } from "../moderation/moderation.js";
 import { ResponseMessage } from "../chat/types/message.js";
+import { ChatGuildData } from "../chat/types/options.js";
 import { DatabaseInfo } from "../db/managers/user.js";
 import { OpenAIManager } from "../openai/openai.js";
 import { ConversationManager } from "./manager.js";
@@ -11,8 +11,6 @@ import { Conversation } from "./conversation.js";
 
 import { GPTGenerationErrorType } from "../error/gpt/generation.js";
 import { GPTGenerationError } from "../error/gpt/generation.js";
-import { ChatGuildData } from "../chat/types/options.js";
-
 
 /** Session cost data */
 export const SessionCostProducts: SessionCostProduct[] = [
@@ -353,10 +351,5 @@ export class Session {
 
     public get active(): boolean {
         return this.state === SessionState.Running;
-    }
-
-    /* Whether the session can be deemed usable */
-    public get usable(): boolean {
-        return !this.locked && this.state !== SessionState.Disabled;
     }
 }

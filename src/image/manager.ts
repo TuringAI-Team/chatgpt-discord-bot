@@ -1,4 +1,4 @@
-import { BaseGuildTextChannel, ChannelType, Collection, Interaction, TextBasedChannel, TextChannel, User } from "discord.js";
+import { BaseGuildTextChannel, ChannelType, Collection, Interaction, TextBasedChannel, User } from "discord.js";
 import fetch, { HeadersInit, Response } from "node-fetch";
 import { EventEmitter } from "events";
 import { Agent } from "https";
@@ -8,9 +8,9 @@ import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generat
 import { StableHordeModel, StableHordeConfigModels } from "./types/model.js";
 import { StableHordeAPIError } from "../error/gpt/stablehorde.js";
 import { StorageImage } from "../db/managers/storage.js";
+import { ImageBuffer } from "../chat/types/image.js";
 import { Utils } from "../util/utils.js";
 import { Bot } from "../bot/bot.js";
-import { ImageBuffer } from "../chat/types/image.js";
 
 type StableHordeAPIPath = "find_user" | "status/models" | "generate/async" | `generate/check/${string}` | `generate/status/${string}` | `generate/rate/${string}`
 
@@ -121,8 +121,8 @@ class ImageModelHelper {
         if (interaction.channel === null || interaction.channel.type === ChannelType.DM) return true;
         if (interaction.channel.type !== ChannelType.GuildText && nsfw) return false;
 
-        if (interaction.channel.type === ChannelType.GuildText && interaction.channel.nsfw && nsfw) return true;
-        else if (interaction.channel.type === ChannelType.GuildText && !interaction.channel.nsfw && nsfw) return false;
+        if (interaction.channel instanceof BaseGuildTextChannel && interaction.channel.nsfw && nsfw) return true;
+        else if (interaction.channel instanceof BaseGuildTextChannel && !interaction.channel.nsfw && nsfw) return false;
 
         return true;
     }

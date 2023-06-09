@@ -4,7 +4,7 @@ import { type Bot } from "../bot/bot.js";
 import { Config } from "../config.js";
 import { type App } from "../app.js";
 
-export type DatabaseCollectionType = "users" | "conversations" | "guilds" | "interactions" | "images" | "descriptions"
+export type DatabaseCollectionType = "users" | "conversations" | "guilds" | "interactions" | "images" | "descriptions" | "errors"
 export type DatabaseManagerBot = Bot | App
 
 export class DatabaseManager<T extends DatabaseManagerBot = Bot> {

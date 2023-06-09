@@ -20,7 +20,7 @@ export default class InteractionCreateEvent extends Event {
 			}
 
 		} catch (error) {
-			await this.bot.moderation.error({
+			await this.bot.error.handle({
 				error, title: "Failed to process interaction"
 			});
 		}

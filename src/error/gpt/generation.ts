@@ -10,6 +10,9 @@ export enum GPTGenerationErrorType {
     /* The response was empty */
     Empty,
 
+    /* The prompt was blocked by external moderation filters */
+    Moderation,
+
     /* The prompt was too long */
     Length,
 

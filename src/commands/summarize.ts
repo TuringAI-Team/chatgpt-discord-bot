@@ -184,11 +184,9 @@ export default class SummarizeCommand extends Command {
 		});
 
 		/* If the message was flagged, send a warning message. */
-		if (moderation.blocked) return new ErrorResponse({
-			interaction, command: this,
-			message: "Your YouTube search query was blocked by our filters. *If you violate the usage policies, we may have to take moderative actions; otherwise, you can ignore this notice*.",
-			color: "Orange", emoji: null
-		});
+		if (moderation.blocked) return await this.bot.moderation.message({
+            result: moderation, name: "The YouTube search query"
+        });
 
 		await interaction.deferReply();
 
@@ -274,12 +272,8 @@ export default class SummarizeCommand extends Command {
 					interaction: selection, command: this, message: `The video **${video.title}** doesn't have subtitles`, emoji: "😕"
 				});
 
-				await this.bot.moderation.error({
-					error, title: "Failed to fetch video subtitles"
-				});
-
-				return new ErrorResponse({
-					interaction: selection, command: this, type: ErrorType.Error, message: "It seems like something went wrong while trying to summarize the subtitles for the video."
+				return await this.bot.error.handle({
+					error, title: "Failed to fetch video subtitles", notice: "It seems like something went wrong while trying to summarize the subtitles for the video."
 				});
 			}
 

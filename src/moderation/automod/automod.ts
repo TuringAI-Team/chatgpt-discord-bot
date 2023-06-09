@@ -3,7 +3,6 @@ import chalk from "chalk";
 
 import { DatabaseInfo, DatabaseUserInfraction, DatabaseUserInfractionType } from "../../db/managers/user.js";
 import { AutoModerationFilter, AutoModerationFilters } from "./filters.js";
-import { Conversation } from "../../conversation/conversation.js";
 import { ModerationSource } from "../moderation.js";
 import { Bot } from "../../bot/bot.js";
 
@@ -13,6 +12,7 @@ export interface AutoModerationFilterOptions {
 }
 
 export interface AutoModerationFilterData {
+    bot: Bot;
     content: string;
     db: DatabaseInfo;
     source: ModerationSource;
@@ -77,7 +77,7 @@ export class AutoModerationManager {
                     break;
                 }
 
-            /* If an error occured, simply continue with the next filter. */
+            /* If an error occurred, simply continue with the next filter. */
             } catch (error) {
                 this.bot.logger.warn(`Failed to execute moderation filter ${chalk.bold(filter.description)} ->`, error); 
             }

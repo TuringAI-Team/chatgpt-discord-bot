@@ -410,8 +410,9 @@ export class CommandManager {
 				)
 				.setEphemeral(true);
 
-			await this.bot.moderation.error({
-				title: `Error while executing command \`${command.builder instanceof SlashCommandBuilder ? "/" : ""}${command.builder.name}\``, error
+			response = await this.bot.error.handle({
+				title: `Error while executing command \`${command.builder instanceof SlashCommandBuilder ? "/" : ""}${command.builder.name}\``,
+				notice: "It seems like something went wrong while trying to run this command.", error
 			});
 		}
 
