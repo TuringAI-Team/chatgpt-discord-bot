@@ -83,7 +83,6 @@ export default class VideoCommand extends Command {
 		};
 
 		try {
-			if (Math.random() > 0) throw new Error("a");
 			/* Try to generate the actual video. */
 			const result = await this.bot.turing.generateVideo(options);
 

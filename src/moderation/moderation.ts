@@ -1,15 +1,16 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle, EmbedBuilder, Interaction, InteractionReplyOptions, MessageEditOptions, ModalActionRowComponentBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, User, StringSelectMenuBuilder, StringSelectMenuInteraction, Collection, Snowflake, TextChannel, Guild, Channel, Message, InteractionResponse } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle, EmbedBuilder, Interaction, InteractionReplyOptions, MessageEditOptions, ModalActionRowComponentBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, User, StringSelectMenuBuilder, StringSelectMenuInteraction, Collection, Snowflake, TextChannel, Guild, Channel, Message, InteractionResponse, MessageCreateOptions, ChatInputCommandInteraction, ComponentType } from "discord.js";
 import translate from "@iamtraction/google-translate";
 
 import { AutoModerationActionData, AutoModerationActionType, AutoModerationManager } from "./automod/automod.js";
 import { DatabaseUser, DatabaseUserInfraction, DatabaseInfo, DatabaseGuild } from "../db/managers/user.js";
 import { ModerationInteractionHandlerData } from "../interactions/moderation.js";
-import { InteractionHandlerResponse } from "../interaction/handler.js";
+import { InteractionHandlerClassType, InteractionHandlerResponse } from "../interaction/handler.js";
 import { Response, ResponseSendClass } from "../command/response.js";
 import { AutoModerationFilter } from "./automod/filters.js";
 import { FindResult, Utils } from "../util/utils.js";
 import { Config } from "../config.js";
 import { Bot } from "../bot/bot.js";
+import { randomUUID } from "crypto";
 
 const ActionToEmoji: Record<string, string> = {
 	warn: "⚠️",
@@ -98,6 +99,11 @@ export interface ModerationNoticeOptions {
     result: ModerationResult;
     original?: ResponseSendClass;
     name: string;
+}
+
+export interface ModerationWarningModalOptions {
+    interaction: Message | ChatInputCommandInteraction | InteractionHandlerClassType;
+    db: DatabaseInfo;
 }
 
 type ImagePromptModerationOptions = Pick<ModerationOptions, "db" |  "user" | "content"> & AdditionalModerationOptions
@@ -212,7 +218,7 @@ export class ModerationManager {
                             .addEmbed(EmbedBuilder.from(original.message.embeds[0]))
 
                             .addEmbed(builder => builder
-                                .setAuthor({ name: original.user.tag, iconURL: original.user.displayAvatarURL() })
+                                .setAuthor({ name: original.user.username, iconURL: original.user.displayAvatarURL() })
                                 .setTitle(action === "warn" ? "Warning given ✉️" : "Banned 🔨")
                                 .setDescription(`\`\`\`\n${infractions[infractions.length - 1].reason}\n\`\`\``)
                                 .setColor("Green")
@@ -251,7 +257,7 @@ export class ModerationManager {
                 .addEmbed(EmbedBuilder.from(original.message.embeds[0]))
 
                 .addEmbed(builder => builder
-                    .setAuthor({ name: original.user.tag, iconURL: original.user.displayAvatarURL() })
+                    .setAuthor({ name: original.user.username, iconURL: original.user.displayAvatarURL() })
                     .setTitle(action === "warn" ? "Warning given ✉️" : "Banned 🔨")
                     .setDescription(`\`\`\`\n${reason}\n\`\`\``)
                     .setColor("Green")
@@ -262,7 +268,7 @@ export class ModerationManager {
         /* View information about a user */
         } else if (action === "view") {
             const response: Response = (await this.buildUserOverview({
-                id: author.id, name: author.tag, created: author.createdTimestamp, icon: author.displayAvatarURL()
+                id: author.id, name: author.username, created: author.createdTimestamp, icon: author.displayAvatarURL()
             }, db))
                 .setEphemeral(true);
 
@@ -272,7 +278,7 @@ export class ModerationManager {
         } else if (action === "lock") {
             await original.message.edit(
                 new Response()
-                    .addEmbed(EmbedBuilder.from(original.message.embeds[0]).setColor("Grey").setFooter({ text: `Locked by ${original.user.tag} • ${original.message.embeds[0].footer!.text}` }))
+                    .addEmbed(EmbedBuilder.from(original.message.embeds[0]).setColor("Grey").setFooter({ text: `Locked by ${original.user.username} • ${original.message.embeds[0].footer!.text}` }))
                 .get() as MessageEditOptions
             );
         }
@@ -294,7 +300,7 @@ export class ModerationManager {
         }
     
         if (infractions.length > 0) description = infractions
-            .map(i => `${ActionToEmoji[i.type]} \`${i.type}\`${i.by ? ` by **${moderators.get(i.by)!.tag}**` : ""} @ <t:${Math.round(i.when / 1000)}:f>${i.seen !== undefined ? i.seen ? " ✅" : " ❌" : ""}${i.reason ? ` » *\`${i.reason}\`*` : ""}${i.automatic ? " 🤖" : " 👤"}`)
+            .map(i => `${ActionToEmoji[i.type]} \`${i.type}\`${i.by ? ` by **${moderators.get(i.by)!.username}**` : ""} @ <t:${Math.round(i.when / 1000)}:f>${i.seen !== undefined ? i.seen ? " ✅" : " ❌" : ""}${i.reason ? ` » *\`${i.reason}\`*` : ""}${i.automatic ? " 🤖" : " 👤"}`)
             .join("\n");
     
         if (infractions.length > 0) description = `__**${infractions.length}** infractions__\n\n${description}`;
@@ -305,7 +311,12 @@ export class ModerationManager {
         
         /* Format the description for previous automated moderation flags. */
         let flagDescription: string | null = null;
-        if (flags.length > 0) flagDescription = `${flags.length - shown.length !== 0 ? `(*${flags.length - shown.length} previous flags ...*)\n\n` : ""}${shown.map(f => `<t:${Math.round(f.when / 1000)}:f> » ${f.moderation!.auto ? `\`${f.moderation!.auto.action}\` ` : ""}${FlagToEmoji[f.moderation!.source]} » \`${f.moderation!.reference.split("\n").length > 1 ? `${f.moderation!.reference.split("\n")[0]} ...` : f.moderation!.reference}\``).join("\n")}`
+        if (flags.length > 0) flagDescription = `${flags.length - shown.length !== 0 ? `(*${flags.length - shown.length} previous flags ...*)\n\n` : ""}${shown.map(f => {
+            const content: string = f.moderation!.translation ? f.moderation!.translation.content : f.moderation!.reference;
+            const translation: boolean = f.moderation!.translation != undefined;
+
+            return `<t:${Math.round(f.when / 1000)}:f> » ${f.moderation!.auto ? `\`${f.moderation!.auto.action}\` ` : ""}${FlagToEmoji[f.moderation!.source]} » ${translation ? "*" : ""}\`${content.split("\n").length > 1 ? `${content.split("\n")[0]} ...` : content}\`${translation ? "*" : ""}`;
+        }).join("\n")}`
     
         /* Formatted interactions count, for each category */
         let interactionsDescription: string = "";
@@ -429,19 +440,18 @@ export class ModerationManager {
         return response;
     }
 
-    public buildBanNotice(infraction: DatabaseUserInfraction): Response {
+    public buildBanMessage(infraction: DatabaseUserInfraction): Response {
         return new Response()
             .addEmbed(builder => builder
                 .setTitle(`You were banned **permanently** from the bot 😔`)
-                .setDescription("*You may have been banned for previous messages; this message is not the cause for your ban*.")
+                .setDescription("_If you want to appeal or have questions about your ban, join the **[support server](https://discord.gg/${this.bot.app.config.discord.inviteCode})**_.")
                 .addFields({
-                    name: "Reason",
-                    value: infraction.reason ?? "Inappropriate use of the bot"
+                    name: "Reason", value: infraction.reason ?? "Inappropriate use of the bot"
                 })
-                .setFooter({ text: "View /support on how to appeal this ban" })
                 .setTimestamp(infraction.when)
                 .setColor("Red")
-            );
+            )
+            .setEphemeral(true);
     }
 
     /**
@@ -535,7 +545,7 @@ export class ModerationManager {
                     }
                 )
                 .setDescription(description)
-                .setAuthor({ name: `${user.tag} [${user.id}]`, iconURL: user.displayAvatarURL() })
+                .setAuthor({ name: `${user.username} [${user.id}]`, iconURL: user.displayAvatarURL() })
                 .setFooter({ text: `Cluster #${this.bot.data.id + 1}` })
                 .setColor("Yellow")
                 .setTimestamp()
@@ -544,31 +554,25 @@ export class ModerationManager {
         /* Add the toolbar rows to the reply. */
         rows.forEach(row => reply.addComponent(ActionRowBuilder<ButtonBuilder>, row));
 
-        if (notice) {
-            reply.embeds[0].addFields(
-                {
-                    name: "Notice 📝",
-                    value: `\`${notice}\``,
-                    inline: true
-                }
-            )
-        }
+        if (notice) reply.embeds[0].addFields({
+            name: "Notice 📝",
+            value: `\`${notice}\``,
+            inline: true
+        });
 
-        if (result.auto) {
-            reply.embeds[0].addFields(
-                {
-                    name: "Filter 🚩",
-                    value: `\`${result.auto!.reason ?? result.auto!.action}\``,
-                    inline: true
-                },
+        if (result.auto) reply.embeds[0].addFields(
+            {
+                name: "Filter 🚩",
+                value: `\`${result.auto!.reason ?? result.auto!.action}\``,
+                inline: true
+            },
 
-                {
-                    name: "Action ⚠️",
-                    value: `\`${result.auto!.type}\` ${ActionToEmoji[result.auto!.type]}`,
-                    inline: true
-                }
-            );
-        }
+            {
+                name: "Action ⚠️",
+                value: `\`${result.auto!.type}\` ${ActionToEmoji[result.auto!.type]}`,
+                inline: true
+            }
+        );
         
         if (!result.auto) reply.embeds[0].addFields({
             name: "Blocked ⛔",
@@ -590,7 +594,7 @@ export class ModerationManager {
             }
         );
 
-        await channel.send(reply.get() as any);
+        await channel.send(reply.get() as MessageCreateOptions);
     }
 
     public async checkImagePrompt({ user, db, content, nsfw, model }: ImagePromptModerationOptions): Promise<ModerationResult> {
@@ -704,7 +708,7 @@ export class ModerationManager {
 
         if (result.auto && result.auto.type !== "block") {
             if (result.auto.type === "warn") embed.setDescription(`${name} violates our **usage policies** & you have received a **warning**. *If you continue to violate the usage policies, we may have to take additional moderative actions*.`);
-            else if (result.auto.type === "ban") embed.setDescription(`${name} violates our **usage policies** & you have been **banned** from using the bot.`);
+            else if (result.auto.type === "ban") embed.setDescription(`${name} violates our **usage policies** & you have been **banned** from using the bot. _If you want to appeal or have questions about your ban, join the **[support server](https://discord.gg/${this.bot.app.config.discord.inviteCode})**_.`);
         } else if (result.blocked) embed.setDescription(`${name} violates our **usage policies**. *If you violate the usage policies, we may have to take moderative actions; otherwise you can ignore this notice*.`);
 
         response.addEmbed(embed);
@@ -712,6 +716,76 @@ export class ModerationManager {
         /* Build a formatted response for the user, if requested. */
         if (original) return await response.send(original);
         else return response;
+    }
+
+    public async warningModal({ interaction, db }: ModerationWarningModalOptions): Promise<DatabaseUser> {
+        /* The user's unread infractions, if any */
+        const unread: DatabaseUserInfraction[] = this.bot.db.users.unread(db.user);
+
+        /* The original author of the interaction/message */
+        const author: User = interaction instanceof Message ? interaction.author : interaction.user;
+
+        /* ID of the button to acknowledge the infractions */
+        const buttonID: string = randomUUID();
+
+		if (unread.length > 0) {
+			const row = new ActionRowBuilder<ButtonBuilder>()
+				.addComponents(
+					new ButtonBuilder()
+						.setCustomId(buttonID)
+						.setLabel("Acknowledge")
+						.setStyle(ButtonStyle.Danger),
+
+					new ButtonBuilder()
+						.setURL(Utils.supportInvite(this.bot))
+						.setLabel("Support server")
+						.setStyle(ButtonStyle.Link)
+				);
+
+			const reply = (await new Response()
+				.addComponent(ActionRowBuilder<ButtonBuilder>, row)
+				.addEmbed(builder => builder
+					.setTitle(`Before you continue ...`)
+					.setDescription(`You received **${unread.length > 1 ? "several warnings" : "a warning"}**, as a consequence of your messages with the bot. *${unread.length > 1 ? "These are only warnings" : "This is only a warning"}; you can continue to use the bot. If you however keep violating our **usage policies**, we may have to take further moderative actions*.`)
+					
+					.addFields(unread.map(i => ({
+						name: `${i.reason} ⚠️`,
+						value: `*<t:${Math.floor(i.when / 1000)}:F>*`
+					})))
+
+					.setFooter({ text: "If you have any further questions about these warnings, join our support server." })
+					.setColor("Red")
+				)
+                .setEphemeral(true)
+            .send(interaction));
+                
+            if (reply === null) return db.user;
+
+			/* Wait for the `Acknowledge` button to be pressed, or for the collector to expire. */
+			const collector = reply.createMessageComponentCollector<ComponentType.Button>({
+				componentType: ComponentType.Button,
+				filter: i => i.user.id === author.id && i.customId === buttonID,
+				time: 60 * 1000,
+				max: 1
+			});
+
+			/* When the collector is done, delete the reply message & continue the execution. */
+			await new Promise<void>(resolve => collector.on("end", async collected => {
+				await Promise.all(collected.map(entry => entry.deferUpdate()))
+					.catch(() => {});
+
+				resolve();
+			}));
+
+            /* If the reply was to a message, delete the warning modal. */
+            if (interaction instanceof Message) await reply.delete();
+
+			/* Mark the unread infractions as read. */
+			return await this.bot.db.users.read(db.user, unread);
+
+		} else {
+            return db.user;
+        }
     }
 
     /**

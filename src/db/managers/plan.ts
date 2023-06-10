@@ -11,7 +11,7 @@ import { ProgressBar } from "../../util/progressBar.js";
 import { ClientDatabaseManager } from "../cluster.js";
 import { YouTubeVideo } from "../../util/youtube.js";
 import { Response } from "../../command/response.js";
-import { ImageDescription } from "./description.js";
+import { DescribeSummary, ImageDescription } from "./description.js";
 import { Utils } from "../../util/utils.js";
 
 type DatabaseEntry = DatabaseUser | DatabaseGuild
@@ -272,8 +272,16 @@ export class PlanManager {
     }
 
     public async expenseForImageDescription(
-        entry: DatabaseInfo, result: ImageDescription
+        entry: DatabaseInfo, result: ImageDescription, summary: DescribeSummary | null
     ): Promise<UserPlanImageDescribeExpense | null> {
+        let cost: number = 0;
+
+        /* Cost for the BLIP image description */
+        cost += (Math.max(result.duration, 1000) / 1000) * 0.0023;
+
+        /* Cost for the ChatGPT summary */
+        if (summary !== null) cost += ((summary.tokens.prompt + summary.tokens.completion) / 1000) * 0.0015;
+
         return this.expense(entry, {
             type: "describe", used: (Math.max(result.duration, 1000) / 1000) * 0.0023, data: { duration: result.duration }, bonus: 0.10
         });

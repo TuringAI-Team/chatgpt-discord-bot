@@ -36,6 +36,10 @@ export class GPTError<T> extends Error {
         this.options = opts;
     }
 
+    public get name(): string {
+        return this.constructor.name;
+    }
+
     public get message(): string {
         return this.toString();
     }

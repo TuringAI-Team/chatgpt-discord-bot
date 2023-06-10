@@ -382,7 +382,7 @@ export class Bot extends EventEmitter {
                 this.stop(1);
             });
 
-        this.logger.info(`Started on ${chalk.bold(this.client.user.tag)}.`);
+        this.logger.info(`Started on ${chalk.bold(this.client.user.username)}.`);
 
         if (!this.started) {
             this.once("started", () => {

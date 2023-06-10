@@ -78,9 +78,14 @@ type ChatMetricsEntry = MetricsEntry<"chat", {
 }>
 
 type PremiumMetricsEntry = MetricsEntry<"premium", {
-    redeemed: {
+    location: {
         user: number;
         guild: number;
+    };
+
+    type: {
+        plan: number;
+        credits: number;
     };
 }>
 
@@ -248,7 +253,7 @@ export class AppDatabaseMetricsManager extends DatabaseMetricsManager<App> {
 
             for (const [ objectKey, objectValue ] of Object.entries(value)) {
                 newObject[objectKey] = this.newValue(
-                    type, objectKey, objectValue as MetricsUpdateValue, newObject
+                    type, objectKey, objectValue, newObject
                 );
             }
 

@@ -188,7 +188,7 @@ export default class MidjourneyCommand extends Command {
 				embeds: [ EmbedBuilder.from(interaction.message.embeds[0]).setImage("attachment://output.png") ], components
 			});
 
-			await interaction.deferReply();
+			await interaction.deferReply().catch(() => {});
 
 			try {
 				/* Wait for the actual generation result. */
@@ -276,7 +276,7 @@ export default class MidjourneyCommand extends Command {
 		/* Which generation prompt to use as the input */
 		const prompt: string = interaction.options.getString("prompt", true);
 
-		await interaction.deferReply();
+		await interaction.deferReply().catch(() => {});
 
 		const moderation = await this.bot.moderation.checkImagePrompt({
 			db, user: interaction.user, content: prompt, nsfw: false, model: "midjourney"

@@ -7,7 +7,6 @@ import { Command, CommandInteraction, CommandResponse } from "../command/command
 import { ErrorResponse, ErrorType } from "../command/response/error.js";
 import { YouTubeSubtitle, YouTubeVideo } from "../util/youtube.js";
 import { LoadingIndicatorManager } from "../db/types/indicator.js";
-import { Conversation } from "../conversation/conversation.js";
 import { OpenAIChatMessage } from "../openai/types/chat.js";
 import { LanguageManager } from "../db/types/locale.js";
 import { DatabaseInfo } from "../db/managers/user.js";
@@ -188,7 +187,7 @@ export default class SummarizeCommand extends Command {
             result: moderation, name: "The YouTube search query"
         });
 
-		await interaction.deferReply();
+		await interaction.deferReply().catch(() => {});
 
 		/* How to summarize the video */
 		const summaryName: string | null = interaction.options.getString("type");

@@ -55,12 +55,12 @@ export class PremiumRole {
         const hasRole: PremiumRoleStatus = await this.hasRole(bot, member, user);
 
         if (hasRole === PremiumRoleStatus.YesWithoutSubscription) {
-            bot.logger.debug(`User ${chalk.bold(member.user.tag)} was revoked their Premium role.`);
+            bot.logger.debug(`User ${chalk.bold(member.user.username)} was revoked their Premium role.`);
             await this.revokeRole(bot, member);
         } else if (hasRole === PremiumRoleStatus.NoSubscription || hasRole === PremiumRoleStatus.NoWithoutSubscription) return hasRole;
 
         if (hasRole === PremiumRoleStatus.NoWithSubscription) {
-            bot.logger.debug(`User ${chalk.bold(member.user.tag)} was given their Premium role.`);
+            bot.logger.debug(`User ${chalk.bold(member.user.username)} was given their Premium role.`);
             await this.grantRole(bot, member);
         } else if (hasRole === PremiumRoleStatus.YesWithSubscription) return hasRole;
 

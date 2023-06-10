@@ -219,7 +219,7 @@ export default class DeveloperCommand extends Command {
 				const member = await guild.members.fetch(db.id).catch(() => null) ?? null;
 
 				if (member !== null && !member.roles.cache.has(PREMIUM_ROLE_ID)) {
-					this.bot.logger.debug(`Premium member ${chalk.bold(member.user.tag)} has been fetched. [${chalk.bold(current + 1)}/${chalk.bold(users.length)}]`);
+					this.bot.logger.debug(`Premium member ${chalk.bold(member.user.username)} has been fetched. [${chalk.bold(current + 1)}/${chalk.bold(users.length)}]`);
 
 					if (current % 5 === 0) progress(member, current, total);
 					current++;

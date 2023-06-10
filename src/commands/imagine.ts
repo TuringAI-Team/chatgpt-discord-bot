@@ -453,7 +453,7 @@ export default class ImagineCommand extends Command {
 			const result: ImageGenerationResult = image.results.find((_, index) => index === data.resultIndex)!;
 			const storage: StorageImage = await this.bot.image.getImageData(result);
 
-			await interaction.deferReply();
+			await interaction.deferReply().catch(() => {});
 
 			const response = this.startImageGeneration({
 				interaction,
@@ -486,7 +486,7 @@ export default class ImagineCommand extends Command {
 
 		/* The user wants to re-do an image */
 		} else if (data.action === "redo") {
-			await interaction.deferReply();
+			await interaction.deferReply().catch(() => {});
 
 			const response = this.startImageGeneration({
 				interaction,

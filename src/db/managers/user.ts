@@ -517,12 +517,12 @@ export class UserManager {
     }
 
     /**
-     * Mark the specified infractions as `seen`.
+     * Mark the specified infractions as seen for the user.
      * 
-     * @param user User to mark the infractions as `seen` for
-     * @param marked Infractions to mark as `seen`
+     * @param user User to mark the infractions as seen for
+     * @param marked Infractions to mark as seen
      */
-    public async read(user: DatabaseUser, marked: DatabaseUserInfraction[]): Promise<void> {
+    public async read(user: DatabaseUser, marked: DatabaseUserInfraction[]): Promise<DatabaseUser> {
         let arr: DatabaseUserInfraction[] = user.infractions;
 
         /* Loop through the user's infractions, and when the infractions that should be marked as read were found, change their `seen` status. */
@@ -530,9 +530,14 @@ export class UserManager {
             i => marked.find(m => m.when === i.when) !== undefined ? { ...i, seen: true } : i
         );
 
-        return void await this.updateUser(user, { infractions: arr });
+        return await this.updateUser(user, { infractions: arr });
     }
 
+    /**
+     * Get a list of unread infractions for the user.
+     * @param user User to get unread infractions of
+     * @returns 
+     */
     public unread(user: DatabaseUser): DatabaseUserInfraction[] {
         return user.infractions.filter(i => i.type === "warn" && i.seen === false);
     }
@@ -545,7 +550,7 @@ export class UserManager {
         const updated: DatabaseInteractionStatistics = db.user.interactions;
         updated[key] = (updated[key] ?? 0) + increment;
 
-        return void await this.updateUser(db.user, { interactions: updated });
+        await this.updateUser(db.user, { interactions: updated });
     }
 
     public userIcon({ user, guild }: DatabaseInfo): "⚒️" | "📊" | "✨" | "💫" | "✉️" | "📩" | "👤" {

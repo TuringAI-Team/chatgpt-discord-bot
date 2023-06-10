@@ -24,9 +24,6 @@ export interface Config {
 
 		/* Invite code for the support server */
 		inviteCode: string;
-
-		/* ID of the bot owner */
-		owner: Snowflake[];
 	};
 
 	/* Whether metrics about usage, cool-down, guilds, users, etc. should be collected in the database */

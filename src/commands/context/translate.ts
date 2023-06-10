@@ -78,7 +78,7 @@ The user will now give you a message to translate, your goal is to apply the abo
 		});
 
         /* Defer the reply, as this might take a while. */
-        await interaction.deferReply();
+        await interaction.deferReply().catch(() => {});
 
         let moderation = await this.bot.moderation.check({
             db, user: interaction.user, content, source: "translationPrompt"
@@ -178,7 +178,7 @@ The user will now give you a message to translate, your goal is to apply the abo
             )
             .addEmbed(builder => builder
                 .setDescription(content)
-                .setAuthor({ name: message.author.tag, iconURL: message.author.displayAvatarURL() })
+                .setAuthor({ name: message.author.username, iconURL: message.author.displayAvatarURL() })
                 .setTitle("Jump to message")
                 .setURL(message.url)
             );

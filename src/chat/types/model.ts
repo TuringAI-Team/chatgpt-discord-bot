@@ -93,13 +93,12 @@ export abstract class ChatModel {
     public async analyze(options: GPTImageAnalyzeOptions): Promise<ChatAnalyzedImage> {
         /* Analyze & describe the image. */
         const result = await this.client.session.manager.bot.db.description.describe({
-            input: options.attachment,
-            useOCR: true
+            input: options.attachment
         });
 
         return {
             description: result.result.description,
-            text: result.result.ocr
+            text: result.result.ocr ? result.result.ocr.content : null
         };
     }
 

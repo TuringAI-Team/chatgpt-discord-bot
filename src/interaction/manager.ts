@@ -205,7 +205,7 @@ export class InteractionManager {
 		}
 
 		/* If the handler is marked as private, do some checks to make sure only privileged users are able to execute this handler. */
-		if (!(handler.planOnly() || handler.subscriptionOnly())) {
+		if (!handler.premiumOnly) {
 			/* Whether the user can execute this command */
 			const canExecute: boolean = this.bot.db.role.canExecuteCommand(db.user, handler);
 
@@ -220,17 +220,12 @@ export class InteractionManager {
 		const banned: DatabaseUserInfraction | null = this.bot.db.users.banned(db.user);
 
 		/* If the user is banned from the bot, send a notice message. */
-		if (banned !== null && !handler.options.always) return void await new Response()
-			.addEmbed(builder => builder
-				.setTitle(`You have been banned **permanently** from the bot 😔`)
-				.addFields({
-					name: "Reason",
-					value: banned.reason ?? "Inappropriate use of the bot"
-				})
-				.setFooter({ text: "View /support on how to appeal this ban" })
-				.setTimestamp(banned.when)
-				.setColor("Red")
-			).setEphemeral(true).send(interaction);
+		if (banned !== null && !handler.options.always) return void await 
+			this.bot.moderation.buildBanMessage(banned)
+		.send(interaction);
+
+		/* Show a warning modal to the user, if needed. */
+		db.user = await this.bot.moderation.warningModal({ interaction, db });
 
 		/* If the user doesn't have a cool-down set for the handler yet, ... */
 		if (handler.options.cooldown !== null && cooldown === null) {

@@ -17,6 +17,7 @@ import { ConversationManager } from "./manager.js";
 import { ChatModel } from "../chat/types/model.js";
 import { GPTAPIError } from "../error/gpt/api.js";
 import { GeneratorOptions } from "./generator.js";
+import { Response } from "../command/response.js";
 import { GenerationOptions } from "./session.js";
 import { BotDiscordClient } from "../bot/bot.js";
 import { Utils } from "../util/utils.js";
@@ -351,7 +352,7 @@ export class Conversation {
 						});
 					}
 				} else {
-					this.manager.bot.logger.warn(`Request by ${chalk.bold(options.conversation.user.tag)} failed, retrying [ ${chalk.bold(tries)}/${chalk.bold(CONVERSATION_ERROR_RETRY_MAX_TRIES)} ] ->`, error);
+					this.manager.bot.logger.warn(`Request by ${chalk.bold(options.conversation.user.username)} failed, retrying [ ${chalk.bold(tries)}/${chalk.bold(CONVERSATION_ERROR_RETRY_MAX_TRIES)} ] ->`, error);
 
 					/* Display a notice message to the user on Discord. */
 					options.onProgress({
@@ -514,6 +515,12 @@ export class Conversation {
 
 		const finalDuration: number = baseDuration * baseModifier * modelModifier;
 		return Math.round(finalDuration);
+	}
+
+	public cooldownResponse(db: DatabaseInfo): Response {
+		return new Response()
+			.addEmbeds(this.cooldownMessage(db))
+			.setEphemeral(true);
 	}
 
 	public cooldownMessage(db: DatabaseInfo): EmbedBuilder[] {

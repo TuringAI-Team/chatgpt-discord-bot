@@ -5,6 +5,7 @@ import { Conversation } from "../conversation/conversation.js";
 import { DatabaseInfo } from "../db/managers/user.js";
 import { Response } from "../command/response.js";
 import { Bot } from "../bot/bot.js";
+import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
 
 export default class ResetCommand extends Command {
     constructor(bot: Bot) {

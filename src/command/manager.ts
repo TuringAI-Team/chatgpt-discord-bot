@@ -175,7 +175,7 @@ export class CommandManager {
 	 */
 	public async applyCooldown(interaction: ChatInputCommandInteraction | InteractionHandlerClassType, db: DatabaseInfo, command: Command | InteractionHandler, time?: number): Promise<void> {
 		/* If the command doesn't have a cool-down time set, abort. */
-		if (!command.options.cooldown || this.bot.app.config.discord.owner.includes(interaction.user.id)) return;
+		if (!command.options.cooldown || this.bot.db.role.owner(db.user)) return;
 		const name: string = this.commandName(interaction, command);
 		
 		/* How long the cool-down should last */
@@ -330,57 +330,14 @@ export class CommandManager {
 		}
 
 		const banned: DatabaseUserInfraction | null = this.bot.db.users.banned(db.user);
-		const unread: DatabaseUserInfraction[] = this.bot.db.users.unread(db.user);
 
 		/* If the user is banned from the bot, send a notice message. */
 		if (banned !== null && !command.options.always) return void await 
-			this.bot.moderation.buildBanNotice(banned).setEphemeral(true)
+			this.bot.moderation.buildBanMessage(banned)
 		.send(interaction);
 
-		if (unread.length > 0) {
-			const row = new ActionRowBuilder<ButtonBuilder>()
-				.addComponents(
-					new ButtonBuilder()
-						.setCustomId("acknowledge-warning")
-						.setLabel("Acknowledge")
-						.setStyle(ButtonStyle.Danger)
-				);
-
-			const reply: Message = (await new Response()
-				.addComponent(ActionRowBuilder<ButtonBuilder>, row)
-				.addEmbed(builder => builder
-					.setTitle(`Before you continue ...`)
-					.setDescription(`You received **${unread.length > 1 ? "several warnings" : "a warning"}**, as a consequence of your messages with the bot.`)
-					
-					.addFields(unread.map(i => ({
-						name: `${i.reason} ⚠️`,
-						value: `*<t:${Math.floor(i.when / 1000)}:F>*`
-					})))
-
-					.setFooter({ text: "This is only a warning; you can continue to use the bot. If you however keep breaking the rules, we may have to take further administrative actions." })
-					.setColor("Red")
-				).send(interaction)) as Message;
-
-			/* Wait for the `Acknowledge` button to be pressed, or for the collector to expire. */
-			const collector = reply.createMessageComponentCollector<ComponentType.Button>({
-				componentType: ComponentType.Button,
-				filter: i => i.user.id === interaction.user.id && i.customId === "acknowledge-warning",
-				time: 60 * 1000,
-				max: 1
-			});
-
-			/* When the collector is done, delete the reply message & continue the execution. */
-			await new Promise<void>(resolve => collector.on("end", async collected => {
-				await Promise.all(collected.map(entry => entry.deferUpdate()))
-					.catch(() => {});
-
-				resolve();
-			}));
-
-			/* Mark the unread messages as read. */
-			await this.bot.db.users.read(db.user, unread);
-			db.user = await this.bot.db.users.fetchUser(interaction.user);
-		}
+		/* Show a warning modal to the user, if needed. */
+		db.user = await this.bot.moderation.warningModal({ interaction, db });
 
 		/* If the user doesn't have a cool-down set for the command yet, ... */
 		if (command.options.cooldown !== null && cooldown === null) {
@@ -401,14 +358,6 @@ export class CommandManager {
 
 		} catch (error) {
 			if (error instanceof DiscordAPIError && error.code === 10062) return;
-
-			response = new Response()
-				.addEmbed(builder =>
-					builder.setTitle("An error occurred ⚠️")
-					    .setDescription(`It seems like something went wrong while trying to run this command.\n_If you continue to experience issues, join our **[support server](${Utils.supportInvite(this.bot)})**_.`)
-						.setColor("Red")
-				)
-				.setEphemeral(true);
 
 			response = await this.bot.error.handle({
 				title: `Error while executing command \`${command.builder instanceof SlashCommandBuilder ? "/" : ""}${command.builder.name}\``,

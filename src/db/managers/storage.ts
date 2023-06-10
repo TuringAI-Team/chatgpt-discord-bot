@@ -28,8 +28,8 @@ export class StorageManager {
     public async setup(): Promise<void> { 
         /* Set up the Supabase storage client. */
         this.client = new StorageClient(`${this.db.bot.app.config.db.supabase.url}/storage/v1`, {
-            apikey: this.db.bot.app.config.db.supabase.key.anon,
-            Authorization: `Bearer ${this.db.bot.app.config.db.supabase.key.service}`
+            Authorization: `Bearer ${this.db.bot.app.config.db.supabase.key.service}`,
+            apikey: this.db.bot.app.config.db.supabase.key.anon
         });
     }
 
@@ -41,7 +41,7 @@ export class StorageManager {
      */
     public async bucket(name: StorageBucketName): Promise<Bucket> {
         const { data, error } = await this.client.getBucket(name);
-        this.checkError(error);
+        this.error(error);
 
         if (data === null) throw new Error(`Bucket ${name} doesn't exist`);
         return data;
@@ -70,7 +70,7 @@ export class StorageManager {
             });
 
         /* Check for any errors. */
-        this.checkError(error);
+        this.error(error);
         return this.fetchImage(image, "images");
     }
 
@@ -85,7 +85,7 @@ export class StorageManager {
             });
 
         /* Check for any errors. */
-        this.checkError(error);
+        this.error(error);
     }
 
     public async uploadImages(result: StableHordeGenerationResult): Promise<StorageImage[]> {
@@ -108,7 +108,7 @@ export class StorageManager {
      * 
      * @throws A GPTDatabaseError, if needed
      */
-    private checkError(error: StorageError | null): void {
+    private error(error: StorageError | null): void {
         if (error !== null) throw new GPTDatabaseError({
             collection: "images",
             raw: error

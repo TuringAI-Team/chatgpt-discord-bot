@@ -110,12 +110,12 @@ export abstract class Utils {
 
 			user: {
 				handlers: [
-					async id => bot.client.users.cache.find(user => user.tag === id) ?? null,
+					async id => bot.client.users.cache.find(user => user.tag === id || user.username === id || user.displayName === id) ?? null,
 					async id => await bot.client.users.fetch(id).catch(() => null)
 				],
 
 				process: user => ({
-					name: user.tag,
+					name: user.globalName ? `${user.displayName} (${user.username})` : user.username,
 					created: user.createdTimestamp,
 					icon: user.displayAvatarURL()
 				})

@@ -4,9 +4,6 @@ export enum GPTGenerationErrorType {
     /* The account is unusable */
     SessionUnusable,
 
-    /* The conversation could not be created properly */
-    Conversation,
-
     /* The response was empty */
     Empty,
 
@@ -50,6 +47,6 @@ export class GPTGenerationError<T = any> extends GPTError<GPTGenerationErrorOpti
      * @returns Human-readable error message
      */
     public toString(): string {
-        return `Failed to generate assistant response with code ${GPTGenerationErrorType[this.options.data.type]}${this.options.data.cause ? ": " + this.options.data.cause.toString() : ""}`;
+        return `Something went wrong with code ${GPTGenerationErrorType[this.options.data.type]}${this.options.data.cause ? ": " + this.options.data.cause.toString() : ""}`;
     }
 }

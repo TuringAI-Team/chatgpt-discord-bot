@@ -44,8 +44,7 @@ export class UserRoleManager {
     }
 
     public template(user: User): UserRoles {
-        if (this.db.bot.app.config.discord.owner.includes(user.id)) return [ "tester", "investor", "advertiser", "moderator", "owner" ];
-        else return [];
+        return [];
     }
 
     public roles(user: DatabaseUser): UserRoles {
