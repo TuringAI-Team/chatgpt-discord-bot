@@ -725,10 +725,10 @@ export class ModerationManager {
         /* The original author of the interaction/message */
         const author: User = interaction instanceof Message ? interaction.author : interaction.user;
 
-        /* ID of the button to acknowledge the infractions */
-        const buttonID: string = randomUUID();
-
 		if (unread.length > 0) {
+            /* ID of the button to acknowledge the infractions */
+            const buttonID: string = randomUUID();
+
 			const row = new ActionRowBuilder<ButtonBuilder>()
 				.addComponents(
 					new ButtonBuilder()

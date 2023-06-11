@@ -1,14 +1,15 @@
-import { Attachment, Message, Sticker, StickerFormatType } from "discord.js";
-import { Utils } from "../../util/utils.js";
+import { Attachment, Embed, Message, Sticker, StickerFormatType } from "discord.js";
+
 import { TenorGIF } from "../../util/tenor.js";
+import { Utils } from "../../util/utils.js";
 import { Bot } from "../../bot/bot.js";
 
-export type ChatImageType = "image" | "sticker" | "emoji" | "Discord attachment link" | "tenor GIF"
-export const CHAT_IMAGE_TYPES: ChatImageType[] = [ "image", "sticker", "emoji", "Discord attachment link", "tenor GIF" ]
+export type ChatImageType = "image" | "sticker" | "emoji" | "Discord attachment link" | "Discord embed image" | "Tenor GIF"
+export const CHAT_IMAGE_TYPES: ChatImageType[] = [ "image", "sticker", "emoji", "Discord attachment link", "Discord embed image", "Tenor GIF" ]
 
-export const ALLOWED_FILE_EXTENSIONS: string[] = [ "webp", "png", "jpeg", "jpg", "gif" ]
+export const ALLOWED_FILE_EXTENSIONS: string[] = [ "webp", "png", "jpeg", "jpg" ]
 
-const DISCORD_CDN_REGEX = /https:\/\/media\.discordapp\.net\/attachments\/\d+\/\d+\/\S+\.(gif|png|jpe?g|webp)/ig
+const DISCORD_CDN_REGEX = /https:\/\/(media|cdn)\.discordapp\.(com|net)\/attachments\/\d+\/\d+\/\S+\.(gif|png|jpe?g|webp)/ig
 const EMOJI_REGEX = /<(a?)?:[\w-]+:(\d{18,19})?>/gu
 const TENOR_GIF_REGEX = /-gif-(\d+)/g
 
@@ -84,7 +85,7 @@ export const ChatImageAttachmentExtractors: ChatImageAttachmentExtractor[] = [
 
         extract: async ({ message }) => {
             const attachments: Attachment[] = Array.from(message.attachments.filter(
-                a => ALLOWED_FILE_EXTENSIONS.includes(Utils.fileExtension(a.name))
+                a => ALLOWED_FILE_EXTENSIONS.includes(Utils.fileExtension(a.name).toLowerCase())
             ).values());
 
             return attachments.map(a => ({
@@ -116,7 +117,7 @@ export const ChatImageAttachmentExtractors: ChatImageAttachmentExtractor[] = [
             const match = message.content.match(EMOJI_REGEX);
             if (match === null) return null;
             
-            let emote = match[0];
+            let emote = match[0]; 
             let name = emote.split(":")[1];
             let id = emote.split(":")[2].slice(0, -1);
 
@@ -144,14 +145,29 @@ export const ChatImageAttachmentExtractors: ChatImageAttachmentExtractor[] = [
     },
 
     {
-        type: "tenor GIF",
+        type: "Discord embed image",
+        condition: ({ message }) => message.embeds.length > 0 && message.embeds.some(e => e.image !== null) && message.embeds.some(e => ALLOWED_FILE_EXTENSIONS.includes(Utils.fileExtension(e.image!.url))),
+
+        extract: async ({ message }) => {
+            const embeds: Embed[] = message.embeds.filter(
+                e => ALLOWED_FILE_EXTENSIONS.includes(Utils.fileExtension(e.image!.url).toLowerCase())
+            );
+
+            return embeds.map(e => ({
+                name: Utils.fileName(e.image!.url),
+                url: e.image!.url
+            }));
+        }
+    },
+
+    /*{
+        type: "Tenor GIF",
         condition: ({ message }) => message.content.matchAll(TENOR_GIF_REGEX) !== null,
 
         extract: async ({ bot, message }) => {
             const matches = message.content.matchAll(TENOR_GIF_REGEX);
             if (matches === null) return null;
 
-            /* List of Tenor IDs */
             const arr: string[] = Array.from(matches, m => m[1]);
             if (arr.length === 0) return null;
 
@@ -163,7 +179,7 @@ export const ChatImageAttachmentExtractors: ChatImageAttachmentExtractor[] = [
                 url: r.media.gif.url
             }));
         }
-    }
+    }*/
 ]
 
 export interface ChatBaseImage {

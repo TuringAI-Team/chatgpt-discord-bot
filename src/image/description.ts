@@ -1,20 +1,20 @@
 import { APIEmbedField, Attachment, AttachmentBuilder, ChatInputCommandInteraction, MessageContextMenuCommandInteraction } from "discord.js";
+import { Image, createCanvas } from "@napi-rs/canvas";
 import crypto from "crypto";
-import chalk from "chalk";
 
-import { ALLOWED_FILE_EXTENSIONS, ChatImageAttachment, ChatImageType, ImageBuffer } from "../../chat/types/image.js";
-import { LoadingResponse } from "../../command/response/loading.js";
-import { Conversation } from "../../conversation/conversation.js";
-import { NoticeResponse } from "../../command/response/notice.js";
-import { ImageOCRResult, detectText } from "../../util/ocr.js";
-import { ChatBaseImage } from "../../chat/types/image.js";
-import { ClientDatabaseManager } from "../cluster.js";
-import { Response } from "../../command/response.js";
-import { Utils } from "../../util/utils.js";
-import { DatabaseInfo } from "./user.js";
-import { Canvas, Image, createCanvas } from "@napi-rs/canvas";
-import { OpenAIChatMessage } from "../../openai/types/chat.js";
-import { countChatMessageTokens, getPromptLength } from "../../conversation/utils/length.js";
+import { ALLOWED_FILE_EXTENSIONS, ChatImageAttachment, ChatImageType, ImageBuffer } from "../chat/types/image.js";
+import { countChatMessageTokens, getPromptLength } from "../conversation/utils/length.js";
+import { LoadingResponse } from "../command/response/loading.js";
+import { Conversation } from "../conversation/conversation.js";
+import { NoticeResponse } from "../command/response/notice.js";
+import { OpenAIChatMessage } from "../openai/types/chat.js";
+import { ImageOCRResult, detectText } from "../util/ocr.js";
+import { ClientDatabaseManager } from "../db/cluster.js";
+import { ChatBaseImage } from "../chat/types/image.js";
+import { DatabaseInfo } from "../db/managers/user.js";
+import { Response } from "../command/response.js";
+import { Utils } from "../util/utils.js";
+import { Bot } from "../bot/bot.js";
 
 export interface ImageDescriptionResult {
     /* BLIP description of the image */
@@ -69,27 +69,24 @@ interface ImageDescriptionOptions {
 
     /* Whether a cached description can be used */
     cached?: boolean;
-
-    /* Whether text should be automatically removed from the image */
-    removeText?: boolean;
 }
 
 export class ImageDescriptionManager {
-    private readonly db: ClientDatabaseManager;
+    private readonly bot: Bot;
 
-    constructor(db: ClientDatabaseManager) {
-        this.db = db;
+    constructor(bot: Bot) {
+        this.bot = bot;
     }
 
     private async get(input: ImageDescriptionInput & { hash: string }): Promise<ImageDescription | null> {
-        return this.db.users.fetchFromCacheOrDatabase(
+        return this.bot.db.users.fetchFromCacheOrDatabase(
             "descriptions", input.hash
         );
     }
 
     private async save(result: ImageDescription, buffer: ImageBuffer): Promise<void> {
-        await this.db.storage.uploadImageDescription(result, buffer).catch(() => {});
-        await this.db.users.updateImageDescription(result.id, result);
+        await this.bot.db.storage.uploadImageDescription(result, buffer).catch(() => {});
+        await this.bot.db.users.updateImageDescription(result.id, result);
     }
 
     /**
@@ -123,8 +120,7 @@ export class ImageDescriptionManager {
     }
 
     public async describe(options: ImageDescriptionOptions): Promise<ImageDescription & { cached: boolean }> {
-        let { input, cached, buffer, removeText }: Required<Omit<ImageDescriptionOptions, "buffer">> & { buffer: ImageBuffer | null } = {
-            removeText: options.removeText ?? true,
+        let { input, cached, buffer }: Required<Omit<ImageDescriptionOptions, "buffer">> & { buffer: ImageBuffer | null } = {
             cached: options.cached ?? true,
             buffer: options.buffer ?? null,
             input: options.input
@@ -140,48 +136,25 @@ export class ImageDescriptionManager {
             if (entry !== null) return { ...entry, cached: true };
         }
 
-        const start: number = Date.now();
-
         /* Additionally, run OCR text recognition, to further improve results. */
-        const ocr: ImageOCRResult | null = await detectText(this.db.bot, {
+        const ocr: ImageOCRResult | null = await detectText(this.bot, {
             url: input.url, engine: 2
         }).catch(() => null);
 
-        /* If text was detected in the image & it should be removed, do so. */ 
-        if (removeText && ocr !== null) {
-            buffer = await this.removeTextFromImage(buffer, ocr);
-        }
-
-        /* The BLIP model */
-        const model = await this.db.bot.replicate.api.models.get("andreasjansson", "blip-2");
-
         /* Convert the image into a data URL. */
-        const url: string = `data:image/png;base64,${buffer.toString()}`;
+        const url: string = input.url;
 
         /* Run the interrogation request, R.I.P money. */
-        const description: string = (await this.db.bot.replicate.api.run(`andreasjansson/blip-2:${model.latest_version!.id}`, {
-            input: {
-                image: url,
-
-                caption: true, context: "",
-                use_nucleus_sampling: true,
-                temperature: 0.8
-            },
-
-            wait: {
-                interval: 750
-            }
-        })) as unknown as string;
-
-        /* How long the description took */
-        const duration: number = Date.now() - start;
+        const description = await this.bot.runpod.blip2({
+            data_url: url
+        });
 
         /* Final image description result */
         const result: ImageDescription = {
-            id: hash, duration, when: new Date().toISOString(),
+            id: hash, duration: description.duration, when: new Date().toISOString(),
 
             result: {
-                ocr, description
+                ocr, description: description.output.captions[0].caption
             }
         };
 
@@ -240,11 +213,11 @@ export class ImageDescriptionManager {
                 input: attachment, buffer
             });
 
-            const moderation = await this.db.bot.moderation.check({
+            const moderation = await this.bot.moderation.check({
                 db, user: interaction.user, content: description.result.description, source: "describe"
             });
 
-            if (moderation.blocked) return await this.db.bot.moderation.message({
+            if (moderation.blocked) return await this.bot.moderation.message({
                 result: moderation, name: "The image description"
             });
 
@@ -270,8 +243,8 @@ export class ImageDescriptionManager {
                 name: "Summary", value: summary.content
             });
 
-            await this.db.bot.db.users.incrementInteractions(db, "image_descriptions");
-            await this.db.bot.db.plan.expenseForImageDescription(db, description, summary);
+            await this.bot.db.users.incrementInteractions(db, "image_descriptions");
+            await this.bot.db.plan.expenseForImageDescription(db, description, summary);
 
             return new Response()
                 .addEmbed(builder => builder
@@ -280,39 +253,44 @@ export class ImageDescriptionManager {
                     .setImage(`attachment://image.png`)
                     .setFooter(!description.cached ? { text: `${(description.duration / 1000).toFixed(1)}s` } : null)
                     .setTimestamp(description.cached && description.when ? Date.parse(description.when) : null)
-                    .setColor(this.db.bot.branding.color)
+                    .setColor(this.bot.branding.color)
                 )
                 .addAttachment(
                     new AttachmentBuilder(final.buffer).setName("image.png")
                 );
 
         } catch (error) {
-            return await this.db.bot.error.handle({
+            return await this.bot.error.handle({
                 title: "Failed to describe image", notice: "Something went wrong while trying to describe the provided image.", error
             });
         }
     }
 
-    private async generateDescription(result: ImageDescription): Promise<DescribeSummary> {
+    private async generateDescription(result: ImageDescription): Promise<DescribeSummary | null> {
         /* The formatted prompt */
         const prompt = this.buildPrompt(result);
 
-        /* Generate the summarization result using ChatGPT. */
-        const raw = await this.db.bot.turing.openAI({
-            messages: prompt.messages, model: "gpt-3.5-turbo",
-            temperature: 0.75, maxTokens: 300
-        });
+        try {
+            /* Generate the summarization result using ChatGPT. */
+            const raw = await this.bot.turing.openAI({
+                messages: prompt.messages, model: "gpt-3.5-turbo",
+                temperature: 0.75, maxTokens: 300
+            });
 
-        const content: string = raw.response.message.content;
+            const content: string = raw.response.message.content;
 
-        return {
-            content,
+            return {
+                content,
 
-            tokens: {
-                completion: getPromptLength(content),
-                prompt: prompt.tokens
-            }
-        };
+                tokens: {
+                    completion: getPromptLength(content),
+                    prompt: prompt.tokens
+                }
+            };
+
+        } catch (_) {
+            return null;
+        }
     }
 
     private buildPrompt(result: ImageDescription): { tokens: number; messages: OpenAIChatMessage[] } {
@@ -338,7 +316,7 @@ export class ImageDescriptionManager {
     }
 
     private async removeTextFromImage(buffer: ImageBuffer, result: ImageOCRResult | null): Promise<ImageBuffer> {
-        return this.drawOverlay(buffer, result, "#ffffff)");
+        return this.drawOverlay(buffer, result, "#ffffff");
     }
 
     private async drawOverlay(buffer: ImageBuffer, result: ImageOCRResult | null, style: string | CanvasGradient | CanvasPattern): Promise<ImageBuffer> {

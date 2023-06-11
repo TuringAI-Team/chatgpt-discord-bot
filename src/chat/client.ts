@@ -347,10 +347,12 @@ export class ChatClient {
         const total: ChatImageAttachment[] = [];
 
         for (const extractor of ChatImageAttachmentExtractors) {
-            const condition: boolean = extractor.condition(this.messageImageAttachmentData(message));
+            const data: ChatImageAttachmentExtractorData = this.messageImageAttachmentData(message);
+
+            const condition: boolean = extractor.condition(data);
             if (!condition) continue;
 
-            total.push(...(await extractor.extract(this.messageImageAttachmentData(message)) ?? []).map(extracted => ({
+            total.push(...(await extractor.extract(data) ?? []).map(extracted => ({
                 ...extracted, type: extractor.type
             })));
         }

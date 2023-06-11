@@ -168,6 +168,10 @@ export abstract class Utils {
 		return name.split(".").reverse()[0];
 	}
 
+	public static fileName(url: string): string {
+		return url.split("/").reverse()[0];
+	}
+
 	public static inviteLink(bot: Bot): string {
 		return `https://discord.com/api/oauth2/authorize?client_id=${bot.app.config.discord.id}&permissions=277025769536&scope=bot`;
 	}

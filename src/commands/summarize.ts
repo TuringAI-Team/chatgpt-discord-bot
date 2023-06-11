@@ -194,8 +194,9 @@ export default class SummarizeCommand extends Command {
 		const type: SummaryType = summaryName !== null ? SummaryTypes.find(s => s.name === summaryName)! : SummaryTypes[0];
 
 		/* Search for the given query on YouTube. */
-		const results: YouTubeVideo[] = (await YouTube.search({ query, max: 25 }))
-			.filter(video => video.duration.seconds <= SUMMARIZE_MAX_VIDEO_DURATION);
+		const results: YouTubeVideo[] = (await YouTube.search({ query, max: 50 }))
+			.filter(video => video.duration.seconds <= SUMMARIZE_MAX_VIDEO_DURATION)
+			.slice(undefined, 25);
 		
 		if (results.length === 0) return new ErrorResponse({
 			interaction, command: this, message: "There are no search results for the specified query"

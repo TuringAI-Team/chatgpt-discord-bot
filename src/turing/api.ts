@@ -3,21 +3,22 @@ import { Awaitable } from "discord.js";
 import { EventEmitter } from "events";
 import { inspect } from "util";
 
+import { OpenAIChatBody, OpenAIChatCompletionsData, OpenAIChatMessage, OpenAIPartialCompletionsJSON } from "../openai/types/chat.js";
 import { ChatSettingsPlugin, ChatSettingsPluginIdentifier } from "../conversation/settings/plugin.js";
+import { countChatMessageTokens, getPromptLength } from "../conversation/utils/length.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
+import { OpenAIUsageCompletionsData } from "../openai/types/completions.js";
 import { ChoiceSettingOptionChoice } from "../db/managers/settings.js";
 import { ChatOutputImage, ImageBuffer } from "../chat/types/image.js";
 import { DatabaseInfo, DatabaseUser } from "../db/managers/user.js";
 import { Conversation } from "../conversation/conversation.js";
-import { OpenAIChatBody, OpenAIChatCompletionsData, OpenAIChatMessage, OpenAIPartialCompletionsJSON } from "../openai/types/chat.js";
 import { MetricsType } from "../db/managers/metrics.js";
 import { ChatInputImage } from "../chat/types/image.js";
 import { GPTAPIError } from "../error/gpt/api.js";
 import { StreamBuilder } from "../util/stream.js";
+import { RunPodPath } from "../runpod/api.js";
 import { Utils } from "../util/utils.js";
 import { Bot } from "../bot/bot.js";
-import { OpenAIUsageCompletionsData } from "../openai/types/completions.js";
-import { countChatMessageTokens, getPromptLength } from "../conversation/utils/length.js";
 
 type TuringAPIPath = 
     `cache/${string}`
@@ -26,6 +27,7 @@ type TuringAPIPath =
     | `video/${TuringVideoModelName}`
     | `chart/${MetricsType}`
     | `imgs/mj/${"describe" | "imagine" | MidjourneyAction}`
+    | `runpod/${RunPodPath}`
 
 interface TuringAPIFilterResult {
     isNsfw: boolean;
@@ -944,7 +946,7 @@ export class TuringAPI extends EventEmitter {
         await this.request(`text/${model}`, "DELETE");
     }
 
-    private async request<T>(path: TuringAPIPath, method: "GET" | "POST" | "DELETE" = "GET", data?: { [key: string]: any }): Promise<T> {
+    public async request<T>(path: TuringAPIPath, method: "GET" | "POST" | "DELETE" = "GET", data?: { [key: string]: any }): Promise<T> {
         /* Make the actual request. */
         const response = await fetch(this.url(path), {
             method,
@@ -961,7 +963,7 @@ export class TuringAPI extends EventEmitter {
         return body;
     }
 
-    private url(path: TuringAPIPath): string {
+    public url(path: TuringAPIPath): string {
         const base: string = this.bot.app.config.turing.urls.dev && this.bot.dev
             ? this.bot.app.config.turing.urls.dev ?? this.bot.app.config.turing.urls.prod
             : this.bot.app.config.turing.urls.prod;

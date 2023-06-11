@@ -912,7 +912,7 @@ export const SettingOptions: SettingsOption[] = [
             emoji: model.options.emoji,
             value: model.id
         }))
-    }),
+    })
 ]
 
 interface SettingsPageBuilderOptions {

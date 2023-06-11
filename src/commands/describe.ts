@@ -29,6 +29,6 @@ export default class DescribeCommand extends Command {
 
     public async run(interaction: CommandInteraction, db: DatabaseInfo): CommandResponse {
 		const conversation: Conversation = await this.bot.conversation.create(interaction.user);
-		return this.bot.db.description.run(conversation, db, interaction);
+		return this.bot.description.run(conversation, db, interaction);
     }
 }

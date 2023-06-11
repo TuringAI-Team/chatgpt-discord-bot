@@ -2,6 +2,7 @@ import { ActionRowBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle, EmbedB
 
 import { MidjourneyResult, TuringVideoModel, TuringVideoModelName, TuringVideoResult } from "../../turing/api.js";
 import { DatabaseGuild, DatabaseInfo, DatabaseUser, UserSubscriptionType } from "./user.js";
+import { DescribeSummary, ImageDescription } from "../../image/description.js";
 import { StableHordeGenerationResult } from "../../image/types/image.js";
 import { ChatInteraction } from "../../conversation/conversation.js";
 import { ErrorResponse } from "../../command/response/error.js";
@@ -11,7 +12,6 @@ import { ProgressBar } from "../../util/progressBar.js";
 import { ClientDatabaseManager } from "../cluster.js";
 import { YouTubeVideo } from "../../util/youtube.js";
 import { Response } from "../../command/response.js";
-import { DescribeSummary, ImageDescription } from "./description.js";
 import { Utils } from "../../util/utils.js";
 
 type DatabaseEntry = DatabaseUser | DatabaseGuild
@@ -277,7 +277,7 @@ export class PlanManager {
         let cost: number = 0;
 
         /* Cost for the BLIP image description */
-        cost += (Math.max(result.duration, 1000) / 1000) * 0.0023;
+        cost += (Math.max(result.duration, 1000) / 1000) * 0.0004;
 
         /* Cost for the ChatGPT summary */
         if (summary !== null) cost += ((summary.tokens.prompt + summary.tokens.completion) / 1000) * 0.0015;

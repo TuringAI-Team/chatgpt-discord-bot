@@ -1,5 +1,4 @@
 import { ClusterDatabaseMetricsManager } from "./managers/metrics.js";
-import { ImageDescriptionManager } from "./managers/description.js";
 import { UserSettingsManager } from "./managers/settings.js";
 import { StorageManager } from "./managers/storage.js";
 import { UserRoleManager } from "./managers/role.js";
@@ -13,7 +12,6 @@ import { type Bot } from "../bot/bot.js";
 export class ClientDatabaseManager extends DatabaseManager<Bot> {
     /* Various sub-managers */
     public readonly metrics: ClusterDatabaseMetricsManager;
-    public readonly description: ImageDescriptionManager;
     public readonly settings: UserSettingsManager;
     public readonly storage: StorageManager;
     public readonly role: UserRoleManager;
@@ -25,7 +23,6 @@ export class ClientDatabaseManager extends DatabaseManager<Bot> {
         super(bot);
 
         this.metrics = new ClusterDatabaseMetricsManager(this);
-        this.description = new ImageDescriptionManager(this);
         this.settings = new UserSettingsManager(this);
         this.storage = new StorageManager(this);
         this.role = new UserRoleManager(this);

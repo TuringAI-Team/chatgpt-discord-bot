@@ -274,66 +274,6 @@ Knowledge cut-off: September 2021
         }
     }),
 
-    new ReplicateChatSettingsModel({
-        name: "Dolly",
-        description: "Open source instruction-tuned large language model developed by Databricks",
-        emoji: { display: "<:dolly:1100453639396524122>", fallback: "🐑" },
-        settings: { model: "replicate/dolly-v2-12b" },
-        history: { generation: 300, maxTokens: 2048 },
-        cooldown: { multiplier: 2.5 },
-
-        billing: {
-            type: ChatSettingsModelBillingType.PerSecond,
-            amount: 0.0023
-        },
-
-        prompt: {
-            builder: ({ context }) => `
-I am Dolly, an open source instruction-tuned large language model, developed by Databricks.
-Current date & time: ${context.time}, ${context.date}
-`
-        },
-
-        builder: ({ model, options }) => ({
-            top_k: 50,
-            top_p: 1,
-            decoding: "top_k",
-            prompt: options.prompt,
-            max_length: model.options.history.generation,
-            repetition_penalty: 1.2,
-            temperature: 0.75
-        })
-    }),
-
-    new ReplicateChatSettingsModel({
-        name: "StableLM",
-        description: "7 billion parameter version of Stability AI's language model",
-        emoji: { display: "<:stablelm:1100453631746113597>", fallback: "🦜" },
-        settings: { model: "stability-ai/stablelm-tuned-alpha-7b" },
-        history: { generation: 300, maxTokens: 4096 },
-        cooldown: { multiplier: 2.5 },
-
-        billing: {
-            type: ChatSettingsModelBillingType.PerSecond,
-            amount: 0.0023
-        },
-
-        prompt: {
-            builder: ({ context }) => `
-I am StableLM, a 7 billion parameter version of Stability newly released AI's language model.
-Current date & time: ${context.time}, ${context.date}
-`
-        },
-
-        builder: ({ model, options }) => ({
-            prompt: options.prompt,
-            max_tokens: model.options.history.generation,
-            repetition_penalty: 1.2,
-            temperature: 0.75,
-            top_p: 1
-        })
-    }),
-
     new ChatSettingsModel({
         name: "Vicuna",
         emoji: { display: "<:vicuna:1100453628256456765>", fallback: "🦙" },
@@ -369,27 +309,6 @@ Knowledge cut-off: September 2021, like ChatGPT
 
         billing: { type: ChatSettingsModelBillingType.Free, amount: 0 },
         prompt: { builder: () => "" }
-    }),
-
-    new ChatSettingsModel({
-        name: "FastChat",
-        description: "Open-source chat bot trained by fine-tuning FLAN-T5 XL on ShareGPT conversations",
-        emoji: { display: "<:google:1102619904185733272>", fallback: "🔤" },
-        settings: { model: "fastchat" },
-        history: { maxTokens: 1500 },
-        type: ModelType.Turing,
-
-        billing: {
-            type: ChatSettingsModelBillingType.PerSecond,
-            amount: 0.0023
-        },
-
-        prompt: {
-            builder: ({ context }) => `
-I am FastChat, a fine-tuned language model based on FLAN-T5 XL created by Google, trained on conversations between ChatGPT and users collected from ShareGPT.
-Current date & time: ${context.time}, ${context.date}
-`
-        }
     }),
 
     new ChatSettingsModel({

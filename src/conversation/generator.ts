@@ -662,6 +662,11 @@ export class Generator {
 				emoji: "😔"
 			});
 
+			if (error instanceof GPTGenerationError && error.options.data.type === GPTGenerationErrorType.Moderation) return await sendError({
+				message: `Your prompt was blocked by the **moderation filters**, *please try out a different one*`,
+				emoji: "😔"
+			});
+
 			if (error instanceof GPTGenerationError && error.options.data.type === GPTGenerationErrorType.Length) return await sendError({
 				message: `Your message is too long for **${settingsModel.options.name}**. ${Emoji.display(settingsModel.options.emoji, true)}\n\n*Try resetting your conversation, and sending shorter messages to the bot, in order to avoid reaching the limit*.`,
 				emoji: null

@@ -3,6 +3,7 @@ import { ClusterClient, getInfo, IPCMessage, messageType } from "discord-hybrid-
 import EventEmitter from "events";
 import chalk from "chalk";
 
+import { ImageDescriptionManager } from "../image/description.js";
 import { ConversationManager } from "../conversation/manager.js";
 import { ModerationManager } from "../moderation/moderation.js";
 import { InteractionManager } from "../interaction/manager.js";
@@ -16,6 +17,7 @@ import { CommandManager } from "../command/manager.js";
 import { ErrorManager } from "../moderation/error.js";
 import { OpenAIManager } from "../openai/openai.js";
 import { ImageManager } from "../image/manager.js";
+import { RunPodManager } from "../runpod/api.js";
 import { ShardLogger } from "../util/logger.js";
 import { ConfigBranding } from "../config.js";
 import { VoteManager } from "../util/vote.js";
@@ -123,6 +125,12 @@ export class Bot extends EventEmitter {
     /* Web-hook manager; for custom characters with the bot */
     public readonly webhook: WebhookManager;
 
+    /* Image description manager; in charge of describing images & detecting text */
+    public readonly description: ImageDescriptionManager;
+
+    /* RunPod AI manager; in charge of executing RunPod model requests */
+    public readonly runpod: RunPodManager;
+
     /* Replicate API manager */
     public readonly replicate: ReplicateManager;
 
@@ -167,6 +175,7 @@ export class Bot extends EventEmitter {
         };
 
         /* Set up various classes & services. */
+        this.description = new ImageDescriptionManager(this);
         this.conversation = new ConversationManager(this);
         this.interaction = new InteractionManager(this);
         this.moderation = new ModerationManager(this);
@@ -174,6 +183,7 @@ export class Bot extends EventEmitter {
         this.db = new ClientDatabaseManager(this);
         this.webhook = new WebhookManager(this);
         this.command = new CommandManager(this);
+        this.runpod = new RunPodManager(this);
         this.error = new ErrorManager(this);
         this.logger = new ShardLogger(this);
         this.image = new ImageManager(this);

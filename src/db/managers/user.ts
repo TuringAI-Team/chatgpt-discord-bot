@@ -3,18 +3,18 @@ import chalk from "chalk";
 
 import { ChatInput, Conversation } from "../../conversation/conversation.js";
 import { DatabaseModerationResult } from "../../moderation/moderation.js";
+import { ImageDescription } from "../../image/description.js";
 import { ResponseMessage } from "../../chat/types/message.js";
 import { ChatOutputImage } from "../../chat/types/image.js";
 import { DatabaseImage } from "../../image/types/image.js";
+import { DatabaseError } from "../../moderation/error.js";
 import { GPTDatabaseError } from "../../error/gpt/db.js";
 import { DatabaseCollectionType } from "../manager.js";
 import { ClientDatabaseManager } from "../cluster.js";
-import { ImageDescription } from "./description.js";
 import { VOTE_DURATION } from "../../util/vote.js";
 import { SettingsLocation } from "./settings.js";
 import { GuildPlan, UserPlan } from "./plan.js";
 import { UserRoles } from "./role.js";
-import { DatabaseError } from "../../moderation/error.js";
 
 /* Type of moderation action */
 export type DatabaseUserInfractionType = "ban" | "unban" | "warn" | "moderation"
