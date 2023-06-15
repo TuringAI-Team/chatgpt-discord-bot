@@ -1,29 +1,29 @@
 import { ActionRow, ActionRowBuilder, Attachment, AttachmentBuilder, ButtonBuilder, ButtonComponent, ButtonInteraction, ButtonStyle, ChatInputCommandInteraction, EmbedBuilder, EmbedField, SlashCommandBuilder, User } from "discord.js";
 import { setTimeout as delay } from "timers/promises";
 
-import { Command, CommandCooldown, CommandInteraction, CommandResponse } from "../command/command.js";
+import { Command, CommandInteraction, CommandResponse } from "../command/command.js";
 import { Response } from "../command/response.js";
 
 import { DatabaseImage, ImageGenerationCheckData, ImageGenerationOptions, ImageGenerationPrompt, ImageGenerationResult, ImageInput, StableHordeGenerationResult } from "../image/types/image.js";
+import { ImagineInteractionHandler, ImagineInteractionHandlerData } from "../interactions/imagine.js";
 import { StableHordeGenerationFilter, STABLE_HORDE_FILTERS } from "../image/types/filter.js";
 import { ImageGenerationSamplers, ImageGenerationSampler } from "../image/types/image.js";
 import { PremiumUpsellResponse, PremiumUpsellType } from "../command/response/premium.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
 import { StableHordeConfigModels, StableHordeModel } from "../image/types/model.js";
-import { ImagineInteractionHandler, ImagineInteractionHandlerData } from "../interactions/imagine.js";
-import { ErrorResponse, ErrorType } from "../command/response/error.js";
 import { InteractionHandlerResponse } from "../interaction/handler.js";
 import { renderIntoSingleImage } from "../image/utils/renderer.js";
 import { LoadingIndicatorManager } from "../db/types/indicator.js";
 import { StableHordeAPIError } from "../error/gpt/stablehorde.js";
+import { ALLOWED_FILE_EXTENSIONS } from "../chat/types/image.js";
+import { CommandSpecificCooldown } from "../command/command.js";
 import { ModerationResult } from "../moderation/moderation.js";
+import { NoticeResponse } from "../command/response/notice.js";
+import { ErrorResponse } from "../command/response/error.js";
 import { StorageImage } from "../db/managers/storage.js";
 import { DatabaseInfo } from "../db/managers/user.js";
 import { Utils } from "../util/utils.js";
 import { Bot } from "../bot/bot.js";
-import { ALLOWED_FILE_EXTENSIONS } from "../chat/types/image.js";
-import { NoticeResponse } from "../command/response/notice.js";
-import { CommandSpecificCooldown } from "../command/command.js";
 
 interface ImageGenerationProcessOptions {
 	interaction: CommandInteraction | ButtonInteraction;

@@ -1,7 +1,8 @@
 import { ActionRowBuilder, AttachmentBuilder, BaseGuildTextChannel, ButtonBuilder, ButtonInteraction, ButtonStyle, ChannelType, ComponentEmojiResolvable, ComponentType, DiscordAPIError, DMChannel, EmbedBuilder, Guild, InteractionReplyOptions, Message, MessageCreateOptions, MessageEditOptions, MessageReplyOptions, PermissionsString, Role, TextChannel, User, WebhookMessageCreateOptions } from "discord.js";
+import { randomUUID } from "crypto";
 
 import { DatabaseInfo, DatabaseUserInfraction, UserSubscriptionType } from "../db/managers/user.js";
-import { ChatNoticeMessage, MessageType, ResponseMessage } from "../chat/types/message.js";
+import { ResponseChatNoticeMessage, MessageType, ResponseMessage } from "../chat/types/message.js";
 import { LoadingIndicator, LoadingIndicatorManager } from "../db/types/indicator.js";
 import { PlanCreditViewers, PlanCreditVisibility } from "../db/managers/plan.js";
 import { ChatSettingsModel, ChatSettingsModels } from "./settings/model.js";
@@ -142,7 +143,7 @@ export class Generator {
 		/* If the received data is a chat notice request, simply add the notice to the formatted message. */
 		if (data.type === "ChatNotice") {
 			embeds.push(new EmbedBuilder()
-				.setDescription(`${(data as ChatNoticeMessage).notice} ${pending ? `**...** ${loadingEmoji}` : ""}`)
+				.setDescription(`${(data as ResponseChatNoticeMessage).notice} ${pending ? `**...** ${loadingEmoji}` : ""}`)
 				.setColor("Orange")
 			);
 
@@ -202,7 +203,7 @@ export class Generator {
 					.setStyle(ButtonStyle.Secondary)
 			);
 
-			buttons.push(
+			if (buttons.length < 2) buttons.push(
 				new ButtonBuilder()
 					.setCustomId(`chat:user:${conversation.id}`)
 					.setDisabled(true)
@@ -215,6 +216,39 @@ export class Generator {
 				.addComponents(buttons);
 
 			response.addComponent(ActionRowBuilder<ButtonBuilder>, row);
+		}
+
+		/* If the message has any additional buttons attached, add them to the resulting message. */
+		if (data.buttons && data.buttons.length > 0) {
+			const buttons: ButtonBuilder[] = [];
+
+			data.buttons.forEach(button => {
+				const builder = new ButtonBuilder()
+					.setLabel(button.label)
+					.setCustomId(button.id ?? randomUUID())
+					.setDisabled(button.disabled ?? false)
+					.setStyle(button.style ?? ButtonStyle.Secondary);
+
+				if (button.emoji) builder.setEmoji(button.emoji);
+				buttons.push(builder);
+			});
+
+			const row = new ActionRowBuilder<ButtonBuilder>()
+				.addComponents(buttons);
+
+			response.addComponent(ActionRowBuilder<ButtonBuilder>, row);
+		}
+
+		/* If the message has any additional embeds attached, add them to the resulting message. */
+		if (data.embeds && data.embeds.length > 0) {
+			data.embeds.forEach(embed => {
+				embeds.push(new EmbedBuilder()
+					.setTitle(embed.title ?? null)
+					.setDescription(embed.description ?? null)
+					.setColor(embed.color ?? null)
+					.setTimestamp(embed.time ? undefined : null)
+				);
+			});
 		}
 
 		/* If the generated message finished due to reaching the token limit, show a notice. */
@@ -237,8 +271,13 @@ export class Generator {
 
 		/* If the message would be too long, send it as an attachment. */
 		if (formatted.length > 2000) {
+			/* Formatted date string */
+			const date: string = new Date().toLocaleString("en-GB", {
+				day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit"
+			});
+		
 			response.addAttachment(new AttachmentBuilder(Buffer.from(content))
-				.setName("output.txt")
+				.setName(`${model.id}${tone.id !== "normal" ? `-${tone.id}` : ""}-${date}.txt`)
 			);
 
 			response.setContent(pending ? loadingEmoji : "_ _");
@@ -648,7 +687,7 @@ export class Generator {
 				guild: guildData,
 				prompt: content,
 				trigger: message,
-				onProgress: onProgress,
+				progress: onProgress,
 				moderation: moderation
 			});
 
@@ -663,7 +702,7 @@ export class Generator {
 			});
 
 			if (error instanceof GPTGenerationError && error.options.data.type === GPTGenerationErrorType.Moderation) return await sendError({
-				message: `Your prompt was blocked by the **moderation filters**, *please try out a different one*`,
+				message: `Your prompt was blocked by the **moderation filters**, please try out a different one or modifying it.\n*If this repeatedly occurs, try **\`/reset\`ting** your conversation with the bot*.`,
 				emoji: "😔"
 			});
 

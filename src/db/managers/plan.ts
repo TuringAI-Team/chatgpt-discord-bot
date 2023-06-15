@@ -172,6 +172,10 @@ export class PlanManager {
         return PlanLocation.Guild;
     }
 
+    private functionName(entry: DatabaseEntry): "updateUser" | "updateGuild" {
+        return this.location(entry) === PlanLocation.Guild ? "updateGuild" : "updateUser";
+    }
+
     /**
      * Check whether an entry's current plan is overdue and cannot be used anymore.
      * @param user Entry to check for
@@ -283,7 +287,7 @@ export class PlanManager {
         if (summary !== null) cost += ((summary.tokens.prompt + summary.tokens.completion) / 1000) * 0.0015;
 
         return this.expense(entry, {
-            type: "describe", used: (Math.max(result.duration, 1000) / 1000) * 0.0023, data: { duration: result.duration }, bonus: 0.10
+            type: "describe", used: cost, data: { duration: result.duration }, bonus: 0.10
         });
     }
 
@@ -339,7 +343,7 @@ export class PlanManager {
         /* Updated, total credit */
         const updatedCredit: number = plan.total + amount;
 
-        await this.db.users[this.location(entry) === PlanLocation.Guild ? "updateGuild" : "updateUser"](entry as any, {
+        await this.db.users[this.functionName(entry)](entry as any, {
             plan: {
                 ...plan,
 
@@ -361,11 +365,20 @@ export class PlanManager {
             expenses: [], history: []
         };
 
-        await this.db.users[this.location(entry) === PlanLocation.Guild ? "updateGuild" : "updateUser"](entry as any, {
+        await this.db.users[this.functionName(entry)](entry as any, {
             plan
         });
 
         return plan;
+    }
+
+    public async remove(entry: DatabaseEntry): Promise<void> {
+        /* If the entry doesn't have a running plan, simply skip this. */
+        if (entry.plan === null) return;
+
+        await this.db.users[this.functionName(entry)](entry as any, {
+            plan: null
+        });
     }
 
     public async handleInteraction(interaction: ButtonInteraction): Promise<void> {

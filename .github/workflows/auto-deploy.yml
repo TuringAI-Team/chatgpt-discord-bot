@@ -14,19 +14,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      # Install Node.js and PM2
-
-      # Upload code to VPS using SSH
-      #- name: Upload code to VPS
-      #  uses: appleboy/scp-action@master
-      # with:
-      #   host: ${{ secrets.HOST }}
-      #   username: ${{ secrets.USERNAME }}
-      #   password: ${{ secrets.PASSWORD }}
-      #    source: ./
-      #    target: /home/loick/github/chatgpt-bot
-
-      # Connect to remote server via SSH to start the bot using PM2
+      # Connect to remote server via SSH to pull all changes and re-build the bot
       - name: Deploy bot
         uses: appleboy/ssh-action@master
         with:
@@ -39,4 +27,3 @@ jobs:
             npm run git
             npm i
             npm run build
-    #         pm2 reload ChatGPT

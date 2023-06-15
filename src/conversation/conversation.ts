@@ -21,6 +21,7 @@ import { Response } from "../command/response.js";
 import { GenerationOptions } from "./session.js";
 import { BotDiscordClient } from "../bot/bot.js";
 import { Utils } from "../util/utils.js";
+import { randomUUID } from "crypto";
 
 export interface ChatInput {
 	/* The input message itself; always given */
@@ -34,6 +35,9 @@ export interface ChatInput {
 }
 
 export interface ChatInteraction {
+	/* ID of the chat interaction */
+	id: string;
+
 	/* Input message */
 	input: ChatInput;
 
@@ -129,7 +133,9 @@ export class Conversation {
 	constructor(manager: ConversationManager, user: User) {
 		this.manager = manager;
 
-		this.cooldown = new Cooldown({ time: CONVERSATION_DEFAULT_COOLDOWN.time! });
+		this.cooldown = new Cooldown({
+			conversation: this, time: CONVERSATION_DEFAULT_COOLDOWN.time!
+		});
 
 		this.ttl = 30 * 60 * 1000;
 		this.timer = null;
@@ -174,7 +180,7 @@ export class Conversation {
 		if (data.history && data.history !== null && (data.history as any).forEach) {
 			for (const entry of data.history) {
 				this.history.push({
-					input: entry.input,
+					input: entry.input, id: entry.id,
 
 					/* This is awful, but it works... */
 					output: this.databaseToResponseMessage(entry.output),
@@ -195,9 +201,8 @@ export class Conversation {
 		
 		/* Cached database conversation */
 		const cached: DatabaseConversation | null = await this.cached();
-		if (cached === null) return;
+		if (cached !== null) await this.loadFromDatabase(cached);
 		
-		await this.loadFromDatabase(cached);
 		await this.init();
 	}
 
@@ -234,19 +239,15 @@ export class Conversation {
 
 	/**
 	 * Initialize the conversation.
-	 * This also gets called after each "reset", in order to maintain the creation time & future data.
 	 */
 	public async init(): Promise<void> {
-		/* Make sure that the user exists in the database. */
-		await this.manager.bot.db.users.fetchUser(this.user);
-
         /* Update the conversation entry in the database. */
         if (this.history.length === 0) await this.manager.bot.db.users.updateConversation(this, {
-                created: Date.now(),id: this.id,
-                active: true, history: null
-            });
+			created: Date.now(), id: this.id,
+			active: true, history: null
+		});
 
-		this.applyResetTimer();
+		this.bump();
 		this.active = true;
 	}
 
@@ -261,7 +262,7 @@ export class Conversation {
 	 * Apply the reset timer, to reset the conversation after inactivity.
 	 * @param updatedAt Time when the last interaction with this conversation occurred, optional
 	 */
-	private applyResetTimer(): void {
+	private bump(): void {
 		/* If a timer already exists, reset it. */
 		if (this.timer !== null) { clearTimeout(this.timer); this.timer = null; }
 		this.updatedAt = Date.now();
@@ -288,7 +289,7 @@ export class Conversation {
 		});
 
 		/* Reset the conversation data. */
-		this.applyResetTimer();
+		this.bump();
 		this.history = [];
 
 		/* Remove the entry in the database. */
@@ -312,7 +313,7 @@ export class Conversation {
 	 * @returns Given chat response
 	 */
 	public async generate(options: GeneratorOptions & GenerationOptions): Promise<ChatGeneratedInteraction> {
-		if (!this.active) throw new Error("Conversation is inactive");
+		if (!this.active) throw new GPTGenerationError({ type: GPTGenerationErrorType.Inactive });
 		if (this.generating) throw new GPTGenerationError({ type: GPTGenerationErrorType.Busy });
 
 		/* Lock the conversation during generation. */
@@ -325,7 +326,7 @@ export class Conversation {
 		/* When the generation request was started */
 		const before: Date = new Date();
 
-		/* GPT-3 response */
+		/* Chat model response */
 		let data: ChatClientResult | null = null;
 
 		/**
@@ -352,13 +353,12 @@ export class Conversation {
 						});
 					}
 				} else {
-					this.manager.bot.logger.warn(`Request by ${chalk.bold(options.conversation.user.username)} failed, retrying [ ${chalk.bold(tries)}/${chalk.bold(CONVERSATION_ERROR_RETRY_MAX_TRIES)} ] ->`, error);
+					if (this.manager.bot.dev) this.manager.bot.logger.warn(`Request by ${chalk.bold(options.conversation.user.username)} failed, retrying [ ${chalk.bold(tries)}/${chalk.bold(CONVERSATION_ERROR_RETRY_MAX_TRIES)} ] ->`, error);
 
 					/* Display a notice message to the user on Discord. */
-					options.onProgress({
-						id: "", raw: null, type: MessageType.Notice,
+					await this.manager.progress.notice(options, {
 						text: `Something went wrong while processing your message, retrying [ **${tries}**/**${CONVERSATION_ERROR_RETRY_MAX_TRIES}** ]`
-					});	
+					});
 				}
 
 				/* If the request failed, due to the current session running out of credit or the account being terminated, throw an error. */
@@ -396,7 +396,7 @@ export class Conversation {
 		this.generating = false;
 
 		/* Update the reset timer. */
-		this.applyResetTimer();
+		this.bump();
 
 		/* If the data still turned out `null` somehow, ...! */
 		if (data === null) throw new Error("What.");
@@ -409,6 +409,9 @@ export class Conversation {
 			source: "chatUser"
 		});
 
+        /* Random message identifier */
+        const id: string = randomUUID();
+
 		const result: ChatInteraction = {
 			input: data.input,
 			output: data.output,
@@ -416,7 +419,7 @@ export class Conversation {
 			trigger: options.trigger,
 			reply: null,
 
-			moderation,
+			moderation, id,
 			time: Date.now()
 		};
 
@@ -453,9 +456,8 @@ export class Conversation {
 		await this.manager.bot.db.users.updateConversation(this, {
 			/* Save a stripped-down version of the chat history in the database. */
 			history: this.history.map(entry => ({
-				id: entry.output.id,
-				input: entry.input,
-				output: this.responseMessageToDatabase(entry.output)
+				id: entry.id, input: entry.input,
+				output: this.responseMessageToDatabase(entry)
 			}))
 		});
 
@@ -470,10 +472,10 @@ export class Conversation {
 				completedAt: new Date().toISOString(),
 				requestedAt: before.toISOString(),
 
-				id: result.output.id,
+				id: result.id,
 
 				input: result.input,
-				output: this.responseMessageToDatabase(result.output),
+				output: this.responseMessageToDatabase(result),
 
 				model: model.id,
 				tone: tone.id
@@ -658,7 +660,7 @@ export class Conversation {
 
 				if (c !== null) {
 					c.history = context.history;
-					c.applyResetTimer();
+					c.bump();
 				}
 			}
 		}) as any, {
@@ -686,17 +688,23 @@ export class Conversation {
 		return this.user.id;
 	}
 
-    private responseMessageToDatabase(message: ResponseMessage): DatabaseResponseMessage {
+    private responseMessageToDatabase({ output: message }: ChatInteraction): DatabaseResponseMessage {
         return {
             ...message,
-            images: message.images ? message.images.map(i => ({ ...i, data: i.data.toString() })) : undefined
+
+            images: message.images ? message.images.map(i => ({
+				...i, data: i.data.toString()
+			})) : undefined
         };
     }
 
     private databaseToResponseMessage(message: DatabaseResponseMessage): ResponseMessage {
         return {
             ...message,
-            images: message.images ? message.images.map(i => ({ ...i, data: ImageBuffer.load(i.data) })) : undefined
+			
+            images: message.images ? message.images.map(i => ({
+				...i, data: ImageBuffer.load(i.data)
+			})) : undefined
         };
     }
 }

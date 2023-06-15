@@ -193,7 +193,9 @@ export class ImageDescriptionManager {
                 "Looking at the image",
                 "Inspecting your image",
                 "Looking at the details"
-            ]
+            ],
+
+            bot: this.bot, db
         }).send(interaction);
 
         /* Make sure that the image is accessible. */

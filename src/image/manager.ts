@@ -245,7 +245,7 @@ export class ImageManager extends EventEmitter {
      * 
      * @returns Finished generation result 
      */
-    public async generate({ nsfw, model, params, prompt, shared, priority, source }: ImageGenerationOptions, progress?: (data: ImageGenerationCheckData) => Promise<void | void>, updateInterval: number = 3000): Promise<StableHordeGenerationResult> {
+    public async generate({ nsfw, model, params, prompt, shared, priority, source }: ImageGenerationOptions, progress?: (data: ImageGenerationCheckData) => Promise<void | void>, updateInterval: number = 5000): Promise<StableHordeGenerationResult> {
         const before: number = Date.now();
 
         /* Img2Img input image */

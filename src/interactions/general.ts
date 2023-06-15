@@ -61,7 +61,6 @@ export class GeneralInteractionHandler extends InteractionHandler<ButtonInteract
 				if (!voted) return new ErrorResponse({
 					interaction, message: "You haven't voted for the bot yet", emoji: "😕"
 				});
-				
 
 				return new Response()
 					.addEmbed(builder => builder

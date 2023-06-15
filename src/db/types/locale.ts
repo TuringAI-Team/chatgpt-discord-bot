@@ -53,6 +53,10 @@ export const Languages: UserLanguage[] = [
     },
 
     {
+        name: "Bulgarian", id: "bg", emoji: "🇧🇬"
+    },
+
+    {
         name: "Czech", id: "cs", emoji: "🇨🇿"
     },
 

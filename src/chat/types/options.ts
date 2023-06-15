@@ -1,6 +1,6 @@
 import { Guild, GuildMember, Message, TextChannel } from "discord.js";
 
-import { ChatNoticeMessage, PartialResponseMessage, ResponseMessage } from "./message.js";
+import { ResponseChatNoticeMessage, PartialResponseMessage, ResponseMessage } from "./message.js";
 import { ChatSettingsModel } from "../../conversation/settings/model.js";
 import { ChatSettingsTone } from "../../conversation/settings/tone.js";
 import { Conversation } from "../../conversation/conversation.js";
@@ -17,7 +17,7 @@ export type ModelGenerationOptions = Pick<ChatGenerationOptions, "conversation" 
     settings: ChatSettingsModel;
 
     /* Function to call on partial message generation */
-    progress: (message: PartialResponseMessage | ChatNoticeMessage) => Promise<void> | void;
+    progress: (message: PartialResponseMessage | ResponseChatNoticeMessage) => Promise<void> | void;
 
     /* List of attached images */
     images: ChatInputImage[];

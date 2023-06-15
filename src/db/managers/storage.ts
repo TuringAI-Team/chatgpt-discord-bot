@@ -90,7 +90,7 @@ export class StorageManager {
 
     public async uploadImages(result: StableHordeGenerationResult): Promise<StorageImage[]> {
         /* All generated images */
-        const images: ImageGenerationResult[] = result.images;
+        const images: ImageGenerationResult[] = result.images.filter(i => !i.censored);
 
         /* Upload all of the images to the storage bucket. */
         await Promise.all(images.map(async image => {

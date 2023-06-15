@@ -218,23 +218,6 @@ export const TuringAlanImageModifiers: TuringAlanImageModifier[] = [
     { name: "ControlNet Segmentation", type: "seg" }
 ]
 
-export interface TuringAlanPlugin {
-    name: string;
-    type: "calculator" | "urlReader";
-}
-
-export const TuringAlanPlugins: TuringAlanPlugin[] = [
-    {
-        name: "Calculator",
-        type: "calculator"
-    },
-
-    {
-        name: "URL reader",
-        type: "urlReader"
-    }
-]
-
 interface TuringAlanBody {
     userName: string;
     conversationId: string;
@@ -242,7 +225,7 @@ interface TuringAlanBody {
     imageGenerator: TuringAlanImageGenerator["type"];
     imageModificator: TuringAlanImageModifier["type"];
     videoGenerator: TuringAlanParameter;
-    pluginList: TuringAlanPluginName[];
+    pluginList: string[];
     photodescription: string | null;
     photo?: string;
     message: string;
@@ -468,15 +451,20 @@ export interface TuringChartResult {
 export type TuringTrackingType = "topgg"
 
 interface TuringChatPluginsBody {
+    model: TuringChatPluginsModel;
+    max_tokens?: number;
     messages: OpenAIChatMessage[];
-    pluginList: ChatSettingsPluginIdentifier[];
+    plugins: ChatSettingsPluginIdentifier[];
 }
 
-export type TuringChatPluginsModel = "chatgpt" | "gpt-4"
+export type TuringChatPluginsModel = "gpt-3.5-turbo-0613" | "gpt-4-0613"
 
 export interface TuringChatPluginsOptions {
     /* Which model to use */
     model: TuringChatPluginsModel;
+
+    /* Maximum amount of generation tokens */
+    tokens: number;
 
     /* OpenAI chat messages to send to the model */
     messages: OpenAIChatMessage[];
@@ -493,12 +481,9 @@ export interface TuringChatPluginsOptions {
 
 export interface TuringChatPluginsPartialResult {
     result: string;
-    extra: string | {};
     done: boolean;
-    thought: string | null;
     tool: string | null;
     credits: number;
-    error: any | null;
 }
 
 export type TuringChatPluginsResult = TuringChatPluginsPartialResult
@@ -563,45 +548,13 @@ export type MidjourneyOptions = Omit<MidjourneyBody, "mode" | "premium"> & {
 
 export type MidjourneyAction = "variation" | "upscale"
 
-export type TuringChatBingTone = "balanced"
-
-interface TuringChatBingOptions {
-    /* Conversation instance, that the API will use to remember the conversation */
-    conversation: Conversation;
-
-    /* Progress callback to call when a new token is generated */
-    progress: (result: TuringChatBingPartialResult) => Awaitable<void>;
-
-    /* Prompt to pass to Bing */
-    prompt: string;
-
-    /* Which Bing tone to use */
-    tone: TuringChatBingTone;
-}
-
 export interface TuringChatBingResult {
     response: string;
     done: boolean;
 }
 
-interface TuringChatBingBody {
-    prompt: string;
-    conversationId: string;
-    tone?: TuringChatBingTone;
-}
-
-export type TuringChatBingPartialResult = Pick<TuringChatBingResult, "response">
-
 export type TuringChatOpenAIBody = Pick<OpenAIChatBody, "model" | "messages" | "temperature"> & {
     maxTokens?: number;
-}
-
-interface TuringChatOpenAIErrorData {
-    success: false;
-
-    error: {
-        message: string;
-    };
 }
 
 export class TuringAPI extends EventEmitter {
@@ -678,21 +631,6 @@ export class TuringAPI extends EventEmitter {
                     usage
                 };
             }
-        }).run();
-    }
-
-    public async bing({ prompt, conversation, tone, progress }: TuringChatBingOptions): Promise<TuringChatBingResult> {
-        return await new StreamBuilder<
-            TuringChatBingBody, TuringChatBingPartialResult, TuringChatBingResult
-        >({
-            body: {
-                conversationId: conversation.id,
-                prompt, tone
-            },
-
-            error: response => this.error(response, "text/bing", true),
-            headers: this.headers(), progress,
-            url: this.url("text/bing")
         }).run();
     }
 
@@ -844,12 +782,6 @@ export class TuringAPI extends EventEmitter {
     public async alan({ prompt, conversation, user, progress, image }: TuringAlanOptions): Promise<TuringAlanResult> {
         /* Various settings */
         const imageModifier = this.bot.db.settings.get(user, "alan:imageModifier");
-        const pluginList = this.bot.db.settings.get<any>(user, "alan:plugins");
-
-        /* Enabled Alan plugins */
-        const plugins: string[] = Object.entries(pluginList)
-            .filter(([ _, enabled ]) => enabled)
-            .map(([ key ]) => key);
 
         return await new StreamBuilder<
             TuringAlanBody, TuringAlanResult
@@ -864,7 +796,7 @@ export class TuringAPI extends EventEmitter {
                 photodescription: image.output && image.output.prompt ? image.output.prompt : null,
                 photo: image.output && image.output.url ? image.output.url : image.input ? image.input.url : undefined,
                 videoGenerator: "none",
-                pluginList: plugins
+                pluginList: []
             },
 
             error: response => this.error(response, "text/alan/chatgpt", true),
@@ -917,12 +849,12 @@ export class TuringAPI extends EventEmitter {
             TuringChatPluginsBody, TuringChatPluginsPartialResult, TuringChatPluginsResult
         >({
             body: {
-                messages, pluginList: plugins.map(p => p.id)
+                messages, plugins: plugins.map(p => p.id), model
             },
 
-            error: response => this.error(response, `text/plugins/${model}`, true),
+            error: response => this.error(response, "text/plugins", true),
             headers: this.headers(), progress,
-            url: this.url(`text/plugins/${model}`)
+            url: this.url("text/plugins")
         }).run();
     }
 

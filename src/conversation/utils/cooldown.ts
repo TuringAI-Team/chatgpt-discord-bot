@@ -1,6 +1,11 @@
 import { EventEmitter } from "events";
 
+import { Conversation } from "../conversation.js";
+
 export interface CooldownOptions {
+    /* Which conversation this cooldown is for */
+    conversation: Conversation;
+
     /* How long the cooldown takes to expire */
     time: number;
 }

@@ -1,9 +1,35 @@
 import { Canvas, Image } from "@napi-rs/canvas";
 import mergeImages from "merge-images";
+import { readFile } from "fs/promises";
 
 import { StableHordeGenerationResult, ImageGenerationOptions } from "../types/image.js";
 import { StorageImage } from "../../db/managers/storage.js";
+import { ImageBuffer } from "../../chat/types/image.js";
+import { Utils } from "../../util/utils.js";
 import { Bot } from "../../bot/bot.js";
+
+type SpecialImageName = "censored"
+
+/* All special images */
+const SpecialImages: Record<SpecialImageName, Buffer> = {
+    /* This will be loaded when the app starts ... */
+} as any
+
+const loadSpecialImages = async (): Promise<void> => {
+    /* Paths of all images */
+    const paths: string[] = await Utils.search("./assets/imagine", "png");
+
+    for (const path of paths) {
+        /* Get the name of the asset. */
+        const name: SpecialImageName = Utils.baseName(Utils.fileName(path)) as SpecialImageName;
+
+        const buffer: Buffer = await readFile(path);
+        SpecialImages[name] = buffer;
+    }
+}
+
+/* Load all special assets from the directory. */
+loadSpecialImages();
 
 /**
  * Render the specified image generation results into a single image, to display in a Discord embed.
@@ -16,10 +42,12 @@ import { Bot } from "../../bot/bot.js";
 export const renderIntoSingleImage = async (bot: Bot, options: ImageGenerationOptions, result: StableHordeGenerationResult): Promise<Buffer> => {
     /* Fetch all the images. */
     const images: Buffer[] = await Promise.all(result.images.map(async image => {
-        const storage: StorageImage = await bot.image.getImageData(image);
+        if (image.censored) return SpecialImages.censored;
 
-        const data: Buffer = Buffer.from(await (await fetch(storage.url)).arrayBuffer());
-        return data;
+        const storage: StorageImage = await bot.image.getImageData(image);
+        const data: ImageBuffer = (await Utils.fetchBuffer(storage.url))!;
+
+        return data.buffer;
     }));
 
     /* If there's only a single image, simply return that one instead of creating a canvas to only render one. */

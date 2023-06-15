@@ -230,7 +230,7 @@ export class Bot extends EventEmitter {
                         type: ActivityType.Playing
                     }
                 ]
-            },
+            }
         }) as typeof this.client;
 
         /* Add the cluster client to the Discord client. */

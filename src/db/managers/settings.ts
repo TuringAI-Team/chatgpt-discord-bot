@@ -1,17 +1,17 @@
-import { APIApplicationCommandOptionChoice, ActionRow, ActionRowBuilder, Awaitable, ButtonBuilder, ButtonComponent, ButtonInteraction, ButtonStyle, ComponentEmojiResolvable, GuildMember, Interaction, InteractionReplyOptions, InteractionUpdateOptions, ModalBuilder, SelectMenuComponentOptionData, StringSelectMenuBuilder, StringSelectMenuInteraction, TextChannel, TextInputBuilder, TextInputStyle } from "discord.js";
+import { APIApplicationCommandOptionChoice, ActionRow, ActionRowBuilder, Awaitable, ButtonBuilder, ButtonComponent, ButtonInteraction, ButtonStyle, ComponentEmojiResolvable, GuildMember, Interaction, InteractionReplyOptions, InteractionUpdateOptions, ModalBuilder, SelectMenuComponentOptionData, StringSelectMenuBuilder, StringSelectMenuInteraction, TextChannel, TextInputBuilder, TextInputStyle, managerToFetchingStrategyOptions } from "discord.js";
 import { ChatInputCommandInteraction, Guild, Role, Snowflake } from "discord.js";
 import chalk from "chalk";
 
-import { TuringAlanImageGenerators, TuringAlanImageModifiers, TuringAlanPlugins, TuringAlanSearchEngines, TuringVideoModels, alanOptions } from "../../turing/api.js";
+import { TuringAlanImageGenerators, TuringAlanImageModifiers, TuringAlanSearchEngines, TuringVideoModels, alanOptions } from "../../turing/api.js";
 import { CONVERSATION_DEFAULT_COOLDOWN, Conversation } from "../../conversation/conversation.js";
 import { DatabaseInfo, DatabaseUser, DatabaseSettings, DatabaseGuild } from "./user.js";
 import { LoadingIndicatorManager, LoadingIndicators } from "../types/indicator.js";
 import { GenerationSizes, getAspectRatio } from "../../commands/imagine.js";
 import { ChatSettingsPlugins } from "../../conversation/settings/plugin.js";
-import { StableHordeConfigModels } from "../../image/types/model.js";
 import { InteractionHandlerResponse } from "../../interaction/handler.js";
 import { ChatSettingsModels } from "../../conversation/settings/model.js";
 import { ChatSettingsTones } from "../../conversation/settings/tone.js";
+import { StableHordeConfigModels } from "../../image/types/model.js";
 import { ErrorResponse } from "../../command/response/error.js";
 import { ChatGuildData } from "../../chat/types/options.js";
 import { RestrictionType } from "../types/restriction.js";
@@ -39,6 +39,9 @@ export interface SettingsCategory {
 
     /* Emoji for this category */
     emoji: DisplayEmoji;
+
+    /* Whether this category is restricted to a specific group of users */
+    restricted?: RestrictionType;
 }
 
 export type SettingsCategoryName = "general" | "image" | "video" | "chat" | "premium" | "limits" | "plugins" | "character" | "alan"
@@ -60,13 +63,15 @@ export const SettingCategories: SettingsCategory[] = [
     {
         name: "Premium",
         type: "premium",
-        emoji: { fallback: "✨" }
+        emoji: { fallback: "✨" },
+        restricted: "premium"
     },
 
     {
         name: "Limits",
         type: "limits",
-        emoji: { fallback: "‼️" }
+        emoji: { fallback: "‼️" },
+        restricted: "plan"
     },
 
     {
@@ -145,6 +150,9 @@ interface BaseSettingsOptionData<T = any> {
     /* Handler to execute when this setting is changed */
     handler?: (bot: Bot, entry: SettingsDatabaseEntry, value: T) => Awaitable<void>;
 
+    /* Validator to run when the settings get loaded */
+    validate?: (bot: Bot, value: T, entry: SettingsDatabaseEntry) => boolean | T;
+
     /* Default value of this settings option */
     default: T;
 }
@@ -168,7 +176,7 @@ interface SettingsOptionExplanation {
 }
 
 export abstract class SettingsOption<T extends SettingsOptionValueType = any, U extends Partial<BaseSettingsOptionData<T>> = BaseSettingsOptionData<T>> {
-    public readonly data: Required<BaseSettingsOptionData & U>;
+    public readonly data: Required<BaseSettingsOptionData<T> & U>;
 
     constructor(data: BaseSettingsOptionData & U) {
         this.data = data as typeof this.data;
@@ -196,12 +204,17 @@ export abstract class SettingsOption<T extends SettingsOptionValueType = any, U 
         return builder;
     }
 
-    protected customID(value?: string | number | boolean, action?: string): string {
+    protected customID(value?: T, action?: string): string {
         return `settings:${action ?? "change"}:${this.data.location}:${this.key}${value != undefined ? `:${value}` : ""}`;
     }
 
     public async handle(bot: Bot, entry: SettingsDatabaseEntry, value: T): Promise<void> {
         if (this.data.handler) await this.data.handler(bot, entry, value);
+    }
+
+    public validate(bot: Bot, value: T, entry: SettingsDatabaseEntry): boolean | T {
+        if (this.data.validate) return this.data.validate(bot, value, entry);
+        else return true;
     }
 
     public get key(): SettingsName {
@@ -301,6 +314,10 @@ export class StringSettingsOption extends SettingsOption<string, BaseSettingsOpt
         return this.applyBase(builder)
             .addComponents(button);
     }
+
+    public validate(bot: Bot, value: string): string | boolean {
+        return value.length < this.data.max || value.length > this.data.min;
+    }
 }
 
 export type ChoiceSettingOptionChoice = Pick<APIApplicationCommandOptionChoice<string>, "name" | "value"> & {
@@ -311,7 +328,7 @@ export type ChoiceSettingOptionChoice = Pick<APIApplicationCommandOptionChoice<s
     emoji?: DisplayEmoji | string;
 
     /* Whether this option is restricted to a specific group of users */
-    restricted?: RestrictionType | null;
+    restricted?: RestrictionType;
 }
 
 interface ChoiceSettingOptionData {
@@ -348,6 +365,10 @@ export class ChoiceSettingsOption extends SettingsOption<string, BaseSettingsOpt
                     ])
             );
     }
+
+    public validate(bot: Bot, value: string): string | boolean {
+        return this.data.choices.find(c => c.value === value) != undefined;
+    }
 }
 
 type MultipleChoiceSettingsObject = {
@@ -370,11 +391,12 @@ export class MultipleChoiceSettingsOption extends SettingsOption<MultipleChoiceS
         });
     }
 
-    public static build(enabled: MultipleChoiceSettingsObject = {}): MultipleChoiceSettingsObject {
+    public static build(arr: MultipleChoiceSettingsObject | string[] = {}): MultipleChoiceSettingsObject {
         const object: Partial<MultipleChoiceSettingsObject> = {};
 
-        for (const choice of Object.keys(enabled)) {
-            object[choice] = enabled[choice] ?? false;
+        for (const choice of !Array.isArray(arr) ? Object.keys(arr) : arr) {
+            const enabled: boolean = Array.isArray(arr) ? arr.includes(choice) : arr[choice] ?? false;
+            object[choice] = enabled;
         }
 
         return object as MultipleChoiceSettingsObject;
@@ -402,6 +424,20 @@ export class MultipleChoiceSettingsOption extends SettingsOption<MultipleChoiceS
                         value
                     }) as SelectMenuComponentOptionData))
             );
+    }
+
+    public validate(bot: Bot, value: MultipleChoiceSettingsObject, entry: SettingsDatabaseEntry): boolean | MultipleChoiceSettingsObject {
+        /* Which settings are enabled & actually exist */
+        let which: string[] = MultipleChoiceSettingsOption.which(value);
+        which = which.filter(id => this.data.choices.find(c => c.value === id) != undefined);
+
+        let final: Partial<MultipleChoiceSettingsObject> = {};
+
+        for (const choice of this.data.choices) {
+            final[choice.value] = which.includes(choice.value);
+        }
+
+        return final as MultipleChoiceSettingsObject;
     }
 }
 
@@ -542,7 +578,7 @@ export const SettingOptions: SettingsOption[] = [
         default: true,
 
         explanation: {
-            description: "This setting changes whether the bot should send messages generated by ChatGPT while they're being generated, just like on the website. This does not affect generation speed or maximum generation length in any way."
+            description: "This setting changes whether the bot should send partial messages by ChatGPT while they're being generated, just like on the website. This does not affect generation speed or maximum generation length in any way."
         }
     }),
 
@@ -557,7 +593,7 @@ export const SettingOptions: SettingsOption[] = [
         choices: ChatSettingsModels.map(model => ({
             name: model.options.name,
             description: model.options.description,
-            restricted: model.options.restricted,
+            restricted: model.options.restricted ?? undefined,
             emoji: model.options.emoji,
             value: model.id
         })),
@@ -653,16 +689,6 @@ export const SettingOptions: SettingsOption[] = [
         emoji: { fallback: "🖌️" },
         description: "Which image modifier to use",
         choices: alanOptions(TuringAlanImageModifiers),
-        location: SettingsLocation.User
-    }),
-
-    new MultipleChoiceSettingsOption({
-        key: "plugins",
-        name: "Plugins",
-        category: "alan",
-        emoji: { fallback: "🧩" },
-        description: "Which plugins to use",
-        choices: alanOptions(TuringAlanPlugins, false),
         location: SettingsLocation.User
     }),
 
@@ -881,10 +907,6 @@ export const SettingOptions: SettingsOption[] = [
         location: SettingsLocation.User,
         max: 3,
 
-        explanation: {
-            description: "This setting changes the avatar of the custom character, set it to any valid image URL to see it in the chat."
-        },
-
         choices: ChatSettingsPlugins.map(plugin => ({
             name: plugin.options.name,
             description: plugin.options.description,
@@ -908,7 +930,7 @@ export const SettingOptions: SettingsOption[] = [
         choices: ChatSettingsModels.filter(model => model.options.restricted === null).map(model => ({
             name: model.options.name,
             description: model.options.description,
-            restricted: model.options.restricted,
+            restricted: model.options.restricted ?? undefined,
             emoji: model.options.emoji,
             value: model.id
         }))
@@ -964,14 +986,28 @@ export class UserSettingsManager {
     }
 
     public load(entry: SettingsDatabaseEntry): DatabaseSettings {
-        const get = (option: SettingsOption) => entry.settings ? this.get(entry, this.settingsString(option)) : undefined ?? this.template(this.location(entry))[this.settingsString(option)];
+        const get = (option: SettingsOption) => entry.settings ? this.get(entry, this.settingsString(option)) : undefined ?? this.settingsDefault(entry, option);
         const settings: Partial<DatabaseSettings> = {};
 
         for (const option of this.options(this.location(entry))) {
-            settings[this.settingsString(option)] = get(option);
+            /* Current, unmodified value */
+            let value = get(option);
+
+            /* Try to validate the current setting value. */
+            const validation = option.validate(this.db.bot, value, entry);
+
+            /* The setting is invalid, and should be reset to the defaults. */
+            if (validation === false) value = this.settingsDefault(entry, option);
+            else if (validation !== true) value = validation;
+
+            settings[this.settingsString(option)] = value;
         }
 
         return settings as DatabaseSettings;
+    }
+    
+    public settingsDefault(entry: SettingsDatabaseEntry, option: SettingsOption): any {
+        return this.template(this.location(entry))[this.settingsString(option)];
     }
 
     public settingsString(option: SettingsOption | SettingKeyAndCategory): SettingKeyAndCategory {
@@ -1022,7 +1058,7 @@ export class UserSettingsManager {
             ...changes
         };
 
-        for(const [ key, value ] of Object.entries(changes)) {
+        for(const [ key ] of Object.entries(changes)) {
             const option = this.settingsOption(key as SettingKeyAndCategory)!;
             await option.handle(this.db.bot, entry, entry.settings[key as SettingKeyAndCategory]);
         }
@@ -1135,7 +1171,7 @@ export class UserSettingsManager {
             });
         }
 
-        if (Date.now() - interaction.message.createdTimestamp > 15 * 60 * 1000) {
+        if (Date.now() - interaction.message.createdTimestamp > 10 * 60 * 1000) {
             return new ErrorResponse({
                 interaction, message: `This settings menu can't be used anymore; run \`/settings\` again to continue`, emoji: "😔"
             });

@@ -172,6 +172,10 @@ export abstract class Utils {
 		return url.split("/").reverse()[0];
 	}
 
+	public static baseName(name: string): string {
+		return name.split(".")[0];
+	}
+
 	public static inviteLink(bot: Bot): string {
 		return `https://discord.com/api/oauth2/authorize?client_id=${bot.app.config.discord.id}&permissions=277025769536&scope=bot`;
 	}

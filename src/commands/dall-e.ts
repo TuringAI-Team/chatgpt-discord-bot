@@ -103,7 +103,7 @@ export default class DallECommand extends Command {
 		} catch (error) {
 			if (error instanceof GPTAPIError && error.options.data.code === 400) return new ErrorResponse({
 				interaction, command: this,
-				message: "Your image prompt was blocked by **OpenAI**'s filters. *Make sure to follow the [usage policies](https://openai.com/policies/usage-policies); otherwise we may have to take moderative actions*.",
+				message: "Your image prompt was blocked by **OpenAI**'s filters. *Make sure to follow their [usage policies](https://openai.com/policies/usage-policies); otherwise we may have to take moderative actions*.",
 				color: "Orange", emoji: null
 			});
 

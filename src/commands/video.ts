@@ -2,8 +2,7 @@ import { AttachmentBuilder, SlashCommandBuilder } from "discord.js";
 
 import { TuringVideoModel, TuringVideoModels, TuringVideoOptions } from "../turing/api.js";
 import { Command, CommandInteraction, CommandResponse } from "../command/command.js";
-import { ErrorResponse, ErrorType } from "../command/response/error.js";
-import { Conversation } from "../conversation/conversation.js";
+import { ErrorResponse } from "../command/response/error.js";
 import { DatabaseInfo } from "../db/managers/user.js";
 import { ImageBuffer } from "../chat/types/image.js";
 import { Response } from "../command/response.js";

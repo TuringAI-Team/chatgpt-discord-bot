@@ -171,7 +171,7 @@ export type DatabaseOutputImage = Omit<ChatOutputImage, "data"> & {
     data: string;
 } 
 
-export type DatabaseResponseMessage = Pick<ResponseMessage, "id" | "raw" | "text" | "type"> & {
+export type DatabaseResponseMessage = Pick<ResponseMessage, "raw" | "text" | "type"> & {
     images?: DatabaseOutputImage[];
 }
 
@@ -243,7 +243,7 @@ export class UserManager {
         const id: string = typeof obj === "string" ? obj : obj.id;
 
         const existing: U | null = await this.db.cache.get(type, id);
-        if (existing) return process ? process(existing) : existing;
+        if (existing) return process ? process(existing) : existing; // return existing;
 
         const { data, error } = await this.db.client
             .from(this.db.collectionName(type)).select("*")

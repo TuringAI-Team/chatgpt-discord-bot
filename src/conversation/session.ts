@@ -129,7 +129,7 @@ export interface GenerationOptions {
     trigger: Message;
 
     /* Function to call on message updates */
-    onProgress: (message: ResponseMessage) => Promise<void> | void;
+    progress: (message: ResponseMessage) => Promise<void> | void;
 
     /* Guild data, if available */
     guild: ChatGuildData | null;
@@ -308,7 +308,7 @@ export class Session {
      * @throws Any exception that may occur
      * @returns Given chat response
      */
-    public async generate({ prompt, conversation, onProgress, trigger, db, guild, partial }: GenerationOptions): Promise<ChatClientResult> {
+    public async generate({ prompt, conversation, progress, trigger, db, guild, partial }: GenerationOptions): Promise<ChatClientResult> {
         if (this.state === SessionState.Disabled) throw new GPTGenerationError({
             type: GPTGenerationErrorType.SessionUnusable
         });
@@ -325,7 +325,7 @@ export class Session {
 
             /* Send the request, to complete the prompt. */
             const data = await this.client.ask({
-                progress: onProgress, conversation,
+                progress, conversation,
                 trigger, prompt, db, guild, partial
             });
 
