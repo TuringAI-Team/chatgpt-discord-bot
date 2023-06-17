@@ -1,13 +1,14 @@
 import { fetchEventSource } from "@waylaidwanderer/fetch-event-source";
 
-import { OpenAIChatBody, OpenAIChatCompletionsData, OpenAIChatCompletionsJSON, OpenAIChatMessage, OpenAIPartialCompletionsJSON } from "./types/chat.js";
-import { OpenAICompletionsBody, OpenAICompletionsData, OpenAICompletionsJSON, OpenAIUsageCompletionsData } from "./types/completions.js";
+import { OpenAIChatBody, OpenAIChatCompletionsData, OpenAIChatCompletionsJSON, OpenAIChatMessage, OpenAIPartialChatCompletionsJSON } from "./types/chat.js";
+import { OpenAICompletionsBody, OpenAICompletionsData, OpenAICompletionsJSON, OpenAIPartialCompletionsJSON, OpenAIUsageCompletionsData } from "./types/completions.js";
 import { countChatMessageTokens, getPromptLength } from "../conversation/utils/length.js"
 import { GPTGenerationErrorType, GPTGenerationError } from "../error/gpt/generation.js";
 import { OpenAIModerationsData } from "./types/moderation.js";
 import { OpenAIErrorData } from "./types/error.js";
 import { GPTAPIError } from "../error/gpt/api.js";
 import { Bot } from "../bot/bot.js";
+import { StreamBuilder } from "../util/stream.js";
 
 export type OpenAIAPIPath = "moderations" | "chat/completions" | "completions"
 
@@ -42,11 +43,11 @@ export class OpenAIManager {
      * @throws An error, if the request to OpenAI failed
      * @returns Moderation data
      */
-    public async chat(options: OpenAIChatBody, progress?: (data: OpenAIPartialCompletionsJSON) => Promise<void> | void): Promise<OpenAIChatCompletionsData> {
+    public async chat(options: OpenAIChatBody, progress?: (data: OpenAIPartialChatCompletionsJSON) => Promise<void> | void): Promise<OpenAIChatCompletionsData> {
         /* Streaming mode */
         if (options.stream) {
             /* Latest message of the stream */
-            let latest: OpenAIPartialCompletionsJSON | null = null;
+            let latest: OpenAIPartialChatCompletionsJSON | null = null;
 
             /* Whether the generation is finished */
             let done: boolean = false;
@@ -103,7 +104,7 @@ export class OpenAIManager {
                             }
             
                             /* Response data */
-                            const data: OpenAIPartialCompletionsJSON = JSON.parse(event.data);
+                            const data: OpenAIPartialChatCompletionsJSON = JSON.parse(event.data);
                             if (data === null || data === undefined || data.choices === undefined || data.choices === null) return;
 
                             /* If an error occurred, stop generation at this point. */
@@ -190,118 +191,56 @@ export class OpenAIManager {
      * @throws An error, if the request to OpenAI failed
      * @returns Moderation data
      */
-    public async complete(options: OpenAICompletionsBody, progress?: (data: OpenAICompletionsJSON) => Promise<void> | void): Promise<OpenAICompletionsData> {
-        /* Streaming mode */
-        if (options.stream) {
-            /* Latest message of the stream */
-            let latest: OpenAICompletionsJSON | null = null;
+    public async complete(options: OpenAICompletionsBody, progress?: (data: OpenAIPartialCompletionsJSON) => Promise<void> | void): Promise<OpenAICompletionsData> {
+        return await new StreamBuilder<
+            OpenAICompletionsBody, OpenAIPartialCompletionsJSON, OpenAICompletionsJSON, OpenAICompletionsData
+        >({
+            body: options,
 
-            /* Whether the generation is finished */
-            let done: boolean = false;
+            error: async response => {
+                if (response.status === 400) return new GPTGenerationError({
+                    type: GPTGenerationErrorType.Moderation
+                });
 
-            await new Promise<void>(async (resolve, reject) => {
-                const controller: AbortController = new AbortController();
+                return this.error(response, "completions");
+            },
 
-                const abortTimer: NodeJS.Timeout = setTimeout(() => {
-                    controller.abort();
-                    reject(new TypeError("Request timed out"));
-                }, 30 * 1000);
+            url: this.url("completions"),
+            headers: this.headers(),
 
-                try {
-                    await fetchEventSource(this.url("completions"), {
-                        headers: this.headers() as any,
-                        body: JSON.stringify(options),
-                        mode: "cors",
-                        signal: controller.signal,
-                        method: "POST",
+            progress: (data, old, set) => {
+                const updated: OpenAIPartialCompletionsJSON = {
+                    choices: [
+                        {
+                            text: old !== null && old.choices[0].text ? `${old.choices[0].text}${data.choices[0].text}` : data.choices[0].text,
+                            finish_reason: data.choices[0].finish_reason
+                        }
+                    ]
+                };
 
-                        onclose: () => {
-                            /* If the API didn't send us [DONE] back, but still finished the request, manually mark the request as done. */
-                            if (!done) {
-                                done = true;
+                set(updated);
+                if (progress) progress(updated);
+            },
 
-                                controller.abort();
-                                resolve();
-                            }
-                        },
-            
-                        onopen: async (response) => {
-                            clearTimeout(abortTimer);
-
-                            /* If the request failed for some reason, throw an exception. */
-                            if (response.status !== 200) {
-                                /* Response data */
-                                const data: any | null = await response.clone().json().catch(() => null);
-                
-                                /* If an error message was given in the response body, show it to the user. */
-                                if (data !== null) {
-                                    const error: Error = await this.error(response, "completions");
-
-                                    controller.abort();
-                                    reject(error);
-                                }
-                            }
-                        },
-
-                        onmessage: async (event) => {
-                            /* If the request is finished, resolve the promise & mark the request as done. */
-                            if (event.data === "[DONE]") {
-                                done = true;
-
-                                controller.abort();
-                                return resolve();
-                            }
-            
-                            /* Response data */
-                            const data: OpenAICompletionsJSON = JSON.parse(event.data);
-                            if (data === null || data.choices === undefined || (data.choices && data.choices.length === 0)) return;
-
-                            latest = {
-                                usage: data.usage,
-
-                                choices: [
-                                    {
-                                        text: latest !== null ? `${latest.choices[0].text}${data.choices[0].text}` : data.choices[0].text,
-                                        finish_reason: data.choices[0].finish_reason
-                                    }
-                                ]
-                            };
-
-                            if (progress !== undefined) progress(latest);
-                        },
-                    });
-
-                } catch (error) {
-                    if (error instanceof GPTAPIError) return reject(error);
-
-                    reject(new GPTGenerationError({
-                        type: GPTGenerationErrorType.Other,
-                        cause: error as Error
-                    }));
+            process: final => {
+                const usage: OpenAIUsageCompletionsData = {
+                    completion_tokens: getPromptLength(final.choices[0].text),
+                    prompt_tokens: getPromptLength(options.prompt),
+                    total_tokens: 0
                 }
-            });
-
-            /* If the request was not finished, throw an error. */
-            if (!done && latest === null) throw new GPTGenerationError({
-                type: GPTGenerationErrorType.Empty
-            });
-
-            return {
-                response: latest!.choices[0],
-                usage: latest!.usage
-            };
-        } else {
-            const response: OpenAICompletionsJSON = await this.request("completions", "POST", options);
-
-            return {
-                response: {
-                    text: response.choices[0].text,
-                    finish_reason: response.choices[0].finish_reason
-                },
-
-                usage: response.usage
-            };
-        }
+    
+                usage.total_tokens = usage.completion_tokens + usage.total_tokens;
+    
+                return {
+                    response: {
+                        text: final.choices[0].text,
+                        finish_reason: final.choices[0].finish_reason
+                    },
+    
+                    usage
+                };
+            }
+        }).run();
     }
 
     /**

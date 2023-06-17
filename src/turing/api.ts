@@ -3,17 +3,18 @@ import { Awaitable } from "discord.js";
 import { EventEmitter } from "events";
 import { inspect } from "util";
 
-import { OpenAIChatBody, OpenAIChatCompletionsData, OpenAIChatMessage, OpenAIPartialCompletionsJSON } from "../openai/types/chat.js";
+import { OpenAIChatBody, OpenAIChatCompletionsData, OpenAIChatMessage, OpenAIPartialChatCompletionsJSON } from "../openai/types/chat.js";
 import { ChatSettingsPlugin, ChatSettingsPluginIdentifier } from "../conversation/settings/plugin.js";
 import { countChatMessageTokens, getPromptLength } from "../conversation/utils/length.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
 import { OpenAIUsageCompletionsData } from "../openai/types/completions.js";
 import { ChoiceSettingOptionChoice } from "../db/managers/settings.js";
 import { ChatOutputImage, ImageBuffer } from "../chat/types/image.js";
-import { DatabaseInfo, DatabaseUser } from "../db/managers/user.js";
 import { Conversation } from "../conversation/conversation.js";
-import { MetricsType } from "../db/managers/metrics.js";
 import { ChatInputImage } from "../chat/types/image.js";
+import { MetricsType } from "../db/managers/metrics.js";
+import { DatabaseInfo } from "../db/managers/user.js";
+import { DatabaseUser } from "../db/schemas/user.js";
 import { GPTAPIError } from "../error/gpt/api.js";
 import { StreamBuilder } from "../util/stream.js";
 import { RunPodPath } from "../runpod/api.js";
@@ -565,9 +566,9 @@ export class TuringAPI extends EventEmitter {
         this.bot = bot;
     }
 
-    public async openAI(options: TuringChatOpenAIBody, progress?: (data: OpenAIPartialCompletionsJSON) => Promise<void> | void): Promise<OpenAIChatCompletionsData> {
+    public async openAI(options: TuringChatOpenAIBody, progress?: (data: OpenAIPartialChatCompletionsJSON) => Promise<void> | void): Promise<OpenAIChatCompletionsData> {
         return await new StreamBuilder<
-            TuringChatOpenAIBody, OpenAIPartialCompletionsJSON, OpenAIPartialCompletionsJSON, OpenAIChatCompletionsData
+            TuringChatOpenAIBody, OpenAIPartialChatCompletionsJSON, OpenAIPartialChatCompletionsJSON, OpenAIChatCompletionsData
         >({
             body: options,
 
@@ -593,7 +594,7 @@ export class TuringAPI extends EventEmitter {
                     });
                 }
 
-                const updated: OpenAIPartialCompletionsJSON = {
+                const updated: OpenAIPartialChatCompletionsJSON = {
                     choices: [
                         {
                             delta: {
@@ -643,7 +644,7 @@ export class TuringAPI extends EventEmitter {
         let latest: MidjourneyPartialResult | null = null;
 
         /* Whether the user can use the fast mode */
-        const premium: boolean = this.bot.db.users.canUsePremiumFeatures(db);
+        const premium: boolean = await this.bot.db.users.canUsePremiumFeatures(db);
         const mode: MidjourneyMode = premium ? "fast" : "relax";
 
         /* Whether the generation is finished */

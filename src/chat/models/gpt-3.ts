@@ -1,4 +1,4 @@
-import { OpenAICompletionsData, OpenAICompletionsJSON } from "../../openai/types/completions.js";
+import { OpenAICompletionsData, OpenAICompletionsJSON, OpenAIPartialCompletionsJSON } from "../../openai/types/completions.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../../error/gpt/generation.js";
 import { ChatModel, ModelCapability, ModelType } from "../types/model.js";
 import { getPromptLength } from "../../conversation/utils/length.js";
@@ -23,7 +23,7 @@ export class GPT3Model extends ChatModel {
      * @param options Generation options
      * @returns Generated response
      */
-    private async generate(options: ModelGenerationOptions, progress?: (response: OpenAICompletionsJSON) => Promise<void> | void): Promise<OpenAICompletionsData | null> {
+    private async generate(options: ModelGenerationOptions, progress?: (response: OpenAIPartialCompletionsJSON) => Promise<void> | void): Promise<OpenAICompletionsData | null> {
         const prompt: PromptData = await this.client.buildPrompt(options);
 
         const data: OpenAICompletionsData = await this.client.session.ai.complete({

@@ -1,6 +1,6 @@
 import { APIMessage, BaseGuildTextChannel, DiscordAPIError, Message, Routes, WebhookMessageCreateOptions, WebhookMessageEditOptions } from "discord.js";
 
-import { DatabaseGuild } from "../db/managers/user.js";
+import { DatabaseGuild } from "../db/schemas/guild.js";
 import { Bot } from "../bot/bot.js";
 
 type WebhookChannel = BaseGuildTextChannel

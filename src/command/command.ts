@@ -2,11 +2,12 @@ import { ContextMenuCommandBuilder, SlashCommandBuilder, SlashCommandSubcommands
 import { AutocompleteInteraction, ButtonInteraction, ChatInputCommandInteraction, ContextMenuCommandInteraction } from "discord.js";
 import { APIApplicationCommandOptionChoice } from "discord-api-types/v10";
 
-import { DatabaseInfo, UserSubscriptionPlanType } from "../db/managers/user.js";
+import { UserSubscriptionPlanType } from "../db/schemas/user.js";
+import { DatabaseInfo } from "../db/managers/user.js";
+import { CooldownData } from "./types/cooldown.js";
 import { UserRole } from "../db/managers/role.js";
 import { Response } from "./response.js";
 import { Bot } from "../bot/bot.js";
-import { CooldownData } from "./types/cooldown.js";
 
 export type CommandBuilder = 
 	SlashCommandBuilder
@@ -19,7 +20,7 @@ export type CommandOptionChoice<T = string | number> = APIApplicationCommandOpti
 
 export type CommandResponse = Promise<Response | undefined | void>
 
-export type CommandRestrictionType = (UserRole | UserSubscriptionPlanType)[]
+export type CommandRestrictionType = (UserRole | Omit<UserSubscriptionPlanType, "free">)[]
 
 export interface CommandSpecificCooldown {
 	free: number;
@@ -73,6 +74,10 @@ export class Command<U extends ContextMenuCommandInteraction | ChatInputCommandI
 			.every(c => this.options.restriction.includes(c));
 	}
 
+	public voterOnly(): boolean {
+		return this.restricted([ "voter" ]);
+	}
+
 	public premiumOnly(): boolean {
 		return this.restricted([ "subscription", "plan" ]);
 	}
@@ -98,18 +103,10 @@ export class Command<U extends ContextMenuCommandInteraction | ChatInputCommandI
 		return this.bot.command.cooldown(interaction, this as any);
 	}
 
-
-	/**
-	 * Respond to auto-completion requests.
-	 */
-	public async complete(interaction: AutocompleteInteraction, db: DatabaseInfo): Promise<CommandOptionChoice[]> {
-		return [];
-	}
-
 	/**
 	 * Execute the command.
 	 */
 	public async run(interaction: U, db: DatabaseInfo): CommandResponse {
-		return undefined;
+		return;
 	}
 }

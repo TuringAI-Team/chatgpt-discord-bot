@@ -17,6 +17,7 @@ export class MidjourneyInteractionHandler extends InteractionHandler<ButtonInter
             undefined,
 
             {
+                restriction: [ "voter" ],
                 synchronous: true
             }
         );

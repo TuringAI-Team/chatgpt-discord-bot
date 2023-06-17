@@ -4,7 +4,6 @@ import chalk from "chalk";
 
 import { TuringAlanImageGenerators, TuringAlanImageModifiers, TuringAlanSearchEngines, TuringVideoModels, alanOptions } from "../../turing/api.js";
 import { CONVERSATION_DEFAULT_COOLDOWN, Conversation } from "../../conversation/conversation.js";
-import { DatabaseInfo, DatabaseUser, DatabaseSettings, DatabaseGuild } from "./user.js";
 import { LoadingIndicatorManager, LoadingIndicators } from "../types/indicator.js";
 import { GenerationSizes, getAspectRatio } from "../../commands/imagine.js";
 import { ChatSettingsPlugins } from "../../conversation/settings/plugin.js";
@@ -16,10 +15,13 @@ import { ErrorResponse } from "../../command/response/error.js";
 import { ChatGuildData } from "../../chat/types/options.js";
 import { RestrictionType } from "../types/restriction.js";
 import { DisplayEmoji, Emoji } from "../../util/emoji.js";
-import { ClientDatabaseManager } from "../cluster.js";
+import { SubClusterDatabaseManager } from "../sub.js";
 import { Response } from "../../command/response.js";
+import { DatabaseGuild } from "../schemas/guild.js";
+import { DatabaseSettings, DatabaseUser } from "../schemas/user.js";
 import { Languages } from "../types/locale.js";
 import { Utils } from "../../util/utils.js";
+import { DatabaseInfo } from "./user.js";
 import { Bot } from "../../bot/bot.js";
 
 export enum SettingsLocation {
@@ -948,13 +950,7 @@ interface SettingsPageBuilderOptions {
     interaction: ChatInputCommandInteraction | StringSelectMenuInteraction | ButtonInteraction;
 }
 
-export class UserSettingsManager {
-    private readonly db: ClientDatabaseManager;
-
-    constructor(db: ClientDatabaseManager) {
-        this.db = db;
-    }
-
+export class UserSettingsManager extends SubClusterDatabaseManager {
     private location(entry: SettingsDatabaseEntry): SettingsLocation {
         if ((entry as any).interactions != undefined) return SettingsLocation.User;
         return SettingsLocation.Guild;
@@ -1040,13 +1036,6 @@ export class UserSettingsManager {
 
     public get<T extends any>(entry: SettingsDatabaseEntry, key: SettingKeyAndCategory): T {
         let value: T = entry.settings[key] as T ?? this.template(this.location(entry))[key];
-        const option = this.settingsOption(key)!;
-
-        if (option instanceof ChoiceSettingsOption) {
-            /* If the current setting value is an invalid choice, reset it to the default again, */
-            if (!option.data.choices.find(c => c.value === value)) value = this.template(this.location(entry))[key] as T;
-        }
-
         return value;
     }
 
@@ -1157,7 +1146,7 @@ export class UserSettingsManager {
             : origin === SettingsLocation.Guild ? db.guild! : db.user;
         
         /* Subscription type of the user & guild */
-        const subscriptionType = this.db.users.type(db);
+        const subscriptionType = await this.db.users.type(db);
 
         if (type === "menu") {
             /* Category name & the actual category */

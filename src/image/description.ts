@@ -9,7 +9,7 @@ import { Conversation } from "../conversation/conversation.js";
 import { NoticeResponse } from "../command/response/notice.js";
 import { OpenAIChatMessage } from "../openai/types/chat.js";
 import { ImageOCRResult, detectText } from "../util/ocr.js";
-import { ClientDatabaseManager } from "../db/cluster.js";
+import { ClusterDatabaseManager } from "../db/cluster.js";
 import { ChatBaseImage } from "../chat/types/image.js";
 import { DatabaseInfo } from "../db/managers/user.js";
 import { Response } from "../command/response.js";
@@ -79,7 +79,7 @@ export class ImageDescriptionManager {
     }
 
     private async get(input: ImageDescriptionInput & { hash: string }): Promise<ImageDescription | null> {
-        return this.bot.db.users.fetchFromCacheOrDatabase(
+        return this.bot.db.fetchFromCacheOrDatabase(
             "descriptions", input.hash
         );
     }
@@ -245,7 +245,7 @@ export class ImageDescriptionManager {
                 name: "Summary", value: summary.content
             });
 
-            await this.bot.db.users.incrementInteractions(db, "image_descriptions");
+            await this.bot.db.users.incrementInteractions(db, "imageDescriptions");
             await this.bot.db.plan.expenseForImageDescription(db, description, summary);
 
             return new Response()

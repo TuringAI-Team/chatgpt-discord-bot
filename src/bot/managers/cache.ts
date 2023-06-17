@@ -1,4 +1,4 @@
-import { RedisClientType, createClient } from "redis";
+import { RedisClientType as RedisClient, createClient } from "redis";
 
 import { DatabaseCollectionType } from "../../db/manager.js";
 import { App } from "../../app.js";
@@ -17,7 +17,7 @@ const CacheDuration: Partial<Record<CacheType, number>> = {
 }
 
 export class CacheManager {
-    public client: RedisClientType;
+    public client: RedisClient;
     private readonly app: App;
 
     constructor(app: App) {
@@ -64,6 +64,6 @@ export class CacheManager {
     }
 
     private keyName(collection: CacheType, key: string): string {
-        return `${collection}:${key}`;
+        return `test4:${collection}:${key}`;
     }
 }

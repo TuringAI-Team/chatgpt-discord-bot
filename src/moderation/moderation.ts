@@ -1,16 +1,18 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle, EmbedBuilder, Interaction, InteractionReplyOptions, MessageEditOptions, ModalActionRowComponentBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, User, StringSelectMenuBuilder, StringSelectMenuInteraction, Collection, Snowflake, TextChannel, Guild, Channel, Message, InteractionResponse, MessageCreateOptions, ChatInputCommandInteraction, ComponentType } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle, EmbedBuilder, Interaction, MessageEditOptions, ModalActionRowComponentBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, User, StringSelectMenuBuilder, StringSelectMenuInteraction, Collection, Snowflake, TextChannel, Guild, Channel, Message, InteractionResponse, MessageCreateOptions, ChatInputCommandInteraction, ComponentType } from "discord.js";
 import translate from "@iamtraction/google-translate";
+import { randomUUID } from "crypto";
 
 import { AutoModerationActionData, AutoModerationActionType, AutoModerationManager } from "./automod/automod.js";
-import { DatabaseUser, DatabaseUserInfraction, DatabaseInfo, DatabaseGuild } from "../db/managers/user.js";
-import { ModerationInteractionHandlerData } from "../interactions/moderation.js";
 import { InteractionHandlerClassType, InteractionHandlerResponse } from "../interaction/handler.js";
+import { ModerationInteractionHandlerData } from "../interactions/moderation.js";
+import { DatabaseUser, DatabaseUserInfraction } from "../db/schemas/user.js";
 import { Response, ResponseSendClass } from "../command/response.js";
 import { AutoModerationFilter } from "./automod/filters.js";
+import { DatabaseGuild } from "../db/schemas/guild.js";
+import { DatabaseInfo } from "../db/managers/user.js";
 import { FindResult, Utils } from "../util/utils.js";
 import { Config } from "../config.js";
 import { Bot } from "../bot/bot.js";
-import { randomUUID } from "crypto";
 
 const ActionToEmoji: Record<string, string> = {
 	warn: "⚠️",
@@ -339,6 +341,9 @@ export class ModerationManager {
         if (db.subscription !== null) premiumDescription = `${premiumDescription}\n**Subscription** » expires *<t:${Math.floor(db.subscription.expires / 1000)}:R>*`;
         if (db.plan !== null) premiumDescription = `${premiumDescription}\n**Plan** » **$${db.plan.total.toFixed(2)}** total; **$${db.plan.used.toFixed(2)}** used; **${db.plan.expenses.length}** expenses; **${db.plan.history.length}** charges`;
     
+        /* Whether the user is banned */
+        const banned = await this.bot.db.users.banned(db);
+
         const response = new Response()
             .addEmbed(builder => builder
                 .setTitle("User Overview 🔎")
@@ -353,7 +358,7 @@ export class ModerationManager {
     
                     {
                         name: "First interaction 🙌",
-                        value: `<t:${Math.floor(db.created / 1000)}:f>`,
+                        value: `<t:${Math.floor(Date.parse(db.created) / 1000)}:f>`,
                         inline: true
                     },
     
@@ -389,7 +394,7 @@ export class ModerationManager {
     
                     {
                         name: "Banned ⚠️",
-                        value: this.bot.db.users.banned(db) ? "✅" : "❌",
+                        value: banned !== null ? "✅" : "❌",
                         inline: true
                     }
                 )
@@ -424,7 +429,7 @@ export class ModerationManager {
     
                     {
                         name: "First interaction 🙌",
-                        value: `<t:${Math.floor(db.created / 1000)}:f>`,
+                        value: `<t:${Math.floor(Date.parse(db.created) / 1000)}:f>`,
                         inline: true
                     },
     

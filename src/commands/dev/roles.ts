@@ -1,9 +1,9 @@
-import { SlashCommandBuilder, User } from "discord.js";
+import { SlashCommandBuilder } from "discord.js";
 
 import { Command, CommandInteraction, CommandResponse } from "../../command/command.js";
 import { UserRole, UserRoleHierarchy } from "../../db/managers/role.js";
 import { ErrorResponse } from "../../command/response/error.js";
-import { DatabaseUser } from "../../db/managers/user.js";
+import { DatabaseUser } from "../../db/schemas/user.js";
 import { Response } from "../../command/response.js";
 import { Utils } from "../../util/utils.js";
 import { Bot } from "../../bot/bot.js";

@@ -103,11 +103,21 @@ export class App {
      * Shut down the application & all related services.
      */
 	public async stop(code: number = 0): Promise<void> {
+		/* First, save the pending database changes. */
+		await this.db.queue.work();
+
 		this.state = AppState.Stopped;
 
 		/* Exit the process. */
 		process.exit(code);
 	}
+
+    /**
+     * Whether development mode is enabled
+     */
+    public get dev(): boolean {
+        return this.config.dev;
+    }
 
 	/**
 	 * Get a stripped-down interface of this class.

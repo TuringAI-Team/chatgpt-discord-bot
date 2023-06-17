@@ -1,4 +1,4 @@
-import { OpenAIChatCompletionsData, OpenAIPartialCompletionsJSON } from "../../openai/types/chat.js";
+import { OpenAIChatCompletionsData, OpenAIPartialChatCompletionsJSON } from "../../openai/types/chat.js";
 import { ChatModel, ConstructorModelOptions, ModelCapability, ModelType } from "../types/model.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../../error/gpt/generation.js";
 import { ModelGenerationOptions } from "../types/options.js";
@@ -22,7 +22,7 @@ export class ChatGPTModel extends ChatModel {
      * @param options Generation options
      * @returns Generated response
      */
-    protected async chat(options: ModelGenerationOptions, prompt: PromptData, progress: (response: OpenAIPartialCompletionsJSON) => Promise<void> | void): Promise<OpenAIChatCompletionsData> {
+    protected async chat(options: ModelGenerationOptions, prompt: PromptData, progress: (response: OpenAIPartialChatCompletionsJSON) => Promise<void> | void): Promise<OpenAIChatCompletionsData> {
         let data: OpenAIChatCompletionsData | null = null;
 
         /* Turing ChatGPT API */

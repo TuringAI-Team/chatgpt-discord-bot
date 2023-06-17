@@ -3,17 +3,11 @@ import chalk from "chalk";
 import { CacheType, CacheValue } from "../../bot/managers/cache.js";
 import { BotClusterManager } from "../../bot/manager.js";
 import { DatabaseCollectionType } from "../manager.js";
-import { ClientDatabaseManager } from "../cluster.js";
+import { SubClusterDatabaseManager } from "../sub.js";
 
 type CacheEvalAction = "get" | "delete" | "set"
 
-export class CacheManager {
-    private db: ClientDatabaseManager;
-
-    constructor(db: ClientDatabaseManager) {
-        this.db = db;
-    }
-
+export class CacheManager extends SubClusterDatabaseManager {
     public async set(
         collection: CacheType,
         key: string,
@@ -74,7 +68,7 @@ export class CacheManager {
                     await manager.bot.app.cache.delete(context.collection, context.key);
                 }
             }) as any, {
-                timeout: 15 * 1000,
+                timeout: 3 * 1000,
                 context: {
                     action, collection, key, value
                 }

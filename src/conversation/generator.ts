@@ -1,7 +1,7 @@
 import { ActionRowBuilder, AttachmentBuilder, BaseGuildTextChannel, ButtonBuilder, ButtonInteraction, ButtonStyle, ChannelType, ComponentEmojiResolvable, ComponentType, DiscordAPIError, DMChannel, EmbedBuilder, Guild, InteractionReplyOptions, Message, MessageCreateOptions, MessageEditOptions, MessageReplyOptions, PermissionsString, Role, TextChannel, User, WebhookMessageCreateOptions } from "discord.js";
 import { randomUUID } from "crypto";
 
-import { DatabaseInfo, DatabaseUserInfraction, UserSubscriptionType } from "../db/managers/user.js";
+import { DatabaseInfo } from "../db/managers/user.js";
 import { ResponseChatNoticeMessage, MessageType, ResponseMessage } from "../chat/types/message.js";
 import { LoadingIndicator, LoadingIndicatorManager } from "../db/types/indicator.js";
 import { PlanCreditViewers, PlanCreditVisibility } from "../db/managers/plan.js";
@@ -25,6 +25,7 @@ import { Emoji } from "../util/emoji.js";
 import { ErrorResponse, ErrorResponseOptions, ErrorType } from "../command/response/error.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
 import { GPTAPIError } from "../error/gpt/api.js";
+import { DatabaseUserInfraction, UserSubscriptionType } from "../db/schemas/user.js";
 
 /* Permissions required by the bot to function correctly */
 const BOT_REQUIRED_PERMISSIONS: { [key: string]: PermissionsString } = {
@@ -101,7 +102,7 @@ export class Generator {
 		);
 
 		/* Subscription type of the user */
-		const type: UserSubscriptionType = this.bot.db.users.type(db);
+		const type: UserSubscriptionType = await this.bot.db.users.type(db);
 
 		/* Whether the remaining credit should be shown in the toolbar */
 		const creditVisibility: PlanCreditVisibility = type.type === "plan"
@@ -207,7 +208,7 @@ export class Generator {
 				new ButtonBuilder()
 					.setCustomId(`chat:user:${conversation.id}`)
 					.setDisabled(true)
-					.setEmoji(this.bot.db.users.userIcon(db))
+					.setEmoji(await this.bot.db.users.userIcon(db))
 					.setLabel(`@${conversation.user.username}`)
 					.setStyle(ButtonStyle.Secondary)
 			);
@@ -305,7 +306,7 @@ export class Generator {
 
 		/* If the command is on cool-down, don't run the request. */
 		if (conversation.cooldown.active && remaining > Math.min(conversation.cooldown.state.expiresIn! / 2, 10 * 1000)) {
-			const reply = await interaction.reply(conversation.cooldownResponse(db).get() as InteractionReplyOptions).catch(() => null);
+			const reply = await interaction.reply((await conversation.cooldownResponse(db)).get() as InteractionReplyOptions).catch(() => null);
 
 			if (reply === null) return;
 
@@ -422,9 +423,8 @@ export class Generator {
 		if (mentions === "inMessage") return void await Reaction.add(this.bot, message, "👋");
 
 		/* Get the user & guild data from the database, if available. */
-		const db = await this.bot.db.users.fetchData(author, guild);
-
-		const banned: DatabaseUserInfraction | null = this.bot.db.users.banned(db.user);
+		const db = await this.bot.db.users.fetch(author, guild);
+		const banned: DatabaseUserInfraction | null = await this.bot.db.users.banned(db.user);
 
 		/* If the user is banned from the bot, send a notice message. */
 		if (banned !== null) return void await this.bot.moderation.buildBanMessage(banned).send(message);
@@ -433,7 +433,7 @@ export class Generator {
 		db.user = await this.bot.moderation.warningModal({ interaction: message, db });
 
 		/* Whether the user can access Premium features */
-		const premium: boolean = this.bot.db.users.canUsePremiumFeatures(db);
+		const premium: boolean = await this.bot.db.users.canUsePremiumFeatures(db);
 
 		/* Conversation of the author */
 		let conversation: Conversation = null!;
@@ -486,12 +486,12 @@ export class Generator {
 
 		/* Remaining cool-down time */
 		const remaining: number = conversation.cooldown.remaining;
-		if (conversation.cooldown.active) await this.bot.db.users.incrementInteractions(db, "cooldown_messages");
+		if (conversation.cooldown.active) await this.bot.db.users.incrementInteractions(db, "cooldownMessages");
 
 		/* If the command is on cool-down, don't run the request. */
 		if (conversation.cooldown.active && remaining > Math.min(conversation.cooldown.state.expiresIn! / 2, 10 * 1000)) {
 			const reply = await message.reply({
-				embeds: conversation.cooldownMessage(db)
+				embeds: await conversation.cooldownMessage(db)
 			}).catch(() => null);
 
 			if (reply === null) return;
@@ -574,7 +574,7 @@ export class Generator {
 
 		/* Whether partial results should be shown, and how often they should be updated */
 		const partial: boolean = this.bot.db.settings.get<boolean>(db.user, "chat:partialMessages");
-		const updateTime: number = this.bot.db.users.canUsePremiumFeatures(db) ? 2500 : 5000;
+		const updateTime: number = premium ? 2500 : 5000;
 
 		let typingTimer: NodeJS.Timer | null = setInterval(async () => {
 			try {

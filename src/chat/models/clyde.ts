@@ -1,14 +1,14 @@
 import { Awaitable, ChannelType, GuildBasedChannel, GuildEmoji, GuildMember, Invite, MessageMentions, TextChannel } from "discord.js";
 
-import { OpenAIChatCompletionsData, OpenAIPartialCompletionsJSON } from "../../openai/types/chat.js";
-import { DatabaseSubscription, DatabaseUser } from "../../db/managers/user.js";
+import { OpenAIChatCompletionsData, OpenAIPartialChatCompletionsJSON } from "../../openai/types/chat.js";
+import { DatabaseSubscription, DatabaseUser } from "../../db/schemas/user.js";
 import { ChatGuildData, ModelGenerationOptions } from "../types/options.js";
 import { Conversation } from "../../conversation/conversation.js";
 import { ChatOutputImage, ImageBuffer } from "../types/image.js";
 import { ModelCapability, ModelType } from "../types/model.js";
 import { PartialResponseMessage } from "../types/message.js";
+import { DatabasePlan } from "../../db/managers/plan.js";
 import { ChatClient, PromptData } from "../client.js";
-import { UserPlan } from "../../db/managers/plan.js";
 import { ChatGPTModel } from "./chatgpt.js";
 import { Utils } from "../../util/utils.js";
 
@@ -222,7 +222,7 @@ export class ClydeModel extends ChatGPTModel {
     /**
      * Display the presence & activity status of a guild member. 
      */
-    private toClydeUser(conversation: Conversation, member: GuildMember, db: DatabaseUser): ClydeUser {
+    private async toClydeUser(conversation: Conversation, member: GuildMember, db: DatabaseUser): Promise<ClydeUser> {
         /* Roles of the member */
         const roles = Array.from(member.roles.cache.values());
 
@@ -235,10 +235,10 @@ export class ClydeModel extends ChatGPTModel {
 
         if (conversation.user.id === member.id) final.suffix = "user I'm talking to";
 
-        const voted: number | null = this.client.session.manager.bot.db.users.voted(db);
+        const voted: number | null = await this.client.session.manager.bot.db.users.voted(db);
 
         const subscription: DatabaseSubscription | null = db.subscription;
-        const plan: UserPlan | null = db.plan;
+        const plan: DatabasePlan | null = db.plan;
 
         final["Premium subscription"] = subscription !== null ? `yes, joined at ${new Date(subscription.since)} and expires at ${new Date(subscription.expires)}` : "no";
         final["Premium pay-as-you-go plan"] = plan !== null ? `yes, has used up $${plan.used} and a total of $${plan.total} charged up` : "no";
@@ -299,14 +299,14 @@ export class ClydeModel extends ChatGPTModel {
         /* Clean up the user's prompt; format all channel names, mentions and emoji names. */
         const cleanedPrompt: ClydeFormatterResult = await this.format(options.conversation, options.guild!, options.prompt, "input");
 
-        const progress = async (response: OpenAIPartialCompletionsJSON) => {
+        const progress = async (response: OpenAIPartialChatCompletionsJSON) => {
             const final: ClydeFormatterResult = await this.format(options.conversation, options.guild!, response.choices[0].delta.content!, "output", true);
             options.progress(final);
         };
 
         /* All users to include in the prompt */
         const users: ClydeUser[] = [
-            this.toClydeUser(options.conversation, options.guild!.member, options.db.user)
+            await this.toClydeUser(options.conversation, options.guild!.member, options.db.user)
         ];
 
         const regex: RegExpMatchArray | null = options.prompt.match(MessageMentions.UsersPattern);
@@ -325,7 +325,7 @@ export class ClydeModel extends ChatGPTModel {
             if (db === null) continue;
 
             users.push(
-                this.toClydeUser(options.conversation, member, db)
+                await this.toClydeUser(options.conversation, member, db)
             );
         }
 

@@ -477,7 +477,7 @@ export default class ImagineCommand extends Command {
 				}
 			});
 
-			const type = this.bot.db.users.type(db);
+			const type = await this.bot.db.users.type(db);
 			
 			const duration: number | null = (ImageGenerationCooldown as any)[type.type] ?? null;
 			if (duration !== null) await handler.applyCooldown(interaction, db, duration);
@@ -509,7 +509,7 @@ export default class ImagineCommand extends Command {
 				}
 			});
 
-			const type = this.bot.db.users.type(db);
+			const type = await this.bot.db.users.type(db);
 			
 			const duration: number | null = (ImageGenerationCooldown as any)[type.type] ?? null;
 			if (duration !== null) await handler.applyCooldown(interaction, db, duration);
@@ -733,8 +733,8 @@ export default class ImagineCommand extends Command {
 	}
 
     public async run(interaction: ChatInputCommandInteraction, db: DatabaseInfo): CommandResponse {
-		const canUsePremiumFeatures: boolean = this.bot.db.users.canUsePremiumFeatures(db);
-		const subscriptionType = this.bot.db.users.type(db);
+		const canUsePremiumFeatures: boolean = await this.bot.db.users.canUsePremiumFeatures(db);
+		const subscriptionType = await this.bot.db.users.type(db);
 		
 		/* How many images to generate */
 		const count: number = 

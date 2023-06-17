@@ -1,18 +1,20 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle, EmbedBuilder, GuildMember, InteractionReplyOptions } from "discord.js";
 
 import { MidjourneyResult, TuringVideoModel, TuringVideoModelName, TuringVideoResult } from "../../turing/api.js";
-import { DatabaseGuild, DatabaseInfo, DatabaseUser, UserSubscriptionType } from "./user.js";
 import { DescribeSummary, ImageDescription } from "../../image/description.js";
 import { StableHordeGenerationResult } from "../../image/types/image.js";
+import { DatabaseUser, UserSubscriptionType } from "../schemas/user.js";
 import { ChatInteraction } from "../../conversation/conversation.js";
 import { ErrorResponse } from "../../command/response/error.js";
 import { CommandInteraction } from "../../command/command.js";
 import { SummaryPrompt } from "../../commands/summarize.js";
 import { ProgressBar } from "../../util/progressBar.js";
-import { ClientDatabaseManager } from "../cluster.js";
+import { SubClusterDatabaseManager } from "../sub.js";
 import { YouTubeVideo } from "../../util/youtube.js";
 import { Response } from "../../command/response.js";
+import { DatabaseGuild } from "../schemas/guild.js";
 import { Utils } from "../../util/utils.js";
+import { DatabaseInfo } from "./user.js";
 
 type DatabaseEntry = DatabaseUser | DatabaseGuild
 
@@ -104,7 +106,7 @@ export type UserPlanCreditBonusAmount = 0.05 | 0.10 | 0.15 | 0.20
 /* How many expense entries can be in the history, maximum */
 export const PLAN_MAX_EXPENSE_HISTORY: number = 500
 
-export interface UserPlan {
+export interface DatabasePlan {
     /* How much credit the user has charged up, e.g. 17.80 (17,80 USD)  */
     total: number;
 
@@ -118,15 +120,13 @@ export interface UserPlan {
     history: UserPlanCredit[];
 }
 
-export type GuildPlan = UserPlan
-
 enum PlanLocation {
     Guild = "guild",
     User = "user"
 }
 
 export type PlanCreditVisibility = "detailed" | "full" | "used" | "percentage" | "hide"
-export type PlanCreditViewer = (plan: UserPlan, interaction: ChatInteraction) => string | null
+export type PlanCreditViewer = (plan: DatabasePlan, interaction: ChatInteraction) => string | null
 
 export const PlanCreditViewers: Record<PlanCreditVisibility, PlanCreditViewer> = {
     detailed: (plan, interaction) => `${interaction.output.raw?.usage ? `${interaction.output.raw.usage.completion} tokens •` : interaction.output.raw?.cost ? `$${interaction.output.raw.cost.toFixed(4)} •` : ""} $${plan.used.toFixed(2)} / $${plan.total.toFixed(2)}`,
@@ -137,7 +137,7 @@ export const PlanCreditViewers: Record<PlanCreditVisibility, PlanCreditViewer> =
 }
 
 export type PlanExpenseEntryViewer<T extends UserPlanExpense = any> = (
-    (expense: T & { data: NonNullable<T["data"]> }, plan: UserPlan) => string | null
+    (expense: T & { data: NonNullable<T["data"]> }, plan: DatabasePlan) => string | null
 ) | null
 
 export const PlanExpenseEntryViewers: {
@@ -160,13 +160,7 @@ export const PlanExpenseEntryViewers: {
     translate: e => `translated from **\`${e.data.source}\`**, used **${e.data.tokens.prompt}** prompt & **${e.data.tokens.completion}** completion tokens`
 }
 
-export class PlanManager {
-    private db: ClientDatabaseManager;
-
-    constructor(db: ClientDatabaseManager) {
-        this.db = db;
-    }
-
+export class PlanManager extends SubClusterDatabaseManager {
     public location(entry: DatabaseEntry): PlanLocation {
         if ((entry as any).roles != undefined) return PlanLocation.User;
         return PlanLocation.Guild;
@@ -193,7 +187,7 @@ export class PlanManager {
      * 
      * @returns The user's plan, or `null`
      */
-    public get({ plan }: DatabaseEntry): UserPlan | null {
+    public get({ plan }: DatabaseEntry): DatabasePlan | null {
         if (plan === null) return null;
 
         return {
@@ -210,7 +204,7 @@ export class PlanManager {
         /* If no used amount of credit was actually specified, ignore this. */
         if (used === 0) return null;
 
-        const userType = this.db.users.type(db);
+        const userType = await this.db.users.type(db);
         const entry = db[userType.location]!;
 
         /* Check whether the user/guild has actually configured to use this plan. */
@@ -223,7 +217,7 @@ export class PlanManager {
         } as T;
 
         /* The entry's current plan */
-        const plan: UserPlan = this.get(entry)!;
+        const plan: DatabasePlan = this.get(entry)!;
 
         let additional: number = used;
         if (bonus) additional += additional * bonus;
@@ -333,12 +327,12 @@ export class PlanManager {
         };
 
         const entry: DatabaseEntry = (db as any).guild
-            ? (db as DatabaseInfo)[this.db.users.type(db as DatabaseInfo).location]!
+            ? (db as DatabaseInfo)[(await this.db.users.type(db as DatabaseInfo)).location]!
             : db as DatabaseEntry;
 
         /* The entry's current plan */
         if (entry.plan === null) throw new Error("User/guild doesn't have a running plan");
-        const plan: UserPlan = this.get(entry)!;
+        const plan: DatabasePlan = this.get(entry)!;
 
         /* Updated, total credit */
         const updatedCredit: number = plan.total + amount;
@@ -355,12 +349,12 @@ export class PlanManager {
         return credit;
     }
 
-    public async create(entry: DatabaseEntry, amount?: number): Promise<UserPlan> {
+    public async create(entry: DatabaseEntry, amount?: number): Promise<DatabasePlan> {
         /* If the user already has a pay-as-you-go plan, just return that instead. */
         if (entry.plan !== null) return entry.plan;
 
         /* The user's new plan */
-        const plan: UserPlan = {
+        const plan: DatabasePlan = {
             total: amount ?? 0, used: 0,
             expenses: [], history: []
         };
@@ -390,7 +384,7 @@ export class PlanManager {
         const action: "overview" = data.shift()! as any;
 
         /* Database instances, guild & user */
-        const db: DatabaseInfo = await this.db.users.fetchData(interaction.user, interaction.guild);
+        const db: DatabaseInfo = await this.db.users.fetch(interaction.user, interaction.guild);
 
         if (action === "overview") {
             const response = await this.buildOverview(interaction, db);
@@ -414,7 +408,7 @@ export class PlanManager {
 		};
 
 		/* Subscription type of the user */
-		const type: UserSubscriptionType = this.db.users.type({ user, guild });
+		const type: UserSubscriptionType = await this.db.users.type({ user, guild });
 
 		/* The user's permissions */
 		const permissions = interaction.member instanceof GuildMember ? interaction.member.permissions : null;

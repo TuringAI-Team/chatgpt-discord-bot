@@ -38,9 +38,11 @@ export interface OpenAICompletionsBody {
 }
 
 export interface OpenAICompletionsJSON {
-    choices: OpenAICompletionResponse[];
+    choices: [ OpenAICompletionResponse ];
     usage: OpenAIUsageCompletionsData;
 }
+
+export type OpenAIPartialCompletionsJSON = Pick<OpenAICompletionsJSON, "choices">
 
 export interface OpenAIUsageCompletionsData {
     prompt_tokens: number;

@@ -1,14 +1,15 @@
+import { getInfo } from "discord-hybrid-sharding";
 import { User } from "discord.js";
 import chalk from "chalk";
 
-import { DatabaseUser } from "../db/managers/user.js";
+import { DatabaseUser } from "../db/schemas/user.js";
 import { GPTAPIError } from "../error/gpt/api.js";
 import { Bot } from "../bot/bot.js";
-import { getInfo } from "discord-hybrid-sharding";
 
 type VoteAPIPath = string
 
-export const VOTE_DURATION: number = 12.5 * 60 * 60 * 1000
+/* How long a vote lasts */
+export const VoteDuration: number = 12.5 * 60 * 60 * 1000
 
 export class VoteManager {
     private readonly bot: Bot;
@@ -35,7 +36,7 @@ export class VoteManager {
         if (!voted) return false;
 
         /* Update the user's vote status in the database. */
-        await this.bot.db.users.updateUser(db, {
+        await this.bot.db.queue.update("users", db, {
             voted: new Date().toISOString()
         });
 

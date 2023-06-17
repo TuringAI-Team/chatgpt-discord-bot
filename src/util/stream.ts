@@ -96,11 +96,18 @@ export class StreamBuilder<RequestBody, PartialResponseData, FinalResponseData =
                     },
 
                     onmessage: async (event) => {
-                        /* Response data */
-                        const data: PartialResponseData = JSON.parse(event.data);
-                        if (!data || !(await this.options.check(data))) return;
+                        if (event.data === "[DONE]") {
+                            done = true;
+
+                            controller.abort();
+                            return resolve();
+                        }
 
                         try {
+                            /* Response data */
+                            const data: PartialResponseData = JSON.parse(event.data);
+                            if (!data || !(await this.options.check(data))) return;
+                            
                             const old = latest;
                             latest = data;
 

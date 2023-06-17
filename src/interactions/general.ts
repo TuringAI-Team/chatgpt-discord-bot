@@ -41,7 +41,7 @@ export class GeneralInteractionHandler extends InteractionHandler<ButtonInteract
 
         } else if (data.action === "vote") {
 			/* When the user already voted for the bot, if applicable */
-			const when: number | null = this.bot.db.users.voted(db.user);
+			const when: number | null = await this.bot.db.users.voted(db.user);
 
 			if (when !== null) return new Response()
                 .addEmbed(builder => builder

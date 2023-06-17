@@ -1,13 +1,14 @@
-import { ActionRowBuilder, ComponentType, ButtonStyle, ButtonBuilder, ChatInputCommandInteraction, Collection, InteractionResponse, Message, SlashCommandBuilder, MessageContextMenuCommandInteraction } from "discord.js";
+import { Collection, InteractionResponse } from "discord.js";
 import { DiscordAPIError } from "@discordjs/rest";
 
-import { DatabaseInfo, DatabaseUserInfraction } from "../db/managers/user.js";
-import { CooldownData } from "../command/types/cooldown.js";
-import { Response } from "../command/response.js";
 import { AnyInteractionHandlerValues, InteractionHandler, InteractionHandlerClassType, InteractionHandlerRunOptions, InteractionValidationError } from "./handler.js";
+import { DatabaseUserInfraction } from "../db/schemas/user.js";
+import { CooldownData } from "../command/types/cooldown.js";
+import { RunningData } from "../command/types/running.js";
+import { DatabaseInfo } from "../db/managers/user.js";
+import { Response } from "../command/response.js";
 import { Bot, BotStatus } from "../bot/bot.js";
 import { Utils } from "../util/utils.js";
-import { RunningData } from "../command/types/running.js";
 
 export class InteractionManager {
 	protected readonly bot: Bot;
@@ -50,7 +51,7 @@ export class InteractionManager {
 	public get<T extends InteractionHandler = InteractionHandler>(name: string): T {
 		/* Search for the specified command. */
 		const found: T | null = this.handlers.get(name) as T ?? null;
-		if (found === null) throw new Error("EEK!");
+		if (found === null) throw new Error(`Couldn't find interaction "${name}"`);
 
 		return found;
 	}
@@ -135,7 +136,7 @@ export class InteractionManager {
 		/* The interaction handler */
 		const handler = data.handler;
 
-		if (handler.options.waitForStart && (!this.bot.started || this.bot.statistics.memoryUsage === 0)) return void await new Response()
+		if (handler.options.waitForStart && this.bot.reloading) return void await new Response()
 			.addEmbed(builder => builder
 				.setTitle("The bot is currently reloading**...** ⏳")
 				.setColor("Orange")
@@ -148,8 +149,8 @@ export class InteractionManager {
 		const running: RunningData | null = await this.bot.command.running(interaction, handler);
 
 		/* Get the database entry of the user. */
-		let db: DatabaseInfo = await this.bot.db.users.fetchData(interaction.user, interaction.guild);
-		const subscription = this.bot.db.users.type(db);
+		let db: DatabaseInfo = await this.bot.db.users.fetch(interaction.user, interaction.guild);
+		const subscription = await this.bot.db.users.type(db);
 
 		/* Current status of the bot */
 		const status: BotStatus = await this.bot.status();
@@ -187,7 +188,7 @@ export class InteractionManager {
 		/* If the user is currently on cool-down for this handler, ... */
 		if (handler.options.cooldown !== null && cooldown !== null && cooldown.createdAt) {
 			/* Build the cool-down message. */
-			const response: Response = this.bot.command.cooldownMessage(interaction, handler, db, cooldown);
+			const response: Response = await this.bot.command.cooldownMessage(interaction, handler, db, cooldown);
 
 			/* How long until the cool-down expires */
 			const delay: number = (cooldown.createdAt + cooldown.duration) - Date.now() - 1000;
@@ -205,9 +206,9 @@ export class InteractionManager {
 		}
 
 		/* If the handler is marked as private, do some checks to make sure only privileged users are able to execute this handler. */
-		if (!handler.premiumOnly) {
+		if (!handler.premiumOnly()) {
 			/* Whether the user can execute this command */
-			const canExecute: boolean = this.bot.db.role.canExecuteCommand(db.user, handler);
+			const canExecute: boolean = await this.bot.db.role.canExecuteCommand(db.user, handler);
 
 			if (!canExecute) return void await new Response()
 				.addEmbed(builder => builder
@@ -217,7 +218,7 @@ export class InteractionManager {
 			.send(interaction);
 		}
 
-		const banned: DatabaseUserInfraction | null = this.bot.db.users.banned(db.user);
+		const banned: DatabaseUserInfraction | null = await this.bot.db.users.banned(db.user);
 
 		/* If the user is banned from the bot, send a notice message. */
 		if (banned !== null && !handler.options.always) return void await 

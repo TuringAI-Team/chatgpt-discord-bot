@@ -1,17 +1,19 @@
 import { EmbedBuilder, Message, User } from "discord.js";
+import { randomUUID } from "crypto";
 import chalk from "chalk";
 
-import { DatabaseConversation, DatabaseInfo, DatabaseResponseMessage, DatabaseUser, RawDatabaseConversation, UserSubscriptionType } from "../db/managers/user.js";
 import { ChatSettingsModel, ChatSettingsModelBillingType, ChatSettingsModels } from "./settings/model.js";
+import { DatabaseUser, UserSubscriptionPlanType, UserSubscriptionType } from "../db/schemas/user.js";
+import { DatabaseConversation, DatabaseResponseMessage } from "../db/schemas/conversation.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
 import { ChatSettingsTone, ChatSettingsTones } from "./settings/tone.js";
-import { MessageType, ResponseMessage } from "../chat/types/message.js";
 import { ChatInputImage, ImageBuffer } from "../chat/types/image.js";
-import { UserSubscriptionPlanType } from "../db/managers/user.js";
 import { Cooldown, CooldownModifier } from "./utils/cooldown.js";
 import { ModerationResult } from "../moderation/moderation.js";
 import { UserPlanChatExpense } from "../db/managers/plan.js";
+import { ResponseMessage } from "../chat/types/message.js";
 import { ChatDocument } from "../chat/types/document.js";
+import { DatabaseInfo } from "../db/managers/user.js";
 import { ChatClientResult } from "../chat/client.js";
 import { ConversationManager } from "./manager.js";
 import { ChatModel } from "../chat/types/model.js";
@@ -21,7 +23,6 @@ import { Response } from "../command/response.js";
 import { GenerationOptions } from "./session.js";
 import { BotDiscordClient } from "../bot/bot.js";
 import { Utils } from "../util/utils.js";
-import { randomUUID } from "crypto";
 
 export interface ChatInput {
 	/* The input message itself; always given */
@@ -163,9 +164,8 @@ export class Conversation {
 	 * Cached database conversation
 	 */
 	public async cached(): Promise<DatabaseConversation | null> {
-		const db = await this.manager.bot.db.users.fetchFromCacheOrDatabase<string, DatabaseConversation, RawDatabaseConversation>(
-			"conversations", this.id,
-			raw => this.manager.bot.db.users.rawToConversation(raw)
+		const db = await this.manager.bot.db.fetchFromCacheOrDatabase<string, DatabaseConversation>(
+			"conversations", this.id
 		);
 
 		this.db = db;
@@ -243,7 +243,7 @@ export class Conversation {
 	public async init(): Promise<void> {
         /* Update the conversation entry in the database. */
         if (this.history.length === 0) await this.manager.bot.db.users.updateConversation(this, {
-			created: Date.now(), id: this.id,
+			created: new Date().toISOString(), id: this.id,
 			active: true, history: null
 		});
 
@@ -483,7 +483,7 @@ export class Conversation {
 		);
 
 		/* How long to apply the cool-down for */
-		const cooldown: number | null = this.cooldownTime(options.db, this.model(options.db));
+		const cooldown: number | null = await this.cooldownTime(options.db, this.model(options.db));
 		if (cooldown !== null) this.cooldown.use(cooldown);
 
 		return {
@@ -491,9 +491,9 @@ export class Conversation {
 		};
 	}
 
-	public cooldownTime(db: DatabaseInfo, model: ChatSettingsModel): number | null {
+	public async cooldownTime(db: DatabaseInfo, model: ChatSettingsModel): Promise<number | null> {
 		/* Subscription type of the user */
-		const type: UserSubscriptionType = this.manager.bot.db.users.type(db);
+		const type: UserSubscriptionType = await this.manager.bot.db.users.type(db);
 		if (type.type === "plan" && type.location === "user") return null;
 
 		if (type.type === "plan" && type.location === "guild") {
@@ -519,15 +519,15 @@ export class Conversation {
 		return Math.round(finalDuration);
 	}
 
-	public cooldownResponse(db: DatabaseInfo): Response {
+	public async cooldownResponse(db: DatabaseInfo): Promise<Response> {
 		return new Response()
-			.addEmbeds(this.cooldownMessage(db))
+			.addEmbeds(await this.cooldownMessage(db))
 			.setEphemeral(true);
 	}
 
-	public cooldownMessage(db: DatabaseInfo): EmbedBuilder[] {
+	public async cooldownMessage(db: DatabaseInfo): Promise<EmbedBuilder[]> {
 		/* Subscription type of the user */
-		const subscriptionType = this.manager.bot.db.users.type(db);
+		const subscriptionType = await this.manager.bot.db.users.type(db);
 		const additional: EmbedBuilder[] = [];
 		
 		if (!subscriptionType.premium) {
@@ -575,7 +575,7 @@ export class Conversation {
 
 	public async charge(options: ChatChargeOptions): Promise<UserPlanChatExpense | null> {
 		/* Subscription type of the user */
-		const type: UserSubscriptionType = this.manager.bot.db.users.type(options.db);
+		const type: UserSubscriptionType = await this.manager.bot.db.users.type(options.db);
 		if (type.type !== "plan") return null;
 
 		const db = options.db[type.location];

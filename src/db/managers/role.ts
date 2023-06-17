@@ -1,10 +1,10 @@
 import { User } from "discord.js";
 
 import { InteractionHandler } from "../../interaction/handler.js";
-import { ClientDatabaseManager } from "../cluster.js";
+import { SubClusterDatabaseManager } from "../sub.js";
 import { Command } from "../../command/command.js";
 import { BotStatus } from "../../bot/bot.js";
-import { DatabaseUser } from "./user.js";
+import { DatabaseUser } from "../schemas/user.js";
 
 export type UserRole = "tester" | "investor" | "advertiser" | "moderator" | "owner"
 export type UserRoles = UserRole[]
@@ -35,14 +35,7 @@ enum UserHasRoleCheck {
     NotSome
 }
 
-export class UserRoleManager {
-    /* The database manager itself */
-    private readonly db: ClientDatabaseManager;
-
-    constructor(db: ClientDatabaseManager) {
-        this.db = db;
-    }
-
+export class UserRoleManager extends SubClusterDatabaseManager {
     public template(user: User): UserRoles {
         return [];
     }
@@ -62,14 +55,18 @@ export class UserRoleManager {
         } else return user.roles.includes(role);
     }
 
-    public canExecuteCommand(user: DatabaseUser, command: Command | InteractionHandler, status?: BotStatus): boolean {
+    public async canExecuteCommand(user: DatabaseUser, command: Command | InteractionHandler, status?: BotStatus): Promise<boolean> {
         if (command.options.restriction.length === 0) return status ? status.type !== "maintenance" : true;
         if (this.owner(user)) return true;
 
+        if (command.voterOnly()) return await this.db.users.voted(user) !== null;
+
         if (command.premiumOnly()) {
-            if (command.premiumOnly()) return this.db.users.type({ user }).premium;
-            else if (command.subscriptionOnly()) return this.db.users.type({ user }).type === "subscription";
-            else if (command.planOnly()) return this.db.users.type({ user }).type === "plan";
+            const type = await this.db.users.type({ user });
+
+            if (command.premiumOnly()) return type.premium;
+            else if (command.subscriptionOnly()) return type.type === "subscription";
+            else if (command.planOnly()) return type.type === "plan";
         }
 
         return this.has(user, command.options.restriction as UserRole[], UserHasRoleCheck.Some);

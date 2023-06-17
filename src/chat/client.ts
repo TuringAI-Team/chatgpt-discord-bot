@@ -164,12 +164,12 @@ export class ChatClient {
         let tokens: number = 0;
 
         /* The user's subscription type */
-        const subscriptionType = options.conversation.manager.bot.db.users.type(options.db);
+        const subscriptionType = await options.conversation.manager.bot.db.users.type(options.db);
 
         /* The user's selected tone */
         const tone = options.conversation.tone(options.db);
         
-        const { type, location } = this.session.manager.bot.db.users.type(options.db);
+        const { type, location } = await this.session.manager.bot.db.users.type(options.db);
 
         const limits = {
             context: this.session.manager.bot.db.settings.get<number>(options.db[location]!, "limits:contextTokens"),

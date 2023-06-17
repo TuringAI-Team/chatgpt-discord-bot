@@ -2,9 +2,8 @@ import { Awaitable } from "discord.js";
 import chalk from "chalk";
 
 import { Bot, BotDiscordClient, BotStatistics } from "./bot.js";
-import { DB_CACHE_INTERVAL } from "../db/managers/user.js";
+import { DatabaseCacheInterval } from "../db/managers/queue.js";
 import { Git, GitCommit } from "../util/git.js";
-import { getInfo } from "discord-hybrid-sharding";
 
 enum BotTaskType {
     RunOnStart
@@ -38,9 +37,9 @@ const BOT_TASKS: BotTask[] = [
 
     {
         name: "Save database changes",
-        interval: DB_CACHE_INTERVAL,
+        interval: DatabaseCacheInterval,
 
-        callback: async bot => await bot.db.users.workOnQueue()
+        callback: async bot => await bot.db.queue.work()
     },
 
     {

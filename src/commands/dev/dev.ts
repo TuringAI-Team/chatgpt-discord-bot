@@ -5,9 +5,8 @@ import chalk from "chalk";
 import dayjs from "dayjs";
 
 import { Command, CommandInteraction, CommandResponse } from "../../command/command.js";
-import { SessionCostProducts } from "../../conversation/session.js";
-import { RawDatabaseUser } from "../../db/managers/user.js";
 import { Bot, BotDiscordClient } from "../../bot/bot.js";
+import { DatabaseUser } from "../../db/schemas/user.js";
 import { PREMIUM_ROLE_ID } from "../../util/roles.js";
 import { Response } from "../../command/response.js";
 
@@ -158,7 +157,7 @@ export default class DeveloperCommand extends Command {
 			.get());
 
 			/* First, save all queued database changes. */
-			await this.bot.client.cluster.broadcastEval(((client: BotDiscordClient) => client.bot.db.users.workOnQueue()) as any);
+			await this.bot.db.queue.work();
 
 			/* Initiate the restart. */
 			await this.bot.client.cluster.evalOnManager("this.bot.restart()");
@@ -192,7 +191,7 @@ export default class DeveloperCommand extends Command {
 				.setEphemeral(true);
 
 			/* Raw database users */
-			const users: RawDatabaseUser[] = (data as RawDatabaseUser[])
+			const users: DatabaseUser[] = (data as DatabaseUser[])
 				.map(user => ({ ...user, subscription: this.bot.db.users.subscription(user) }));
 
 			const members: GuildMember[] = [];
@@ -251,7 +250,8 @@ export default class DeveloperCommand extends Command {
 
 		/* Execute all the queued database requests in all clusters */
 		} else if (action === "flush") {
-			await this.bot.client.cluster.broadcastEval(((client: BotDiscordClient) => client.bot.db.users.workOnQueue()) as any);
+			/* Save all pending database changes. */
+			await this.bot.db.queue.work();
 
 			return new Response()
 				.addEmbed(builder => builder

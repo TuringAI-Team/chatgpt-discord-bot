@@ -1,9 +1,9 @@
-import { SlashCommandBuilder, User } from "discord.js";
+import { SlashCommandBuilder } from "discord.js";
 import dayjs from "dayjs";
 
 import { Command, CommandInteraction, CommandResponse } from "../../command/command.js";
-import { DatabaseUser, DatabaseSubscription, DatabaseGuild } from "../../db/managers/user.js";
-import { UserPlan } from "../../db/managers/plan.js";
+import { DatabaseSubscription, DatabaseUser } from "../../db/schemas/user.js";
+import { DatabaseGuild } from "../../db/schemas/guild.js";
 import { Response } from "../../command/response.js";
 import { Utils } from "../../util/utils.js";
 import { Bot } from "../../bot/bot.js";

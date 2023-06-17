@@ -11,7 +11,7 @@ import { ReplicateManager } from "../chat/other/replicate.js";
 import { WebhookManager } from "../conversation/webhook.js";
 import { StatusIncidentType } from "../util/statuspage.js";
 import { BotClusterManager, BotData } from "./manager.js";
-import { ClientDatabaseManager } from "../db/cluster.js";
+import { ClusterDatabaseManager } from "../db/cluster.js";
 import { chooseStatusMessage } from "../util/status.js";
 import { CommandManager } from "../command/manager.js";
 import { ErrorManager } from "../moderation/error.js";
@@ -105,7 +105,7 @@ export class Bot extends EventEmitter {
     public readonly interaction: InteractionManager;
 
     /* Database manager, in charge of managing the database connection & updates */
-    public readonly db: ClientDatabaseManager;
+    public readonly db: ClusterDatabaseManager;
 
     /* OpenAI manager, in charge of moderation endpoint requests */
     public readonly ai: OpenAIManager;
@@ -146,9 +146,6 @@ export class Bot extends EventEmitter {
     /* Discord client */
     public readonly client: BotDiscordClient;
 
-    /* Whether the sharding manager has finished initializing all the shards */
-    public started: boolean;
-
     /* Since when this instance has been running */
     public since: number;
 
@@ -158,7 +155,6 @@ export class Bot extends EventEmitter {
     constructor() {
         super();
 
-        this.started = false;
         this.data = null!;
         this.app = null!;
         this.since = -1;
@@ -180,7 +176,7 @@ export class Bot extends EventEmitter {
         this.interaction = new InteractionManager(this);
         this.moderation = new ModerationManager(this);
         this.replicate = new ReplicateManager(this);
-        this.db = new ClientDatabaseManager(this);
+        this.db = new ClusterDatabaseManager(this);
         this.webhook = new WebhookManager(this);
         this.command = new CommandManager(this);
         this.runpod = new RunPodManager(this);
@@ -275,8 +271,6 @@ export class Bot extends EventEmitter {
         this.client.cluster.on("message", ((message: IPCMessage & { _type: messageType }) => {
             if (message.content === "done") {
                 this.since = Date.now();
-                this.started = true;
-
                 this.emit("started");
             }
         }) as any);
@@ -410,10 +404,6 @@ export class Bot extends EventEmitter {
         if (code === 0) this.logger.debug("Stopped.");
         else this.logger.error("An unexpected error occurred, stopping cluster ...");
 
-        /* Flush all the pending database changes. */
-        await this.db.users.workOnQueue().catch(() => {});
-        this.logger.debug("Saved pending database changes.");
-
         process.exit(code);
     }
 
@@ -436,11 +426,29 @@ export class Bot extends EventEmitter {
      * Current status of the bot
      */
     public async status(): Promise<BotStatus> {
-        const status: BotStatus = (await this.client.cluster.evalOnManager(
-            ((manager: BotClusterManager) => manager.bot.status) as any)
-        ) as unknown as BotStatus;
+        //const status: BotStatus = (await this.client.cluster.evalOnManager(
+        //    ((manager: BotClusterManager) => manager.bot.status) as any)
+        //) as unknown as BotStatus;
         
-        return status;
+        //return status;
+
+        return {
+            type: "operational", since: this.since
+        };
+    }
+
+    /**
+     * Whether the bot has started
+     */
+    public get started(): boolean {
+        return this.since !== -1;
+    }
+
+    /**
+     * Whether the bot is currently reloading
+     */
+    public get reloading(): boolean {
+        return !this.started || this.statistics.memoryUsage === 0;
     }
 
     /**

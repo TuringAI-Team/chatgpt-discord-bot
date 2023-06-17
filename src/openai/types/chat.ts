@@ -31,12 +31,12 @@ export interface OpenAIChatErrorJSON {
 
 export interface OpenAIPartialChatResponse {
     delta: Partial<OpenAIChatMessage>;
-    finish_reason: null | "stop" | "length";
+    finish_reason: "stop" | "length" | null;
     index: number;
     error?: OpenAIChatErrorJSON;
 }
 
-export interface OpenAIPartialCompletionsJSON {
+export interface OpenAIPartialChatCompletionsJSON {
     choices: [ OpenAIPartialChatResponse ];
 }
 
