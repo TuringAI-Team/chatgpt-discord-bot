@@ -11,14 +11,17 @@ import { InteractionHandlerResponse } from "../../interaction/handler.js";
 import { ChatSettingsModels } from "../../conversation/settings/model.js";
 import { ChatSettingsTones } from "../../conversation/settings/tone.js";
 import { StableHordeConfigModels } from "../../image/types/model.js";
+import { DatabaseManager, DatabaseManagerBot } from "../manager.js";
+import { DatabaseSettings, DatabaseUser } from "../schemas/user.js";
 import { ErrorResponse } from "../../command/response/error.js";
 import { ChatGuildData } from "../../chat/types/options.js";
 import { RestrictionType } from "../types/restriction.js";
 import { DisplayEmoji, Emoji } from "../../util/emoji.js";
-import { SubClusterDatabaseManager } from "../sub.js";
+import { ClusterDatabaseManager } from "../cluster.js";
 import { Response } from "../../command/response.js";
 import { DatabaseGuild } from "../schemas/guild.js";
-import { DatabaseSettings, DatabaseUser } from "../schemas/user.js";
+import { AppDatabaseManager } from "../app.js";
+import { SubDatabaseManager } from "../sub.js";
 import { Languages } from "../types/locale.js";
 import { Utils } from "../../util/utils.js";
 import { DatabaseInfo } from "./user.js";
@@ -153,7 +156,7 @@ interface BaseSettingsOptionData<T = any> {
     handler?: (bot: Bot, entry: SettingsDatabaseEntry, value: T) => Awaitable<void>;
 
     /* Validator to run when the settings get loaded */
-    validate?: (bot: Bot, value: T, entry: SettingsDatabaseEntry) => boolean | T;
+    validate?: (value: T, entry: SettingsDatabaseEntry) => boolean | T;
 
     /* Default value of this settings option */
     default: T;
@@ -214,8 +217,8 @@ export abstract class SettingsOption<T extends SettingsOptionValueType = any, U 
         if (this.data.handler) await this.data.handler(bot, entry, value);
     }
 
-    public validate(bot: Bot, value: T, entry: SettingsDatabaseEntry): boolean | T {
-        if (this.data.validate) return this.data.validate(bot, value, entry);
+    public validate(value: T, entry: SettingsDatabaseEntry): boolean | T {
+        if (this.data.validate) return this.data.validate(value, entry);
         else return true;
     }
 
@@ -317,7 +320,7 @@ export class StringSettingsOption extends SettingsOption<string, BaseSettingsOpt
             .addComponents(button);
     }
 
-    public validate(bot: Bot, value: string): string | boolean {
+    public validate(value: string): string | boolean {
         return value.length < this.data.max || value.length > this.data.min;
     }
 }
@@ -368,7 +371,7 @@ export class ChoiceSettingsOption extends SettingsOption<string, BaseSettingsOpt
             );
     }
 
-    public validate(bot: Bot, value: string): string | boolean {
+    public validate(value: string): string | boolean {
         return this.data.choices.find(c => c.value === value) != undefined;
     }
 }
@@ -428,7 +431,7 @@ export class MultipleChoiceSettingsOption extends SettingsOption<MultipleChoiceS
             );
     }
 
-    public validate(bot: Bot, value: MultipleChoiceSettingsObject, entry: SettingsDatabaseEntry): boolean | MultipleChoiceSettingsObject {
+    public validate(value: MultipleChoiceSettingsObject, entry: SettingsDatabaseEntry): boolean | MultipleChoiceSettingsObject {
         /* Which settings are enabled & actually exist */
         let which: string[] = MultipleChoiceSettingsOption.which(value);
         which = which.filter(id => this.data.choices.find(c => c.value === id) != undefined);
@@ -950,8 +953,8 @@ interface SettingsPageBuilderOptions {
     interaction: ChatInputCommandInteraction | StringSelectMenuInteraction | ButtonInteraction;
 }
 
-export class UserSettingsManager extends SubClusterDatabaseManager {
-    private location(entry: SettingsDatabaseEntry): SettingsLocation {
+export class BaseSettingsManager<T extends DatabaseManager<DatabaseManagerBot>> extends SubDatabaseManager<T> {
+    protected location(entry: SettingsDatabaseEntry): SettingsLocation {
         if ((entry as any).interactions != undefined) return SettingsLocation.User;
         return SettingsLocation.Guild;
     }
@@ -990,7 +993,7 @@ export class UserSettingsManager extends SubClusterDatabaseManager {
             let value = get(option);
 
             /* Try to validate the current setting value. */
-            const validation = option.validate(this.db.bot, value, entry);
+            const validation = option.validate(value, entry);
 
             /* The setting is invalid, and should be reset to the defaults. */
             if (validation === false) value = this.settingsDefault(entry, option);
@@ -1024,7 +1027,7 @@ export class UserSettingsManager extends SubClusterDatabaseManager {
         };
     }
 
-    public settingsOption<T extends SettingsOption = SettingsOption>(key: SettingKeyAndCategory | ReturnType<InstanceType<typeof UserSettingsManager>["settingsCategoryAndKey"]>): T | null {
+    public settingsOption<T extends SettingsOption = SettingsOption>(key: SettingKeyAndCategory | ReturnType<InstanceType<typeof ClusterSettingsManager>["settingsCategoryAndKey"]>): T | null {
         /* Extract the key & category from the specified option. */
         const data = typeof key === "string" ? this.settingsCategoryAndKey(key) : key;
         if (data === null) return null;
@@ -1038,7 +1041,13 @@ export class UserSettingsManager extends SubClusterDatabaseManager {
         let value: T = entry.settings[key] as T ?? this.template(this.location(entry))[key];
         return value;
     }
+}
 
+export class AppSettingsManager extends BaseSettingsManager<AppDatabaseManager> {
+
+}
+
+export class ClusterSettingsManager extends BaseSettingsManager<ClusterDatabaseManager> {
     public async apply<T extends SettingsDatabaseEntry>(entry: T, changes: Partial<Record<SettingKeyAndCategory, any>>): Promise<T> {
         if (this.db.bot.dev) this.db.bot.logger.debug("Apply settings ->", chalk.bold(entry.id), "->", `${chalk.bold(Object.values(changes).length)} changes`);
 

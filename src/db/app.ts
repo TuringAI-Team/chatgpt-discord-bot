@@ -1,17 +1,21 @@
 import { Awaitable, Collection } from "discord.js";
 
 import { DatabaseCollectionType, DatabaseLikeObject, DatabaseManager } from "./manager.js";
+import { DatabaseSchemaMap, DatabaseSchemas } from "./schemas/index.js";
 import { AppDatabaseMetricsManager } from "./managers/metrics.js";
 import { AppDatabaseQueueManager } from "./managers/queue.js";
+import { AppSettingsManager } from "./managers/settings.js";
 import { GPTDatabaseError } from "../error/gpt/db.js";
-import { DatabaseSchemaMap, DatabaseSchemas } from "./schemas/index.js";
 import { DatabaseSchema } from "./schemas/schema.js";
+import { AppPlanManager } from "./managers/plan.js";
 import { App } from "../app.js";
 
 export class AppDatabaseManager extends DatabaseManager<App> {
     /* Various sub-managers */
     public readonly metrics: AppDatabaseMetricsManager;
     public readonly queue: AppDatabaseQueueManager;
+    public readonly settings: AppSettingsManager;
+    public readonly plan: AppPlanManager;
 
     /* The schemas for all database types */
     private readonly schemas: Collection<DatabaseCollectionType, DatabaseSchema>;
@@ -21,6 +25,8 @@ export class AppDatabaseManager extends DatabaseManager<App> {
 
         this.metrics = new AppDatabaseMetricsManager(this);
         this.queue = new AppDatabaseQueueManager(this);
+        this.settings = new AppSettingsManager(this);
+        this.plan = new AppPlanManager(this);
 
         this.schemas = new Collection();
 
@@ -39,7 +45,7 @@ export class AppDatabaseManager extends DatabaseManager<App> {
         return schema as DatabaseSchemaMap[CollectionType];
     }
 
-    public async fetchFromCacheOrDatabase<T extends DatabaseLikeObject | string, U extends Partial<DatabaseLikeObject>>(
+    public async fetchFromCacheOrDatabase<T extends DatabaseLikeObject | string, U extends DatabaseLikeObject>(
         type: DatabaseCollectionType, object: T | string
     ): Promise<U | null> {
         const id: string = typeof object === "string" ? object : object.id;

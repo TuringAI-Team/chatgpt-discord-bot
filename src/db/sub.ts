@@ -2,7 +2,7 @@ import { type ClusterDatabaseManager } from "./cluster.js";
 import { type AppDatabaseManager } from "./app.js";
 import { DatabaseManager, DatabaseManagerBot } from "./manager.js";
 
-export class SubDatabaseManager<T extends DatabaseManager<DatabaseManagerBot>> {
+export class SubDatabaseManager<T extends DatabaseManager<DatabaseManagerBot> = DatabaseManager> {
     protected readonly db: T;
 
     constructor(db: T) {

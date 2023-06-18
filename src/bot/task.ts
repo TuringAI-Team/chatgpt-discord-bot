@@ -39,6 +39,7 @@ const BOT_TASKS: BotTask[] = [
         name: "Save database changes",
         interval: DatabaseCacheInterval,
 
+        condition: bot => bot.data.id === 0,
         callback: async bot => await bot.db.queue.work()
     },
 

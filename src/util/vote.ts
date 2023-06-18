@@ -18,7 +18,7 @@ export class VoteManager {
         this.bot = bot;
     }
 
-    public voteLink(db: DatabaseUser): string {
+    public link(db: DatabaseUser): string {
         return this.bot.turing.trackingURL(db, "topgg");
     }
 
@@ -29,7 +29,7 @@ export class VoteManager {
      * @returns Whether the user has voted for the bot
      */
     public async voted(user: User, db: DatabaseUser): Promise<boolean> {
-        if (this.bot.db.users.voted(db) !== null) return true;
+        if (await this.bot.db.users.voted(db) !== null) return true;
 
         /* Check whether the user has voted, using the API. */
         const { voted }: { voted: number } = await this.request(`${this.botPath("check")}?userId=${user.id}`, "GET");

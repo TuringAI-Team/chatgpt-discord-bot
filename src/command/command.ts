@@ -69,9 +69,8 @@ export class Command<U extends ContextMenuCommandInteraction | ChatInputCommandI
 		} as Required<CommandOptions>;
 	}
 
-	public restricted(check: CommandRestrictionType | (UserRole | UserSubscriptionPlanType)): boolean {
-		return (typeof check !== "object" ? [ check ] : check)
-			.every(c => this.options.restriction.includes(c));
+	public restricted(check: CommandRestrictionType): boolean {
+		return check.some(c => this.options.restriction.includes(c));
 	}
 
 	public voterOnly(): boolean {
@@ -83,11 +82,11 @@ export class Command<U extends ContextMenuCommandInteraction | ChatInputCommandI
 	}
 
 	public planOnly(): boolean {
-		return this.restricted("plan");
+		return this.restricted([ "plan" ]);
 	}
 
 	public subscriptionOnly(): boolean {
-		return this.restricted("subscription");
+		return this.restricted([ "subscription" ]);
 	}
 
 
@@ -108,5 +107,9 @@ export class Command<U extends ContextMenuCommandInteraction | ChatInputCommandI
 	 */
 	public async run(interaction: U, db: DatabaseInfo): CommandResponse {
 		return;
+	}
+
+	public get name(): string {
+		return this.builder.name;
 	}
 }

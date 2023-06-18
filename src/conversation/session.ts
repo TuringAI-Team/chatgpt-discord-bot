@@ -5,7 +5,7 @@ import { ModerationResult } from "../moderation/moderation.js";
 import { ResponseMessage } from "../chat/types/message.js";
 import { ChatGuildData } from "../chat/types/options.js";
 import { DatabaseInfo } from "../db/managers/user.js";
-import { OpenAIManager } from "../openai/openai.js";
+import { OpenAIManager } from "../openai/manager.js";
 import { ConversationManager } from "./manager.js";
 import { Conversation } from "./conversation.js";
 
@@ -135,9 +135,6 @@ export class Session {
         /* If the conversation has been locked, don't initialize the session. */
         if (this.locked) throw new Error("Session is busy");
         this.locked = true;
-
-        /* Initialize the OpenAI manager. */
-        await this.ai.setup(this.credentials.token);
 
         this.locked = false;
         this.state = SessionState.Running;

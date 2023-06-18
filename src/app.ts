@@ -3,6 +3,7 @@ import { AppDatabaseManager } from "./db/app.js";
 import { BotManager } from "./bot/manager.js";
 import { Logger } from "./util/logger.js";
 import { Config } from "./config.js";
+import { TuringConnectionManager } from "./turing/connection/connection.js";
 
 enum AppState {
 	/* The app is not initialized yet */
@@ -34,16 +35,23 @@ export class App {
 	/* Database manager */
 	public readonly db: AppDatabaseManager;
 
+	/* Turing connection manager */
+	public readonly connection: TuringConnectionManager;
+
 	/* Configuration data */
 	public config: Config;
 
 	/* Current initialization state */
 	public state: AppState;
 
+	/* When the app was started */
+	public started: number;
+
     constructor() {
         this.logger = new Logger();
 
 		/* Set up various managers & services. */
+		this.connection = new TuringConnectionManager(this);
 		this.db = new AppDatabaseManager(this);
 		this.manager = new BotManager(this);
 		this.cache = new CacheManager(this);
@@ -54,6 +62,7 @@ export class App {
 
 		/* Set the default, stopped state of the app. */
 		this.state = AppState.Stopped;
+		this.started = Date.now();
     }
 
     /**
@@ -89,6 +98,13 @@ export class App {
 				this.stop(1);
 			});
 
+		/* Initialize the Turing connection manager. */
+		await this.connection.setup()
+			.catch(error => {
+				this.logger.error("Failed to set up the connection manager ->", error);
+				this.stop(1);
+			});
+
 		/* Finally, set up all clusters. */
 		await this.manager.setup()
 			.catch(error => {
@@ -105,6 +121,9 @@ export class App {
 	public async stop(code: number = 0): Promise<void> {
 		/* First, save the pending database changes. */
 		await this.db.queue.work();
+
+		/* Close the RabbitMQ connection. */
+		await this.connection.stop();
 
 		this.state = AppState.Stopped;
 

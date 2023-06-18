@@ -1,7 +1,7 @@
 import { Bucket, StorageClient, StorageError } from "@supabase/storage-js";
 
 import { ImageGenerationResult, StableHordeGenerationResult } from "../../image/types/image.js";
-import { ImageDescription } from "../../image/description.js";
+import { DatabaseDescription } from "../../image/description.js";
 import { GPTDatabaseError } from "../../error/gpt/db.js";
 import { ImageBuffer } from "../../chat/types/image.js";
 import { ClusterDatabaseManager } from "../cluster.js";
@@ -72,7 +72,7 @@ export class StorageManager extends SubClusterDatabaseManager {
         return this.fetchImage(image, "images");
     }
 
-    public async uploadImageDescription(image: ImageDescription, data: ImageBuffer): Promise<void> {
+    public async uploadImageDescription(image: DatabaseDescription, data: ImageBuffer): Promise<void> {
         const name: string = image.id;
 
         const { error } = await this.client

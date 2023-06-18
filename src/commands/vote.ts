@@ -30,8 +30,9 @@ export default class VoteCommand extends Command {
 		];
 
 		const builder: EmbedBuilder = new EmbedBuilder()
-			.setTitle("Vote for our bot 📩")
-			.setDescription(`*By voting for **${this.bot.client.user.username}**, you'll get the following rewards, for as long as you vote*.`)
+			.setTitle("Vote for our bot <:topgg:1119699678343200879>")
+			.setDescription(`*By voting for **${this.bot.client.user.username}**, you'll get the following rewards as long as you vote*.`)
+			.setColor("#FF3366")
 			.setColor(this.bot.branding.color)
 
 			.addFields(fields.map(({ key, value }) => ({
@@ -41,13 +42,8 @@ export default class VoteCommand extends Command {
 		const row = new ActionRowBuilder<ButtonBuilder>()
 			.addComponents(
 				new ButtonBuilder()
-					.setCustomId("general:vote")
-					.setEmoji("🎉")
-					.setLabel("Check your vote")
-					.setStyle(ButtonStyle.Success),
-
-				new ButtonBuilder()
-					.setURL(this.bot.vote.voteLink(user))
+					.setURL(this.bot.vote.link(user))
+					.setEmoji("📩")
 					.setLabel("Vote")
 					.setStyle(ButtonStyle.Link)
 			);

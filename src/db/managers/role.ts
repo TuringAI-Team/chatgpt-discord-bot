@@ -36,10 +36,6 @@ enum UserHasRoleCheck {
 }
 
 export class UserRoleManager extends SubClusterDatabaseManager {
-    public template(user: User): UserRoles {
-        return [];
-    }
-
     public roles(user: DatabaseUser): UserRoles {
         return user.roles;
     }

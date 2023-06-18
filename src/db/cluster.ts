@@ -1,14 +1,14 @@
 import { DatabaseCollectionType, DatabaseLikeObject, DatabaseManager } from "./manager.js";
 import { ClusterDatabaseMetricsManager } from "./managers/metrics.js";
 import { ClusterDatabaseQueueManager } from "./managers/queue.js";
-import { UserSettingsManager } from "./managers/settings.js";
+import { ClusterSettingsManager } from "./managers/settings.js";
 import { StorageManager } from "./managers/storage.js";
 import { BotClusterManager } from "../bot/manager.js";
 import { UserRoleManager } from "./managers/role.js";
 import { DatabaseSchema } from "./schemas/schema.js";
 import { CacheManager } from "./managers/cache.js";
 import { UserManager } from "./managers/user.js";
-import { PlanManager } from "./managers/plan.js";
+import { ClusterPlanManager } from "./managers/plan.js";
 import { App } from "../app.js";
 
 import { type Bot } from "../bot/bot.js";
@@ -20,24 +20,24 @@ export class ClusterDatabaseManager extends DatabaseManager<Bot> {
     /* Various sub-managers */
     public readonly metrics: ClusterDatabaseMetricsManager;
     public readonly queue: ClusterDatabaseQueueManager;
-    public readonly settings: UserSettingsManager;
+    public readonly settings: ClusterSettingsManager;
     public readonly storage: StorageManager;
     public readonly role: UserRoleManager;
     public readonly cache: CacheManager;
     public readonly users: UserManager;
-    public readonly plan: PlanManager;
+    public readonly plan: ClusterPlanManager;
 
     constructor(bot: any) {
         super(bot);
 
         this.metrics = new ClusterDatabaseMetricsManager(this);
         this.queue = new ClusterDatabaseQueueManager(this);
-        this.settings = new UserSettingsManager(this);
+        this.settings = new ClusterSettingsManager(this);
         this.storage = new StorageManager(this);
         this.role = new UserRoleManager(this);
         this.cache = new CacheManager(this);
         this.users = new UserManager(this);
-        this.plan = new PlanManager(this);
+        this.plan = new ClusterPlanManager(this);
     }
 
     public async setup(): Promise<void> {
@@ -62,7 +62,7 @@ export class ClusterDatabaseManager extends DatabaseManager<Bot> {
         });
     }
 
-    public async fetchFromCacheOrDatabase<T extends DatabaseLikeObject | string, U extends Partial<DatabaseLikeObject>>(
+    public async fetchFromCacheOrDatabase<T extends DatabaseLikeObject | string, U extends DatabaseLikeObject>(
         type: DatabaseCollectionType, object: T | string
     ): Promise<U | null> {
         return this.eval((app, { type, object }) => {

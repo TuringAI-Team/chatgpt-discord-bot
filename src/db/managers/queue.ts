@@ -46,8 +46,11 @@ export class AppDatabaseQueueManager extends DatabaseQueueManager<AppDatabaseMan
         const queued: T | null = this.updates[type].get(id) as T ?? null;
         let updated: T;
 
-        if (typeof obj === "string") updated = { ...queued, ...updates as T };
-        else updated = { ...obj, ...queued, ...updates as T };
+        if (typeof obj === "string") {
+            updated = { ...queued, ...updates as T };
+        } else {
+            updated = { ...obj, ...queued, ...updates as T };
+        }
 
         this.updates[type].set(id, updated);
         await this.db.setCache(type, obj, updated);

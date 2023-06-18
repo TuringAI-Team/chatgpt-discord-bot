@@ -1,6 +1,7 @@
 import { Awaitable, Guild, Snowflake } from "discord.js";
 
 import { DatabaseSettings, DatabaseSubscription } from "./user.js";
+import { SettingsLocation } from "../managers/settings.js";
 import { type AppDatabaseManager } from "../app.js";
 import { DatabasePlan } from "../managers/plan.js";
 import { DatabaseSchema } from "./schema.js";
@@ -35,20 +36,20 @@ export class GuildSchema extends DatabaseSchema<DatabaseGuild, Guild> {
     }
 
     public async process(guild: DatabaseGuild): Promise<DatabaseGuild | null> {
-        /*guild.plan = this.db.plan.active(guild) ? this.db.plan.get(guild) : null;
-        guild.subscription = this.subscription(guild);
+        guild.plan = this.db.plan.active(guild) ? this.db.plan.get(guild) : null;
+        guild.subscription = this.db.schema("users").subscription(guild);
 
-        guild.settings = this.db.settings.load(guild);*/
+        guild.settings = this.db.settings.load(guild);
 
         return guild;
     }
 
-    public template(id: string, source: Guild): Awaitable<DatabaseGuild> {
+    public template(id: string): Awaitable<DatabaseGuild> {
         return {
-            id: source.id,
+            id,
             created: new Date().toISOString(),
             subscription: null, plan: null,
-            settings: {}, // this.db.settings.template(SettingsLocation.Guild)
+            settings: this.db.settings.template(SettingsLocation.Guild)
         };
     }
 }

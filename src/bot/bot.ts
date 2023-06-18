@@ -15,7 +15,6 @@ import { ClusterDatabaseManager } from "../db/cluster.js";
 import { chooseStatusMessage } from "../util/status.js";
 import { CommandManager } from "../command/manager.js";
 import { ErrorManager } from "../moderation/error.js";
-import { OpenAIManager } from "../openai/openai.js";
 import { ImageManager } from "../image/manager.js";
 import { RunPodManager } from "../runpod/api.js";
 import { ShardLogger } from "../util/logger.js";
@@ -107,9 +106,6 @@ export class Bot extends EventEmitter {
     /* Database manager, in charge of managing the database connection & updates */
     public readonly db: ClusterDatabaseManager;
 
-    /* OpenAI manager, in charge of moderation endpoint requests */
-    public readonly ai: OpenAIManager;
-
     /* Turing API manager */
     public readonly turing: TuringAPI;
 
@@ -185,7 +181,6 @@ export class Bot extends EventEmitter {
         this.image = new ImageManager(this);
         this.turing = new TuringAPI(this);
         this.vote = new VoteManager(this);
-        this.ai = new OpenAIManager(this);
         this.task = new TaskManager(this);
         this.gif = new TenorAPI(this);
         
@@ -285,11 +280,6 @@ export class Bot extends EventEmitter {
 
         this.client.cluster.on("ready", async () => {
             const steps: BotSetupStep[] = [ 
-                {
-                    name: "OpenAI manager",
-                    execute: () => this.ai.setup(this.app.config.openAI.key)
-                },
-    
                 {
                     name: "Stable Horde",
                     execute: async () => this.image.setup()

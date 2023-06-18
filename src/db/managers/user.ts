@@ -5,7 +5,7 @@ import { DatabaseConversation, DatabaseMessage } from "../schemas/conversation.j
 import { DatabaseGuild, DatabaseGuildSubscription } from "../schemas/guild.js";
 import { DatabaseModerationResult } from "../../moderation/moderation.js";
 import { Conversation } from "../../conversation/conversation.js";
-import { ImageDescription } from "../../image/description.js";
+import { DatabaseDescription } from "../../image/description.js";
 import { DatabaseImage } from "../../image/types/image.js";
 import { DatabaseError } from "../../moderation/error.js";
 import { SubClusterDatabaseManager } from "../sub.js";
@@ -287,7 +287,7 @@ export class UserManager extends SubClusterDatabaseManager {
         await this.db.queue.update("images", image.id, data);
     }
 
-    public async updateImageDescription(image: ImageDescription | string, updates: ImageDescription): Promise<ImageDescription> {
+    public async updateImageDescription(image: DatabaseDescription | string, updates: DatabaseDescription): Promise<DatabaseDescription> {
         return await this.db.queue.update("descriptions", image, updates);
     }
 }

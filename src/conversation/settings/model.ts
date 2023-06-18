@@ -148,7 +148,7 @@ export class ChatSettingsModel {
     }
 
     public get id(): string {
-        return this.options.name.toLowerCase().replaceAll(" ", "-");
+        return this.options.name.replace(/[^a-zA-Z0-9 ]/g, "").replace(/\s+/g, "-").toLowerCase();
     }
 }
 

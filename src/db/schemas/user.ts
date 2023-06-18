@@ -1,11 +1,13 @@
 import { Awaitable, Snowflake, User } from "discord.js";
 
 import { DatabaseModerationResult } from "../../moderation/moderation.js";
+import { SettingsLocation } from "../managers/settings.js";
 import { type AppDatabaseManager } from "../app.js";
 import { DatabasePlan } from "../managers/plan.js";
 import { VoteDuration } from "../../util/vote.js";
 import { UserRoles } from "../managers/role.js";
 import { DatabaseSchema } from "./schema.js";
+import { DatabaseGuild, DatabaseGuildSubscription } from "./guild.js";
 
 export type DatabaseSubscriptionType = "guild" | "user"
 
@@ -103,25 +105,25 @@ export class UserSchema extends DatabaseSchema<DatabaseUser, User> {
     }
 
     public async process(user: DatabaseUser): Promise<DatabaseUser | null> {
-        /*user.plan = this.db.plan.active(user) ? this.db.plan.get(user) : null;
+        user.plan = this.db.plan.active(user) ? this.db.plan.get(user) : null;
         user.subscription = this.subscription(user);
 
         user.settings = this.db.settings.load(user);
-        user.metadata = this.metadata(user);*/
+        user.metadata = this.metadata(user);
 
         return user;
     }
 
     public template(id: string, source: User): Awaitable<DatabaseUser> {
         return {
-            id: source.id,
+            id,
             created: new Date().toISOString(),
-            infractions: [],
             interactions: this.interactionsTemplate(),
             subscription: null, plan: null, voted: null,
-            settings: {}, // this.db.settings.template(SettingsLocation.User),
-            roles: [], // this.db.role.template(user),
-            metadata: this.metadataTemplate()
+            settings: this.db.settings.template(SettingsLocation.User),
+            metadata: this.metadataTemplate(),
+            infractions: [],
+            roles: []
         };
     }
 
@@ -163,6 +165,25 @@ export class UserSchema extends DatabaseSchema<DatabaseUser, User> {
         }
 
         return interactions as DatabaseInteractionStatistics;
+    }
+
+    /**
+     * Get information about the user/guild's current subscription, if available.
+     * @param db User/guild to get subscription for
+     * 
+     * @returns User/guild's current subscription, if available
+     */
+    public subscription<T extends DatabaseGuildSubscription | DatabaseSubscription>(db: DatabaseUser | DatabaseGuild): T | null {
+        if (db.subscription === null) return null;
+        if (db.subscription !== null && Date.now() > db.subscription.expires) return null;
+
+        return {
+            ...db.subscription as T,
+            
+            /* Handle an edge case where `since` and `expires` are actually a date string instead of a UNIX timestamp. */
+            since: typeof db.subscription.since === "string" ? Date.parse(db.subscription.since) : db.subscription.since,
+            expires: typeof db.subscription.expires === "string" ? Date.parse(db.subscription.expires) : db.subscription.expires
+        };
     }
 
     /**

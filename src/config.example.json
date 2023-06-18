@@ -76,6 +76,10 @@
         "key": "Stable Horde API key"
     },
 
+    "rabbitMQ": {
+        "url": "URL to RabbitMQ instance"
+    },
+
     "db": {
         "supabase": {
             "url": "Supabase URL",

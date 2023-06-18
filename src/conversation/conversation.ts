@@ -1,4 +1,4 @@
-import { EmbedBuilder, Message, User } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, Message, User } from "discord.js";
 import { randomUUID } from "crypto";
 import chalk from "chalk";
 
@@ -520,20 +520,19 @@ export class Conversation {
 	}
 
 	public async cooldownResponse(db: DatabaseInfo): Promise<Response> {
-		return new Response()
-			.addEmbeds(await this.cooldownMessage(db))
-			.setEphemeral(true);
-	}
-
-	public async cooldownMessage(db: DatabaseInfo): Promise<EmbedBuilder[]> {
 		/* Subscription type of the user */
 		const subscriptionType = await this.manager.bot.db.users.type(db);
+
+		const response: Response = new Response();
 		const additional: EmbedBuilder[] = [];
+
+		/* Link to the vote for the bot */
+		const link: string = this.manager.bot.vote.link(db.user);
 		
 		if (!subscriptionType.premium) {
 			additional.push(
 				new EmbedBuilder()
-					.setDescription(`✨ By buying **[Premium](${Utils.shopURL()})**, your cool-down will be lowered to **a few seconds** only, with **unlimited** messages per day.\n**Premium** *also includes further benefits, view \`/premium\` for more*. ✨`)
+					.setDescription(`✨ **[Premium](${Utils.shopURL()})** greatly **decreases** the cool-down & includes further benefits, view \`/premium\` for more.`)
 					.setColor("Orange")
 			);
 			
@@ -541,7 +540,7 @@ export class Conversation {
 			if (subscriptionType.type === "subscription") {
 				additional.push(
 					new EmbedBuilder()
-						.setDescription(`✨ By buying **[Premium](${Utils.shopURL()})** for yourself, the cool-down will be lowered to only **a few seconds**, with **unlimited** messages per day.\n**Premium** *also includes further benefits, view \`/premium\` for more*. ✨`)
+						.setDescription(`✨ Buying **[Premium](${Utils.shopURL()})** for **yourself** greatly *decreases* the cool-down & also includes further benefits, view \`/premium\` for more.`)
 						.setColor("Orange")
 				);
 
@@ -551,26 +550,44 @@ export class Conversation {
 
 				additional.push(
 					new EmbedBuilder()
-						.setDescription(`✨ The server owners have configured a cool-down of **${guildCooldown} seconds** for this server, using the **Pay-as-you-go 📊** plan.\n${db.user.subscription !== null || db.user.plan !== null ? `*You can configure the **priority** of Premium in \`/settings\`*.` : ""}`)
+						.setDescription(`📊 The server owners have configured a cool-down of **${guildCooldown} seconds** using the **Pay-as-you-go** plan.\n${db.user.subscription !== null || db.user.plan !== null ? `*You can configure the **priority** of Premium in \`/settings\`*.` : ""}`)
 						.setColor("Orange")
 				);
 			}
 		}
 
-		if (!subscriptionType.premium && additional[0]) additional[0].setDescription(`${additional[0].data.description!}\n\nYou can also reduce your cool-down for **completely free**, by simply voting for us on **[top.gg](${this.manager.bot.vote.voteLink(db.user)})**. 📩\nAfter voting, run \`/vote\` and press the **Check your vote** button.`)
+		if (!subscriptionType.premium && subscriptionType.type !== "voter") {
+			additional.push(
+				new EmbedBuilder()
+					.setDescription(`<:topgg:1119699678343200879> You can **reduce your cool-down**, by voting for us on **[top.gg](${link})** below.`)
+					.setColor("#FF3366")
+			);
+
+			response.addComponent(ActionRowBuilder<ButtonBuilder>, builder => builder
+				.addComponents(
+					new ButtonBuilder()
+						.setURL(link)
+						.setLabel("Vote for the bot")
+						.setStyle(ButtonStyle.Link)
+						.setEmoji("📩")
+				)
+			);
+		}
 
 		this.manager.bot.db.metrics.changeCooldownMetric({
 			chat: "+1"
 		});
 
-		return [
+		response.addEmbeds([
 			new EmbedBuilder()
 				.setTitle("Whoa-whoa... slow down ⌛")
-				.setDescription(`I'm sorry, but I can't keep up with your requests. You can talk to me again <t:${Math.floor((this.cooldown.state.startedAt! + this.cooldown.state.expiresIn! + 1000) / 1000)}:R>. 😔`)
+				.setDescription(`I can't keep up with your requests; you can talk to me again <t:${Math.floor((this.cooldown.state.startedAt! + this.cooldown.state.expiresIn! + 1000) / 1000)}:R>.`)
 				.setColor("Yellow"),
 
 			...additional
-		];
+		]);
+
+		return response;
 	}
 
 	public async charge(options: ChatChargeOptions): Promise<UserPlanChatExpense | null> {

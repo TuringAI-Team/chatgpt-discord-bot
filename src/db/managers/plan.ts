@@ -1,7 +1,7 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle, EmbedBuilder, GuildMember, InteractionReplyOptions } from "discord.js";
 
 import { MidjourneyResult, TuringVideoModel, TuringVideoModelName, TuringVideoResult } from "../../turing/api.js";
-import { DescribeSummary, ImageDescription } from "../../image/description.js";
+import { DescribeSummary, DatabaseDescription } from "../../image/description.js";
 import { StableHordeGenerationResult } from "../../image/types/image.js";
 import { DatabaseUser, UserSubscriptionType } from "../schemas/user.js";
 import { ChatInteraction } from "../../conversation/conversation.js";
@@ -9,12 +9,15 @@ import { ErrorResponse } from "../../command/response/error.js";
 import { CommandInteraction } from "../../command/command.js";
 import { SummaryPrompt } from "../../commands/summarize.js";
 import { ProgressBar } from "../../util/progressBar.js";
-import { SubClusterDatabaseManager } from "../sub.js";
+import { SubClusterDatabaseManager, SubDatabaseManager } from "../sub.js";
 import { YouTubeVideo } from "../../util/youtube.js";
 import { Response } from "../../command/response.js";
 import { DatabaseGuild } from "../schemas/guild.js";
 import { Utils } from "../../util/utils.js";
 import { DatabaseInfo } from "./user.js";
+import { DatabaseManager, DatabaseManagerBot } from "../manager.js";
+import { ClusterDatabaseManager } from "../cluster.js";
+import { AppDatabaseManager } from "../app.js";
 
 type DatabaseEntry = DatabaseUser | DatabaseGuild
 
@@ -160,14 +163,10 @@ export const PlanExpenseEntryViewers: {
     translate: e => `translated from **\`${e.data.source}\`**, used **${e.data.tokens.prompt}** prompt & **${e.data.tokens.completion}** completion tokens`
 }
 
-export class PlanManager extends SubClusterDatabaseManager {
+export class BasePlanManager<T extends DatabaseManager<DatabaseManagerBot>> extends SubDatabaseManager<T> {
     public location(entry: DatabaseEntry): PlanLocation {
         if ((entry as any).roles != undefined) return PlanLocation.User;
         return PlanLocation.Guild;
-    }
-
-    private functionName(entry: DatabaseEntry): "updateUser" | "updateGuild" {
-        return this.location(entry) === PlanLocation.Guild ? "updateGuild" : "updateUser";
     }
 
     /**
@@ -196,6 +195,16 @@ export class PlanManager extends SubClusterDatabaseManager {
             total: plan.total ?? 0,
             used: plan.used ?? 0
         };
+    }
+}
+
+export class AppPlanManager extends BasePlanManager<AppDatabaseManager> {
+
+}
+
+export class ClusterPlanManager extends BasePlanManager<ClusterDatabaseManager> {
+    private functionName(entry: DatabaseEntry): "updateUser" | "updateGuild" {
+        return this.location(entry) === PlanLocation.Guild ? "updateGuild" : "updateUser";
     }
 
     public async expense<T extends UserPlanExpense = UserPlanExpense>(
@@ -270,7 +279,7 @@ export class PlanManager extends SubClusterDatabaseManager {
     }
 
     public async expenseForImageDescription(
-        entry: DatabaseInfo, result: ImageDescription, summary: DescribeSummary | null
+        entry: DatabaseInfo, result: DatabaseDescription, summary: DescribeSummary | null
     ): Promise<UserPlanImageDescribeExpense | null> {
         let cost: number = 0;
 

@@ -1,13 +1,10 @@
-import { Collection, InteractionResponse } from "discord.js";
 import { DiscordAPIError } from "@discordjs/rest";
+import { Collection } from "discord.js";
 
 import { AnyInteractionHandlerValues, InteractionHandler, InteractionHandlerClassType, InteractionHandlerRunOptions, InteractionValidationError } from "./handler.js";
-import { DatabaseUserInfraction } from "../db/schemas/user.js";
-import { CooldownData } from "../command/types/cooldown.js";
-import { RunningData } from "../command/types/running.js";
-import { DatabaseInfo } from "../db/managers/user.js";
+import { CommandPrepareData } from "../command/manager.js";
 import { Response } from "../command/response.js";
-import { Bot, BotStatus } from "../bot/bot.js";
+import { Bot } from "../bot/bot.js";
 import { Utils } from "../util/utils.js";
 
 export class InteractionManager {
@@ -136,106 +133,11 @@ export class InteractionManager {
 		/* The interaction handler */
 		const handler = data.handler;
 
-		if (handler.options.waitForStart && this.bot.reloading) return void await new Response()
-			.addEmbed(builder => builder
-				.setTitle("The bot is currently reloading**...** ⏳")
-				.setColor("Orange")
-			).setEphemeral(true).send(interaction);
+		/* Execute some checks & get all needed data. */
+		const prepared: CommandPrepareData | void = await this.bot.command.prepare(interaction, handler);
+		if (!prepared) return;
 
-		/* Get the current cool-down of the handler. */
-		const cooldown: CooldownData | null = await this.bot.command.cooldown(interaction, handler);
-
-		/* Check whether the user already has an instance of this handler running. */
-		const running: RunningData | null = await this.bot.command.running(interaction, handler);
-
-		/* Get the database entry of the user. */
-		let db: DatabaseInfo = await this.bot.db.users.fetch(interaction.user, interaction.guild);
-		const subscription = await this.bot.db.users.type(db);
-
-		/* Current status of the bot */
-		const status: BotStatus = await this.bot.status();
-
-		if (status.type === "maintenance" && !this.bot.db.role.canExecuteCommand(db.user, handler, status)) return void await new Response()
-			.addEmbed(builder => builder
-				.setTitle("The bot is currently under maintenance 🛠️")
-				.setDescription(status.notice !== undefined ? `*${status.notice}*` : null)
-				.setTimestamp(status.since)
-				.setColor("Orange")
-			).setEphemeral(true).send(interaction);
-
-		/* If this command is Premium-only and the user doesn't have a subscription, ... */
-		if ((handler.planOnly() || handler.premiumOnly()) && !subscription.premium) {
-			/* Which Premium type this command is restricted to */
-			const type = handler.planOnly() && handler.premiumOnly()
-				? null : handler.planOnly() ? "plan" : "subscription";
-
-			const response = new Response()
-				.addEmbed(builder => builder
-					.setDescription(`This action is only available to ${type === null ? "**Premium**" : type === "plan" ? "**pay-as-you-go Premium 📊**" : "**fixed Premium 💸**"} users. **Premium 🌟** also includes many additional benefits; view \`/premium\` for more.`)
-					.setColor("Orange")
-				)
-				.setEphemeral(true);
-
-			return void await response.send(interaction);
-		}
-
-		/* If the user already has an instance of this handler running, ... */
-		if (running !== null) {
-			const response = this.bot.command.runningMessage(interaction, handler, running);
-			return void await response.send(interaction);
-		}
-
-		/* If the user is currently on cool-down for this handler, ... */
-		if (handler.options.cooldown !== null && cooldown !== null && cooldown.createdAt) {
-			/* Build the cool-down message. */
-			const response: Response = await this.bot.command.cooldownMessage(interaction, handler, db, cooldown);
-
-			/* How long until the cool-down expires */
-			const delay: number = (cooldown.createdAt + cooldown.duration) - Date.now() - 1000;
-
-			/* Send the notice message. */
-			return await response.send(interaction)
-				.then(message => {
-					if (message instanceof InteractionResponse) {
-						/* Delete the cool-down message again, after it has expired. */
-						setTimeout(async () => {
-							await interaction.deleteReply().catch(() => {});
-						}, delay);
-					}
-				});
-		}
-
-		/* If the handler is marked as private, do some checks to make sure only privileged users are able to execute this handler. */
-		if (!handler.premiumOnly()) {
-			/* Whether the user can execute this command */
-			const canExecute: boolean = await this.bot.db.role.canExecuteCommand(db.user, handler);
-
-			if (!canExecute) return void await new Response()
-				.addEmbed(builder => builder
-					.setDescription(`You are not allowed to perform this action 🤨`)
-					.setColor("Red")
-				).setEphemeral(true)
-			.send(interaction);
-		}
-
-		const banned: DatabaseUserInfraction | null = await this.bot.db.users.banned(db.user);
-
-		/* If the user is banned from the bot, send a notice message. */
-		if (banned !== null && !handler.options.always) return void await 
-			this.bot.moderation.buildBanMessage(banned)
-		.send(interaction);
-
-		/* Show a warning modal to the user, if needed. */
-		db.user = await this.bot.moderation.warningModal({ interaction, db });
-
-		/* If the user doesn't have a cool-down set for the handler yet, ... */
-		if (handler.options.cooldown !== null && cooldown === null) {
-			await this.bot.command.applyCooldown(interaction, db, handler);
-		
-		/* If the user's cooldown already expired, ... */
-		} else if (handler.options.cooldown !== null && cooldown !== null && cooldown.duration < Date.now()) {
-			await this.bot.command.applyCooldown(interaction, db, handler);
-		}
+		const { db } = prepared;
 
 		/* Reply to the original interaction */
 		let response: Response | undefined | void;

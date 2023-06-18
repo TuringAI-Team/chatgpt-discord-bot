@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, Collection, InteractionResponse, SlashCommandBuilder, MessageContextMenuCommandInteraction, CommandInteraction } from "discord.js";
+import { ChatInputCommandInteraction, Collection, InteractionResponse, SlashCommandBuilder, MessageContextMenuCommandInteraction, CommandInteraction, ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
 import { RESTPostAPIApplicationCommandsJSONBody, Routes } from "discord-api-types/v10";
 import { DiscordAPIError } from "@discordjs/rest";
 
@@ -11,6 +11,10 @@ import { RunningData } from "./types/running.js";
 import { Bot, BotStatus } from "../bot/bot.js";
 import { Response } from "./response.js";
 import { Utils } from "../util/utils.js";
+
+export interface CommandPrepareData {
+	db: DatabaseInfo;
+}
 
 export class CommandManager {
 	protected readonly bot: Bot;
@@ -231,15 +235,7 @@ export class CommandManager {
 		return response;
 	}
 
-	/**
-     * Handle a command interaction.
-     * @param interaction Command interaction to handle
-     */
-	public async handleCommand(interaction: ChatInputCommandInteraction): Promise<void> {
-		/* Get the command, by its name. */
-		const command: Command | null = this.commands.get(interaction.commandName) ?? null;
-		if (command === null) return;
-
+	public async prepare(interaction: ChatInputCommandInteraction | InteractionHandlerClassType, command: Command | InteractionHandler): Promise<CommandPrepareData | void> {
 		if (command.options.waitForStart && this.bot.reloading) return void await new Response()
 			.addEmbed(builder => builder
 				.setTitle("The bot is currently reloading**...** ⏳")
@@ -275,7 +271,7 @@ export class CommandManager {
 
 			const response = new Response()
 				.addEmbed(builder => builder
-					.setDescription(`The ${interaction instanceof MessageContextMenuCommandInteraction ? `context menu action \`${command.builder.name}\`` : `command \`/${command.builder.name}\``} is only available to ${type === null ? "**Premium**" : type === "plan" ? "**pay-as-you-go Premium 📊**" : "**fixed Premium 💸**"} users. **Premium 🌟** also includes many additional benefits; view \`/premium\` for more.`)
+					.setDescription(`This ${command instanceof InteractionHandler ? "action" : "command"} is only available to ${type === null ? "**Premium**" : type === "plan" ? "**pay-as-you-go Premium 📊**" : "**fixed Premium 💸**"} users. **Premium 🌟** also includes many additional benefits; view \`/premium\` for more.`)
 					.setColor("Orange")
 				)
 				.setEphemeral(true);
@@ -309,6 +305,29 @@ export class CommandManager {
 				});
 		}
 
+		if (command.voterOnly()) {
+			/* Whether the user has voted */
+			const voted: boolean = await this.bot.db.users.voted(db.user) !== null;
+
+			if (!voted) return void await new Response()
+				.addEmbed(builder => builder
+					.setTitle("Wait a moment... <:topgg:1119699678343200879>")
+					.setDescription(`This ${command instanceof InteractionHandler ? "action" : "command"} is restricted to **voters** only. *You can get access to it by simply voting for us on **[top.gg](${this.bot.vote.link(db.user)})** below*.`)
+					.setColor("#FF3366")
+				)
+				.addComponent(ActionRowBuilder<ButtonBuilder>, builder => builder
+					.addComponents(
+						new ButtonBuilder()
+							.setURL(this.bot.vote.link(db.user))
+							.setEmoji("📩")
+							.setLabel("Vote for the bot")
+							.setStyle(ButtonStyle.Link)
+					)
+				)
+				.setEphemeral(true)
+			.send(interaction);
+		}
+
 		/* If the command is marked as private, do some checks to make sure only privileged users are able to execute this command. */
 		if (!(command.planOnly() || command.subscriptionOnly())) {
 			/* Whether the user can execute this command */
@@ -316,14 +335,14 @@ export class CommandManager {
 
 			if (!canExecute) return void await new Response()
 				.addEmbed(builder => builder
-					.setDescription(`You are not allowed to run this command 🤨`)
+					.setDescription(`You are not allowed to run this ${command instanceof InteractionHandler ? "action" : "command"} 🤨`)
 					.setColor("Red")
 				).setEphemeral(true)
 			.send(interaction);
 		}
 
 		/* Defer the message, in case the command may execute for more than 3 seconds. */
-		if (command.options.long) try {
+		if (command instanceof Command && command.options.long) try {
 			await interaction.deferReply();
 		} catch (_) {
 			return;
@@ -348,13 +367,33 @@ export class CommandManager {
 			await this.applyCooldown(interaction, db, command);
 		}
 
+		return {
+			db
+		};
+	}
+
+	/**
+     * Handle a command interaction.
+     * @param interaction Command interaction to handle
+     */
+	public async handleCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+		/* Get the command, by its name. */
+		const command: Command | null = this.commands.get(interaction.commandName) ?? null;
+		if (command === null) return;
+
+		/* Execute some checks & get all needed data. */
+		const data: CommandPrepareData | void = await this.prepare(interaction, command);
+		if (!data) return;
+
+		const { db } = data;
+
 		/* Reply to the original interaction */
 		let response: Response | undefined | void;
 
 		/* Try to execute the command handler. */
 		try {
 			await this.setRunning(interaction, command, true);
-			response = await command.run(interaction as any, db);
+			response = await command.run(interaction, db);
 
 		} catch (error) {
 			if (error instanceof DiscordAPIError && error.code === 10062) return;

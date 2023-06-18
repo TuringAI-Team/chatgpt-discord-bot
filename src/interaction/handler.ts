@@ -94,7 +94,7 @@ export abstract class InteractionHandler<T extends InteractionHandlerClassType =
 
 
 	public restricted(check: CommandRestrictionType): boolean {
-		return check.every(c => this.options.restriction.includes(c));
+		return check.some(c => this.options.restriction.includes(c));
 	}
 
 	public voterOnly(): boolean {
@@ -131,4 +131,8 @@ export abstract class InteractionHandler<T extends InteractionHandlerClassType =
 	 * Execute the interaction handler.
 	 */
 	public abstract run(data: InteractionHandlerRunOptions<T, U>): InteractionHandlerResponse;
+
+	public get name(): string {
+		return this.builder.data.name;
+	}
 }

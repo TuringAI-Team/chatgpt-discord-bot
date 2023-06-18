@@ -559,7 +559,7 @@ export type TuringChatOpenAIBody = Pick<OpenAIChatBody, "model" | "messages" | "
 }
 
 export class TuringAPI extends EventEmitter {
-    private readonly bot: Bot;
+    public readonly bot: Bot;
 
     constructor(bot: Bot) {
         super();
@@ -774,7 +774,7 @@ export class TuringAPI extends EventEmitter {
     }
 
     public async resetAlanConversation({ conversation }: Pick<TuringAlanOptions, "conversation">): Promise<void> {
-        await this.request(`text/alan/chatgpt`, "DELETE", {
+        await this.request("text/alan/chatgpt", "DELETE", {
             userName: conversation.user.username,
             conversationId: conversation.id
         });

@@ -107,6 +107,11 @@ export interface Config {
 		key: string;
 	};
 
+	/* RabbitMQ configuration */
+	rabbitMQ: {
+		url: string;
+	}
+
 	/* General database information */
 	db: {
 		supabase: {

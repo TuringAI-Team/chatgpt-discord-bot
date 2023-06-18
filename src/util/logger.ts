@@ -3,7 +3,7 @@ import dayjs from "dayjs";
 
 import { Bot } from "../bot/bot.js";
 
-type LogType = string | number | boolean | any
+export type LogType = string | number | boolean | any
 
 interface LogLevel {
 	name: string;
