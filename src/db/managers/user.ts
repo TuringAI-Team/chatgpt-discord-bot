@@ -86,9 +86,9 @@ export class UserManager extends SubClusterDatabaseManager {
         return this.infraction(user, { by, reason: reason ?? "Inappropriate use of the bot", type: "warn", seen: false, automatic: automatic });
     }
 
-    public async ban(user: DatabaseUser, { by, reason, status, automatic  }: Pick<DatabaseInfractionOptions, "reason" | "by" | "automatic"> & { status: boolean }): Promise<DatabaseUser | null> {
+    public async ban(user: DatabaseUser, { by, reason, status, automatic  }: Pick<DatabaseInfractionOptions, "reason" | "by" | "automatic"> & { status: boolean }): Promise<DatabaseUser> {
         const banned: boolean = await this.banned(user) !== null;
-        if (banned === status) return null;
+        if (banned === status) return user;
 
         return this.infraction(user, { by, reason: reason ?? "Inappropriate use of the bot", type: status ? "ban" : "unban", automatic });
     }

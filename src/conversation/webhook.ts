@@ -17,7 +17,7 @@ export class WebhookManager {
         this.bot = bot;
     }
 
-    public mode(db?: DatabaseGuild | null): "noAds" | "on" | "off" {
+    public mode(db?: DatabaseGuild | null): "on" | "off" {
         if (!db) return "off";
         return this.bot.db.settings.get(db, "character:mode");
     }

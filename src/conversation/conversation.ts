@@ -154,13 +154,6 @@ export class Conversation {
 	}
 
 	/**
-	 * Cached database user instance
-	 */
-	public async databaseUser(): Promise<DatabaseUser> {
-		return this.manager.bot.db.users.fetchUser(this.user);
-	}
-
-	/**
 	 * Cached database conversation
 	 */
 	public async cached(): Promise<DatabaseConversation | null> {
@@ -406,7 +399,7 @@ export class Conversation {
 			user: this.user, db: options.db,
 
 			content: data.output.text,
-			source: "chatUser"
+			source: "chatBot"
 		});
 
         /* Random message identifier */

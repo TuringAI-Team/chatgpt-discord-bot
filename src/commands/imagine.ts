@@ -105,8 +105,8 @@ const MaxStepGenerationCount = {
 export type StableHordeImageAction = "upscale" | "variation"
 
 export const ImageGenerationCooldown: CommandSpecificCooldown = {
-	free: 100 * 1000,
-	voter: 80 * 1000,
+	free: 150 * 1000,
+	voter: 140 * 1000,
 	subscription: 45 * 1000
 }
 
@@ -211,11 +211,11 @@ export default class ImagineCommand extends Command {
 					value: `${width}:${height}:${premium ?? false}`
 				})))
 			)
-			.addAttachmentOption(builder => builder
+			/*.addAttachmentOption(builder => builder
 				.setName("source")
 				.setDescription("Source image to transform using the prompt")
 				.setRequired(false)
-			);
+			);*/
     }
 
 	private displayPrompt(user: User, prompt: ImageGenerationPrompt, action: StableHordeImageAction | null): string {
@@ -404,7 +404,7 @@ export default class ImagineCommand extends Command {
 		
 		if (action !== "upscale") {
 			rows.push(...this.buildRow(user, result, "upscale"));
-			if (action !== "variation") rows.push(...this.buildRow(user, result, "variation"));
+			//if (action !== "variation") rows.push(...this.buildRow(user, result, "variation"));
 		}
 
 		if (rows[0] && action === null) {

@@ -101,6 +101,7 @@ export interface ModerationNoticeOptions {
     result: ModerationResult;
     original?: ResponseSendClass;
     name: string;
+    small?: boolean;
 }
 
 export interface ModerationWarningModalOptions {
@@ -196,14 +197,14 @@ export class ModerationManager {
 
                         if (action === "warn") {
                             /* Send the warning to the user. */
-                            await this.bot.db.users.warn(db, {
+                            db = await this.bot.db.users.warn(db, {
                                 by: original.user.id,
                                 reason: content
                             });
 
                         } else if (action === "ban") {
                             /* Ban the user. */
-                            await this.bot.db.users.ban(db, {
+                            db = await this.bot.db.users.ban(db, {
                                 by: original.user.id,
                                 reason: content,
                                 status: true
@@ -211,7 +212,6 @@ export class ModerationManager {
                         }
 
                         /* Fetch the user's infractions again. */
-                        db = await this.bot.db.users.fetchUser(author);
                         const infractions: DatabaseUserInfraction[] = db.infractions;
 
                         /* Edit the original flag message. */
@@ -702,19 +702,21 @@ export class ModerationManager {
     public async message(options: ModerationNoticeOptions & Required<Pick<ModerationNoticeOptions, "original">>): Promise<Message | InteractionResponse | null>;
     public async message(options: ModerationNoticeOptions): Promise<Response>;
 
-    public async message({ result, original, name }: ModerationNoticeOptions): Promise<Response | Message | InteractionResponse | null> {
+    public async message({ result, original, name, small }: ModerationNoticeOptions): Promise<Response | Message | InteractionResponse | null> {
         const response = new Response();
 
         const embed = new EmbedBuilder()
-            .setTitle("What's this? 🤨")
+            .setTitle(!small ? "What's this? 🤨" : null)
             .setFooter({ text: `discord.gg/${this.bot.app.config.discord.inviteCode} • Support server` })
-            .setColor("Red")
+            .setColor(result.flagged && !result.blocked ? "Orange" : "Red")
             .setTimestamp();
 
         if (result.auto && result.auto.type !== "block") {
             if (result.auto.type === "warn") embed.setDescription(`${name} violates our **usage policies** & you have received a **warning**. *If you continue to violate the usage policies, we may have to take additional moderative actions*.`);
             else if (result.auto.type === "ban") embed.setDescription(`${name} violates our **usage policies** & you have been **banned** from using the bot. _If you want to appeal or have questions about your ban, join the **[support server](https://discord.gg/${this.bot.app.config.discord.inviteCode})**_.`);
-        } else if (result.blocked) embed.setDescription(`${name} violates our **usage policies**. *If you violate the usage policies, we may have to take moderative actions; otherwise you can ignore this notice*.`);
+            else if (result.auto.type === "flag") embed.setDescription(`${name} may violate our **usage policies**. *If you violate the usage policies, we may have to take moderative actions; otherwise you can ignore this notice*.`);
+        } else if (result.blocked) embed.setDescription(`${name} violates our **usage policies**. *If you actually violate the usage policies, we may have to take moderative actions; otherwise you can ignore this notice*.`);
+        else if (result.flagged) embed.setDescription(`${name} may violate our **usage policies**. *If you violate the usage policies, we may have to take moderative actions; otherwise you can ignore this notice*.`);
 
         response.addEmbed(embed);
 

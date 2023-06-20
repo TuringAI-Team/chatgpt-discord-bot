@@ -151,19 +151,16 @@ export class Generator {
 			pending = false;
 		}
 
-		for (const moderation of moderations) {
-			/* Add a moderation notice, if applicable. */
-			if (moderation !== null && (moderation.flagged || moderation.blocked)) embeds.push(new EmbedBuilder()
-				.setDescription(
-					!moderation.blocked
-						? `${moderation.source === "chatUser" ? "Your message" : `**${this.bot.client.user.username}**'s response`} may violate our **usage policies**. *If you violate the usage policies, we may have to take moderative actions; otherwise you can ignore this notice.*`
-						: `${moderation.source === "chatUser" ? "Your message" : `**${this.bot.client.user.username}**'s response`} violates our **usage policies**. *If you continue to violate the usage policies, we may have to take moderative actions; otherwise you can ignore this notice.*.`
-				)
-				.setColor(moderation.blocked ? "Red" : "Orange")
-			);
+		for (const moderation of moderations.filter(m => m !== null && m.flagged) as ModerationResult[]) {
+			const response = await this.bot.moderation.message({
+				name: moderation.source === "chatUser" ? "Your message" : `**${this.bot.client.user.username}**'s response`,
+				result: moderation, small: true
+			})
+
+			embeds.push(response.embeds[0]);
 		}
 
-		/* Only show the daily limit, if the generation request is already finished. */
+		/* Only show the buttons, once the generation request has finished. */
 		if (!pending) {
 			const buttons: ButtonBuilder[] = [];
 
