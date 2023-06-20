@@ -2,8 +2,8 @@ import { AsyncMessage as RabbitMQMessage, Envelope, MessageBody } from "rabbitmq
 import { Collection } from "discord.js";
 import chalk from "chalk";
 
-import { TuringConnectionManager } from "./connection.js";
 import { Packet, PacketData, PacketDirection, PacketMetadata, PacketName, PacketSendOptions, RawPacketData } from "./packet/packet.js";
+import { TuringConnectionManager } from "./connection.js";
 import { LogType } from "../../util/logger.js";
 import { Packets } from "./packets/index.js";
 
@@ -65,7 +65,7 @@ export class TuringConnectionHandler {
             const packet: Packet | null = this.get(raw.id, PacketDirection.Incoming);
             if (packet === null) return this.log(message, "invalid packet");
 
-            this.manager.app.logger.debug(chalk.bold(chalk.italic("RabbitMQ")), "->", "packet", chalk.bold(packet.options.name));
+            if (this.manager.app.dev) this.manager.app.logger.debug(chalk.bold(chalk.italic("RabbitMQ")), "->", "packet", chalk.bold(packet.options.name));
 
             /* Metadata for the packet */
             const metadata: PacketMetadata = this.metadata(packet, message);

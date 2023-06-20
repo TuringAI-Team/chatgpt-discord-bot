@@ -46,7 +46,11 @@ export class TuringConnectionManager {
         await this.wait();
 
         this.consumer = this.client.createConsumer({
-            queue: "messages"
+            queue: "messages",
+            qos: { prefetchCount: 1 },
+            
+            exchanges: [ { exchange: "messages", type: "topic" } ],
+            queueBindings: [ { exchange: "messages", routingKey: "message" } ]
         }, (message, reply) => this.handler.handle(message, reply));
 
         this.publisher = this.client.createPublisher({
