@@ -103,8 +103,8 @@ export class StreamBuilder<RequestBody, PartialResponseData, FinalResponseData =
                             const data: PartialResponseData = JSON.parse(event.data);
                             if (!data || !(await this.options.check(data))) return;
                             
-                            const old = { ...latest };
-                            if (!latest) latest = data;
+                            const old = latest;
+                            if (latest == null) latest = data;
 
                             const result: PartialResponseData | void = await this.options.progress(data, old);
 
