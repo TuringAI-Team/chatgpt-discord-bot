@@ -822,11 +822,17 @@ export class Generator {
 
 		try {
 			if (reply !== null) return await reply.edit(response.get() as MessageEditOptions);
-			else return await message.reply(response.get() as MessageReplyOptions);
+			else return await message.reply({
+				...response.get() as MessageReplyOptions,
+				failIfNotExists: false
+			});
 
 		} catch (_) {
 			try {
-				if (reply !== null) return await message.reply(response.get() as MessageCreateOptions);
+				if (reply !== null) return await message.reply({
+					...response.get() as MessageCreateOptions,
+					failIfNotExists: false
+				});
 				return await message.channel.send(response.get() as MessageCreateOptions);
 			} catch (_) {
 				return null;
