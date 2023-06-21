@@ -89,6 +89,10 @@ export class Command<U extends ContextMenuCommandInteraction | ChatInputCommandI
 		return this.restricted([ "subscription" ]);
 	}
 
+	public private(): boolean {
+		return this.restricted([ "moderator", "owner", "advertiser", "investor" ]);
+	}
+
 
 	public async removeCooldown(interaction: ChatInputCommandInteraction | ButtonInteraction): Promise<void> {
 		return this.bot.command.removeCooldown(interaction, this as any);

@@ -63,7 +63,7 @@ export class CommandManager {
 
 		/* Information about each application command, as JSON */
 		const commandList: RESTPostAPIApplicationCommandsJSONBody[] = this.commands.filter(
-			cmd => cmd.premiumOnly() || cmd.planOnly() || cmd.subscriptionOnly() || cmd.options.restriction.length === 0
+			cmd => cmd.premiumOnly() || cmd.planOnly() || cmd.subscriptionOnly() || cmd.voterOnly() || cmd.options.restriction.length === 0
 		).map(cmd =>
 			(cmd.builder as SlashCommandBuilder).setDefaultPermission(true).toJSON()
 		);
