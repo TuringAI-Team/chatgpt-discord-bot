@@ -17,7 +17,7 @@ const formatters: MessageFormatter[] = [
 
     {
         name: "Style Markdown links correctly",
-        execute: content => content.replaceAll(MARKDOWN_LINK_REGEXP, "**$1** (<*$2*>)")
+        execute: content => content.replaceAll(MARKDOWN_LINK_REGEXP, "**$1** (*<$2>*)")
     }
 ]
 

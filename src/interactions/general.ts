@@ -46,7 +46,7 @@ export class GeneralInteractionHandler extends InteractionHandler<ButtonInteract
 			if (when !== null) return new Response()
                 .addEmbed(builder => builder
                     .setDescription(`You have already voted for the bot <t:${Math.round(when / 1000)}:R>, thank you for your support! 🎉`)
-                    .setColor(this.bot.branding.color)
+                    .setColor("#FF3366")
                 )
                 .setEphemeral(true);
 

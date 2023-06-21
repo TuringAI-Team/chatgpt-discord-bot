@@ -45,18 +45,21 @@ export class TuringConnectionManager {
         /* Wait for the client to connect. */
         await this.wait();
 
+        const exchangeName: string = this.exchangeName();
+        const routingKey: string = this.routingKey();
+
         this.consumer = this.client.createConsumer({
-            queue: "messages",
             qos: { prefetchCount: 1 },
+            queue: exchangeName,
             
-            exchanges: [ { exchange: "messages", type: "topic" } ],
-            queueBindings: [ { exchange: "messages", routingKey: "message" } ]
+            exchanges: [ { exchange: exchangeName, type: "topic" } ],
+            queueBindings: [ { exchange: exchangeName, routingKey: routingKey } ]
         }, (message, reply) => this.handler.handle(message, reply));
 
         this.publisher = this.client.createPublisher({
             exchanges: [
                 {
-                    exchange: "messages", type: "topic"
+                    exchange: exchangeName, type: "topic"
                 }
             ],
 
@@ -73,5 +76,13 @@ export class TuringConnectionManager {
 
         /* Close the client itself. */
         await this.client.close();
+    }
+
+    private exchangeName(): string {
+        return `messages${this.app.dev ? ":dev" : ""}`;
+    }
+
+    private routingKey(): string {
+        return "message";
     }
 }

@@ -305,7 +305,7 @@ export class CommandManager {
 				});
 		}
 
-		if (command.voterOnly()) {
+		if (command.voterOnly() && !subscription.premium) {
 			/* Whether the user has voted */
 			const voted: boolean = await this.bot.db.users.voted(db.user) !== null;
 

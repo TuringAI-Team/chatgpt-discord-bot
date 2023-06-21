@@ -580,7 +580,7 @@ export class Conversation {
 			...additional
 		]);
 
-		return response;
+		return response.setEphemeral(true);
 	}
 
 	public async charge(options: ChatChargeOptions): Promise<UserPlanChatExpense | null> {

@@ -93,7 +93,7 @@ export class ClusterDatabaseManager extends DatabaseManager<Bot> {
             context: {
                 function: runner.toString(),
                 data: context
-            }, timeout: 3 * 1000
+            }, timeout: 15 * 1000
         });
 
         if (value !== void 0) return value;

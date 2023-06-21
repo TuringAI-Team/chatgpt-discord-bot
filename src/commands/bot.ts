@@ -48,18 +48,30 @@ export default class StatisticsCommand extends Command {
 			},
 		];
 
-		const builder: EmbedBuilder = new EmbedBuilder()
+		const response: Response = new Response()
+			.addComponent(ActionRowBuilder<ButtonBuilder>, Introduction.buttons(this.bot))
+
+		response.addEmbed(builder => builder
 			.setTitle("Bot Statistics")
-			.setDescription("*The ultimate AI-powered Discord bot*")
 			.setColor(this.bot.branding.color)
+			.setTimestamp(this.bot.statistics.since)
 
 			.addFields(fields.map(({ key, value }) => ({
 				name: key, value: value.toString(),
 				inline: true
-			})));
+			})))
+		);
 
-        return new Response()
-            .addEmbed(builder)
-			.addComponent(ActionRowBuilder<ButtonBuilder>, Introduction.buttons(this.bot));
+		/* If there are partners configured in the configuration, display them here. */
+		if (this.bot.branding.partners && this.bot.branding.partners.length > 0) {
+			const embed: EmbedBuilder = new EmbedBuilder()
+				.setTitle("Partners 🤝")
+				.setColor(this.bot.branding.color)
+				.setDescription(this.bot.branding.partners.map(p => `${p.emoji ? `${p.emoji} ` : ""} [**${p.name}**](${p.url})${p.description ? ` — *${p.description}*` : ""}`).join("\n"));
+
+			response.addEmbed(embed);
+		}
+
+        return response.setEphemeral(true);
     }
 }

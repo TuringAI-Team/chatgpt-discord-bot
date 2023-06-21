@@ -84,7 +84,8 @@ const BOT_TASKS: BotTask[] = [
                 guildCount: guildCount,
                 discordUsers: discordUsers,
                 databaseUsers: databaseUsers,
-                commit: commit
+                commit: commit,
+                since: Date.now()
             };
             
             await bot.client.cluster.broadcastEval(((client: BotDiscordClient, context: BotStatistics) => {

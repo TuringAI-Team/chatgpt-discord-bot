@@ -6,7 +6,7 @@ export type RunPodPath = "runsync"
 /* Available RunPod models */
 type RunPodModel = "blip2"
 
-type RunPodExecutionStatus = "COMPLETED"
+type RunPodExecutionStatus = "COMPLETED" | "FAILED"
 
 interface RunPodExecuteOptions<T> {
     /* Which model to run */

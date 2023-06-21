@@ -49,7 +49,6 @@ export class AppDatabaseManager extends DatabaseManager<App> {
         type: DatabaseCollectionType, object: T | string
     ): Promise<U | null> {
         const id: string = typeof object === "string" ? object : object.id;
-        const schema = this.schema(type);
 
         const existing: U | null = await this.bot.cache.get(type, id);
         if (existing) return existing;
@@ -65,6 +64,7 @@ export class AppDatabaseManager extends DatabaseManager<App> {
         const raw: U = data[0];
 
         /* Process the raw database entry into a formatted format. */
+        const schema = this.schema(type);
         let final: U = await schema.process(raw as any) as U;
 
         /* If the process() callback didn't return anything, just use the raw data. */

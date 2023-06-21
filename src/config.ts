@@ -10,9 +10,26 @@ export interface ConfigDiscordChannel {
     channel: Snowflake;
 }
 
+export interface ConfigBrandingPartner {
+	/* Name of the partner */
+	name: string;
+
+	/* Description of the partner */
+	description?: string;
+
+	/* Emoji for the partner, optional */
+	emoji?: string;
+
+	/* URL to the partner's website */
+	url: string;
+}
+
 export interface ConfigBranding {
-	/* Branding color code */
+	/* Color to use for most embeds */
 	color: ColorResolvable;
+
+	/* List of partners */
+	partners: ConfigBrandingPartner[];
 }
 
 export interface Config {

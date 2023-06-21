@@ -42,26 +42,29 @@ export interface BotStatus {
 }
 
 export interface BotStatistics {
-    /* Total amount of servers the bot is on */
+    /** Total amount of servers the bot is on */
     guildCount: number;
 
-    /* Total amount of users in the database */
+    /** Total amount of users in the database */
     databaseUsers: number;
 
-    /* Total amount of Discord users */
+    /** Total amount of Discord users */
     discordUsers: number;
 
-    /* Total amount of conversations in the database */
+    /** Total amount of conversations in the database */
     conversations: number;
 
-    /* RAM usage, in bytes */
+    /** RAM usage, in bytes */
     memoryUsage: number;
 
-    /* Discord ping, in milliseconds */
+    /** Discord ping, in milliseconds */
     discordPing: number;
 
-    /* Latest Git commit */
+    /** Latest Git commit */
     commit: GitCommit | null;
+
+    /** When the statistics were last updated */
+    since: number;
 }
 
 interface BotSetupStep {
@@ -163,7 +166,8 @@ export class Bot extends EventEmitter {
             guildCount: 0,
             discordUsers: 0,
             databaseUsers: 0,
-            commit: null
+            commit: null,
+            since: -1
         };
 
         /* Set up various classes & services. */
