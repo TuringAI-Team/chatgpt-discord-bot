@@ -22,7 +22,7 @@ export class ClusterDatabaseQueueManager extends DatabaseQueueManager<ClusterDat
 
     public async work(): Promise<void> {
         await this.db.eval(async app => {
-            await app.db.queue.work();
+            app.db.queue.work();
         });
     }
 }
