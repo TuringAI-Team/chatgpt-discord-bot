@@ -56,7 +56,9 @@ export class UserRoleManager extends SubClusterDatabaseManager {
         if (this.owner(user)) return true;
 
         const type = await this.db.users.type({ user });
+
         if (command.voterOnly() && !type.premium) return await this.db.users.voted(user) !== null;
+        else if (command.voterOnly() && type.premium) return true;
 
         if (command.premiumOnly()) {
             if (command.premiumOnly()) return type.premium;

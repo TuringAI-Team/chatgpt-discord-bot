@@ -308,17 +308,18 @@ export class CommandManager {
 		if (command.voterOnly() && !subscription.premium) {
 			/* Whether the user has voted */
 			const voted: boolean = await this.bot.db.users.voted(db.user) !== null;
+			const link: string = this.bot.vote.link(db.user);
 
 			if (!voted) return void await new Response()
 				.addEmbed(builder => builder
 					.setTitle("Wait a moment... <:topgg:1119699678343200879>")
-					.setDescription(`This ${command instanceof InteractionHandler ? "action" : "command"} is restricted to **voters** only. *You can get access to it by simply voting for us on **[top.gg](${this.bot.vote.link(db.user)})** below*.`)
+					.setDescription(`This ${command instanceof InteractionHandler ? "action" : "command"} is restricted to **voters** only. *You can get access to it by simply voting for us on **[top.gg](${link})** below*.`)
 					.setColor("#FF3366")
 				)
 				.addComponent(ActionRowBuilder<ButtonBuilder>, builder => builder
 					.addComponents(
 						new ButtonBuilder()
-							.setURL(this.bot.vote.link(db.user))
+							.setURL(link)
 							.setEmoji("📩")
 							.setLabel("Vote for the bot")
 							.setStyle(ButtonStyle.Link)
