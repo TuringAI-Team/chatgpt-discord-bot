@@ -4,8 +4,6 @@ import { Awaitable } from "discord.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
 import { GPTAPIError } from "../error/gpt/api.js";
 
-type StreamSetFunction<PartialResponseData> = (value: PartialResponseData) => void
-
 export interface StreamBuilderOptions<RequestBody, PartialResponseData, FinalResponseData = PartialResponseData, ProcessedFinalResponseData = FinalResponseData> {
     /* Which URL to request */
     url: string;
@@ -20,7 +18,7 @@ export interface StreamBuilderOptions<RequestBody, PartialResponseData, FinalRes
     error: (response: Response) => Awaitable<Error | null>;
 
     /* The progress handler to use */
-    progress?: (data: PartialResponseData, old: PartialResponseData | null, set: StreamSetFunction<PartialResponseData>) => Awaitable<void>;
+    progress: (data: PartialResponseData, old: PartialResponseData | null) => Awaitable<PartialResponseData | null | void>;
 
     /* Check callback, to determine whether progress() should be called */
     check?: (data: PartialResponseData) => Awaitable<boolean>;
@@ -57,9 +55,6 @@ export class StreamBuilder<RequestBody, PartialResponseData, FinalResponseData =
                 controller.abort();
                 reject(new TypeError("Request timed out"));
             }, this.options.duration * 1000) : null;
-
-            const setFunction: StreamSetFunction<PartialResponseData> =
-                value => latest = value;
 
             try {
                 await fetchEventSource(this.options.url, {
@@ -108,10 +103,15 @@ export class StreamBuilder<RequestBody, PartialResponseData, FinalResponseData =
                             const data: PartialResponseData = JSON.parse(event.data);
                             if (!data || !(await this.options.check(data))) return;
                             
-                            const old = latest;
-                            latest = data;
+                            const old = { ...latest };
+                            if (!latest) latest = data;
 
-                            if (this.options.progress) this.options.progress(data, old, setFunction);
+                            const result: PartialResponseData | void = await this.options.progress(data, old);
+
+                            if (result === null) {}
+                            else if (result !== null && result !== void 0) latest = result;
+                            else if (result === void 0) latest = data;
+
                         } catch (error) {
                             throw error;
                         }

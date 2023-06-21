@@ -45,9 +45,9 @@ export class OpenAIManager {
             url: this.url("chat/completions"),
             headers: this.headers(),
 
-            progress: (data, old, set) => {
+            progress: (data, old) => {
                 /* If an error occurred, stop generation at this point. */
-                if (data.choices[0].error !== undefined) {
+                if (data.choices[0].error != undefined) {
                     throw new GPTAPIError({
                         endpoint: "/chat/completions",
                         code: 400,
@@ -56,7 +56,7 @@ export class OpenAIManager {
                     });
                 }
 
-                if (!data.choices[0].delta.content) return;
+                if (!data.choices[0].delta.content) return null;
 
                 const updated: OpenAIPartialChatCompletionsJSON = {
                     choices: [
@@ -73,8 +73,8 @@ export class OpenAIManager {
                     ]
                 };
 
-                set(updated);
                 if (progress) progress(updated);
+                return updated;
             },
 
             process: final => {
@@ -123,7 +123,7 @@ export class OpenAIManager {
             url: this.url("completions"),
             headers: this.headers(),
 
-            progress: (data, old, set) => {
+            progress: (data, old) => {
                 const updated: OpenAIPartialCompletionsJSON = {
                     choices: [
                         {
@@ -133,8 +133,8 @@ export class OpenAIManager {
                     ]
                 };
 
-                set(updated);
                 if (progress) progress(updated);
+                return updated;
             },
 
             process: final => {

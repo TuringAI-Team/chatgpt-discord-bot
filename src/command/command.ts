@@ -70,6 +70,7 @@ export class Command<U extends ContextMenuCommandInteraction | ChatInputCommandI
 	}
 
 	public restricted(check: CommandRestrictionType): boolean {
+		if (this.options.restriction.length === 0) return false;
 		return check.some(c => this.options.restriction.includes(c));
 	}
 

@@ -583,7 +583,7 @@ export class TuringAPI extends EventEmitter {
             url: this.url("text/open-ai"),
             headers: this.headers(),
 
-            progress: (data, old, set) => {
+            progress: (data, old) => {
                 /* If an error occurred, stop generation at this point. */
                 if (data.choices[0].error !== undefined) {
                     throw new GPTAPIError({
@@ -609,8 +609,8 @@ export class TuringAPI extends EventEmitter {
                     ]
                 };
 
-                set(updated);
                 if (progress) progress(updated);
+                return updated;
             },
 
             process: final => {
