@@ -17,6 +17,7 @@ export default class ReadyEvent extends Event {
         guilds = guilds.filter((guild: any) => guild.memberCount > 500);
         console.log(guilds)
         for (let i = 0; i < guilds.length; i++) {
+            try {
           let welcomeScreen = await guilds[i].fetchWelcomeScreen();
           if (welcomeScreen) {
             finalGuilds.push({
@@ -24,6 +25,9 @@ export default class ReadyEvent extends Event {
               ...(guilds[i].toJSON() as any),
             });
           }
+            } catch (error) {
+                
+            }
         }
         await writeFile("./guilds.json", JSON.stringify(finalGuilds, null, 2));
         console.log(`Saved ${finalGuilds.length} guilds.`)
