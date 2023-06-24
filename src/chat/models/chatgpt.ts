@@ -26,7 +26,7 @@ export class ChatGPTModel extends ChatModel {
         let data: OpenAIChatCompletionsData | null = null;
 
         /* Turing ChatGPT API */
-        if (!options.settings.options.settings.model || options.settings.options.settings.model === "gpt-3.5-turbo") {
+        /*if (!options.settings.options.settings.model || options.settings.options.settings.model === "gpt-3.5-turbo") {
             data = await this.client.session.manager.bot.turing.openAI({
                 model: options.settings.options.settings.model ?? "gpt-3.5-turbo",
                 temperature: options.settings.options.settings.temperature ?? 0.5,
@@ -36,7 +36,7 @@ export class ChatGPTModel extends ChatModel {
             }, progress);
         
         /* Regular OpenAI API */
-        } else {
+        //} else {
             data = await this.client.session.ai.chat({
                 model: options.settings.options.settings.model ?? "gpt-3.5-turbo-0613",
                 stream: options.partial,
@@ -48,7 +48,7 @@ export class ChatGPTModel extends ChatModel {
                 max_tokens: isFinite(prompt.max) ? prompt.max : undefined,
                 messages: Object.values(prompt.parts),
             }, progress);;
-        }
+        //}
 
         if (data === null || data.response.message.content.trim().length === 0) throw new GPTGenerationError({
             type: GPTGenerationErrorType.Empty

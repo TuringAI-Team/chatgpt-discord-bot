@@ -583,6 +583,8 @@ export class TuringAPI extends EventEmitter {
             headers: this.headers(),
 
             progress: (data, old) => {
+                if (!data.choices) return;
+
                 /* If an error occurred, stop generation at this point. */
                 if (data.choices[0].error !== undefined) {
                     throw new GPTAPIError({
