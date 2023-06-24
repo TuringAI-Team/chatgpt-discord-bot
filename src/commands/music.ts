@@ -33,6 +33,7 @@ export default class VideoCommand extends Command {
 				subscription: 1.5 * 60 * 1000
 			},
 
+			restriction: [ "voter" ],
 			synchronous: true
 		});
 	}

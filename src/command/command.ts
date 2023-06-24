@@ -20,7 +20,7 @@ export type CommandOptionChoice<T = string | number> = APIApplicationCommandOpti
 
 export type CommandResponse = Promise<Response | undefined | void>
 
-export type CommandRestrictionType = (UserRole | Omit<UserSubscriptionPlanType, "free">)[]
+export type CommandRestrictionType = (UserRole | UserSubscriptionPlanType)[]
 
 export interface CommandSpecificCooldown {
 	free: number;
