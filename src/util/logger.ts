@@ -45,7 +45,7 @@ export class Logger {
 	}
 }
 
-export class ShardLogger extends Logger {
+export class ClusterLogger extends Logger {
 	/* Discord client instance */
 	private readonly bot: Bot;
 

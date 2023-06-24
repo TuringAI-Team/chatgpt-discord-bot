@@ -15,7 +15,6 @@
     "resolveJsonModule": true,
     "allowJs": true,
     "experimentalDecorators": true, 
-    "emitDecoratorMetadata": true, 
-    /* Advanced Options */
+    "emitDecoratorMetadata": true,
   }
 }

@@ -449,8 +449,6 @@ export interface TuringChartResult {
     image: ImageBuffer;
 }
 
-export type TuringTrackingType = "topgg"
-
 interface TuringChatPluginsBody {
     model: TuringChatPluginsModel;
     max_tokens?: number;
@@ -556,6 +554,7 @@ export interface TuringChatBingResult {
 
 export type TuringChatOpenAIBody = Pick<OpenAIChatBody, "model" | "messages" | "temperature"> & {
     maxTokens?: number;
+    pw?: boolean;
 }
 
 export class TuringAPI extends EventEmitter {
@@ -587,7 +586,7 @@ export class TuringAPI extends EventEmitter {
                 /* If an error occurred, stop generation at this point. */
                 if (data.choices[0].error !== undefined) {
                     throw new GPTAPIError({
-                        endpoint: "/chat/completions",
+                        endpoint: "/text/open-ai",
                         code: 400,
                         id: data.choices[0].error.code,
                         message: data.choices[0].error.message
@@ -614,6 +613,8 @@ export class TuringAPI extends EventEmitter {
             },
 
             process: final => {
+                if (!final.choices) return null;
+
                 const usage: OpenAIUsageCompletionsData = {
                     completion_tokens: getPromptLength(final.choices[0].delta.content!),
                     prompt_tokens: countChatMessageTokens(options.messages),
@@ -746,10 +747,6 @@ export class TuringAPI extends EventEmitter {
         });
 
         return latest;
-    }
-
-    public trackingURL(db: DatabaseUser, type: TuringTrackingType): `https://l.turing.sh/${TuringTrackingType}/${string}` {
-        return `https://l.turing.sh/${type}/${db.id}`;
     }
 
     public async chart({ chart, settings }: TuringChartOptions): Promise<TuringChartResult> {

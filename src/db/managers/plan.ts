@@ -4,24 +4,25 @@ import { MidjourneyResult, TuringVideoModel, TuringVideoModelName, TuringVideoRe
 import { DescribeSummary, DatabaseDescription } from "../../image/description.js";
 import { StableHordeGenerationResult } from "../../image/types/image.js";
 import { DatabaseUser, UserSubscriptionType } from "../schemas/user.js";
+import { RunPodMusicGenResult } from "../../runpod/models/musicgen.js";
 import { ChatInteraction } from "../../conversation/conversation.js";
+import { DatabaseManager, DatabaseManagerBot } from "../manager.js";
 import { ErrorResponse } from "../../command/response/error.js";
 import { CommandInteraction } from "../../command/command.js";
 import { SummaryPrompt } from "../../commands/summarize.js";
 import { ProgressBar } from "../../util/progressBar.js";
-import { SubClusterDatabaseManager, SubDatabaseManager } from "../sub.js";
+import { ClusterDatabaseManager } from "../cluster.js";
 import { YouTubeVideo } from "../../util/youtube.js";
 import { Response } from "../../command/response.js";
 import { DatabaseGuild } from "../schemas/guild.js";
+import { SubDatabaseManager } from "../sub.js";
 import { Utils } from "../../util/utils.js";
 import { DatabaseInfo } from "./user.js";
-import { DatabaseManager, DatabaseManagerBot } from "../manager.js";
-import { ClusterDatabaseManager } from "../cluster.js";
 import { AppDatabaseManager } from "../app.js";
 
 type DatabaseEntry = DatabaseUser | DatabaseGuild
 
-type UserPlanExpenseType = "image" | "dall-e" | "midjourney" | "video" | "summary" | "chat" | "describe" | "translate"
+type UserPlanExpenseType = "image" | "dall-e" | "midjourney" | "video" | "summary" | "chat" | "describe" | "translate" | "music"
 
 type UserPlanExpenseData = {
     [key: string]: string | number | boolean | UserPlanExpenseData;
@@ -70,6 +71,10 @@ export type UserPlanImageDescribeExpense = UserPlanExpense<{
 
 export type UserPlanVideoExpense = UserPlanExpense<{
     model: TuringVideoModelName;
+    duration: number;
+}>
+
+export type UserPlanMusicExpense = UserPlanExpense<{
     duration: number;
 }>
 
@@ -151,7 +156,8 @@ export const PlanExpenseEntryViewers: {
     summary: PlanExpenseEntryViewer<UserPlanSummaryExpense>,
     chat: PlanExpenseEntryViewer<UserPlanChatExpense>,
     describe: PlanExpenseEntryViewer<UserPlanImageDescribeExpense>,
-    translate: PlanExpenseEntryViewer<UserPlanTranslateExpense>
+    translate: PlanExpenseEntryViewer<UserPlanTranslateExpense>,
+    music: PlanExpenseEntryViewer<UserPlanMusicExpense>
 } = {
     image: e => `used \`${e.data.kudos}\` kudos`,
     "dall-e": e => `**${e.data.count}** image${e.data.count > 1 ? "s" : ""}`,
@@ -160,7 +166,8 @@ export const PlanExpenseEntryViewers: {
     summary: e => `used **${e.data.tokens}** tokens`,
     chat: e => `using \`${e.data.model}\`${e.data.tokens ? `, **${e.data.tokens.prompt}** prompt & **${e.data.tokens.completion}** completion tokens` : ""}`,
     describe: e => `took **${e.data.duration} ms**`,
-    translate: e => `translated from **\`${e.data.source}\`**, used **${e.data.tokens.prompt}** prompt & **${e.data.tokens.completion}** completion tokens`
+    translate: e => `translated from **\`${e.data.source}\`**, used **${e.data.tokens.prompt}** prompt & **${e.data.tokens.completion}** completion tokens`,
+    music: e => `took **${e.data.duration} ms**`,
 }
 
 export class BasePlanManager<T extends DatabaseManager<DatabaseManagerBot>> extends SubDatabaseManager<T> {
@@ -298,7 +305,15 @@ export class ClusterPlanManager extends BasePlanManager<ClusterDatabaseManager> 
         entry: DatabaseInfo, video: TuringVideoResult, model: TuringVideoModel
     ): Promise<UserPlanVideoExpense | null> {
         return this.expense(entry, {
-            type: "video", used: (Math.max(video.duration, 1000) / 1000) * 0.0023, data: { duration: video.duration, model: model.id }, bonus: 0.05
+            type: "video", used: (Math.max(video.duration, 1000) / 1000) * 0.0004, data: { duration: video.duration, model: model.id }, bonus: 0.05
+        });
+    }
+
+    public async expenseForMusic(
+        entry: DatabaseInfo, result: RunPodMusicGenResult
+    ): Promise<UserPlanMusicExpense | null> {
+        return this.expense(entry, {
+            type: "music", used: (Math.max(result.raw.duration, 1000) / 1000) * 0.0004, data: { duration: result.raw.duration }, bonus: 0.10
         });
     }
 

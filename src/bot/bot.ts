@@ -1,5 +1,5 @@
-import { ActivityType, Awaitable, basename, Client, GatewayIntentBits, Options, Partials } from "discord.js";
 import { ClusterClient, getInfo, IPCMessage, messageType } from "discord-hybrid-sharding";
+import { ActivityType, Client, GatewayIntentBits, Options, Partials } from "discord.js";
 import EventEmitter from "events";
 import chalk from "chalk";
 
@@ -17,8 +17,8 @@ import { executeConfigurationSteps } from "./setup.js";
 import { CommandManager } from "../command/manager.js";
 import { ErrorManager } from "../moderation/error.js";
 import { ImageManager } from "../image/manager.js";
+import { ClusterLogger } from "../util/logger.js";
 import { RunPodManager } from "../runpod/api.js";
-import { ShardLogger } from "../util/logger.js";
 import { ConfigBranding } from "../config.js";
 import { VoteManager } from "../util/vote.js";
 import { TuringAPI } from "../turing/api.js";
@@ -79,11 +79,11 @@ export class Bot extends EventEmitter {
     /* Stripped-down app data */
     public app: StrippedApp;
 
-    /* Data about this shard */
+    /* Data about this cluster */
     public data: BotData;
 
-    /* Logger instance, for the shard */
-    public readonly logger: ShardLogger;
+    /* Logger instance, for the cluster */
+    public readonly logger: ClusterLogger;
 
     /* Scheduled task manager */
     public readonly task: TaskManager;
@@ -169,7 +169,7 @@ export class Bot extends EventEmitter {
         this.command = new CommandManager(this);
         this.runpod = new RunPodManager(this);
         this.error = new ErrorManager(this);
-        this.logger = new ShardLogger(this);
+        this.logger = new ClusterLogger(this);
         this.image = new ImageManager(this);
         this.turing = new TuringAPI(this);
         this.vote = new VoteManager(this);

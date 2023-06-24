@@ -27,18 +27,18 @@ export class ChatGPTModel extends ChatModel {
 
         /* Turing ChatGPT API */
         if (!options.settings.options.settings.model || options.settings.options.settings.model === "gpt-3.5-turbo") {
-        //if (false) {
             data = await this.client.session.manager.bot.turing.openAI({
                 model: options.settings.options.settings.model ?? "gpt-3.5-turbo",
                 temperature: options.settings.options.settings.temperature ?? 0.5,
                 messages: Object.values(prompt.parts),
-                maxTokens: prompt.max
+                maxTokens: prompt.max,
+                pw: false
             }, progress);
         
         /* Regular OpenAI API */
         } else {
             data = await this.client.session.ai.chat({
-                model: options.settings.options.settings.model ?? "gpt-3.5-turbo",
+                model: options.settings.options.settings.model ?? "gpt-3.5-turbo-0613",
                 stream: options.partial,
                 stop: "User:",
     

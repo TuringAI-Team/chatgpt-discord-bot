@@ -5,8 +5,8 @@ import { type App } from "../app.js";
 
 import { Config } from "../config.js";
 
-export type DatabaseCollectionType = "users" | "conversations" | "guilds" | "interactions" | "images" | "descriptions" | "errors"
-export const DatabaseCollectionTypes: DatabaseCollectionType[] = [ "users", "conversations", "guilds", "interactions", "images", "descriptions", "errors" ]
+export type DatabaseCollectionType = "users" | "conversations" | "guilds" | "interactions" | "images" | "descriptions" | "errors" | "campaigns"
+export const DatabaseCollectionTypes: DatabaseCollectionType[] = [ "users", "conversations", "guilds", "interactions", "images", "descriptions", "errors", "campaigns" ]
 
 export type DatabaseManagerBot = Bot | App
 
@@ -45,7 +45,7 @@ export class DatabaseManager<T extends DatabaseManagerBot = Bot> {
         return this.config.db.supabase.collections[type] ?? type;
     }
 
-    private get config(): Config {
+    public get config(): Config {
         return (this.bot as any).data
             ? (this.bot as any).data.app.config
             : (this.bot as any).config;

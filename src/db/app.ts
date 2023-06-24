@@ -4,6 +4,7 @@ import { DatabaseCollectionType, DatabaseLikeObject, DatabaseManager } from "./m
 import { DatabaseSchemaMap, DatabaseSchemas } from "./schemas/index.js";
 import { AppDatabaseMetricsManager } from "./managers/metrics.js";
 import { AppDatabaseQueueManager } from "./managers/queue.js";
+import { AppCampaignManager } from "./managers/campaign.js";
 import { AppSettingsManager } from "./managers/settings.js";
 import { GPTDatabaseError } from "../error/gpt/db.js";
 import { DatabaseSchema } from "./schemas/schema.js";
@@ -15,6 +16,7 @@ export class AppDatabaseManager extends DatabaseManager<App> {
     public readonly metrics: AppDatabaseMetricsManager;
     public readonly queue: AppDatabaseQueueManager;
     public readonly settings: AppSettingsManager;
+    public readonly campaign: AppCampaignManager;
     public readonly plan: AppPlanManager;
 
     /* The schemas for all database types */
@@ -25,6 +27,7 @@ export class AppDatabaseManager extends DatabaseManager<App> {
 
         this.metrics = new AppDatabaseMetricsManager(this);
         this.queue = new AppDatabaseQueueManager(this);
+        this.campaign = new AppCampaignManager(this);
         this.settings = new AppSettingsManager(this);
         this.plan = new AppPlanManager(this);
 
@@ -36,6 +39,11 @@ export class AppDatabaseManager extends DatabaseManager<App> {
             const instance = new schema(this);
             this.schemas.set(instance.settings.collection, instance);
         }
+    }
+
+    public async setup(): Promise<void> {
+        super.setup();
+        await this.campaign.setup();
     }
 
     public schema<CollectionType extends DatabaseCollectionType>(type: CollectionType): DatabaseSchemaMap[CollectionType] {

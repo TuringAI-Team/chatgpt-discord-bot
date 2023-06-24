@@ -93,7 +93,7 @@ export class AppDatabaseQueueManager extends DatabaseQueueManager<AppDatabaseMan
                         chalk.bold("Database update"),
                         `-> collection ${chalk.bold(type)}`,
                         `-> ID ${chalk.bold(id)}`,
-                        `-> changes:`, Utils.truncate(JSON.stringify(modified, undefined, 4), 200)
+                        `-> changes:`, Utils.truncate(JSON.stringify(modified, undefined, 4), 200, chalk.bold("..."))
                     );
 
                     this.updates[type].delete(id);

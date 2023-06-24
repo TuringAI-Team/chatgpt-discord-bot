@@ -223,7 +223,7 @@ Knowledge cut-off: September 2021
         name: "GPT-4",
         description: "OpenAI's new GPT-4 model",
         emoji: { fallback: "✨" },
-        settings: { model: "gpt-4" },
+        settings: { model: "gpt-4-0613" },
         type: ModelType.OpenAIChat,
         restricted: "premium",
         history: { context: 425, generation: 270, maxTokens: 8192 },

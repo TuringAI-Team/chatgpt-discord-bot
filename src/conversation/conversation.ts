@@ -1,9 +1,10 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, Message, User } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, EmbedBuilder, Message, User } from "discord.js";
 import { randomUUID } from "crypto";
 import chalk from "chalk";
 
 import { ChatSettingsModel, ChatSettingsModelBillingType, ChatSettingsModels } from "./settings/model.js";
 import { DatabaseUser, UserSubscriptionPlanType, UserSubscriptionType } from "../db/schemas/user.js";
+import { CampaignPickOptions, DatabaseCampaign, DisplayCampaign } from "../db/managers/campaign.js";
 import { DatabaseConversation, DatabaseResponseMessage } from "../db/schemas/conversation.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
 import { ChatSettingsTone, ChatSettingsTones } from "./settings/tone.js";
@@ -199,15 +200,6 @@ export class Conversation {
 		await this.init();
 	}
 
-	public async changeSetting<T extends ChatSettingsModel | ChatSettingsTone>(type: "model" | "tone", db: DatabaseUser, updated: T): Promise<void> {
-		/* Reset the conversation first, as the models might get confused otherwise. */
-		await this.reset(db);
-
-		await this.manager.bot.db.settings.apply(db, {
-			[`chat:${type}`]: updated.id
-		});
-	}
-
 	public setting<T extends ChatSettingsModel | ChatSettingsTone>(type: "model" | "tone", arr: T[], db: DatabaseUser | DatabaseInfo): T {
 		/* The database user instance */
 		const user: DatabaseUser =
@@ -311,7 +303,7 @@ export class Conversation {
 
 		/* Lock the conversation during generation. */
 		this.generating = true;
-		if (this.timer !== null) clearTimeout(this.timer);
+		this.bump();
 
 		/* Amount of attempted tries */
 		let tries: number = 0;
@@ -331,6 +323,7 @@ export class Conversation {
 				data = await this.manager.session.generate(options);
 
 			} catch (error) {
+				this.bump();
 				tries++;
 
 				/* If all of the retries were exhausted, throw the error. */
@@ -519,8 +512,13 @@ export class Conversation {
 		const response: Response = new Response();
 		const additional: EmbedBuilder[] = [];
 
-		/* Link to the vote for the bot */
-		const link: string = this.manager.bot.vote.link(db.user);
+		/* Choose an ad to display, if applicable. */
+		const ad = await this.manager.bot.db.campaign.ad({ db });
+
+		if (ad !== null) {
+			response.addComponent(ActionRowBuilder<ButtonBuilder>, ad.response.row);
+			additional.push(ad.response.embed);
+		}
 		
 		if (!subscriptionType.premium) {
 			additional.push(
@@ -547,24 +545,6 @@ export class Conversation {
 						.setColor("Orange")
 				);
 			}
-		}
-
-		if (!subscriptionType.premium && subscriptionType.type !== "voter") {
-			additional.push(
-				new EmbedBuilder()
-					.setDescription(`<:topgg:1119699678343200879> You can **reduce your cool-down**, by voting for us on **[top.gg](${link})** below.`)
-					.setColor("#FF3366")
-			);
-
-			response.addComponent(ActionRowBuilder<ButtonBuilder>, builder => builder
-				.addComponents(
-					new ButtonBuilder()
-						.setURL(link)
-						.setLabel("Vote for the bot")
-						.setStyle(ButtonStyle.Link)
-						.setEmoji("📩")
-				)
-			);
 		}
 
 		this.manager.bot.db.metrics.changeCooldownMetric({
@@ -652,7 +632,7 @@ export class Conversation {
 		/* Count all analyzed images too. */
 		if (model.options.billing.type !== ChatSettingsModelBillingType.Custom && options.interaction.input.images && options.interaction.input.images.length > 0) {
 			options.interaction.input.images.forEach(image => {
-				cost += (image.duration / 1000) * 0.0023;
+				cost += (image.duration / 1000) * 0.0004;
 			});
 		}
 
@@ -680,7 +660,7 @@ export class Conversation {
 				cluster: this.manager.bot.data.id
 			},
 
-			timeout: 5 * 1000
+			timeout: 3 * 1000
 		}).catch(() => {});
 	}
 

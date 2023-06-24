@@ -232,6 +232,14 @@ export class CommandManager {
 			);
 		}
 
+		/* Choose an ad to display, if applicable. */
+		const ad = await this.bot.db.campaign.ad({ db });
+
+		if (ad !== null) {
+			response.addComponent(ActionRowBuilder<ButtonBuilder>, ad.response.row);
+			response.addEmbed(ad.response.embed);
+		}
+
 		return response;
 	}
 
@@ -308,7 +316,7 @@ export class CommandManager {
 		if (command.voterOnly() && !subscription.premium) {
 			/* Whether the user has voted */
 			const voted: boolean = await this.bot.db.users.voted(db.user) !== null;
-			const link: string = this.bot.vote.link(db.user);
+			const link: string = this.bot.vote.link(db);
 
 			if (!voted) return void await new Response()
 				.addEmbed(builder => builder

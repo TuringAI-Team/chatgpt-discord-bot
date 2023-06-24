@@ -24,7 +24,7 @@ export interface StreamBuilderOptions<RequestBody, PartialResponseData, FinalRes
     check?: (data: PartialResponseData) => Awaitable<boolean>;
 
     /* Process & transform the final data */
-    process?: (data: FinalResponseData) => Awaitable<ProcessedFinalResponseData>;
+    process?: (data: FinalResponseData) => Awaitable<ProcessedFinalResponseData | null>;
 
     /* How long to wait, until the request automatically gets aborted after inactivity, in seconds */
     duration?: number;
@@ -134,8 +134,12 @@ export class StreamBuilder<RequestBody, PartialResponseData, FinalResponseData =
         });
 
         /* Final (processed) data */
-        let final: ProcessedFinalResponseData = latest as ProcessedFinalResponseData;
+        let final: ProcessedFinalResponseData | null = latest as ProcessedFinalResponseData;
         if (this.options.process) final = await this.options.process(final);
+
+        if (final === null) throw new GPTGenerationError({
+            type: GPTGenerationErrorType.Empty
+        });
 
         return final;
     }

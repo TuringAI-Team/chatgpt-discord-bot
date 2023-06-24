@@ -63,12 +63,11 @@ export interface DatabaseUser {
 }
 
 export type DatabaseUserMetadataKey = "country" | "region" | "email"
-export type DatabaseUserMetadata = Record<DatabaseUserMetadataKey, string | undefined>
 export const DatabaseUserMetadataKeys: DatabaseUserMetadataKey[] = [ "country", "region", "email" ]
+export type DatabaseUserMetadata = Record<DatabaseUserMetadataKey, string | undefined>
 
-export type DatabaseInteractionType = "commands" | "interactions" | "images" | "messages" | "resets" | "translations" | "votes" | "imageDescriptions" | "cooldownMessages" | "videos"
-export const DatabaseInteractionTypes: DatabaseInteractionType[] = [ "commands", "interactions", "images", "messages", "resets", "translations", "votes", "imageDescriptions", "cooldownMessages", "videos" ]
-
+export type DatabaseInteractionType = "commands" | "interactions" | "images" | "messages" | "resets" | "translations" | "imageDescriptions" | "cooldownMessages" | "videos" | "songs"
+export const DatabaseInteractionTypes: DatabaseInteractionType[] = [ "commands", "interactions", "images", "messages", "resets", "translations", "imageDescriptions", "cooldownMessages", "videos" ]
 export type DatabaseInteractionStatistics = Record<DatabaseInteractionType, number>
 
 /* Type of moderation action */

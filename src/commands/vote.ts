@@ -16,7 +16,7 @@ export default class VoteCommand extends Command {
 		);
     }
 
-    public async run(_: any, { user }: DatabaseInfo): CommandResponse {
+    public async run(_: any, db: DatabaseInfo): CommandResponse {
 		const fields = [
 			{
 				key: "Way lower cool-down ⏰",
@@ -47,7 +47,7 @@ export default class VoteCommand extends Command {
 					.setStyle(ButtonStyle.Success),
 
 				new ButtonBuilder()
-					.setURL(this.bot.vote.link(user))
+					.setURL(this.bot.vote.link(db))
 					.setEmoji("<:topgg:1119699678343200879>")
 					.setLabel("top.gg")
 					.setStyle(ButtonStyle.Link)

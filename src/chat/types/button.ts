@@ -10,6 +10,9 @@ export interface ChatButton {
     /* Style of the button */
     style?: ButtonStyle;
 
+    /* URL of the button, if applicable */
+    url?: string;
+
     /* Whether the button should be disabled */
     disabled?: boolean;
     

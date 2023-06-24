@@ -2,6 +2,7 @@ import { getInfo } from "discord-hybrid-sharding";
 import { User } from "discord.js";
 import chalk from "chalk";
 
+import { DatabaseInfo } from "../db/managers/user.js";
 import { DatabaseUser } from "../db/schemas/user.js";
 import { GPTAPIError } from "../error/gpt/api.js";
 import { Bot } from "../bot/bot.js";
@@ -18,8 +19,8 @@ export class VoteManager {
         this.bot = bot;
     }
 
-    public link(db: DatabaseUser): string {
-        return this.bot.turing.trackingURL(db, "topgg");
+    public link(db: DatabaseInfo): string {
+        return `https://l.turing.sh/topgg/${db.user.id}`;
     }
 
     /**
@@ -41,15 +42,13 @@ export class VoteManager {
         });
 
         await this.bot.db.metrics.changeVoteMetric({ count: "+1" });
-        await this.bot.db.users.incrementInteractions({ user: db }, "votes");
-        
-        if (this.bot.dev) this.bot.logger.debug(`User ${chalk.bold(user.username)} has voted for the bot!`);
         return true;
     }
 
     public async postStatistics(): Promise<void> {
-        const guilds: number = ((await this.bot.client.cluster.fetchClientValues("guilds.cache.size")) as number[])
-            .reduce((value, count) => value + count, 0);
+        /* How many guilds the bot is in */
+        const guilds: number = this.bot.statistics.guildCount;
+        if (guilds === 0) return;
 
         const shardCount: number = getInfo().TOTAL_SHARDS;
 

@@ -1,8 +1,8 @@
 import { ActionRowBuilder, AttachmentBuilder, BaseGuildTextChannel, ButtonBuilder, ButtonInteraction, ButtonStyle, ChannelType, ComponentEmojiResolvable, ComponentType, DiscordAPIError, DMChannel, EmbedBuilder, Guild, InteractionReplyOptions, Message, MessageCreateOptions, MessageEditOptions, MessageReplyOptions, PermissionsString, Role, TextChannel, User, WebhookMessageCreateOptions } from "discord.js";
 import { randomUUID } from "crypto";
 
-import { DatabaseInfo } from "../db/managers/user.js";
 import { ResponseChatNoticeMessage, MessageType, ResponseMessage } from "../chat/types/message.js";
+import { DatabaseUserInfraction, UserSubscriptionType } from "../db/schemas/user.js";
 import { LoadingIndicator, LoadingIndicatorManager } from "../db/types/indicator.js";
 import { PlanCreditViewers, PlanCreditVisibility } from "../db/managers/plan.js";
 import { ChatSettingsModel, ChatSettingsModels } from "./settings/model.js";
@@ -11,9 +11,11 @@ import { InteractionHandlerRunOptions } from "../interaction/handler.js";
 import { ChatInteractionHandlerData } from "../interactions/chat.js";
 import { ChatModel, ModelCapability } from "../chat/types/model.js";
 import { ModerationResult } from "../moderation/moderation.js";
+import { DisplayCampaign } from "../db/managers/campaign.js";
 import { ChatGuildData } from "../chat/types/options.js";
 import { ChatSettingsTones } from "./settings/tone.js";
 import { Introduction } from "../util/introduction.js";
+import { DatabaseInfo } from "../db/managers/user.js";
 import { format } from "../chat/utils/formatter.js";
 import { Response } from "../command/response.js";
 import { OtherPrompts } from "../chat/client.js";
@@ -25,7 +27,6 @@ import { Emoji } from "../util/emoji.js";
 import { ErrorResponse, ErrorResponseOptions, ErrorType } from "../command/response/error.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
 import { GPTAPIError } from "../error/gpt/api.js";
-import { DatabaseUserInfraction, UserSubscriptionType } from "../db/schemas/user.js";
 
 /* Permissions required by the bot to function correctly */
 const BOT_REQUIRED_PERMISSIONS: { [key: string]: PermissionsString } = {
@@ -223,11 +224,12 @@ export class Generator {
 			data.buttons.forEach(button => {
 				const builder = new ButtonBuilder()
 					.setLabel(button.label)
-					.setCustomId(button.id ?? randomUUID())
 					.setDisabled(button.disabled ?? false)
-					.setStyle(button.style ?? ButtonStyle.Secondary);
+					.setStyle(button.url ? ButtonStyle.Link : button.style ?? ButtonStyle.Secondary);
 
+				if (!button.url) builder.setCustomId(button.id ?? randomUUID())
 				if (button.emoji) builder.setEmoji(button.emoji);
+
 				buttons.push(builder);
 			});
 

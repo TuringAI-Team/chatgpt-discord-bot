@@ -19,6 +19,10 @@ export class VotePacket extends Packet<VotePacketIncomingData> {
         const existing: DatabaseUser | null = await this.manager.app.db.fetchFromCacheOrDatabase("users", id);
         if (existing === null) return;
 
+        this.manager.app.db.metrics.change("vote", {
+            count: "+1"
+        });
+
         await this.manager.app.db.queue.update("users", existing, {
             voted: new Date().toISOString()
         });
