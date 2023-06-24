@@ -5,6 +5,7 @@ import { DatabaseCollectionType, DatabaseCollectionTypes, DatabaseLikeObject, Da
 import { ClusterDatabaseManager } from "../cluster.js";
 import { AppDatabaseManager } from "../app.js";
 import { SubDatabaseManager } from "../sub.js";
+import { Utils } from "../../util/utils.js";
 
 /* How often to save cached entries to the database */
 export const DatabaseCacheInterval: number = 3 * 60 * 1000
@@ -92,7 +93,7 @@ export class AppDatabaseQueueManager extends DatabaseQueueManager<AppDatabaseMan
                         chalk.bold("Database update"),
                         `-> collection ${chalk.bold(type)}`,
                         `-> ID ${chalk.bold(id)}`,
-                        `-> changes:`, JSON.stringify(modified, undefined, 4)
+                        `-> changes:`, Utils.truncate(JSON.stringify(modified, undefined, 4), 200)
                     );
 
                     this.updates[type].delete(id);

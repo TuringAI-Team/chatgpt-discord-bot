@@ -217,7 +217,7 @@ export class ClusterPlanManager extends BasePlanManager<ClusterDatabaseManager> 
         const entry = db[userType.location]!;
 
         /* Check whether the user/guild has actually configured to use this plan. */
-        if (!this.active(entry)) return null;
+        if (!this.active(entry) || userType.type !== "plan") return null;
 
         /* The new expense */
         const expense: T = {
@@ -465,7 +465,7 @@ export class ClusterPlanManager extends BasePlanManager<ClusterDatabaseManager> 
                             ? viewer(expense, plan) : null;
 
                         return {
-                            name: `${Utils.titleCase(expense.type)}${formatted !== null ? `— *${formatted}*` : ""}`,
+                            name: `${Utils.titleCase(expense.type)}${formatted !== null ? ` — *${formatted}*` : ""}`,
                             value: `**$${Math.round(expense.used * Math.pow(10, 5)) / Math.pow(10, 5)}** — *<t:${Math.floor(expense.time / 1000)}:F>*`
                         };
                     }))

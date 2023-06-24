@@ -13,6 +13,7 @@ import { StatusIncidentType } from "../util/statuspage.js";
 import { BotClusterManager, BotData } from "./manager.js";
 import { ClusterDatabaseManager } from "../db/cluster.js";
 import { chooseStatusMessage } from "../util/status.js";
+import { executeConfigurationSteps } from "./setup.js";
 import { CommandManager } from "../command/manager.js";
 import { ErrorManager } from "../moderation/error.js";
 import { ImageManager } from "../image/manager.js";
@@ -23,8 +24,6 @@ import { VoteManager } from "../util/vote.js";
 import { TuringAPI } from "../turing/api.js";
 import { TenorAPI } from "../util/tenor.js";
 import { GitCommit } from "../util/git.js";
-import { Event } from "../event/event.js";
-import { Utils } from "../util/utils.js";
 import { StrippedApp } from "../app.js";
 import { TaskManager } from "./task.js";
 
@@ -65,17 +64,6 @@ export interface BotStatistics {
 
     /** When the statistics were last updated */
     since: number;
-}
-
-interface BotSetupStep {
-    /* Name of the setup step */
-    name: string;
-
-    /* Only execute the step if this function evaluates to `true` */
-    check?: () => Awaitable<boolean>;
-
-    /* Function to execute for the setup step */
-    execute: () => Awaitable<any>;
 }
 
 export type BotDiscordClient = Client<true> & {
@@ -282,88 +270,9 @@ export class Bot extends EventEmitter {
         /* If the bot was started in maintenance mode, wait until the `ready` event gets fired. */
         if (this.client.cluster.maintenance && this.dev) this.logger.debug("Started in maintenance mode.");
 
+        /* Execute all the configuration steps, once the cluster gets marked as ready. */
         this.client.cluster.on("ready", async () => {
-            const steps: BotSetupStep[] = [ 
-                {
-                    name: "Stable Horde",
-                    execute: async () => this.image.setup()
-                },
-    
-                {
-                    name: "Replicate",
-                    execute: async () => this.replicate.setup()
-                },
-    
-                {
-                    name: "Supabase database",
-                    execute: async () => this.db.setup()
-                },
-    
-                {
-                    name: "Conversation sessions",
-                    execute: async () => this.conversation.setup()
-                },
-    
-                {
-                    name: "Scheduled tasks",
-                    execute: () => this.task.setup()
-                },
-
-                {
-                    name: "Load Discord commands",
-                    execute: async () => this.command.loadAll()
-                },
-
-                {
-                    name: "Load Discord interactions",
-                    execute: async () => this.interaction.loadAll()
-                },
-
-                {
-                    name: "Register Discord commands",
-                    check: () => this.data.id === 0,
-                    execute: () => this.command.register()
-                },
-
-                {
-                    name: "Load Discord events",
-                    execute: () => Utils.search("./build/events", "js")
-                        .then(files => files.forEach(path => {
-                            /* Name of the event */
-                            const name: string = basename(path).split(".")[0];
-    
-                            import(path)
-                                .then((data: { [key: string]: Event }) => {
-                                    const event: Event = new (data.default as any)(this);
-                                    
-                                    this.client.on(event.name, (...args: any[]) => {
-                                        try {
-                                            event.run(...args);
-                                        } catch (error) {
-                                            this.logger.error(`Failed to call event ${chalk.bold(name)} ->`, error)
-                                        }
-                                    });
-                                })
-                                .catch(error => this.logger.warn(`Failed to load event ${chalk.bold(name)} ->`, error));
-                        }))
-                }
-            ];
-    
-            /* Execute all of the steps asynchronously, in order. */
-            for (const [ index, step ] of steps.entries()) {
-                try {
-                    /* Whether the step should be executed */
-                    const check: boolean = step.check ? await step.check() : true;
-    
-                    /* Execute the step. */
-                    if (check) await step.execute();
-                    if (this.dev) this.logger.debug(`Executed configuration step ${chalk.bold(step.name)}. [${chalk.bold(index + 1)}/${chalk.bold(steps.length)}]`);
-    
-                } catch (error) {
-                    this.logger.error(`Failed to execute configuration step ${chalk.bold(step.name)} ->`, error);
-                    this.stop(1);
-                }
-            }
+            await executeConfigurationSteps(this, "bot");
         });
 
         /* Wait for all application data first. */

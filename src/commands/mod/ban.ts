@@ -48,7 +48,7 @@ export default class BanCommand extends Command {
 			.setEphemeral(true);
 
 		/* Whether the user should be banned / unbanned */
-		const action: boolean = !this.bot.db.users.banned(db);
+		const action: boolean = await this.bot.db.users.banned(db) === null;
 
 		/* Reason for the warning */
 		const reason: string | undefined = interaction.options.getString("reason") !== null

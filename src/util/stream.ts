@@ -18,7 +18,7 @@ export interface StreamBuilderOptions<RequestBody, PartialResponseData, FinalRes
     error: (response: Response) => Awaitable<Error | null>;
 
     /* The progress handler to use */
-    progress: (data: PartialResponseData, old: PartialResponseData | null) => Awaitable<PartialResponseData | null | void>;
+    progress: (data: PartialResponseData, old: PartialResponseData | null) => PartialResponseData | null | void;
 
     /* Check callback, to determine whether progress() should be called */
     check?: (data: PartialResponseData) => Awaitable<boolean>;
@@ -106,11 +106,12 @@ export class StreamBuilder<RequestBody, PartialResponseData, FinalResponseData =
                             const old = latest;
                             if (latest == null) latest = data;
 
-                            const result: PartialResponseData | void = await this.options.progress(data, old);
+                            const result: PartialResponseData | void = this.options.progress(data, old);
 
                             if (result === null) {}
                             else if (result !== null && result !== void 0) latest = result;
                             else if (result === void 0) latest = data;
+                            else {}
 
                         } catch (error) {
                             throw error;

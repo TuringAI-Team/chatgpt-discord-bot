@@ -156,7 +156,9 @@ export class Session {
         if (!this.active) throw new Error("Session is still starting");
 
         /* If the session is locked, throw an exception. */
-        if (this.locked) throw new Error("Session is busy");
+        if (this.locked) throw new GPTGenerationError({
+            type: GPTGenerationErrorType.Busy
+        })
         
         try {
             const started: number = Date.now();

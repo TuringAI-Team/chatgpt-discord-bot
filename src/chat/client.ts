@@ -1,6 +1,5 @@
 import { setTimeout as delay } from "timers/promises";
 import { Collection, Message } from "discord.js";
-import { randomUUID } from "crypto";
 import chalk from "chalk";
 
 import { MaxContextLength, MaxGenerationLength, countChatMessageTokens, getChatMessageLength, getPromptLength, isPromptLengthAcceptable } from "../conversation/utils/length.js";

@@ -115,7 +115,7 @@ export interface TuringAlanOptions {
     user: DatabaseUser;
 
     /* Progress callback to call when a new token is generated */
-    progress: (result: TuringAlanResult) => Awaitable<void>;
+    progress: (result: TuringAlanResult) => void;
 
     /* Prompt to pass to Alan */
     prompt: string;
@@ -474,7 +474,7 @@ export interface TuringChatPluginsOptions {
     plugins: ChatSettingsPlugin[];
 
     /* Progress callback to call when a new token is generated */
-    progress: (result: TuringChatPluginsPartialResult) => Awaitable<void>;
+    progress: (result: TuringChatPluginsPartialResult) => void;
 
     /* User, who initiated this chat request */
     user: DatabaseUser;
@@ -598,7 +598,7 @@ export class TuringAPI extends EventEmitter {
                     choices: [
                         {
                             delta: {
-                                content: old !== null && old.choices[0].delta.content ? `${old.choices[0].delta.content}${data.choices[0].delta.content}` : data.choices[0].delta.content,
+                                content: old !== null && old.choices[0].delta.content ? `${old.choices[0].delta.content}${data.choices[0].delta.content ? data.choices[0].delta.content : ""}` : data.choices[0].delta.content,
                                 role: "assistant"
                             },
 

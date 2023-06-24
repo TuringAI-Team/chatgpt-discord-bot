@@ -62,7 +62,7 @@ export class OpenAIManager {
                     choices: [
                         {
                             delta: {
-                                content: old !== null && old.choices[0].delta.content ? `${old.choices[0].delta.content}${data.choices[0].delta.content}` : data.choices[0].delta.content,
+                                content: old !== null && old.choices[0].delta.content ? `${old.choices[0].delta.content}${data.choices[0].delta.content ? data.choices[0].delta.content : ""}` : data.choices[0].delta.content,
                                 role: "assistant"
                             },
 

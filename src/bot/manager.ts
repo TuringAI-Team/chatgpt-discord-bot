@@ -104,7 +104,7 @@ export class BotManager extends EventEmitter {
         };
     }
 
-    private formatWebhookEmbed(type: DiscordWebhookAnnounceType, cluster?: Cluster): EmbedBuilder {
+    private formatStatusEmbed(type: DiscordWebhookAnnounceType, cluster?: Cluster): EmbedBuilder {
         return new EmbedBuilder()
             .setTitle(DiscordWebhookAnnounceTypeMap[type].replaceAll("%", (cluster !== undefined ? cluster.id + 1 : -1).toString()))
             .setColor(DiscordWebhookAnnounceColorMap[type])
@@ -119,7 +119,7 @@ export class BotManager extends EventEmitter {
      */
     private async announce(type: DiscordWebhookAnnounceType, cluster?: Cluster): Promise<void> {
         /* Create the initial embed. */
-        const embed = this.formatWebhookEmbed(type, cluster);
+        const embed = this.formatStatusEmbed(type, cluster);
 
         await this.rest.post(Routes.channelMessages(this.app.config.channels.status.channel), {
             body: {
@@ -162,8 +162,8 @@ export class BotManager extends EventEmitter {
             } as BotData
         });
 
-        await this.onReady(cluster);
         if (this.started) await this.sendDone([ cluster ]);
+        await this.onReady(cluster);
     }
 
     /**
@@ -198,12 +198,20 @@ export class BotManager extends EventEmitter {
      * Initiate a zero-downtime restart.
      */
     public async restart(): Promise<void> {
+        this.manager!.queue.options.auto = true;
+        const before: number = Date.now();
+
         await this.manager!.recluster!.start({
-            restartMode: "rolling",
+            restartMode: "gracefulSwitch",
             delay: 3 * 1000
         });
+    
+        const time: number = Date.now() - before;
+        this.app.logger.info("It took", chalk.bold(`${(time / 1000).toFixed(2)}s`), "for", chalk.bold(this.clusters.size), `cluster${this.clusters.size > 1 ? "s" : ""} to be reloaded.`)
 
         await this.announce(DiscordWebhookAnnounceType.ReloadBot);
+        this.manager!.queue.options.auto = false;
+
     }
 
     public async fetchSession(): Promise<BotDataSessionLimit> {
@@ -261,7 +269,8 @@ export class BotManager extends EventEmitter {
 
         /* Set up the Discord REST API client. */
         this.rest = new REST({
-            version: "10"
+            version: "10",
+            rejectOnRateLimit: [ "/gateway" ]
         }).setToken(this.app.config.discord.token);
 
         /* Set up the crash handler. */

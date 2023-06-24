@@ -1,9 +1,10 @@
+import { TuringConnectionManager } from "./turing/connection/connection.js";
+import { executeConfigurationSteps } from "./bot/setup.js";
 import { CacheManager } from "./bot/managers/cache.js";
 import { AppDatabaseManager } from "./db/app.js";
 import { BotManager } from "./bot/manager.js";
 import { Logger } from "./util/logger.js";
 import { Config } from "./config.js";
-import { TuringConnectionManager } from "./turing/connection/connection.js";
 
 enum AppState {
 	/* The app is not initialized yet */
@@ -72,45 +73,8 @@ export class App {
     public async setup(): Promise<void> {
 		this.state = AppState.Starting;
 
-		/* Load the configuration. */
-		await import("./config.json", {
-			assert: {
-				type: "json"
-			}
-		})
-			.then(data => this.config = data.default as any)
-			.catch(error => {
-				this.logger.error("Failed to load configuration ->", error);
-				this.stop(1);
-			});
-
-		/* Initialize the database manager. */
-		await this.db.setup()
-			.catch(error => {
-				this.logger.error("Failed to set up the database manager ->", error);
-				this.stop(1);
-			});
-
-		/* Initialize the cache manager. */
-		await this.cache.setup()
-			.catch(error => {
-				this.logger.error("Failed to set up the cache manager ->", error);
-				this.stop(1);
-			});
-
-		/* Initialize the Turing connection manager. */
-		await this.connection.setup()
-			.catch(error => {
-				this.logger.error("Failed to set up the connection manager ->", error);
-				this.stop(1);
-			});
-
-		/* Finally, set up all clusters. */
-		await this.manager.setup()
-			.catch(error => {
-				this.logger.error("Failed to set up the bot sharding manager ->", error);
-				this.stop(1);
-			});
+		/* Execute all configuration steps for the app. */
+		await executeConfigurationSteps(this, "app");
 
 		this.state = AppState.Running;
     }
@@ -135,7 +99,7 @@ export class App {
      * Whether development mode is enabled
      */
     public get dev(): boolean {
-        return this.config.dev;
+        return this.config ? this.config.dev : false;
     }
 
 	/**
