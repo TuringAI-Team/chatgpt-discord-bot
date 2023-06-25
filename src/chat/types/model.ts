@@ -24,12 +24,6 @@ export enum ModelType {
     /* OpenAI's completion API */
     OpenAICompletion,
 
-    /** Replicate text inference */
-    Replicate,
-
-    /** OpenPlayground website */
-    Nat,
-
     /** Replication of Discord's Clyde AI */
     Clyde,
 
@@ -38,9 +32,6 @@ export enum ModelType {
 
     /** Turing Alan model, utilizing various AI technologies */
     TuringAlan,
-
-    /** Turing Bing API */
-    TuringBing,
 
     /** Debug model provider */
     Dummy
@@ -98,7 +89,8 @@ export abstract class ChatModel {
 
         return {
             description: result.result.description,
-            text: result.result.ocr ? result.result.ocr.content : null
+            text: result.result.ocr ? result.result.ocr.content : null,
+            cost: result.duration * 0.0004
         };
     }
 

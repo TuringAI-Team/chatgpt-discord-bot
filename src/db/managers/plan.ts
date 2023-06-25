@@ -1,22 +1,28 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle, EmbedBuilder, GuildMember, InteractionReplyOptions } from "discord.js";
 
 import { MidjourneyResult, TuringVideoModel, TuringVideoModelName, TuringVideoResult } from "../../turing/api.js";
-import { DatabaseGuild, DatabaseInfo, DatabaseUser, UserSubscriptionType } from "./user.js";
-import { DescribeSummary, ImageDescription } from "../../image/description.js";
+import { DescribeSummary, DatabaseDescription } from "../../image/description.js";
 import { StableHordeGenerationResult } from "../../image/types/image.js";
+import { DatabaseUser, UserSubscriptionType } from "../schemas/user.js";
+import { RunPodMusicGenResult } from "../../runpod/models/musicgen.js";
 import { ChatInteraction } from "../../conversation/conversation.js";
+import { DatabaseManager, DatabaseManagerBot } from "../manager.js";
 import { ErrorResponse } from "../../command/response/error.js";
 import { CommandInteraction } from "../../command/command.js";
 import { SummaryPrompt } from "../../commands/summarize.js";
 import { ProgressBar } from "../../util/progressBar.js";
-import { ClientDatabaseManager } from "../cluster.js";
+import { ClusterDatabaseManager } from "../cluster.js";
 import { YouTubeVideo } from "../../util/youtube.js";
 import { Response } from "../../command/response.js";
+import { DatabaseGuild } from "../schemas/guild.js";
+import { SubDatabaseManager } from "../sub.js";
 import { Utils } from "../../util/utils.js";
+import { DatabaseInfo } from "./user.js";
+import { AppDatabaseManager } from "../app.js";
 
 type DatabaseEntry = DatabaseUser | DatabaseGuild
 
-type UserPlanExpenseType = "image" | "dall-e" | "midjourney" | "video" | "summary" | "chat" | "describe" | "translate"
+type UserPlanExpenseType = "image" | "dall-e" | "midjourney" | "video" | "summary" | "chat" | "describe" | "translate" | "music"
 
 type UserPlanExpenseData = {
     [key: string]: string | number | boolean | UserPlanExpenseData;
@@ -68,6 +74,10 @@ export type UserPlanVideoExpense = UserPlanExpense<{
     duration: number;
 }>
 
+export type UserPlanMusicExpense = UserPlanExpense<{
+    duration: number;
+}>
+
 export type UserPlanSummaryExpense = UserPlanExpense<{
     tokens: number;
     url: string;
@@ -104,7 +114,7 @@ export type UserPlanCreditBonusAmount = 0.05 | 0.10 | 0.15 | 0.20
 /* How many expense entries can be in the history, maximum */
 export const PLAN_MAX_EXPENSE_HISTORY: number = 500
 
-export interface UserPlan {
+export interface DatabasePlan {
     /* How much credit the user has charged up, e.g. 17.80 (17,80 USD)  */
     total: number;
 
@@ -118,15 +128,13 @@ export interface UserPlan {
     history: UserPlanCredit[];
 }
 
-export type GuildPlan = UserPlan
-
 enum PlanLocation {
     Guild = "guild",
     User = "user"
 }
 
 export type PlanCreditVisibility = "detailed" | "full" | "used" | "percentage" | "hide"
-export type PlanCreditViewer = (plan: UserPlan, interaction: ChatInteraction) => string | null
+export type PlanCreditViewer = (plan: DatabasePlan, interaction: ChatInteraction) => string | null
 
 export const PlanCreditViewers: Record<PlanCreditVisibility, PlanCreditViewer> = {
     detailed: (plan, interaction) => `${interaction.output.raw?.usage ? `${interaction.output.raw.usage.completion} tokens •` : interaction.output.raw?.cost ? `$${interaction.output.raw.cost.toFixed(4)} •` : ""} $${plan.used.toFixed(2)} / $${plan.total.toFixed(2)}`,
@@ -137,7 +145,7 @@ export const PlanCreditViewers: Record<PlanCreditVisibility, PlanCreditViewer> =
 }
 
 export type PlanExpenseEntryViewer<T extends UserPlanExpense = any> = (
-    (expense: T & { data: NonNullable<T["data"]> }, plan: UserPlan) => string | null
+    (expense: T & { data: NonNullable<T["data"]> }, plan: DatabasePlan) => string | null
 ) | null
 
 export const PlanExpenseEntryViewers: {
@@ -148,7 +156,8 @@ export const PlanExpenseEntryViewers: {
     summary: PlanExpenseEntryViewer<UserPlanSummaryExpense>,
     chat: PlanExpenseEntryViewer<UserPlanChatExpense>,
     describe: PlanExpenseEntryViewer<UserPlanImageDescribeExpense>,
-    translate: PlanExpenseEntryViewer<UserPlanTranslateExpense>
+    translate: PlanExpenseEntryViewer<UserPlanTranslateExpense>,
+    music: PlanExpenseEntryViewer<UserPlanMusicExpense>
 } = {
     image: e => `used \`${e.data.kudos}\` kudos`,
     "dall-e": e => `**${e.data.count}** image${e.data.count > 1 ? "s" : ""}`,
@@ -157,16 +166,11 @@ export const PlanExpenseEntryViewers: {
     summary: e => `used **${e.data.tokens}** tokens`,
     chat: e => `using \`${e.data.model}\`${e.data.tokens ? `, **${e.data.tokens.prompt}** prompt & **${e.data.tokens.completion}** completion tokens` : ""}`,
     describe: e => `took **${e.data.duration} ms**`,
-    translate: e => `translated from **\`${e.data.source}\`**, used **${e.data.tokens.prompt}** prompt & **${e.data.tokens.completion}** completion tokens`
+    translate: e => `translated from **\`${e.data.source}\`**, used **${e.data.tokens.prompt}** prompt & **${e.data.tokens.completion}** completion tokens`,
+    music: e => `took **${e.data.duration} ms**`,
 }
 
-export class PlanManager {
-    private db: ClientDatabaseManager;
-
-    constructor(db: ClientDatabaseManager) {
-        this.db = db;
-    }
-
+export class BasePlanManager<T extends DatabaseManager<DatabaseManagerBot>> extends SubDatabaseManager<T> {
     public location(entry: DatabaseEntry): PlanLocation {
         if ((entry as any).roles != undefined) return PlanLocation.User;
         return PlanLocation.Guild;
@@ -189,7 +193,7 @@ export class PlanManager {
      * 
      * @returns The user's plan, or `null`
      */
-    public get({ plan }: DatabaseEntry): UserPlan | null {
+    public get({ plan }: DatabaseEntry): DatabasePlan | null {
         if (plan === null) return null;
 
         return {
@@ -199,6 +203,16 @@ export class PlanManager {
             used: plan.used ?? 0
         };
     }
+}
+
+export class AppPlanManager extends BasePlanManager<AppDatabaseManager> {
+
+}
+
+export class ClusterPlanManager extends BasePlanManager<ClusterDatabaseManager> {
+    private functionName(entry: DatabaseEntry): "updateUser" | "updateGuild" {
+        return this.location(entry) === PlanLocation.Guild ? "updateGuild" : "updateUser";
+    }
 
     public async expense<T extends UserPlanExpense = UserPlanExpense>(
         db: DatabaseInfo, { type, used, data, bonus }: Pick<T, "type" | "used" | "data"> & { bonus?: UserPlanCreditBonusAmount }
@@ -206,11 +220,11 @@ export class PlanManager {
         /* If no used amount of credit was actually specified, ignore this. */
         if (used === 0) return null;
 
-        const userType = this.db.users.type(db);
+        const userType = await this.db.users.type(db);
         const entry = db[userType.location]!;
 
         /* Check whether the user/guild has actually configured to use this plan. */
-        if (!this.active(entry)) return null;
+        if (!this.active(entry) || userType.type !== "plan") return null;
 
         /* The new expense */
         const expense: T = {
@@ -219,7 +233,7 @@ export class PlanManager {
         } as T;
 
         /* The entry's current plan */
-        const plan: UserPlan = this.get(entry)!;
+        const plan: DatabasePlan = this.get(entry)!;
 
         let additional: number = used;
         if (bonus) additional += additional * bonus;
@@ -272,7 +286,7 @@ export class PlanManager {
     }
 
     public async expenseForImageDescription(
-        entry: DatabaseInfo, result: ImageDescription, summary: DescribeSummary | null
+        entry: DatabaseInfo, result: DatabaseDescription, summary: DescribeSummary | null
     ): Promise<UserPlanImageDescribeExpense | null> {
         let cost: number = 0;
 
@@ -283,7 +297,7 @@ export class PlanManager {
         if (summary !== null) cost += ((summary.tokens.prompt + summary.tokens.completion) / 1000) * 0.0015;
 
         return this.expense(entry, {
-            type: "describe", used: (Math.max(result.duration, 1000) / 1000) * 0.0023, data: { duration: result.duration }, bonus: 0.10
+            type: "describe", used: cost, data: { duration: result.duration }, bonus: 0.10
         });
     }
 
@@ -291,7 +305,15 @@ export class PlanManager {
         entry: DatabaseInfo, video: TuringVideoResult, model: TuringVideoModel
     ): Promise<UserPlanVideoExpense | null> {
         return this.expense(entry, {
-            type: "video", used: (Math.max(video.duration, 1000) / 1000) * 0.0023, data: { duration: video.duration, model: model.id }, bonus: 0.05
+            type: "video", used: (Math.max(video.duration, 1000) / 1000) * 0.0004, data: { duration: video.duration, model: model.id }, bonus: 0.05
+        });
+    }
+
+    public async expenseForMusic(
+        entry: DatabaseInfo, result: RunPodMusicGenResult
+    ): Promise<UserPlanMusicExpense | null> {
+        return this.expense(entry, {
+            type: "music", used: (Math.max(result.raw.duration, 1000) / 1000) * 0.0004, data: { duration: result.raw.duration }, bonus: 0.10
         });
     }
 
@@ -329,17 +351,17 @@ export class PlanManager {
         };
 
         const entry: DatabaseEntry = (db as any).guild
-            ? (db as DatabaseInfo)[this.db.users.type(db as DatabaseInfo).location]!
+            ? (db as DatabaseInfo)[(await this.db.users.type(db as DatabaseInfo)).location]!
             : db as DatabaseEntry;
 
         /* The entry's current plan */
         if (entry.plan === null) throw new Error("User/guild doesn't have a running plan");
-        const plan: UserPlan = this.get(entry)!;
+        const plan: DatabasePlan = this.get(entry)!;
 
         /* Updated, total credit */
         const updatedCredit: number = plan.total + amount;
 
-        await this.db.users[this.location(entry) === PlanLocation.Guild ? "updateGuild" : "updateUser"](entry as any, {
+        await this.db.users[this.functionName(entry)](entry as any, {
             plan: {
                 ...plan,
 
@@ -351,21 +373,30 @@ export class PlanManager {
         return credit;
     }
 
-    public async create(entry: DatabaseEntry, amount?: number): Promise<UserPlan> {
+    public async create(entry: DatabaseEntry, amount?: number): Promise<DatabasePlan> {
         /* If the user already has a pay-as-you-go plan, just return that instead. */
         if (entry.plan !== null) return entry.plan;
 
         /* The user's new plan */
-        const plan: UserPlan = {
+        const plan: DatabasePlan = {
             total: amount ?? 0, used: 0,
             expenses: [], history: []
         };
 
-        await this.db.users[this.location(entry) === PlanLocation.Guild ? "updateGuild" : "updateUser"](entry as any, {
+        await this.db.users[this.functionName(entry)](entry as any, {
             plan
         });
 
         return plan;
+    }
+
+    public async remove(entry: DatabaseEntry): Promise<void> {
+        /* If the entry doesn't have a running plan, simply skip this. */
+        if (entry.plan === null) return;
+
+        await this.db.users[this.functionName(entry)](entry as any, {
+            plan: null
+        });
     }
 
     public async handleInteraction(interaction: ButtonInteraction): Promise<void> {
@@ -377,7 +408,7 @@ export class PlanManager {
         const action: "overview" = data.shift()! as any;
 
         /* Database instances, guild & user */
-        const db: DatabaseInfo = await this.db.users.fetchData(interaction.user, interaction.guild);
+        const db: DatabaseInfo = await this.db.users.fetch(interaction.user, interaction.guild);
 
         if (action === "overview") {
             const response = await this.buildOverview(interaction, db);
@@ -401,7 +432,7 @@ export class PlanManager {
 		};
 
 		/* Subscription type of the user */
-		const type: UserSubscriptionType = this.db.users.type({ user, guild });
+		const type: UserSubscriptionType = await this.db.users.type({ user, guild });
 
 		/* The user's permissions */
 		const permissions = interaction.member instanceof GuildMember ? interaction.member.permissions : null;
@@ -449,7 +480,7 @@ export class PlanManager {
                             ? viewer(expense, plan) : null;
 
                         return {
-                            name: `${Utils.titleCase(expense.type)}${formatted !== null ? `— *${formatted}*` : ""}`,
+                            name: `${Utils.titleCase(expense.type)}${formatted !== null ? ` — *${formatted}*` : ""}`,
                             value: `**$${Math.round(expense.used * Math.pow(10, 5)) / Math.pow(10, 5)}** — *<t:${Math.floor(expense.time / 1000)}:F>*`
                         };
                     }))

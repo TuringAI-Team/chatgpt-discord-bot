@@ -4,8 +4,9 @@ import { DatabaseCollectionType, DatabaseManager, DatabaseManagerBot } from "../
 import { MentionType } from "../../conversation/generator.js";
 import { BotClusterManager } from "../../bot/manager.js";
 import { GPTDatabaseError } from "../../error/gpt/db.js";
-import { Bot } from "../../bot/bot.js";
-import { App } from "../../app.js";
+import { ClusterDatabaseManager } from "../cluster.js";
+import { AppDatabaseManager } from "../app.js";
+import { SubDatabaseManager } from "../sub.js";
 
 type MetricsUpdateValue = `+${string | number}` | `-${string | number}` | string | number | Object
 type MetricsUpdateObject<T extends MetricsEntry> = Record<keyof T["data"], MetricsUpdateValue>
@@ -121,19 +122,9 @@ type MidjourneyMetricsEntry = MetricsEntry<"midjourney", {
     credits: number;
 }>
 
-export class DatabaseMetricsManager<T extends DatabaseManagerBot> {
-    protected readonly db: DatabaseManager<T>;
+export class DatabaseMetricsManager<T extends DatabaseManager<DatabaseManagerBot>> extends SubDatabaseManager<T> {}
 
-    constructor(db: DatabaseManager<T>) {
-        this.db = db;
-    }
-}
-
-export class ClusterDatabaseMetricsManager extends DatabaseMetricsManager<Bot> {
-    constructor(db: DatabaseManager<Bot>) {
-        super(db);
-    }
-
+export class ClusterDatabaseMetricsManager extends DatabaseMetricsManager<ClusterDatabaseManager> {
     public changeGuildsMetric(updates: Partial<MetricsUpdateObject<GuildsMetricsEntry>>): Promise<GuildsMetricsEntry["data"]> {
         return this.change("guilds", updates);
     }
@@ -205,14 +196,14 @@ export class ClusterDatabaseMetricsManager extends DatabaseMetricsManager<Bot> {
     }
 }
 
-export class AppDatabaseMetricsManager extends DatabaseMetricsManager<App> {
+export class AppDatabaseMetricsManager extends DatabaseMetricsManager<AppDatabaseManager> {
     /* Pending metric entries */
     public readonly pending: Map<MetricsType, MetricsData>;
 
     /* Last time when the metrics got reset */
     public lastResetAt: number | null;
 
-    constructor(db: DatabaseManager<App>) {
+    constructor(db: AppDatabaseManager) {
         super(db);
 
         this.pending = new Map();

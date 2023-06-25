@@ -1,6 +1,6 @@
 import { GuildMember, Snowflake } from "discord.js"
 
-import { DatabaseUser } from "../db/managers/user.js";
+import { DatabaseUser } from "../db/schemas/user.js";
 import { Bot } from "../bot/bot.js";
 import chalk from "chalk";
 
@@ -28,7 +28,7 @@ export class PremiumRole {
         const user: DatabaseUser = existing ?? await this.db(bot, member);
 
         /* Whether the user has Premium */
-        const premium: boolean = bot.db.users.canUsePremiumFeatures({ user });
+        const premium: boolean = await bot.db.users.canUsePremiumFeatures({ user });
 
         /* Whether the user has the role */
         const hasRole: boolean = member.roles.cache.find(r => r.id === PREMIUM_ROLE_ID) != undefined;

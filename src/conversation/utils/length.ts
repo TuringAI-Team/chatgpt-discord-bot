@@ -4,7 +4,7 @@ export const encoder = get_encoding("cl100k_base");
 import { OpenAIChatMessage } from "../../openai/types/chat.js";
 
 /* Maximum context history length in total */
-export const GPT_MAX_CONTEXT_LENGTH = {
+export const MaxContextLength = {
     free: 800,
     voter: 850,
     subscription: 1000,
@@ -12,7 +12,7 @@ export const GPT_MAX_CONTEXT_LENGTH = {
 }
 
 /* Maximum generation length in total */
-export const GPT_MAX_GENERATION_LENGTH = {
+export const MaxGenerationLength = {
     free: 350,
     voter: 400,
     subscription: 650,

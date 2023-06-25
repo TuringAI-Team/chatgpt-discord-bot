@@ -3,17 +3,18 @@ import { Awaitable } from "discord.js";
 import { EventEmitter } from "events";
 import { inspect } from "util";
 
-import { OpenAIChatBody, OpenAIChatCompletionsData, OpenAIChatMessage, OpenAIPartialCompletionsJSON } from "../openai/types/chat.js";
+import { OpenAIChatBody, OpenAIChatCompletionsData, OpenAIChatMessage, OpenAIPartialChatCompletionsJSON } from "../openai/types/chat.js";
 import { ChatSettingsPlugin, ChatSettingsPluginIdentifier } from "../conversation/settings/plugin.js";
 import { countChatMessageTokens, getPromptLength } from "../conversation/utils/length.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
 import { OpenAIUsageCompletionsData } from "../openai/types/completions.js";
 import { ChoiceSettingOptionChoice } from "../db/managers/settings.js";
 import { ChatOutputImage, ImageBuffer } from "../chat/types/image.js";
-import { DatabaseInfo, DatabaseUser } from "../db/managers/user.js";
 import { Conversation } from "../conversation/conversation.js";
-import { MetricsType } from "../db/managers/metrics.js";
 import { ChatInputImage } from "../chat/types/image.js";
+import { MetricsType } from "../db/managers/metrics.js";
+import { DatabaseInfo } from "../db/managers/user.js";
+import { DatabaseUser } from "../db/schemas/user.js";
 import { GPTAPIError } from "../error/gpt/api.js";
 import { StreamBuilder } from "../util/stream.js";
 import { RunPodPath } from "../runpod/api.js";
@@ -114,7 +115,7 @@ export interface TuringAlanOptions {
     user: DatabaseUser;
 
     /* Progress callback to call when a new token is generated */
-    progress: (result: TuringAlanResult) => Awaitable<void>;
+    progress: (result: TuringAlanResult) => void;
 
     /* Prompt to pass to Alan */
     prompt: string;
@@ -218,23 +219,6 @@ export const TuringAlanImageModifiers: TuringAlanImageModifier[] = [
     { name: "ControlNet Segmentation", type: "seg" }
 ]
 
-export interface TuringAlanPlugin {
-    name: string;
-    type: "calculator" | "urlReader";
-}
-
-export const TuringAlanPlugins: TuringAlanPlugin[] = [
-    {
-        name: "Calculator",
-        type: "calculator"
-    },
-
-    {
-        name: "URL reader",
-        type: "urlReader"
-    }
-]
-
 interface TuringAlanBody {
     userName: string;
     conversationId: string;
@@ -242,7 +226,7 @@ interface TuringAlanBody {
     imageGenerator: TuringAlanImageGenerator["type"];
     imageModificator: TuringAlanImageModifier["type"];
     videoGenerator: TuringAlanParameter;
-    pluginList: TuringAlanPluginName[];
+    pluginList: string[];
     photodescription: string | null;
     photo?: string;
     message: string;
@@ -465,18 +449,21 @@ export interface TuringChartResult {
     image: ImageBuffer;
 }
 
-export type TuringTrackingType = "topgg"
-
 interface TuringChatPluginsBody {
+    model: TuringChatPluginsModel;
+    max_tokens?: number;
     messages: OpenAIChatMessage[];
-    pluginList: ChatSettingsPluginIdentifier[];
+    plugins: ChatSettingsPluginIdentifier[];
 }
 
-export type TuringChatPluginsModel = "chatgpt" | "gpt-4"
+export type TuringChatPluginsModel = "gpt-3.5-turbo-0613" | "gpt-4-0613"
 
 export interface TuringChatPluginsOptions {
     /* Which model to use */
     model: TuringChatPluginsModel;
+
+    /* Maximum amount of generation tokens */
+    tokens: number;
 
     /* OpenAI chat messages to send to the model */
     messages: OpenAIChatMessage[];
@@ -485,7 +472,7 @@ export interface TuringChatPluginsOptions {
     plugins: ChatSettingsPlugin[];
 
     /* Progress callback to call when a new token is generated */
-    progress: (result: TuringChatPluginsPartialResult) => Awaitable<void>;
+    progress: (result: TuringChatPluginsPartialResult) => void;
 
     /* User, who initiated this chat request */
     user: DatabaseUser;
@@ -493,12 +480,9 @@ export interface TuringChatPluginsOptions {
 
 export interface TuringChatPluginsPartialResult {
     result: string;
-    extra: string | {};
     done: boolean;
-    thought: string | null;
     tool: string | null;
     credits: number;
-    error: any | null;
 }
 
 export type TuringChatPluginsResult = TuringChatPluginsPartialResult
@@ -563,58 +547,27 @@ export type MidjourneyOptions = Omit<MidjourneyBody, "mode" | "premium"> & {
 
 export type MidjourneyAction = "variation" | "upscale"
 
-export type TuringChatBingTone = "balanced"
-
-interface TuringChatBingOptions {
-    /* Conversation instance, that the API will use to remember the conversation */
-    conversation: Conversation;
-
-    /* Progress callback to call when a new token is generated */
-    progress: (result: TuringChatBingPartialResult) => Awaitable<void>;
-
-    /* Prompt to pass to Bing */
-    prompt: string;
-
-    /* Which Bing tone to use */
-    tone: TuringChatBingTone;
-}
-
 export interface TuringChatBingResult {
     response: string;
     done: boolean;
 }
 
-interface TuringChatBingBody {
-    prompt: string;
-    conversationId: string;
-    tone?: TuringChatBingTone;
-}
-
-export type TuringChatBingPartialResult = Pick<TuringChatBingResult, "response">
-
 export type TuringChatOpenAIBody = Pick<OpenAIChatBody, "model" | "messages" | "temperature"> & {
     maxTokens?: number;
-}
-
-interface TuringChatOpenAIErrorData {
-    success: false;
-
-    error: {
-        message: string;
-    };
+    pw?: boolean;
 }
 
 export class TuringAPI extends EventEmitter {
-    private readonly bot: Bot;
+    public readonly bot: Bot;
 
     constructor(bot: Bot) {
         super();
         this.bot = bot;
     }
 
-    public async openAI(options: TuringChatOpenAIBody, progress?: (data: OpenAIPartialCompletionsJSON) => Promise<void> | void): Promise<OpenAIChatCompletionsData> {
+    public async openAI(options: TuringChatOpenAIBody, progress?: (data: OpenAIPartialChatCompletionsJSON) => Promise<void> | void): Promise<OpenAIChatCompletionsData> {
         return await new StreamBuilder<
-            TuringChatOpenAIBody, OpenAIPartialCompletionsJSON, OpenAIPartialCompletionsJSON, OpenAIChatCompletionsData
+            TuringChatOpenAIBody, OpenAIPartialChatCompletionsJSON, OpenAIPartialChatCompletionsJSON, OpenAIChatCompletionsData
         >({
             body: options,
 
@@ -629,37 +582,38 @@ export class TuringAPI extends EventEmitter {
             url: this.url("text/open-ai"),
             headers: this.headers(),
 
-            progress: (data, old, set) => {
+            progress: (data, old) => {
                 /* If an error occurred, stop generation at this point. */
-                if (data.choices[0].error !== undefined) {
+                if (data.error !== undefined) {
                     throw new GPTAPIError({
-                        endpoint: "/chat/completions",
+                        endpoint: "/text/open-ai",
                         code: 400,
-                        id: data.choices[0].error.code,
-                        message: data.choices[0].error.message
+                        id: data.error.code,
+                        message: data.error.message
                     });
                 }
 
-                const updated: OpenAIPartialCompletionsJSON = {
+                const updated: OpenAIPartialChatCompletionsJSON = {
                     choices: [
                         {
                             delta: {
-                                content: old !== null && old.choices[0].delta.content ? `${old.choices[0].delta.content}${data.choices[0].delta.content}` : data.choices[0].delta.content,
+                                content: old !== null && old.choices[0].delta.content ? `${old.choices[0].delta.content}${data.choices[0].delta.content ? data.choices[0].delta.content : ""}` : data.choices[0].delta.content,
                                 role: "assistant"
                             },
 
                             finish_reason: data.choices[0].finish_reason,
-                            index: data.choices[0].index,
-                            error: data.choices[0].error
+                            index: data.choices[0].index
                         }
                     ]
                 };
 
-                set(updated);
                 if (progress) progress(updated);
+                return updated;
             },
 
             process: final => {
+                if (!final.choices) return null;
+
                 const usage: OpenAIUsageCompletionsData = {
                     completion_tokens: getPromptLength(final.choices[0].delta.content!),
                     prompt_tokens: countChatMessageTokens(options.messages),
@@ -681,21 +635,6 @@ export class TuringAPI extends EventEmitter {
         }).run();
     }
 
-    public async bing({ prompt, conversation, tone, progress }: TuringChatBingOptions): Promise<TuringChatBingResult> {
-        return await new StreamBuilder<
-            TuringChatBingBody, TuringChatBingPartialResult, TuringChatBingResult
-        >({
-            body: {
-                conversationId: conversation.id,
-                prompt, tone
-            },
-
-            error: response => this.error(response, "text/bing", true),
-            headers: this.headers(), progress,
-            url: this.url("text/bing")
-        }).run();
-    }
-
     public async cancelImagineRequest(id: string): Promise<void> {
         this.emit("cancelled", id);
     }
@@ -705,7 +644,7 @@ export class TuringAPI extends EventEmitter {
         let latest: MidjourneyPartialResult | null = null;
 
         /* Whether the user can use the fast mode */
-        const premium: boolean = this.bot.db.users.canUsePremiumFeatures(db);
+        const premium: boolean = await this.bot.db.users.canUsePremiumFeatures(db);
         const mode: MidjourneyMode = premium ? "fast" : "relax";
 
         /* Whether the generation is finished */
@@ -809,10 +748,6 @@ export class TuringAPI extends EventEmitter {
         return latest;
     }
 
-    public trackingURL(db: DatabaseUser, type: TuringTrackingType): `https://l.turing.sh/${TuringTrackingType}/${string}` {
-        return `https://l.turing.sh/${type}/${db.id}`;
-    }
-
     public async chart({ chart, settings }: TuringChartOptions): Promise<TuringChartResult> {
         /* Chart type specified */
         const type: MetricsType = typeof chart === "object" ? chart.type : chart;
@@ -835,7 +770,7 @@ export class TuringAPI extends EventEmitter {
     }
 
     public async resetAlanConversation({ conversation }: Pick<TuringAlanOptions, "conversation">): Promise<void> {
-        await this.request(`text/alan/chatgpt`, "DELETE", {
+        await this.request("text/alan/chatgpt", "DELETE", {
             userName: conversation.user.username,
             conversationId: conversation.id
         });
@@ -844,12 +779,6 @@ export class TuringAPI extends EventEmitter {
     public async alan({ prompt, conversation, user, progress, image }: TuringAlanOptions): Promise<TuringAlanResult> {
         /* Various settings */
         const imageModifier = this.bot.db.settings.get(user, "alan:imageModifier");
-        const pluginList = this.bot.db.settings.get<any>(user, "alan:plugins");
-
-        /* Enabled Alan plugins */
-        const plugins: string[] = Object.entries(pluginList)
-            .filter(([ _, enabled ]) => enabled)
-            .map(([ key ]) => key);
 
         return await new StreamBuilder<
             TuringAlanBody, TuringAlanResult
@@ -864,7 +793,7 @@ export class TuringAPI extends EventEmitter {
                 photodescription: image.output && image.output.prompt ? image.output.prompt : null,
                 photo: image.output && image.output.url ? image.output.url : image.input ? image.input.url : undefined,
                 videoGenerator: "none",
-                pluginList: plugins
+                pluginList: []
             },
 
             error: response => this.error(response, "text/alan/chatgpt", true),
@@ -917,12 +846,12 @@ export class TuringAPI extends EventEmitter {
             TuringChatPluginsBody, TuringChatPluginsPartialResult, TuringChatPluginsResult
         >({
             body: {
-                messages, pluginList: plugins.map(p => p.id)
+                messages, plugins: plugins.map(p => p.id), model
             },
 
-            error: response => this.error(response, `text/plugins/${model}`, true),
+            error: response => this.error(response, "text/plugins", true),
             headers: this.headers(), progress,
-            url: this.url(`text/plugins/${model}`)
+            url: this.url("text/plugins")
         }).run();
     }
 
@@ -930,7 +859,7 @@ export class TuringAPI extends EventEmitter {
         /* API request body */
         const body: TuringAPIChatBody = {
             prompt: options.prompt,
-            chat: options.raw,
+            chat: !options.raw,
             conversationId: options.conversation.id
         };
 

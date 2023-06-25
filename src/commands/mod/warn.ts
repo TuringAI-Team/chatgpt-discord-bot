@@ -1,7 +1,7 @@
-import { SlashCommandBuilder, User } from "discord.js";
+import { SlashCommandBuilder } from "discord.js";
 
 import { Command, CommandInteraction, CommandResponse } from "../../command/command.js";
-import { DatabaseUser, DatabaseUserInfraction, } from "../../db/managers/user.js";
+import { DatabaseUser, DatabaseUserInfraction } from "../../db/schemas/user.js";
 import { Response } from "../../command/response.js";
 import { Utils } from "../../util/utils.js";
 import { Bot } from "../../bot/bot.js";
@@ -51,19 +51,15 @@ export default class WarningCommand extends Command {
 			.setEphemeral(true);
 
 		/* Send the warning to the user. */
-		await this.bot.db.users.warn(db, {
+		db = await this.bot.db.users.warn(db, {
 			by: interaction.user.id,
 			reason
 		});
 
-		/* Fetch the user's infractions again. */
-		db = (await this.bot.db.users.getUser(target.id))!;
-		const infractions: DatabaseUserInfraction[] = this.bot.db.users.unread(db);
-
 		return new Response()
 			.addEmbed(builder => builder
 				.setAuthor({ name: target.name, iconURL: target.icon ?? undefined })
-				.setDescription(`\`\`\`\n${infractions[infractions.length - 1].reason}\n\`\`\``)
+				.setDescription(`\`\`\`\n${db!.infractions[db!.infractions.length - 1].reason}\n\`\`\``)
 				.setTitle("Warning given ✉️")
 				.setColor("Yellow")
 				.setTimestamp()

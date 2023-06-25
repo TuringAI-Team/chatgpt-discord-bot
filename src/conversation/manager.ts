@@ -1,5 +1,6 @@
 import { APIUser, Collection, Snowflake, User } from "discord.js";
 
+import { ProgressManager } from "./utils/progress.js";
 import { Conversation } from "./conversation.js";
 import { Generator } from "./generator.js";
 import { Session } from "./session.js";
@@ -18,6 +19,9 @@ export class ConversationManager {
     /* Response generator; used for handling Discord messages */
     public readonly generator: Generator;
 
+    /* The progress() callback handler; used for sending progress callbacks */
+    public readonly progress: ProgressManager;
+
     /* Whether the conversation manager was fully initialized */
     public active: boolean;
 
@@ -27,6 +31,7 @@ export class ConversationManager {
 
         /* Create the Discord message generator. */
         this.generator = new Generator(this.bot);
+        this.progress = new ProgressManager(this);
         
         /* Initialize the lists with empty values. */
         this.conversations = new Collection();
@@ -96,6 +101,6 @@ export class ConversationManager {
      * @returns Whether the user already has a session running
      */
     public has(user: User): boolean {
-        return this.get(user) !== null && this.get(user)!.active;
+        return this.get(user) !== null;
     }
 }

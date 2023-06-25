@@ -1,31 +1,28 @@
-import { ActivityType, Awaitable, basename, Client, GatewayIntentBits, Options, Partials } from "discord.js";
 import { ClusterClient, getInfo, IPCMessage, messageType } from "discord-hybrid-sharding";
+import { ActivityType, Client, GatewayIntentBits, Options, Partials } from "discord.js";
 import EventEmitter from "events";
 import chalk from "chalk";
 
+import { BotClusterManager, BotData, BotDataSessionLimit } from "./manager.js";
 import { ImageDescriptionManager } from "../image/description.js";
 import { ConversationManager } from "../conversation/manager.js";
 import { ModerationManager } from "../moderation/moderation.js";
 import { InteractionManager } from "../interaction/manager.js";
-import { ReplicateManager } from "../chat/other/replicate.js";
 import { WebhookManager } from "../conversation/webhook.js";
 import { StatusIncidentType } from "../util/statuspage.js";
-import { BotClusterManager, BotData } from "./manager.js";
-import { ClientDatabaseManager } from "../db/cluster.js";
+import { ClusterDatabaseManager } from "../db/cluster.js";
 import { chooseStatusMessage } from "../util/status.js";
+import { executeConfigurationSteps } from "./setup.js";
 import { CommandManager } from "../command/manager.js";
 import { ErrorManager } from "../moderation/error.js";
-import { OpenAIManager } from "../openai/openai.js";
 import { ImageManager } from "../image/manager.js";
+import { ClusterLogger } from "../util/logger.js";
 import { RunPodManager } from "../runpod/api.js";
-import { ShardLogger } from "../util/logger.js";
 import { ConfigBranding } from "../config.js";
 import { VoteManager } from "../util/vote.js";
 import { TuringAPI } from "../turing/api.js";
 import { TenorAPI } from "../util/tenor.js";
 import { GitCommit } from "../util/git.js";
-import { Event } from "../event/event.js";
-import { Utils } from "../util/utils.js";
 import { StrippedApp } from "../app.js";
 import { TaskManager } from "./task.js";
 
@@ -43,37 +40,29 @@ export interface BotStatus {
 }
 
 export interface BotStatistics {
-    /* Total amount of servers the bot is on */
+    /** Total amount of servers the bot is on */
     guildCount: number;
 
-    /* Total amount of users in the database */
+    /** Total amount of users in the database */
     databaseUsers: number;
 
-    /* Total amount of Discord users */
+    /** Total amount of Discord users */
     discordUsers: number;
 
-    /* Total amount of conversations in the database */
+    /** Total amount of conversations in the database */
     conversations: number;
 
-    /* RAM usage, in bytes */
+    /** RAM usage, in bytes */
     memoryUsage: number;
 
-    /* Discord ping, in milliseconds */
+    /** Discord ping, in milliseconds */
     discordPing: number;
 
-    /* Latest Git commit */
+    /** Latest Git commit */
     commit: GitCommit | null;
-}
 
-interface BotSetupStep {
-    /* Name of the setup step */
-    name: string;
-
-    /* Only execute the step if this function evaluates to `true` */
-    check?: () => Awaitable<boolean>;
-
-    /* Function to execute for the setup step */
-    execute: () => Awaitable<any>;
+    /** When the statistics were last updated */
+    since: number;
 }
 
 export type BotDiscordClient = Client<true> & {
@@ -89,11 +78,11 @@ export class Bot extends EventEmitter {
     /* Stripped-down app data */
     public app: StrippedApp;
 
-    /* Data about this shard */
+    /* Data about this cluster */
     public data: BotData;
 
-    /* Logger instance, for the shard */
-    public readonly logger: ShardLogger;
+    /* Logger instance, for the cluster */
+    public readonly logger: ClusterLogger;
 
     /* Scheduled task manager */
     public readonly task: TaskManager;
@@ -105,10 +94,7 @@ export class Bot extends EventEmitter {
     public readonly interaction: InteractionManager;
 
     /* Database manager, in charge of managing the database connection & updates */
-    public readonly db: ClientDatabaseManager;
-
-    /* OpenAI manager, in charge of moderation endpoint requests */
-    public readonly ai: OpenAIManager;
+    public readonly db: ClusterDatabaseManager;
 
     /* Turing API manager */
     public readonly turing: TuringAPI;
@@ -131,9 +117,6 @@ export class Bot extends EventEmitter {
     /* RunPod AI manager; in charge of executing RunPod model requests */
     public readonly runpod: RunPodManager;
 
-    /* Replicate API manager */
-    public readonly replicate: ReplicateManager;
-
     /* Tenor API client */
     public gif: TenorAPI;
 
@@ -146,9 +129,6 @@ export class Bot extends EventEmitter {
     /* Discord client */
     public readonly client: BotDiscordClient;
 
-    /* Whether the sharding manager has finished initializing all the shards */
-    public started: boolean;
-
     /* Since when this instance has been running */
     public since: number;
 
@@ -158,7 +138,6 @@ export class Bot extends EventEmitter {
     constructor() {
         super();
 
-        this.started = false;
         this.data = null!;
         this.app = null!;
         this.since = -1;
@@ -171,7 +150,8 @@ export class Bot extends EventEmitter {
             guildCount: 0,
             discordUsers: 0,
             databaseUsers: 0,
-            commit: null
+            commit: null,
+            since: -1
         };
 
         /* Set up various classes & services. */
@@ -179,17 +159,15 @@ export class Bot extends EventEmitter {
         this.conversation = new ConversationManager(this);
         this.interaction = new InteractionManager(this);
         this.moderation = new ModerationManager(this);
-        this.replicate = new ReplicateManager(this);
-        this.db = new ClientDatabaseManager(this);
+        this.db = new ClusterDatabaseManager(this);
         this.webhook = new WebhookManager(this);
         this.command = new CommandManager(this);
         this.runpod = new RunPodManager(this);
         this.error = new ErrorManager(this);
-        this.logger = new ShardLogger(this);
+        this.logger = new ClusterLogger(this);
         this.image = new ImageManager(this);
         this.turing = new TuringAPI(this);
         this.vote = new VoteManager(this);
-        this.ai = new OpenAIManager(this);
         this.task = new TaskManager(this);
         this.gif = new TenorAPI(this);
         
@@ -216,7 +194,7 @@ export class Bot extends EventEmitter {
                 MessageManager: 0,
                 
                 GuildMemberManager: {
-                    keepOverLimit: (member) => member.id === this.client.user.id,
+                    keepOverLimit: member => member.id === this.client.user.id,
                     maxSize: 200
                 }
             }),
@@ -230,7 +208,7 @@ export class Bot extends EventEmitter {
                         type: ActivityType.Playing
                     }
                 ]
-            },
+            }
         }) as typeof this.client;
 
         /* Add the cluster client to the Discord client. */
@@ -275,8 +253,6 @@ export class Bot extends EventEmitter {
         this.client.cluster.on("message", ((message: IPCMessage & { _type: messageType }) => {
             if (message.content === "done") {
                 this.since = Date.now();
-                this.started = true;
-
                 this.emit("started");
             }
         }) as any);
@@ -289,93 +265,9 @@ export class Bot extends EventEmitter {
         /* If the bot was started in maintenance mode, wait until the `ready` event gets fired. */
         if (this.client.cluster.maintenance && this.dev) this.logger.debug("Started in maintenance mode.");
 
+        /* Execute all the configuration steps, once the cluster gets marked as ready. */
         this.client.cluster.on("ready", async () => {
-            const steps: BotSetupStep[] = [ 
-                {
-                    name: "OpenAI manager",
-                    execute: () => this.ai.setup(this.app.config.openAI.key)
-                },
-    
-                {
-                    name: "Stable Horde",
-                    execute: async () => this.image.setup()
-                },
-    
-                {
-                    name: "Replicate",
-                    execute: async () => this.replicate.setup()
-                },
-    
-                {
-                    name: "Supabase database",
-                    execute: async () => this.db.setup()
-                },
-    
-                {
-                    name: "Conversation sessions",
-                    execute: async () => this.conversation.setup()
-                },
-    
-                {
-                    name: "Scheduled tasks",
-                    execute: () => this.task.setup()
-                },
-
-                {
-                    name: "Load Discord commands",
-                    execute: async () => this.command.loadAll()
-                },
-
-                {
-                    name: "Load Discord interactions",
-                    execute: async () => this.interaction.loadAll()
-                },
-
-                {
-                    name: "Register Discord commands",
-                    check: () => this.data.id === 0,
-                    execute: () => this.command.register()
-                },
-
-                {
-                    name: "Load Discord events",
-                    execute: () => Utils.search("./build/events", "js")
-                        .then(files => files.forEach(path => {
-                            /* Name of the event */
-                            const name: string = basename(path).split(".")[0];
-    
-                            import(path)
-                                .then((data: { [key: string]: Event }) => {
-                                    const event: Event = new (data.default as any)(this);
-                                    
-                                    this.client.on(event.name, (...args: any[]) => {
-                                        try {
-                                            event.run(...args);
-                                        } catch (error) {
-                                            this.logger.error(`Failed to call event ${chalk.bold(name)} ->`, error)
-                                        }
-                                    });
-                                })
-                                .catch(error => this.logger.warn(`Failed to load event ${chalk.bold(name)} ->`, error));
-                        }))
-                }
-            ];
-    
-            /* Execute all of the steps asynchronously, in order. */
-            for (const [ index, step ] of steps.entries()) {
-                try {
-                    /* Whether the step should be executed */
-                    const check: boolean = step.check ? await step.check() : true;
-    
-                    /* Execute the step. */
-                    if (check) await step.execute();
-                    if (this.dev) this.logger.debug(`Executed configuration step ${chalk.bold(step.name)}. [${chalk.bold(index + 1)}/${chalk.bold(steps.length)}]`);
-    
-                } catch (error) {
-                    this.logger.error(`Failed to execute configuration step ${chalk.bold(step.name)} ->`, error);
-                    this.stop(1);
-                }
-            }
+            await executeConfigurationSteps(this, "bot");
         });
 
         /* Wait for all application data first. */
@@ -410,10 +302,6 @@ export class Bot extends EventEmitter {
         if (code === 0) this.logger.debug("Stopped.");
         else this.logger.error("An unexpected error occurred, stopping cluster ...");
 
-        /* Flush all the pending database changes. */
-        await this.db.users.workOnQueue().catch(() => {});
-        this.logger.debug("Saved pending database changes.");
-
         process.exit(code);
     }
 
@@ -432,15 +320,39 @@ export class Bot extends EventEmitter {
         );
     }
 
+    public async sessionLimit(): Promise<BotDataSessionLimit> {
+        return await this.db.eval(async app => {
+            return app.manager.fetchSession();
+        });
+    }
+
     /**
      * Current status of the bot
      */
     public async status(): Promise<BotStatus> {
-        const status: BotStatus = (await this.client.cluster.evalOnManager(
-            ((manager: BotClusterManager) => manager.bot.status) as any)
-        ) as unknown as BotStatus;
+        //const status: BotStatus = (await this.client.cluster.evalOnManager(
+        //    ((manager: BotClusterManager) => manager.bot.status) as any)
+        //) as unknown as BotStatus;
         
-        return status;
+        //return status;
+
+        return {
+            type: "operational", since: this.since
+        };
+    }
+
+    /**
+     * Whether the bot has started
+     */
+    public get started(): boolean {
+        return this.since !== -1;
+    }
+
+    /**
+     * Whether the bot is currently reloading
+     */
+    public get reloading(): boolean {
+        return !this.started || this.statistics.memoryUsage === 0;
     }
 
     /**

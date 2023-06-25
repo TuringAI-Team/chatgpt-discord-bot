@@ -1,11 +1,18 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 import { type Bot } from "../bot/bot.js";
-import { Config } from "../config.js";
 import { type App } from "../app.js";
 
-export type DatabaseCollectionType = "users" | "conversations" | "guilds" | "interactions" | "images" | "descriptions" | "errors"
+import { Config } from "../config.js";
+
+export type DatabaseCollectionType = "users" | "conversations" | "guilds" | "interactions" | "images" | "descriptions" | "errors" | "campaigns"
+export const DatabaseCollectionTypes: DatabaseCollectionType[] = [ "users", "conversations", "guilds", "interactions", "images", "descriptions", "errors", "campaigns" ]
+
 export type DatabaseManagerBot = Bot | App
+
+export type DatabaseLikeObject = {
+    id: string;
+}
 
 export class DatabaseManager<T extends DatabaseManagerBot = Bot> {
     public readonly bot: T;
@@ -38,7 +45,7 @@ export class DatabaseManager<T extends DatabaseManagerBot = Bot> {
         return this.config.db.supabase.collections[type] ?? type;
     }
 
-    private get config(): Config {
+    public get config(): Config {
         return (this.bot as any).data
             ? (this.bot as any).data.app.config
             : (this.bot as any).config;

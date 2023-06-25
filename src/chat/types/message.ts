@@ -1,4 +1,6 @@
 import { ChatOutputImage } from "./image.js";
+import { ChatButton } from "./button.js";
+import { ChatEmbed } from "./embed.js";
 
 export enum MessageType {
 	Notice = "Notice",
@@ -27,33 +29,37 @@ export interface MessageData {
 	cost?: number;
 }
 
-export interface BaseMessage {
-	/* Text to prioritize to display for the user */
-	display?: string;
+export interface BaseMessage<Type extends MessageType = MessageType> {
+	/* Type of the message */
+	type: Type;
 
-	/* Raw output message; or the message to display if `displayText` is not set */
+	/* Raw output message; or the message to display if `display` is not set */
 	text: string;
 
-	/* Type of the message */
-	type: MessageType;
+	/* Text to prioritize to display for the user */
+	display?: string;
 }
 
-export type ResponseMessage = BaseMessage & {
+export type ResponseMessage<Type extends MessageType = MessageType> = BaseMessage<Type> & {
 	/* Information about token usage & why the message stopped generating, etc. */
-	raw: MessageData | null;
-
-	/* Identifier of the message */
-	id: string;
+	raw?: MessageData;
 
 	/* Generated images, if applicable */
 	images?: ChatOutputImage[];
+
+	/* Additional buttons, if applicable */
+	buttons?: ChatButton[];
+
+	/* Additional embeds for the message, if applicable */
+	embeds?: ChatEmbed[];
 }
 
-export type ChatNoticeMessage = ResponseMessage & {
-	type: MessageType.ChatNotice;
+export type ResponseChatNoticeMessage = ResponseMessage<MessageType.ChatNotice> & {
 	notice: string;
 }
 
-export type PartialChatNoticeMessage = Partial<Pick<ChatNoticeMessage, "raw" | "type" | "images">> & Pick<ChatNoticeMessage, "text" | "display" | "notice">
+export type PartialChatNoticeMessage = PartialResponseMessage<ResponseChatNoticeMessage>
 
-export type PartialResponseMessage = Partial<Pick<ResponseMessage, "raw" | "type" | "images">> & Pick<ResponseMessage, "text" | "display">
+export type ResponseNoticeMessage = ResponseMessage<MessageType.Notice>
+
+export type PartialResponseMessage<T extends ResponseMessage = ResponseMessage> = Partial<Pick<T, "raw" | "type" | "images" | "buttons" | "embeds">> & Pick<T, "text" | "display">

@@ -34,9 +34,9 @@ export class TuringModel extends ChatModel {
         /* Generate a response for the user's prompt using the Turing API. */
         const result: TuringChatResult = await this.client.session.manager.bot.turing.chat({
             model: options.settings.options.settings.model!,
+            conversation: options.conversation,
             prompt: prompt,
-            raw: true,
-            conversation: options.conversation
+            raw: true
         });
 
         return {

@@ -1,8 +1,9 @@
 import { Awaitable } from "discord.js";
 import chalk from "chalk";
 
-import { DatabaseInfo, DatabaseUserInfraction, DatabaseUserInfractionType } from "../../db/managers/user.js";
+import { DatabaseUserInfraction, DatabaseUserInfractionType } from "../../db/schemas/user.js";
 import { AutoModerationFilter, AutoModerationFilters } from "./filters.js";
+import { DatabaseInfo } from "../../db/managers/user.js";
 import { ModerationSource } from "../moderation.js";
 import { Bot } from "../../bot/bot.js";
 

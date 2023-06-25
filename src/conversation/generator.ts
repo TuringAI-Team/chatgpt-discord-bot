@@ -1,7 +1,8 @@
-import { ActionRowBuilder, AttachmentBuilder, BaseGuildTextChannel, ButtonBuilder, ButtonInteraction, ButtonStyle, ChannelType, ComponentEmojiResolvable, ComponentType, DiscordAPIError, DMChannel, EmbedBuilder, Guild, InteractionReplyOptions, Message, MessageCreateOptions, MessageEditOptions, MessageReplyOptions, PermissionsString, Role, TextChannel, User, WebhookMessageCreateOptions } from "discord.js";
+import { ActionRowBuilder, AttachmentBuilder, BaseGuildTextChannel, ButtonBuilder, ButtonInteraction, ButtonStyle, ChannelType, ComponentEmojiResolvable, DiscordAPIError, DMChannel, EmbedBuilder, Guild, InteractionReplyOptions, Message, MessageCreateOptions, MessageEditOptions, MessageReplyOptions, PermissionsString, Role, TextChannel, User, WebhookMessageCreateOptions } from "discord.js";
+import { randomUUID } from "crypto";
 
-import { DatabaseInfo, DatabaseUserInfraction, UserSubscriptionType } from "../db/managers/user.js";
-import { ChatNoticeMessage, MessageType, ResponseMessage } from "../chat/types/message.js";
+import { ResponseChatNoticeMessage, MessageType, ResponseMessage } from "../chat/types/message.js";
+import { DatabaseUserInfraction, UserSubscriptionType } from "../db/schemas/user.js";
 import { LoadingIndicator, LoadingIndicatorManager } from "../db/types/indicator.js";
 import { PlanCreditViewers, PlanCreditVisibility } from "../db/managers/plan.js";
 import { ChatSettingsModel, ChatSettingsModels } from "./settings/model.js";
@@ -13,6 +14,7 @@ import { ModerationResult } from "../moderation/moderation.js";
 import { ChatGuildData } from "../chat/types/options.js";
 import { ChatSettingsTones } from "./settings/tone.js";
 import { Introduction } from "../util/introduction.js";
+import { DatabaseInfo } from "../db/managers/user.js";
 import { format } from "../chat/utils/formatter.js";
 import { Response } from "../command/response.js";
 import { OtherPrompts } from "../chat/client.js";
@@ -100,7 +102,7 @@ export class Generator {
 		);
 
 		/* Subscription type of the user */
-		const type: UserSubscriptionType = this.bot.db.users.type(db);
+		const type: UserSubscriptionType = await this.bot.db.users.type(db);
 
 		/* Whether the remaining credit should be shown in the toolbar */
 		const creditVisibility: PlanCreditVisibility = type.type === "plan"
@@ -142,26 +144,23 @@ export class Generator {
 		/* If the received data is a chat notice request, simply add the notice to the formatted message. */
 		if (data.type === "ChatNotice") {
 			embeds.push(new EmbedBuilder()
-				.setDescription(`${(data as ChatNoticeMessage).notice} ${pending ? `**...** ${loadingEmoji}` : ""}`)
+				.setDescription(`${(data as ResponseChatNoticeMessage).notice} ${pending ? `**...** ${loadingEmoji}` : ""}`)
 				.setColor("Orange")
 			);
 
 			pending = false;
 		}
 
-		for (const moderation of moderations) {
-			/* Add a moderation notice, if applicable. */
-			if (moderation !== null && (moderation.flagged || moderation.blocked)) embeds.push(new EmbedBuilder()
-				.setDescription(
-					!moderation.blocked
-						? `${moderation.source === "chatUser" ? "Your message" : `**${this.bot.client.user.username}**'s response`} may violate our **usage policies**. *If you violate the usage policies, we may have to take moderative actions; otherwise you can ignore this notice.*`
-						: `${moderation.source === "chatUser" ? "Your message" : `**${this.bot.client.user.username}**'s response`} violates our **usage policies**. *If you continue to violate the usage policies, we may have to take moderative actions; otherwise you can ignore this notice.*.`
-				)
-				.setColor(moderation.blocked ? "Red" : "Orange")
-			);
+		for (const moderation of moderations.filter(m => m !== null && m.flagged) as ModerationResult[]) {
+			const response = await this.bot.moderation.message({
+				name: moderation.source === "chatUser" ? "Your message" : `**${this.bot.client.user.username}**'s response`,
+				result: moderation, small: true
+			})
+
+			embeds.push(response.embeds[0]);
 		}
 
-		/* Only show the daily limit, if the generation request is already finished. */
+		/* Only show the buttons, once the generation request has finished. */
 		if (!pending) {
 			const buttons: ButtonBuilder[] = [];
 
@@ -202,11 +201,11 @@ export class Generator {
 					.setStyle(ButtonStyle.Secondary)
 			);
 
-			buttons.push(
+			if (buttons.length < 2) buttons.push(
 				new ButtonBuilder()
 					.setCustomId(`chat:user:${conversation.id}`)
 					.setDisabled(true)
-					.setEmoji(this.bot.db.users.userIcon(db))
+					.setEmoji(await this.bot.db.users.userIcon(db))
 					.setLabel(`@${conversation.user.username}`)
 					.setStyle(ButtonStyle.Secondary)
 			);
@@ -215,6 +214,40 @@ export class Generator {
 				.addComponents(buttons);
 
 			response.addComponent(ActionRowBuilder<ButtonBuilder>, row);
+		}
+
+		/* If the message has any additional buttons attached, add them to the resulting message. */
+		if (data.buttons && data.buttons.length > 0) {
+			const buttons: ButtonBuilder[] = [];
+
+			data.buttons.forEach(button => {
+				const builder = new ButtonBuilder()
+					.setLabel(button.label)
+					.setDisabled(button.disabled ?? false)
+					.setStyle(button.url ? ButtonStyle.Link : button.style ?? ButtonStyle.Secondary);
+
+				if (!button.url) builder.setCustomId(button.id ?? randomUUID())
+				if (button.emoji) builder.setEmoji(button.emoji);
+
+				buttons.push(builder);
+			});
+
+			const row = new ActionRowBuilder<ButtonBuilder>()
+				.addComponents(buttons);
+
+			response.addComponent(ActionRowBuilder<ButtonBuilder>, row);
+		}
+
+		/* If the message has any additional embeds attached, add them to the resulting message. */
+		if (data.embeds && data.embeds.length > 0) {
+			data.embeds.forEach(embed => {
+				embeds.push(new EmbedBuilder()
+					.setTitle(embed.title ?? null)
+					.setDescription(embed.description ?? null)
+					.setColor(embed.color ?? null)
+					.setTimestamp(embed.time ? undefined : null)
+				);
+			});
 		}
 
 		/* If the generated message finished due to reaching the token limit, show a notice. */
@@ -237,8 +270,13 @@ export class Generator {
 
 		/* If the message would be too long, send it as an attachment. */
 		if (formatted.length > 2000) {
+			/* Formatted date string */
+			const date: string = new Date().toLocaleString("en-GB", {
+				day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit"
+			});
+		
 			response.addAttachment(new AttachmentBuilder(Buffer.from(content))
-				.setName("output.txt")
+				.setName(`${model.id}${tone.id !== "normal" ? `-${tone.id}` : ""}-${date}.txt`)
 			);
 
 			response.setContent(pending ? loadingEmoji : "_ _");
@@ -266,7 +304,7 @@ export class Generator {
 
 		/* If the command is on cool-down, don't run the request. */
 		if (conversation.cooldown.active && remaining > Math.min(conversation.cooldown.state.expiresIn! / 2, 10 * 1000)) {
-			const reply = await interaction.reply(conversation.cooldownResponse(db).get() as InteractionReplyOptions).catch(() => null);
+			const reply = await interaction.reply((await conversation.cooldownResponse(db)).get() as InteractionReplyOptions).catch(() => null);
 
 			if (reply === null) return;
 
@@ -383,9 +421,8 @@ export class Generator {
 		if (mentions === "inMessage") return void await Reaction.add(this.bot, message, "👋");
 
 		/* Get the user & guild data from the database, if available. */
-		const db = await this.bot.db.users.fetchData(author, guild);
-
-		const banned: DatabaseUserInfraction | null = this.bot.db.users.banned(db.user);
+		const db = await this.bot.db.users.fetch(author, guild);
+		const banned: DatabaseUserInfraction | null = await this.bot.db.users.banned(db.user);
 
 		/* If the user is banned from the bot, send a notice message. */
 		if (banned !== null) return void await this.bot.moderation.buildBanMessage(banned).send(message);
@@ -394,7 +431,7 @@ export class Generator {
 		db.user = await this.bot.moderation.warningModal({ interaction: message, db });
 
 		/* Whether the user can access Premium features */
-		const premium: boolean = this.bot.db.users.canUsePremiumFeatures(db);
+		const premium: boolean = await this.bot.db.users.canUsePremiumFeatures(db);
 
 		/* Conversation of the author */
 		let conversation: Conversation = null!;
@@ -447,14 +484,14 @@ export class Generator {
 
 		/* Remaining cool-down time */
 		const remaining: number = conversation.cooldown.remaining;
-		if (conversation.cooldown.active) await this.bot.db.users.incrementInteractions(db, "cooldown_messages");
+		if (conversation.cooldown.active) await this.bot.db.users.incrementInteractions(db, "cooldownMessages");
 
 		/* If the command is on cool-down, don't run the request. */
 		if (conversation.cooldown.active && remaining > Math.min(conversation.cooldown.state.expiresIn! / 2, 10 * 1000)) {
-			const reply = await message.reply({
-				embeds: conversation.cooldownMessage(db)
-			}).catch(() => null);
-
+			const reply = await message.reply(
+				(await conversation.cooldownResponse(db)).get() as MessageReplyOptions
+			).catch(() => null);
+			
 			if (reply === null) return;
 
 			/* Once the cool-down is over, delete the invocation and reply message. */
@@ -535,7 +572,7 @@ export class Generator {
 
 		/* Whether partial results should be shown, and how often they should be updated */
 		const partial: boolean = this.bot.db.settings.get<boolean>(db.user, "chat:partialMessages");
-		const updateTime: number = this.bot.db.users.canUsePremiumFeatures(db) ? 2500 : 5000;
+		const updateTime: number = premium ? 2500 : 5000;
 
 		let typingTimer: NodeJS.Timer | null = setInterval(async () => {
 			try {
@@ -648,7 +685,7 @@ export class Generator {
 				guild: guildData,
 				prompt: content,
 				trigger: message,
-				onProgress: onProgress,
+				progress: onProgress,
 				moderation: moderation
 			});
 
@@ -663,7 +700,7 @@ export class Generator {
 			});
 
 			if (error instanceof GPTGenerationError && error.options.data.type === GPTGenerationErrorType.Moderation) return await sendError({
-				message: `Your prompt was blocked by the **moderation filters**, *please try out a different one*`,
+				message: `Your prompt was blocked by the **moderation filters**, please try out a different one or modifying it.\n*If this repeatedly occurs, try **\`/reset\`ting** your conversation with the bot*.`,
 				emoji: "😔"
 			});
 
@@ -786,11 +823,17 @@ export class Generator {
 
 		try {
 			if (reply !== null) return await reply.edit(response.get() as MessageEditOptions);
-			else return await message.reply(response.get() as MessageReplyOptions);
+			else return await message.reply({
+				...response.get() as MessageReplyOptions,
+				failIfNotExists: false
+			});
 
 		} catch (_) {
 			try {
-				if (reply !== null) return await message.reply(response.get() as MessageCreateOptions);
+				if (reply !== null) return await message.reply({
+					...response.get() as MessageCreateOptions,
+					failIfNotExists: false
+				});
 				return await message.channel.send(response.get() as MessageCreateOptions);
 			} catch (_) {
 				return null;

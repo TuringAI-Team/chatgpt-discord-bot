@@ -5,11 +5,10 @@ import { Utils } from "../../util/utils.js";
 import { Bot } from "../../bot/bot.js";
 
 export type ChatImageType = "image" | "sticker" | "emoji" | "Discord attachment link" | "Discord embed image" | "Tenor GIF"
-export const CHAT_IMAGE_TYPES: ChatImageType[] = [ "image", "sticker", "emoji", "Discord attachment link", "Discord embed image", "Tenor GIF" ]
 
 export const ALLOWED_FILE_EXTENSIONS: string[] = [ "webp", "png", "jpeg", "jpg" ]
 
-const DISCORD_CDN_REGEX = /https:\/\/(media|cdn)\.discordapp\.(com|net)\/attachments\/\d+\/\d+\/\S+\.(gif|png|jpe?g|webp)/ig
+const DISCORD_CDN_REGEX = /https:\/\/(media|cdn)\.discordapp\.(com|net)\/attachments\/\d+\/\d+\/\S+\.(png|jpe?g|webp)/ig
 const EMOJI_REGEX = /<(a?)?:[\w-]+:(\d{18,19})?>/gu
 const TENOR_GIF_REGEX = /-gif-(\d+)/g
 
@@ -205,9 +204,12 @@ export type ChatInputImage = Pick<ChatBaseImage, "name" | "type" | "url"> & {
 
     /* How long it took to analyze the image */
     duration: number;
+
+    /* How much it cost to analyze this image */
+    cost?: number;
 }
 
-export type ChatAnalyzedImage = Pick<ChatInputImage, "description" | "text">
+export type ChatAnalyzedImage = Pick<ChatInputImage, "description" | "text" | "cost">
 
 export interface ChatOutputImage {
     /* Final rendered image */

@@ -5,9 +5,8 @@ import chalk from "chalk";
 import dayjs from "dayjs";
 
 import { Command, CommandInteraction, CommandResponse } from "../../command/command.js";
-import { SessionCostProducts } from "../../conversation/session.js";
-import { RawDatabaseUser } from "../../db/managers/user.js";
 import { Bot, BotDiscordClient } from "../../bot/bot.js";
+import { DatabaseUser } from "../../db/schemas/user.js";
 import { PREMIUM_ROLE_ID } from "../../util/roles.js";
 import { Response } from "../../command/response.js";
 
@@ -105,6 +104,13 @@ export default class DeveloperCommand extends Command {
 			/* Get information about the Stable Horde API user. */
 			const user = await this.bot.image.findUser();
 
+			/* Discord gateway session limit */
+			const session = await this.bot.sessionLimit();
+
+			/* Whether enough remaining sessions are available for the bot to fully restart */
+			const shardCount: number = getInfo().TOTAL_SHARDS;
+			const enough: boolean = session.remaining >= shardCount;
+
 			return new Response()
 				.addEmbed(builder => builder
 					.setTitle("Development Statistics")
@@ -117,9 +123,7 @@ export default class DeveloperCommand extends Command {
 				.addEmbed(builder => builder
 					.setColor(this.bot.branding.color)
 					.setTitle("Clusters 🤖")
-					.setDescription(
-						clusterDebug.trim()
-					)
+					.setDescription(clusterDebug.trim())
 				)
 				.addEmbed(builder => builder
 					.setColor(this.bot.branding.color)
@@ -127,6 +131,17 @@ export default class DeveloperCommand extends Command {
 					.addFields(
 						{ name: "Kudos",            value: `${user.kudos}`, inline: true                 },
 						{ name: "Generated images", value: `${user.records.request.image}`, inline: true }
+					)
+				)
+				.addEmbed(builder => builder
+					.setColor(this.bot.branding.color)
+					.setTitle("Discord session 🖥️")
+					.setDescription(enough ? "There are enough sessions for the bot to fully restart ✅" : "There are **not** enough sessions for the bot to fully restart ⚠️")
+					.addFields(
+						{ name: "Remaining",           value: `\`${session.remaining}\`/\`${session.total}\``, inline: true },
+						{ name: "Concurrency", value: `\`${session.maxConcurrency}\`/s`, inline: true },
+						{ name: "Resets", value: `<t:${Math.floor((Date.now() + session.resetAfter) / 1000)}:R>`, inline: true },
+						{ name: "Shards", value: `${shardCount}`, inline: true }
 					)
 				);
 
@@ -158,7 +173,7 @@ export default class DeveloperCommand extends Command {
 			.get());
 
 			/* First, save all queued database changes. */
-			await this.bot.client.cluster.broadcastEval(((client: BotDiscordClient) => client.bot.db.users.workOnQueue()) as any);
+			await this.bot.db.queue.work();
 
 			/* Initiate the restart. */
 			await this.bot.client.cluster.evalOnManager("this.bot.restart()");
@@ -192,7 +207,7 @@ export default class DeveloperCommand extends Command {
 				.setEphemeral(true);
 
 			/* Raw database users */
-			const users: RawDatabaseUser[] = (data as RawDatabaseUser[])
+			const users: DatabaseUser[] = (data as DatabaseUser[])
 				.map(user => ({ ...user, subscription: this.bot.db.users.subscription(user) }));
 
 			const members: GuildMember[] = [];
@@ -251,7 +266,8 @@ export default class DeveloperCommand extends Command {
 
 		/* Execute all the queued database requests in all clusters */
 		} else if (action === "flush") {
-			await this.bot.client.cluster.broadcastEval(((client: BotDiscordClient) => client.bot.db.users.workOnQueue()) as any);
+			/* Save all pending database changes. */
+			await this.bot.db.queue.work();
 
 			return new Response()
 				.addEmbed(builder => builder

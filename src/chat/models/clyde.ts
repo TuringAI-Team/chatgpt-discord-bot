@@ -1,19 +1,20 @@
-import { Awaitable, ChannelType, GuildBasedChannel, GuildEmoji, GuildMember, Invite, TextChannel } from "discord.js";
+import { Awaitable, ChannelType, GuildBasedChannel, GuildEmoji, GuildMember, Invite, MessageMentions, TextChannel } from "discord.js";
 
-import { OpenAIChatCompletionsData, OpenAIPartialCompletionsJSON } from "../../openai/types/chat.js";
-import { DatabaseSubscription, DatabaseUser } from "../../db/managers/user.js";
+import { OpenAIChatCompletionsData, OpenAIPartialChatCompletionsJSON } from "../../openai/types/chat.js";
+import { DatabaseSubscription, DatabaseUser } from "../../db/schemas/user.js";
 import { ChatGuildData, ModelGenerationOptions } from "../types/options.js";
 import { Conversation } from "../../conversation/conversation.js";
 import { ChatOutputImage, ImageBuffer } from "../types/image.js";
 import { ModelCapability, ModelType } from "../types/model.js";
 import { PartialResponseMessage } from "../types/message.js";
+import { DatabasePlan } from "../../db/managers/plan.js";
 import { ChatClient, PromptData } from "../client.js";
-import { UserPlan } from "../../db/managers/plan.js";
 import { ChatGPTModel } from "./chatgpt.js";
 import { Utils } from "../../util/utils.js";
 
 export interface ClydeUser {
-    name: string;
+    username: string;
+    "display name": string | null;
     suffix: string | null;
     "joined Discord at": string;
     "joined the server at": string;
@@ -21,7 +22,9 @@ export interface ClydeUser {
     "Premium pay-as-you-go plan": string;
     "has voted for the bot": string;
     nickname: string | null;
-    roles: string | null;
+    roles: string | "(none)";
+    bot: boolean;
+    id: string;
 }
 
 export interface ClydePromptData {
@@ -219,31 +222,35 @@ export class ClydeModel extends ChatGPTModel {
     /**
      * Display the presence & activity status of a guild member. 
      */
-    private toClydeUser(conversation: Conversation, member: GuildMember, db: DatabaseUser): ClydeUser {
+    private async toClydeUser(conversation: Conversation, member: GuildMember, db: DatabaseUser): Promise<ClydeUser> {
         /* Roles of the member */
         const roles = Array.from(member.roles.cache.values());
 
         /* Final status activity data */
         let final: Partial<ClydeUser> = {};
 
-        final.name = member.user.username;
+        final.username = member.user.username;
+        final["display name"] = member.user.globalName;
+        final.id = member.user.id;
+
         if (conversation.user.id === member.id) final.suffix = "user I'm talking to";
 
-        const voted: number | null = this.client.session.manager.bot.db.users.voted(db);
+        const voted: number | null = await this.client.session.manager.bot.db.users.voted(db);
 
         const subscription: DatabaseSubscription | null = db.subscription;
-        const plan: UserPlan | null = db.plan;
+        const plan: DatabasePlan | null = db.plan;
 
         final["Premium subscription"] = subscription !== null ? `yes, joined at ${new Date(subscription.since)} and expires at ${new Date(subscription.expires)}` : "no";
         final["Premium pay-as-you-go plan"] = plan !== null ? `yes, has used up $${plan.used} and a total of $${plan.total} charged up` : "no";
         final["has voted for the bot"] = voted !== null ? `yes, at ${new Date(voted)}` : "no";
+        final.bot = member.user.bot;
 
         final["joined Discord at"] = member.user.createdAt.toISOString();
         if (member.joinedAt) final["joined the server at"] = member.joinedAt.toISOString();
 
         final.roles = roles.length > 1
             ? roles.filter(r => r.name !== "@everyone").map(r => r.name).join(", ")
-            : null;
+            : "none";
 
         if (member.nickname) final.nickname = member.nickname;
 
@@ -291,17 +298,38 @@ export class ClydeModel extends ChatGPTModel {
     public async complete(options: ModelGenerationOptions): Promise<PartialResponseMessage> {
         /* Clean up the user's prompt; format all channel names, mentions and emoji names. */
         const cleanedPrompt: ClydeFormatterResult = await this.format(options.conversation, options.guild!, options.prompt, "input");
-        options.prompt = cleanedPrompt.text;
 
-        const progress = async (response: OpenAIPartialCompletionsJSON) => {
+        const progress = async (response: OpenAIPartialChatCompletionsJSON) => {
             const final: ClydeFormatterResult = await this.format(options.conversation, options.guild!, response.choices[0].delta.content!, "output", true);
             options.progress(final);
         };
 
         /* All users to include in the prompt */
         const users: ClydeUser[] = [
-            this.toClydeUser(options.conversation, options.guild!.member, options.db.user)
+            await this.toClydeUser(options.conversation, options.guild!.member, options.db.user)
         ];
+
+        const regex: RegExpMatchArray | null = options.prompt.match(MessageMentions.UsersPattern);
+
+        /* Users mentioned in the prompt */
+        const userIDs: string[] = regex !== null && regex.length > 0
+            ? regex.map(m => m.replace("<@", "").replace(">", "")) : [];
+
+        for (const id of userIDs) {
+            /* The guild member instance */
+            const member: GuildMember | null = await options.guild!.guild.members.fetch(id).catch(() => null);
+            if (member === null) continue;
+
+            /* The user's database instance, if available */
+            const db: DatabaseUser | null = await this.client.session.manager.bot.db.users.getUser(id);
+            if (db === null) continue;
+
+            users.push(
+                await this.toClydeUser(options.conversation, member, db)
+            );
+        }
+
+        options.prompt = cleanedPrompt.text;
 
         const prompt: PromptData = await this.client.buildPrompt<ClydePromptData>(options, { users });
         const data: OpenAIChatCompletionsData = await this.chat(options, prompt, progress);

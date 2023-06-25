@@ -9,7 +9,7 @@ import { Conversation } from "../conversation/conversation.js";
 import { NoticeResponse } from "../command/response/notice.js";
 import { OpenAIChatMessage } from "../openai/types/chat.js";
 import { ImageOCRResult, detectText } from "../util/ocr.js";
-import { ClientDatabaseManager } from "../db/cluster.js";
+import { ClusterDatabaseManager } from "../db/cluster.js";
 import { ChatBaseImage } from "../chat/types/image.js";
 import { DatabaseInfo } from "../db/managers/user.js";
 import { Response } from "../command/response.js";
@@ -44,7 +44,7 @@ export interface DescribeSummary {
     content: string;
 }
 
-export interface ImageDescription {
+export interface DatabaseDescription {
     /* MD5 hash of the image */
     id: string;
 
@@ -78,13 +78,13 @@ export class ImageDescriptionManager {
         this.bot = bot;
     }
 
-    private async get(input: ImageDescriptionInput & { hash: string }): Promise<ImageDescription | null> {
-        return this.bot.db.users.fetchFromCacheOrDatabase(
+    private async get(input: ImageDescriptionInput & { hash: string }): Promise<DatabaseDescription | null> {
+        return this.bot.db.fetchFromCacheOrDatabase(
             "descriptions", input.hash
         );
     }
 
-    private async save(result: ImageDescription, buffer: ImageBuffer): Promise<void> {
+    private async save(result: DatabaseDescription, buffer: ImageBuffer): Promise<void> {
         await this.bot.db.storage.uploadImageDescription(result, buffer).catch(() => {});
         await this.bot.db.users.updateImageDescription(result.id, result);
     }
@@ -119,7 +119,7 @@ export class ImageDescriptionManager {
         return hash;
     }
 
-    public async describe(options: ImageDescriptionOptions): Promise<ImageDescription & { cached: boolean }> {
+    public async describe(options: ImageDescriptionOptions): Promise<DatabaseDescription & { cached: boolean }> {
         let { input, cached, buffer }: Required<Omit<ImageDescriptionOptions, "buffer">> & { buffer: ImageBuffer | null } = {
             cached: options.cached ?? true,
             buffer: options.buffer ?? null,
@@ -132,7 +132,7 @@ export class ImageDescriptionManager {
 
         /* First, try to find a cached image description. */
         if (cached) {
-            const entry: ImageDescription | null = await this.get({ ...input, hash });
+            const entry: DatabaseDescription | null = await this.get({ ...input, hash });
             if (entry !== null) return { ...entry, cached: true };
         }
 
@@ -150,7 +150,7 @@ export class ImageDescriptionManager {
         });
 
         /* Final image description result */
-        const result: ImageDescription = {
+        const result: DatabaseDescription = {
             id: hash, duration: description.duration, when: new Date().toISOString(),
 
             result: {
@@ -193,7 +193,9 @@ export class ImageDescriptionManager {
                 "Looking at the image",
                 "Inspecting your image",
                 "Looking at the details"
-            ]
+            ],
+
+            bot: this.bot, db
         }).send(interaction);
 
         /* Make sure that the image is accessible. */
@@ -243,7 +245,7 @@ export class ImageDescriptionManager {
                 name: "Summary", value: summary.content
             });
 
-            await this.bot.db.users.incrementInteractions(db, "image_descriptions");
+            await this.bot.db.users.incrementInteractions(db, "imageDescriptions");
             await this.bot.db.plan.expenseForImageDescription(db, description, summary);
 
             return new Response()
@@ -266,7 +268,7 @@ export class ImageDescriptionManager {
         }
     }
 
-    private async generateDescription(result: ImageDescription): Promise<DescribeSummary | null> {
+    private async generateDescription(result: DatabaseDescription): Promise<DescribeSummary | null> {
         /* The formatted prompt */
         const prompt = this.buildPrompt(result);
 
@@ -293,7 +295,7 @@ export class ImageDescriptionManager {
         }
     }
 
-    private buildPrompt(result: ImageDescription): { tokens: number; messages: OpenAIChatMessage[] } {
+    private buildPrompt(result: DatabaseDescription): { tokens: number; messages: OpenAIChatMessage[] } {
         const messages: OpenAIChatMessage[] = [];
 
         messages.push({

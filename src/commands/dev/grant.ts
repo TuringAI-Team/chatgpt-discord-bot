@@ -1,9 +1,9 @@
-import { SlashCommandBuilder, User } from "discord.js";
+import { SlashCommandBuilder } from "discord.js";
 import dayjs from "dayjs";
 
 import { Command, CommandInteraction, CommandResponse } from "../../command/command.js";
-import { DatabaseUser, DatabaseSubscription, DatabaseGuild } from "../../db/managers/user.js";
-import { UserPlan } from "../../db/managers/plan.js";
+import { DatabaseSubscription, DatabaseUser } from "../../db/schemas/user.js";
+import { DatabaseGuild } from "../../db/schemas/guild.js";
 import { Response } from "../../command/response.js";
 import { Utils } from "../../util/utils.js";
 import { Bot } from "../../bot/bot.js";
@@ -79,9 +79,8 @@ export default class GrantCommand extends Command {
 					)
 					.addNumberOption(builder => builder
 						.setName("amount")
-						.setMinValue(0.01)
 						.setMaxValue(5000)
-						.setDescription("How much credit to grant")
+						.setDescription("How much credit to grant (0 or -1 removes their plan)")
 						.setRequired(true)
 					)
 				)
@@ -157,11 +156,31 @@ export default class GrantCommand extends Command {
 				);
 				
 		} else if (action === "plan") {
-			/* If the user doesn't have a plan already, create a new one for them. */
-			if (db.plan === null) db.plan = await this.bot.db.plan.create(db);
-
 			/* Amount of credit to grant */
 			const amount: number = interaction.options.getNumber("amount", true);
+
+			/* Remove the user's plan. */
+			if (amount <= 0) {
+				if (db.plan === null) return new Response()
+					.addEmbed(builder => builder
+						.setDescription(`The specified ${type} doesn't have an active plan 😔`)
+						.setColor("Red")
+					)
+					.setEphemeral(true);
+
+				await this.bot.db.plan.remove(db);
+
+				return new Response()
+					.addEmbed(builder => builder
+						.setAuthor({ name: target.name, iconURL: target.icon ?? undefined })
+						.setTitle(`Plan removed 😔`)
+						.setColor("Yellow")
+						.setTimestamp()
+					);
+			}
+
+			/* If the user doesn't have a plan already, create a new one for them. */
+			if (db.plan === null) db.plan = await this.bot.db.plan.create(db);
 
 			/* Grant the user the specified amount of credit. */
 			const credit = await this.bot.db.plan.credit(db, {

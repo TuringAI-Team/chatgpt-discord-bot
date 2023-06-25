@@ -3,7 +3,7 @@ import dayjs from "dayjs";
 
 import { Bot } from "../bot/bot.js";
 
-type LogType = string | number | boolean | any
+export type LogType = string | number | boolean | any
 
 interface LogLevel {
 	name: string;
@@ -45,7 +45,7 @@ export class Logger {
 	}
 }
 
-export class ShardLogger extends Logger {
+export class ClusterLogger extends Logger {
 	/* Discord client instance */
 	private readonly bot: Bot;
 

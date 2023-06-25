@@ -1,17 +1,20 @@
-import { EmbedBuilder, Message, User } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, EmbedBuilder, Message, User } from "discord.js";
+import { randomUUID } from "crypto";
 import chalk from "chalk";
 
-import { DatabaseConversation, DatabaseInfo, DatabaseResponseMessage, DatabaseUser, RawDatabaseConversation, UserSubscriptionType } from "../db/managers/user.js";
 import { ChatSettingsModel, ChatSettingsModelBillingType, ChatSettingsModels } from "./settings/model.js";
+import { DatabaseUser, UserSubscriptionPlanType, UserSubscriptionType } from "../db/schemas/user.js";
+import { CampaignPickOptions, DatabaseCampaign, DisplayCampaign } from "../db/managers/campaign.js";
+import { DatabaseConversation, DatabaseResponseMessage } from "../db/schemas/conversation.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
 import { ChatSettingsTone, ChatSettingsTones } from "./settings/tone.js";
-import { MessageType, ResponseMessage } from "../chat/types/message.js";
 import { ChatInputImage, ImageBuffer } from "../chat/types/image.js";
-import { UserSubscriptionPlanType } from "../db/managers/user.js";
 import { Cooldown, CooldownModifier } from "./utils/cooldown.js";
 import { ModerationResult } from "../moderation/moderation.js";
 import { UserPlanChatExpense } from "../db/managers/plan.js";
+import { ResponseMessage } from "../chat/types/message.js";
 import { ChatDocument } from "../chat/types/document.js";
+import { DatabaseInfo } from "../db/managers/user.js";
 import { ChatClientResult } from "../chat/client.js";
 import { ConversationManager } from "./manager.js";
 import { ChatModel } from "../chat/types/model.js";
@@ -34,6 +37,9 @@ export interface ChatInput {
 }
 
 export interface ChatInteraction {
+	/* ID of the chat interaction */
+	id: string;
+
 	/* Input message */
 	input: ChatInput;
 
@@ -129,7 +135,9 @@ export class Conversation {
 	constructor(manager: ConversationManager, user: User) {
 		this.manager = manager;
 
-		this.cooldown = new Cooldown({ time: CONVERSATION_DEFAULT_COOLDOWN.time! });
+		this.cooldown = new Cooldown({
+			conversation: this, time: CONVERSATION_DEFAULT_COOLDOWN.time!
+		});
 
 		this.ttl = 30 * 60 * 1000;
 		this.timer = null;
@@ -147,19 +155,11 @@ export class Conversation {
 	}
 
 	/**
-	 * Cached database user instance
-	 */
-	public async databaseUser(): Promise<DatabaseUser> {
-		return this.manager.bot.db.users.fetchUser(this.user);
-	}
-
-	/**
 	 * Cached database conversation
 	 */
 	public async cached(): Promise<DatabaseConversation | null> {
-		const db = await this.manager.bot.db.users.fetchFromCacheOrDatabase<string, DatabaseConversation, RawDatabaseConversation>(
-			"conversations", this.id,
-			raw => this.manager.bot.db.users.rawToConversation(raw)
+		const db = await this.manager.bot.db.fetchFromCacheOrDatabase<string, DatabaseConversation>(
+			"conversations", this.id
 		);
 
 		this.db = db;
@@ -174,7 +174,7 @@ export class Conversation {
 		if (data.history && data.history !== null && (data.history as any).forEach) {
 			for (const entry of data.history) {
 				this.history.push({
-					input: entry.input,
+					input: entry.input, id: entry.id,
 
 					/* This is awful, but it works... */
 					output: this.databaseToResponseMessage(entry.output),
@@ -195,19 +195,9 @@ export class Conversation {
 		
 		/* Cached database conversation */
 		const cached: DatabaseConversation | null = await this.cached();
-		if (cached === null) return;
+		if (cached !== null) await this.loadFromDatabase(cached);
 		
-		await this.loadFromDatabase(cached);
 		await this.init();
-	}
-
-	public async changeSetting<T extends ChatSettingsModel | ChatSettingsTone>(type: "model" | "tone", db: DatabaseUser, updated: T): Promise<void> {
-		/* Reset the conversation first, as the models might get confused otherwise. */
-		await this.reset(db);
-
-		await this.manager.bot.db.settings.apply(db, {
-			[`chat:${type}`]: updated.id
-		});
 	}
 
 	public setting<T extends ChatSettingsModel | ChatSettingsTone>(type: "model" | "tone", arr: T[], db: DatabaseUser | DatabaseInfo): T {
@@ -234,19 +224,15 @@ export class Conversation {
 
 	/**
 	 * Initialize the conversation.
-	 * This also gets called after each "reset", in order to maintain the creation time & future data.
 	 */
 	public async init(): Promise<void> {
-		/* Make sure that the user exists in the database. */
-		await this.manager.bot.db.users.fetchUser(this.user);
-
         /* Update the conversation entry in the database. */
         if (this.history.length === 0) await this.manager.bot.db.users.updateConversation(this, {
-                created: Date.now(),id: this.id,
-                active: true, history: null
-            });
+			created: new Date().toISOString(), id: this.id,
+			active: true, history: null
+		});
 
-		this.applyResetTimer();
+		this.bump();
 		this.active = true;
 	}
 
@@ -261,8 +247,7 @@ export class Conversation {
 	 * Apply the reset timer, to reset the conversation after inactivity.
 	 * @param updatedAt Time when the last interaction with this conversation occurred, optional
 	 */
-	private applyResetTimer(): void {
-		/* If a timer already exists, reset it. */
+	private bump(): void {
 		if (this.timer !== null) { clearTimeout(this.timer); this.timer = null; }
 		this.updatedAt = Date.now();
 
@@ -288,7 +273,7 @@ export class Conversation {
 		});
 
 		/* Reset the conversation data. */
-		this.applyResetTimer();
+		this.bump();
 		this.history = [];
 
 		/* Remove the entry in the database. */
@@ -312,12 +297,12 @@ export class Conversation {
 	 * @returns Given chat response
 	 */
 	public async generate(options: GeneratorOptions & GenerationOptions): Promise<ChatGeneratedInteraction> {
-		if (!this.active) throw new Error("Conversation is inactive");
+		if (!this.active) throw new GPTGenerationError({ type: GPTGenerationErrorType.Inactive });
 		if (this.generating) throw new GPTGenerationError({ type: GPTGenerationErrorType.Busy });
 
 		/* Lock the conversation during generation. */
 		this.generating = true;
-		if (this.timer !== null) clearTimeout(this.timer);
+		this.bump();
 
 		/* Amount of attempted tries */
 		let tries: number = 0;
@@ -325,7 +310,7 @@ export class Conversation {
 		/* When the generation request was started */
 		const before: Date = new Date();
 
-		/* GPT-3 response */
+		/* Chat model response */
 		let data: ChatClientResult | null = null;
 
 		/**
@@ -337,28 +322,21 @@ export class Conversation {
 				data = await this.manager.session.generate(options);
 
 			} catch (error) {
+				this.bump();
 				tries++;
 
 				/* If all of the retries were exhausted, throw the error. */
 				if (tries === CONVERSATION_ERROR_RETRY_MAX_TRIES) {
 					this.generating = false;
-
-					if (error instanceof GPTGenerationError || error instanceof GPTAPIError) {
-						throw error;
-					} else {
-						throw new GPTGenerationError({
-							type: GPTGenerationErrorType.Other,
-							cause: error as Error
-						});
-					}
+					throw error;
+					
 				} else {
-					this.manager.bot.logger.warn(`Request by ${chalk.bold(options.conversation.user.username)} failed, retrying [ ${chalk.bold(tries)}/${chalk.bold(CONVERSATION_ERROR_RETRY_MAX_TRIES)} ] ->`, error);
+					if (this.manager.bot.dev) this.manager.bot.logger.warn(`Request by ${chalk.bold(options.conversation.user.username)} failed, retrying [ ${chalk.bold(tries)}/${chalk.bold(CONVERSATION_ERROR_RETRY_MAX_TRIES)} ] ->`, error);
 
 					/* Display a notice message to the user on Discord. */
-					options.onProgress({
-						id: "", raw: null, type: MessageType.Notice,
+					await this.manager.progress.notice(options, {
 						text: `Something went wrong while processing your message, retrying [ **${tries}**/**${CONVERSATION_ERROR_RETRY_MAX_TRIES}** ]`
-					});	
+					});
 				}
 
 				/* If the request failed, due to the current session running out of credit or the account being terminated, throw an error. */
@@ -396,7 +374,7 @@ export class Conversation {
 		this.generating = false;
 
 		/* Update the reset timer. */
-		this.applyResetTimer();
+		this.bump();
 
 		/* If the data still turned out `null` somehow, ...! */
 		if (data === null) throw new Error("What.");
@@ -406,8 +384,11 @@ export class Conversation {
 			user: this.user, db: options.db,
 
 			content: data.output.text,
-			source: "chatUser"
+			source: "chatBot"
 		});
+
+        /* Random message identifier */
+        const id: string = randomUUID();
 
 		const result: ChatInteraction = {
 			input: data.input,
@@ -416,7 +397,7 @@ export class Conversation {
 			trigger: options.trigger,
 			reply: null,
 
-			moderation,
+			moderation, id,
 			time: Date.now()
 		};
 
@@ -453,9 +434,8 @@ export class Conversation {
 		await this.manager.bot.db.users.updateConversation(this, {
 			/* Save a stripped-down version of the chat history in the database. */
 			history: this.history.map(entry => ({
-				id: entry.output.id,
-				input: entry.input,
-				output: this.responseMessageToDatabase(entry.output)
+				id: entry.id, input: entry.input,
+				output: this.responseMessageToDatabase(entry)
 			}))
 		});
 
@@ -470,10 +450,10 @@ export class Conversation {
 				completedAt: new Date().toISOString(),
 				requestedAt: before.toISOString(),
 
-				id: result.output.id,
+				id: result.id,
 
 				input: result.input,
-				output: this.responseMessageToDatabase(result.output),
+				output: this.responseMessageToDatabase(result),
 
 				model: model.id,
 				tone: tone.id
@@ -481,7 +461,7 @@ export class Conversation {
 		);
 
 		/* How long to apply the cool-down for */
-		const cooldown: number | null = this.cooldownTime(options.db, this.model(options.db));
+		const cooldown: number | null = await this.cooldownTime(options.db, this.model(options.db));
 		if (cooldown !== null) this.cooldown.use(cooldown);
 
 		return {
@@ -489,9 +469,9 @@ export class Conversation {
 		};
 	}
 
-	public cooldownTime(db: DatabaseInfo, model: ChatSettingsModel): number | null {
+	public async cooldownTime(db: DatabaseInfo, model: ChatSettingsModel): Promise<number | null> {
 		/* Subscription type of the user */
-		const type: UserSubscriptionType = this.manager.bot.db.users.type(db);
+		const type: UserSubscriptionType = await this.manager.bot.db.users.type(db);
 		if (type.type === "plan" && type.location === "user") return null;
 
 		if (type.type === "plan" && type.location === "guild") {
@@ -517,21 +497,17 @@ export class Conversation {
 		return Math.round(finalDuration);
 	}
 
-	public cooldownResponse(db: DatabaseInfo): Response {
-		return new Response()
-			.addEmbeds(this.cooldownMessage(db))
-			.setEphemeral(true);
-	}
-
-	public cooldownMessage(db: DatabaseInfo): EmbedBuilder[] {
+	public async cooldownResponse(db: DatabaseInfo): Promise<Response> {
 		/* Subscription type of the user */
-		const subscriptionType = this.manager.bot.db.users.type(db);
+		const subscriptionType = await this.manager.bot.db.users.type(db);
+
+		const response: Response = new Response();
 		const additional: EmbedBuilder[] = [];
 		
 		if (!subscriptionType.premium) {
 			additional.push(
 				new EmbedBuilder()
-					.setDescription(`✨ By buying **[Premium](${Utils.shopURL()})**, your cool-down will be lowered to **a few seconds** only, with **unlimited** messages per day.\n**Premium** *also includes further benefits, view \`/premium\` for more*. ✨`)
+					.setDescription(`✨ **[Premium](${Utils.shopURL()})** greatly **decreases** the cool-down & includes further benefits, view \`/premium\` for more.`)
 					.setColor("Orange")
 			);
 			
@@ -539,7 +515,7 @@ export class Conversation {
 			if (subscriptionType.type === "subscription") {
 				additional.push(
 					new EmbedBuilder()
-						.setDescription(`✨ By buying **[Premium](${Utils.shopURL()})** for yourself, the cool-down will be lowered to only **a few seconds**, with **unlimited** messages per day.\n**Premium** *also includes further benefits, view \`/premium\` for more*. ✨`)
+						.setDescription(`✨ Buying **[Premium](${Utils.shopURL()})** for **yourself** greatly *decreases* the cool-down & also includes further benefits, view \`/premium\` for more.`)
 						.setColor("Orange")
 				);
 
@@ -549,31 +525,39 @@ export class Conversation {
 
 				additional.push(
 					new EmbedBuilder()
-						.setDescription(`✨ The server owners have configured a cool-down of **${guildCooldown} seconds** for this server, using the **Pay-as-you-go 📊** plan.\n${db.user.subscription !== null || db.user.plan !== null ? `*You can configure the **priority** of Premium in \`/settings\`*.` : ""}`)
+						.setDescription(`📊 The server owners have configured a cool-down of **${guildCooldown} seconds** using the **Pay-as-you-go** plan.\n${db.user.subscription !== null || db.user.plan !== null ? `*You can configure the **priority** of Premium in \`/settings\`*.` : ""}`)
 						.setColor("Orange")
 				);
 			}
 		}
 
-		if (!subscriptionType.premium && additional[0]) additional[0].setDescription(`${additional[0].data.description!}\n\nYou can also reduce your cool-down for **completely free**, by simply voting for us on **[top.gg](${this.manager.bot.vote.voteLink(db.user)})**. 📩\nAfter voting, run \`/vote\` and press the **Check your vote** button.`)
+		/* Choose an ad to display, if applicable. */
+		const ad = await this.manager.bot.db.campaign.ad({ db });
+
+		if (ad !== null) {
+			response.addComponent(ActionRowBuilder<ButtonBuilder>, ad.response.row);
+			additional.push(ad.response.embed);
+		}
 
 		this.manager.bot.db.metrics.changeCooldownMetric({
 			chat: "+1"
 		});
 
-		return [
+		response.addEmbeds([
 			new EmbedBuilder()
 				.setTitle("Whoa-whoa... slow down ⌛")
-				.setDescription(`I'm sorry, but I can't keep up with your requests. You can talk to me again <t:${Math.floor((this.cooldown.state.startedAt! + this.cooldown.state.expiresIn! + 1000) / 1000)}:R>. 😔`)
+				.setDescription(`I can't keep up with your requests; you can talk to me again <t:${Math.floor((this.cooldown.state.startedAt! + this.cooldown.state.expiresIn! + 1000) / 1000)}:R>.`)
 				.setColor("Yellow"),
 
 			...additional
-		];
+		]);
+
+		return response.setEphemeral(true);
 	}
 
 	public async charge(options: ChatChargeOptions): Promise<UserPlanChatExpense | null> {
 		/* Subscription type of the user */
-		const type: UserSubscriptionType = this.manager.bot.db.users.type(options.db);
+		const type: UserSubscriptionType = await this.manager.bot.db.users.type(options.db);
 		if (type.type !== "plan") return null;
 
 		const db = options.db[type.location];
@@ -640,7 +624,7 @@ export class Conversation {
 		/* Count all analyzed images too. */
 		if (model.options.billing.type !== ChatSettingsModelBillingType.Custom && options.interaction.input.images && options.interaction.input.images.length > 0) {
 			options.interaction.input.images.forEach(image => {
-				cost += (image.duration / 1000) * 0.0023;
+				cost += (image.duration / 1000) * 0.0004;
 			});
 		}
 
@@ -658,7 +642,7 @@ export class Conversation {
 
 				if (c !== null) {
 					c.history = context.history;
-					c.applyResetTimer();
+					c.bump();
 				}
 			}
 		}) as any, {
@@ -668,7 +652,7 @@ export class Conversation {
 				cluster: this.manager.bot.data.id
 			},
 
-			timeout: 5 * 1000
+			timeout: 3 * 1000
 		}).catch(() => {});
 	}
 
@@ -686,17 +670,23 @@ export class Conversation {
 		return this.user.id;
 	}
 
-    private responseMessageToDatabase(message: ResponseMessage): DatabaseResponseMessage {
+    private responseMessageToDatabase({ output: message }: ChatInteraction): DatabaseResponseMessage {
         return {
             ...message,
-            images: message.images ? message.images.map(i => ({ ...i, data: i.data.toString() })) : undefined
+
+            images: message.images ? message.images.map(i => ({
+				...i, data: i.data.toString()
+			})) : undefined
         };
     }
 
     private databaseToResponseMessage(message: DatabaseResponseMessage): ResponseMessage {
         return {
             ...message,
-            images: message.images ? message.images.map(i => ({ ...i, data: ImageBuffer.load(i.data) })) : undefined
+			
+            images: message.images ? message.images.map(i => ({
+				...i, data: ImageBuffer.load(i.data)
+			})) : undefined
         };
     }
 }

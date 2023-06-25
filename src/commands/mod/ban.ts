@@ -1,7 +1,7 @@
-import { SlashCommandBuilder, User } from "discord.js";
+import { SlashCommandBuilder } from "discord.js";
 
 import { Command, CommandInteraction, CommandResponse } from "../../command/command.js";
-import { DatabaseUser } from "../../db/managers/user.js";
+import { DatabaseUser } from "../../db/schemas/user.js";
 import { Response } from "../../command/response.js";
 import { Utils } from "../../util/utils.js";
 import { Bot } from "../../bot/bot.js";
@@ -48,7 +48,7 @@ export default class BanCommand extends Command {
 			.setEphemeral(true);
 
 		/* Whether the user should be banned / unbanned */
-		const action: boolean = !this.bot.db.users.banned(db);
+		const action: boolean = await this.bot.db.users.banned(db) === null;
 
 		/* Reason for the warning */
 		const reason: string | undefined = interaction.options.getString("reason") !== null

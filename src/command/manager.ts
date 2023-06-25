@@ -1,15 +1,20 @@
-import { ActionRowBuilder, ComponentType, ButtonStyle, ButtonBuilder, ChatInputCommandInteraction, Collection, InteractionResponse, Message, SlashCommandBuilder, MessageContextMenuCommandInteraction, CommandInteraction, ButtonInteraction } from "discord.js";
+import { ChatInputCommandInteraction, Collection, InteractionResponse, SlashCommandBuilder, MessageContextMenuCommandInteraction, CommandInteraction, ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
 import { RESTPostAPIApplicationCommandsJSONBody, Routes } from "discord-api-types/v10";
 import { DiscordAPIError } from "@discordjs/rest";
 
 import { InteractionHandler, InteractionHandlerClassType } from "../interaction/handler.js";
-import { DatabaseInfo, DatabaseUserInfraction } from "../db/managers/user.js";
 import { Command, CommandSpecificCooldown } from "./command.js";
+import { DatabaseUserInfraction } from "../db/schemas/user.js";
+import { DatabaseInfo } from "../db/managers/user.js";
 import { CooldownData } from "./types/cooldown.js";
 import { RunningData } from "./types/running.js";
 import { Bot, BotStatus } from "../bot/bot.js";
 import { Response } from "./response.js";
 import { Utils } from "../util/utils.js";
+
+export interface CommandPrepareData {
+	db: DatabaseInfo;
+}
 
 export class CommandManager {
 	protected readonly bot: Bot;
@@ -58,7 +63,7 @@ export class CommandManager {
 
 		/* Information about each application command, as JSON */
 		const commandList: RESTPostAPIApplicationCommandsJSONBody[] = this.commands.filter(
-			cmd => cmd.premiumOnly() || cmd.planOnly() || cmd.subscriptionOnly() || cmd.options.restriction.length === 0
+			cmd => cmd.premiumOnly() || cmd.planOnly() || cmd.subscriptionOnly() || cmd.voterOnly() || cmd.options.restriction.length === 0
 		).map(cmd =>
 			(cmd.builder as SlashCommandBuilder).setDefaultPermission(true).toJSON()
 		);
@@ -81,9 +86,8 @@ export class CommandManager {
 	}
 
 	public get<T extends Command = Command>(name: string): T {
-		/* Search for the specified command. */
 		const found: T | null = this.bot.command.commands.get(name) as T ?? null;
-		if (found === null) throw new Error("EEK!");
+		if (found === null) throw new Error(`Couldn't find command "${name}"`);
 
 		return found;
 	}
@@ -153,12 +157,12 @@ export class CommandManager {
 		return cached;
 	}
 
-	public cooldownDuration(command: Command | InteractionHandler, db: DatabaseInfo): number | null {
+	public async cooldownDuration(command: Command | InteractionHandler, db: DatabaseInfo): Promise<number | null> {
 		/* If the specific command doesn't have a cool-down set, return a default one. */
 		if (!command.options.cooldown) return 3000;
 
 		/* Subscription type of the user */
-		const type = this.bot.db.users.type(db);
+		const type = await this.bot.db.users.type(db);
 
 		return typeof command.options.cooldown === "object"
 			? type.type !== "plan"
@@ -179,7 +183,7 @@ export class CommandManager {
 		const name: string = this.commandName(interaction, command);
 		
 		/* How long the cool-down should last */
-		const duration: number | null = time ?? this.cooldownDuration(command, db);
+		const duration: number | null = time ?? await this.cooldownDuration(command, db);
 		if (duration === null) return;
 
 		/* Update the database entry for the user & the executed command. */
@@ -188,7 +192,7 @@ export class CommandManager {
 		});
 
 		await this.bot.db.metrics.changeCooldownMetric({ [name]: "+1" });
-		await this.bot.db.users.incrementInteractions(db, "cooldown_messages");
+		await this.bot.db.users.incrementInteractions(db, "cooldownMessages");
 
 		/* Delete the user's cooldown from the database, once it expires. */
 		setTimeout(async () => {
@@ -205,9 +209,9 @@ export class CommandManager {
 		return cooldown.createdAt + cooldown.duration < Date.now();
 	}
 
-	public cooldownMessage(interaction: CommandInteraction | MessageContextMenuCommandInteraction | InteractionHandlerClassType, command: Command | InteractionHandler, db: DatabaseInfo, cooldown: CooldownData): Response {
+	public async cooldownMessage(interaction: CommandInteraction | MessageContextMenuCommandInteraction | InteractionHandlerClassType, command: Command | InteractionHandler, db: DatabaseInfo, cooldown: CooldownData): Promise<Response> {
 		/* Subscription type of the user & guild */
-		const subscription = this.bot.db.users.type(db);
+		const subscription = await this.bot.db.users.type(db);
 
 		/* Send an informative message about the cool-down. */
 		const response: Response = new Response()
@@ -228,19 +232,19 @@ export class CommandManager {
 			);
 		}
 
+		/* Choose an ad to display, if applicable. */
+		const ad = await this.bot.db.campaign.ad({ db });
+
+		if (ad !== null) {
+			response.addComponent(ActionRowBuilder<ButtonBuilder>, ad.response.row);
+			response.addEmbed(ad.response.embed);
+		}
+
 		return response;
 	}
 
-	/**
-     * Handle a command interaction.
-     * @param interaction Command interaction to handle
-     */
-	public async handleCommand(interaction: ChatInputCommandInteraction): Promise<void> {
-		/* Get the command, by its name. */
-		const command: Command | null = this.commands.get(interaction.commandName) ?? null;
-		if (command === null) return;
-
-		if (command.options.waitForStart && (!this.bot.started || this.bot.statistics.memoryUsage === 0)) return void await new Response()
+	public async prepare(interaction: ChatInputCommandInteraction | InteractionHandlerClassType, command: Command | InteractionHandler): Promise<CommandPrepareData | void> {
+		if (command.options.waitForStart && this.bot.reloading) return void await new Response()
 			.addEmbed(builder => builder
 				.setTitle("The bot is currently reloading**...** ⏳")
 				.setColor("Orange")
@@ -253,8 +257,8 @@ export class CommandManager {
 		const running: RunningData | null = await this.running(interaction, command);
 
 		/* Get the database entry of the user. */
-		let db: DatabaseInfo = await this.bot.db.users.fetchData(interaction.user, interaction.guild);
-		const subscription = this.bot.db.users.type(db);
+		let db: DatabaseInfo = await this.bot.db.users.fetch(interaction.user, interaction.guild);
+		const subscription = await this.bot.db.users.type(db);
 
 		/* Current status of the bot */
 		const status: BotStatus = await this.bot.status();
@@ -275,7 +279,7 @@ export class CommandManager {
 
 			const response = new Response()
 				.addEmbed(builder => builder
-					.setDescription(`The ${interaction instanceof MessageContextMenuCommandInteraction ? `context menu action \`${command.builder.name}\`` : `command \`/${command.builder.name}\``} is only available to ${type === null ? "**Premium**" : type === "plan" ? "**pay-as-you-go Premium 📊**" : "**fixed Premium 💸**"} users. **Premium 🌟** also includes many additional benefits; view \`/premium\` for more.`)
+					.setDescription(`This ${command instanceof InteractionHandler ? "action" : "command"} is only available to ${type === null ? "**Premium**" : type === "plan" ? "**pay-as-you-go Premium 📊**" : "**fixed Premium 💸**"} users. **Premium 🌟** also includes many additional benefits; view \`/premium\` for more.`)
 					.setColor("Orange")
 				)
 				.setEphemeral(true);
@@ -292,7 +296,7 @@ export class CommandManager {
 		/* If the user is currently on cool-down for this command, ... */
 		if (command.options.cooldown !== null && cooldown !== null && cooldown.createdAt) {
 			/* Build the cool-down message. */
-			const response: Response = this.cooldownMessage(interaction, command, db, cooldown);
+			const response: Response = await this.cooldownMessage(interaction, command, db, cooldown);
 
 			/* How long until the cool-down expires */
 			const delay: number = (cooldown.createdAt + cooldown.duration) - Date.now() - 1000;
@@ -309,27 +313,51 @@ export class CommandManager {
 				});
 		}
 
+		if (command.voterOnly() && !subscription.premium) {
+			/* Whether the user has voted */
+			const voted: boolean = await this.bot.db.users.voted(db.user) !== null;
+			const link: string = this.bot.vote.link(db);
+
+			if (!voted) return void await new Response()
+				.addEmbed(builder => builder
+					.setTitle("Wait a moment... <:topgg:1119699678343200879>")
+					.setDescription(`This ${command instanceof InteractionHandler ? "action" : "command"} is restricted to **voters** only. *You can get access to it by simply voting for us on **[top.gg](${link})** below*.`)
+					.setColor("#FF3366")
+				)
+				.addComponent(ActionRowBuilder<ButtonBuilder>, builder => builder
+					.addComponents(
+						new ButtonBuilder()
+							.setURL(link)
+							.setEmoji("📩")
+							.setLabel("Vote for the bot")
+							.setStyle(ButtonStyle.Link)
+					)
+				)
+				.setEphemeral(true)
+			.send(interaction);
+		}
+
 		/* If the command is marked as private, do some checks to make sure only privileged users are able to execute this command. */
 		if (!(command.planOnly() || command.subscriptionOnly())) {
 			/* Whether the user can execute this command */
-			const canExecute: boolean = this.bot.db.role.canExecuteCommand(db.user, command);
+			const canExecute: boolean = await this.bot.db.role.canExecuteCommand(db.user, command);
 
 			if (!canExecute) return void await new Response()
 				.addEmbed(builder => builder
-					.setDescription(`You are not allowed to run this command 🤨`)
+					.setDescription(`You are not allowed to run this ${command instanceof InteractionHandler ? "action" : "command"} 🤨`)
 					.setColor("Red")
 				).setEphemeral(true)
 			.send(interaction);
 		}
 
 		/* Defer the message, in case the command may execute for more than 3 seconds. */
-		if (command.options.long) try {
+		if (command instanceof Command && command.options.long) try {
 			await interaction.deferReply();
 		} catch (_) {
 			return;
 		}
 
-		const banned: DatabaseUserInfraction | null = this.bot.db.users.banned(db.user);
+		const banned: DatabaseUserInfraction | null = await this.bot.db.users.banned(db.user);
 
 		/* If the user is banned from the bot, send a notice message. */
 		if (banned !== null && !command.options.always) return void await 
@@ -348,13 +376,33 @@ export class CommandManager {
 			await this.applyCooldown(interaction, db, command);
 		}
 
+		return {
+			db
+		};
+	}
+
+	/**
+     * Handle a command interaction.
+     * @param interaction Command interaction to handle
+     */
+	public async handleCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+		/* Get the command, by its name. */
+		const command: Command | null = this.commands.get(interaction.commandName) ?? null;
+		if (command === null) return;
+
+		/* Execute some checks & get all needed data. */
+		const data: CommandPrepareData | void = await this.prepare(interaction, command);
+		if (!data) return;
+
+		const { db } = data;
+
 		/* Reply to the original interaction */
 		let response: Response | undefined | void;
 
 		/* Try to execute the command handler. */
 		try {
 			await this.setRunning(interaction, command, true);
-			response = await command.run(interaction as any, db);
+			response = await command.run(interaction, db);
 
 		} catch (error) {
 			if (error instanceof DiscordAPIError && error.code === 10062) return;
@@ -363,6 +411,8 @@ export class CommandManager {
 				title: `Error while executing command \`${command.builder instanceof SlashCommandBuilder ? "/" : ""}${command.builder.name}\``,
 				notice: "It seems like something went wrong while trying to run this command.", error
 			});
+		} finally {
+			await this.setRunning(interaction, command, false);
 		}
 
 		/* Reply with the response, if one was given. */
@@ -374,7 +424,5 @@ export class CommandManager {
 		await this.bot.db.metrics.changeCommandsMetric({
 			[command.builder.name]: "+1"
 		});
-
-		await this.setRunning(interaction, command, false);
 	}
 }

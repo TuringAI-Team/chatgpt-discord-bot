@@ -1,4 +1,4 @@
-import { DisplayEmojiOnly } from "../../util/emoji.js";
+import { DisplayEmoji } from "../../util/emoji.js";
 
 export type ChatSettingsPluginIdentifier = string
 
@@ -10,7 +10,7 @@ export declare interface ChatSettingsPluginOptions {
     id: ChatSettingsPluginIdentifier;
 
     /* Emoji for the plugin */
-    emoji?: DisplayEmojiOnly | null;
+    emoji?: DisplayEmoji | null;
 
     /* Description of the plugin */
     description: string;
@@ -33,15 +33,56 @@ export class ChatSettingsPlugin {
 
 export const ChatSettingsPlugins: ChatSettingsPlugin[] = [
     new ChatSettingsPlugin({
-        name: "Klarna Shopping",
-        description: "Search and compare prices from thousands of online shops.",
-        emoji: { display: "<:plugin_klarna:1111971683444723723>" },
-        id: "klarna"
+        name: "Google", emoji: { display: "<:google:1102619904185733272>", fallback: "🔎" },
+        description: "Searches Google to get up-to-date information from internet.",
+        id: "google"
     }),
 
     new ChatSettingsPlugin({
-        name: "URL Reader",
-        description: "Read multiple URLs and their content for chat context.",
-        id: "urlReader"
+        name: "Weather", emoji: { fallback: "⛅" },
+        description: "View current weather information for a specific location.",
+        id: "weather"
+    }),
+
+    new ChatSettingsPlugin({
+        name: "Wikipedia", emoji: { display: "<:wikipedia:1118608403086966844>", fallback: "🌐" },
+        description: "Search on Wikipedia for information on various topics.",
+        id: "wikipedia"
+    }),
+
+    new ChatSettingsPlugin({
+        name: "Tenor", emoji: { display: "<:tenor:1118631079859986452>", fallback: "🎞️" },
+        description: "Search for GIFs on Tenor.",
+        id: "tenor"
+    }),
+
+    new ChatSettingsPlugin({
+        name: "FreeToGame", emoji: { display: "<:freetogame:1118612404373311498>", fallback: "🎮" },
+        description: "Browse for free games from different platforms or categories.",
+        id: "free-games"
+    }),
+
+    new ChatSettingsPlugin({
+        name: "Tasty", emoji: { fallback: "🍝" },
+        description: "Get tasty recipes from tasty.co.",
+        id: "tasty"
+    }),
+
+    new ChatSettingsPlugin({
+        name: "World News", emoji: { fallback: "🌎" },
+        description: "Search for current news around the world.",
+        id: "world-news"
+    }),
+
+    new ChatSettingsPlugin({
+        name: "Calculator", emoji: { display: "<:calculator:1118900577653510164>", fallback: "🔢" },
+        description: "Calculate something using MathJS.",
+        id: "calculator"
+    }),
+
+    new ChatSettingsPlugin({
+        name: "GitHub", emoji: { display: "<:github:1097828013871222865>", fallback: "🐙" },
+        description: "Search for users & projects on GitHub.",
+        id: "github"
     })
 ]

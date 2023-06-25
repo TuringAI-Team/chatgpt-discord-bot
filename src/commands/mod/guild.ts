@@ -1,7 +1,7 @@
 import { SlashCommandBuilder } from "discord.js";
 
 import { Command, CommandInteraction, CommandResponse } from "../../command/command.js";
-import { DatabaseGuild } from "../../db/managers/user.js";
+import { DatabaseGuild } from "../../db/schemas/guild.js";
 import { Response } from "../../command/response.js";
 import { Utils } from "../../util/utils.js";
 import { Bot } from "../../bot/bot.js";

@@ -5,86 +5,12 @@ import { ModerationResult } from "../moderation/moderation.js";
 import { ResponseMessage } from "../chat/types/message.js";
 import { ChatGuildData } from "../chat/types/options.js";
 import { DatabaseInfo } from "../db/managers/user.js";
-import { OpenAIManager } from "../openai/openai.js";
+import { OpenAIManager } from "../openai/manager.js";
 import { ConversationManager } from "./manager.js";
 import { Conversation } from "./conversation.js";
 
 import { GPTGenerationErrorType } from "../error/gpt/generation.js";
 import { GPTGenerationError } from "../error/gpt/generation.js";
-
-/** Session cost data */
-export const SessionCostProducts: SessionCostProduct[] = [
-    {
-        name: "gpt-3.5-turbo-0301",
-        calculate: tokens => ({
-            completion: (tokens.completion / 1000) * 0.002,
-            prompt: (tokens.prompt / 1000) * 0.002
-        })
-    },
-
-    {
-        name: "gpt-4-0314",
-        calculate: tokens => ({
-            completion: (tokens.completion / 1000) * 0.06,
-            prompt: (tokens.prompt / 1000) * 0.03
-        })
-    }
-]
-
-interface SessionCostTokens {
-    /* Cost for the prompt tokens */
-    prompt: number;
-
-    /* Cost for the completion tokens */
-    completion: number;
-}
-
-interface SessionCostProduct {
-    name: string;
-
-    calculate: (tokens: SessionCostTokens) => SessionCostTokens;
-}
-
-export interface SessionCost {
-    tokens: number;
-    cost: number;
-}
-
-interface SessionCostResponseJSON {
-    object: "list";
-    data: SessionCostResponseEntry[];
-}
-
-interface SessionCostResponseEntry {
-    aggregation_timestamp: number;
-    n_requests: number;
-    operation: "completion";
-    snapshot_id: string;
-    n_context: number;
-    n_context_tokens_total: number;
-    n_generated: number;
-    n_generated_tokens_total: number;
-}
-/** Session cost data */
-
-/** Session subscription data */
-interface SessionSubscriptionResponseJSON {
-    object: "billing_subscription";
-    has_payment_method: boolean;
-    soft_limit_usd: number;
-    hard_limit_usd: number;
-}
-
-export interface SessionSubscription {
-    /* Whether the session has an attached payment method */
-    hasPaymentMethod: boolean;
-
-    /** Soft & hard usage limits */
-    soft: number;
-    hard: number;
-}
-/** Session subscription data */
-
 
 export interface ChatCredentials {
     token: string;
@@ -129,7 +55,7 @@ export interface GenerationOptions {
     trigger: Message;
 
     /* Function to call on message updates */
-    onProgress: (message: ResponseMessage) => Promise<void> | void;
+    progress: (message: ResponseMessage) => Promise<void> | void;
 
     /* Guild data, if available */
     guild: ChatGuildData | null;
@@ -207,98 +133,11 @@ export class Session {
         if (this.active) return;
 
         /* If the conversation has been locked, don't initialize the session. */
-        if (this.locked) throw new Error("Session is busy");
-        this.locked = true;
-
-        /* Initialize the OpenAI manager. */
-        await this.ai.setup(this.credentials.token);
-
-        this.locked = false;
+        if (this.locked) throw new GPTGenerationError({
+            type: GPTGenerationErrorType.Busy
+        })
+        
         this.state = SessionState.Running;
-    }
-
-    /**
-     * Get information about maximum usage limits of the session.
-     * @returns Session subscription information
-     */
-    private async subscription(): Promise<SessionSubscription> {
-        /* Fetch the /subscription endpoint. */
-        const response = await fetch(
-            "https://api.openai.com/dashboard/billing/subscription",
-            { headers: this.ai.headers() }
-        );
-
-        /* Get the response data. */
-        const body: SessionSubscriptionResponseJSON = await response.json();
-
-        return {
-            hasPaymentMethod: body.has_payment_method,
-
-            hard: body.hard_limit_usd,
-            soft: body.soft_limit_usd
-        };
-    }
-
-    /**
-     * Calculate how much was approximately used for the model on this session, this month.
-     * @returns Total cost & used tokens
-     */
-    private async cost(): Promise<SessionCost> {
-        const now: Date = new Date();
-
-        /* Get the time frame to fetch usage data from. */
-        const month: string = String(now.getMonth() + 1).padStart(2, "0");
-        const date: string = String(now.getDate()).padStart(2, "0");
-        const year: string = String(now.getFullYear()).padStart(2, "0");
-
-        /* Fetch the /usage endpoint. */
-        const response = await fetch(
-            `https://api.openai.com/v1/usage?date=${year}-${month}-${date}`,
-            { headers: this.ai.headers() }
-        );
-
-        /* If the request failed, return some placeholder data. */
-        if (response.status !== 200) return {
-            tokens: 0,
-            cost: 0
-        };
-
-        /* Get the response data. */
-        const body: SessionCostResponseJSON = await response.json();
-
-        /* Product information about the GPT models to get */
-        const products: SessionCostProduct[] = SessionCostProducts.filter(p => p.name === "gpt-3.5-turbo-0301" || p.name === "gpt-4-0314")!;
-
-        let filteredData = body.data.filter(
-            ({ snapshot_id }) => products.some(p => p.name === snapshot_id)
-        );
-
-        let totalTokens = filteredData.reduce(
-            (value, { n_context_tokens_total, n_generated_tokens_total }) => {
-                return value + n_context_tokens_total + n_generated_tokens_total;
-            }, 0
-        );
-
-        let totalCost = filteredData.reduce(
-            (value, { n_context_tokens_total, n_generated_tokens_total, snapshot_id }) => {
-                const product: SessionCostProduct = products.find(p => p.name === snapshot_id)!;
-                const cost = product.calculate({ completion: n_generated_tokens_total, prompt: n_context_tokens_total });
-
-                return value + cost.completion + cost.prompt;
-            }, 0
-        );
-
-        return {
-            tokens: totalTokens,
-            cost: totalCost
-        };
-    }
-
-    public async usage(): Promise<SessionCost & SessionSubscription> {
-        return {
-            ...await this.cost(),
-            ...await this.subscription()
-        };
     }
 
     /**
@@ -308,7 +147,7 @@ export class Session {
      * @throws Any exception that may occur
      * @returns Given chat response
      */
-    public async generate({ prompt, conversation, onProgress, trigger, db, guild, partial }: GenerationOptions): Promise<ChatClientResult> {
+    public async generate({ prompt, conversation, progress, trigger, db, guild, partial }: GenerationOptions): Promise<ChatClientResult> {
         if (this.state === SessionState.Disabled) throw new GPTGenerationError({
             type: GPTGenerationErrorType.SessionUnusable
         });
@@ -317,7 +156,9 @@ export class Session {
         if (!this.active) throw new Error("Session is still starting");
 
         /* If the session is locked, throw an exception. */
-        if (this.locked) throw new Error("Session is busy");
+        if (this.locked) throw new GPTGenerationError({
+            type: GPTGenerationErrorType.Busy
+        })
         
         try {
             const started: number = Date.now();
@@ -325,7 +166,7 @@ export class Session {
 
             /* Send the request, to complete the prompt. */
             const data = await this.client.ask({
-                progress: onProgress, conversation,
+                progress, conversation,
                 trigger, prompt, db, guild, partial
             });
 

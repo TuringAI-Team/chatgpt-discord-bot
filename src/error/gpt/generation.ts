@@ -16,6 +16,9 @@ export enum GPTGenerationErrorType {
     /* The conversation is already busy */
     Busy,
 
+    /* The conversation is inactive */
+    Inactive,
+
     /* The generation request got cancelled */
     Cancelled,
 

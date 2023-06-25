@@ -11,6 +11,7 @@ export interface BotDataSessionLimit {
     maxConcurrency: number;
     remaining: number;
     total: number;
+    resetAfter: number;
 }
 
 export interface BotData {
@@ -104,7 +105,7 @@ export class BotManager extends EventEmitter {
         };
     }
 
-    private formatWebhookEmbed(type: DiscordWebhookAnnounceType, cluster?: Cluster): EmbedBuilder {
+    private formatStatusEmbed(type: DiscordWebhookAnnounceType, cluster?: Cluster): EmbedBuilder {
         return new EmbedBuilder()
             .setTitle(DiscordWebhookAnnounceTypeMap[type].replaceAll("%", (cluster !== undefined ? cluster.id + 1 : -1).toString()))
             .setColor(DiscordWebhookAnnounceColorMap[type])
@@ -119,7 +120,7 @@ export class BotManager extends EventEmitter {
      */
     private async announce(type: DiscordWebhookAnnounceType, cluster?: Cluster): Promise<void> {
         /* Create the initial embed. */
-        const embed = this.formatWebhookEmbed(type, cluster);
+        const embed = this.formatStatusEmbed(type, cluster);
 
         await this.rest.post(Routes.channelMessages(this.app.config.channels.status.channel), {
             body: {
@@ -162,8 +163,8 @@ export class BotManager extends EventEmitter {
             } as BotData
         });
 
-        await this.onReady(cluster);
         if (this.started) await this.sendDone([ cluster ]);
+        await this.onReady(cluster);
     }
 
     /**
@@ -198,23 +199,32 @@ export class BotManager extends EventEmitter {
      * Initiate a zero-downtime restart.
      */
     public async restart(): Promise<void> {
+        this.manager!.queue.options.auto = true;
+        const before: number = Date.now();
+
         await this.manager!.recluster!.start({
             restartMode: "rolling",
             delay: 3 * 1000
         });
+    
+        const time: number = Date.now() - before;
+        this.app.logger.info("It took", chalk.bold(`${(time / 1000).toFixed(2)}s`), "for", chalk.bold(this.clusters.size), `cluster${this.clusters.size > 1 ? "s" : ""} to be reloaded.`)
 
         await this.announce(DiscordWebhookAnnounceType.ReloadBot);
+        this.manager!.queue.options.auto = false;
+
     }
 
     public async fetchSession(): Promise<BotDataSessionLimit> {
         const raw: {
-            session_start_limit: { max_concurrency: number, remaining: number, total: number }
+            session_start_limit: { max_concurrency: number, remaining: number, total: number, reset_after: number }
         } = await this.rest.get(Routes.gatewayBot()) as any;
 
         return {
             maxConcurrency: raw.session_start_limit.max_concurrency,
             remaining: raw.session_start_limit.remaining,
-            total: raw.session_start_limit.total
+            total: raw.session_start_limit.total,
+            resetAfter: raw.session_start_limit.reset_after
         };
     }
 
@@ -261,7 +271,8 @@ export class BotManager extends EventEmitter {
 
         /* Set up the Discord REST API client. */
         this.rest = new REST({
-            version: "10"
+            version: "10",
+            rejectOnRateLimit: [ "/gateway" ]
         }).setToken(this.app.config.discord.token);
 
         /* Set up the crash handler. */

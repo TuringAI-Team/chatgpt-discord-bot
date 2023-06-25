@@ -1,14 +1,16 @@
+import { getInfo } from "discord-hybrid-sharding";
 import { User } from "discord.js";
 import chalk from "chalk";
 
-import { DatabaseUser } from "../db/managers/user.js";
+import { DatabaseInfo } from "../db/managers/user.js";
+import { DatabaseUser } from "../db/schemas/user.js";
 import { GPTAPIError } from "../error/gpt/api.js";
 import { Bot } from "../bot/bot.js";
-import { getInfo } from "discord-hybrid-sharding";
 
 type VoteAPIPath = string
 
-export const VOTE_DURATION: number = 12.5 * 60 * 60 * 1000
+/* How long a vote lasts */
+export const VoteDuration: number = 12.5 * 60 * 60 * 1000
 
 export class VoteManager {
     private readonly bot: Bot;
@@ -17,8 +19,8 @@ export class VoteManager {
         this.bot = bot;
     }
 
-    public voteLink(db: DatabaseUser): string {
-        return this.bot.turing.trackingURL(db, "topgg");
+    public link(db: DatabaseInfo): string {
+        return `https://l.turing.sh/topgg/${db.user.id}`;
     }
 
     /**
@@ -28,27 +30,25 @@ export class VoteManager {
      * @returns Whether the user has voted for the bot
      */
     public async voted(user: User, db: DatabaseUser): Promise<boolean> {
-        if (this.bot.db.users.voted(db) !== null) return true;
+        if (await this.bot.db.users.voted(db) !== null) return true;
 
         /* Check whether the user has voted, using the API. */
         const { voted }: { voted: number } = await this.request(`${this.botPath("check")}?userId=${user.id}`, "GET");
         if (!voted) return false;
 
         /* Update the user's vote status in the database. */
-        await this.bot.db.users.updateUser(db, {
+        await this.bot.db.queue.update("users", db, {
             voted: new Date().toISOString()
         });
 
         await this.bot.db.metrics.changeVoteMetric({ count: "+1" });
-        await this.bot.db.users.incrementInteractions({ user: db }, "votes");
-        
-        if (this.bot.dev) this.bot.logger.debug(`User ${chalk.bold(user.username)} has voted for the bot!`);
         return true;
     }
 
     public async postStatistics(): Promise<void> {
-        const guilds: number = ((await this.bot.client.cluster.fetchClientValues("guilds.cache.size")) as number[])
-            .reduce((value, count) => value + count, 0);
+        /* How many guilds the bot is in */
+        const guilds: number = this.bot.statistics.guildCount;
+        if (guilds === 0) return;
 
         const shardCount: number = getInfo().TOTAL_SHARDS;
 

@@ -1,3 +1,5 @@
+import { TuringConnectionManager } from "./turing/connection/connection.js";
+import { executeConfigurationSteps } from "./bot/setup.js";
 import { CacheManager } from "./bot/managers/cache.js";
 import { AppDatabaseManager } from "./db/app.js";
 import { BotManager } from "./bot/manager.js";
@@ -34,16 +36,23 @@ export class App {
 	/* Database manager */
 	public readonly db: AppDatabaseManager;
 
+	/* Turing connection manager */
+	public readonly connection: TuringConnectionManager;
+
 	/* Configuration data */
 	public config: Config;
 
 	/* Current initialization state */
 	public state: AppState;
 
+	/* When the app was started */
+	public started: number;
+
     constructor() {
         this.logger = new Logger();
 
 		/* Set up various managers & services. */
+		this.connection = new TuringConnectionManager(this);
 		this.db = new AppDatabaseManager(this);
 		this.manager = new BotManager(this);
 		this.cache = new CacheManager(this);
@@ -54,6 +63,7 @@ export class App {
 
 		/* Set the default, stopped state of the app. */
 		this.state = AppState.Stopped;
+		this.started = Date.now();
     }
 
     /**
@@ -63,38 +73,8 @@ export class App {
     public async setup(): Promise<void> {
 		this.state = AppState.Starting;
 
-		/* Load the configuration. */
-		await import("./config.json", {
-			assert: {
-				type: "json"
-			}
-		})
-			.then(data => this.config = data.default as any)
-			.catch(error => {
-				this.logger.error("Failed to load configuration ->", error);
-				this.stop(1);
-			});
-
-		/* Initialize the database manager. */
-		await this.db.setup()
-			.catch(error => {
-				this.logger.error("Failed to set up the database manager ->", error);
-				this.stop(1);
-			});
-
-		/* Initialize the cache manager. */
-		await this.cache.setup()
-			.catch(error => {
-				this.logger.error("Failed to set up the cache manager ->", error);
-				this.stop(1);
-			});
-
-		/* Finally, set up all clusters. */
-		await this.manager.setup()
-			.catch(error => {
-				this.logger.error("Failed to set up the bot sharding manager ->", error);
-				this.stop(1);
-			});
+		/* Execute all configuration steps for the app. */
+		await executeConfigurationSteps(this, "app");
 
 		this.state = AppState.Running;
     }
@@ -103,11 +83,24 @@ export class App {
      * Shut down the application & all related services.
      */
 	public async stop(code: number = 0): Promise<void> {
+		/* First, save the pending database changes. */
+		await this.db.queue.work();
+
+		/* Close the RabbitMQ connection. */
+		await this.connection.stop();
+
 		this.state = AppState.Stopped;
 
 		/* Exit the process. */
 		process.exit(code);
 	}
+
+    /**
+     * Whether development mode is enabled
+     */
+    public get dev(): boolean {
+        return this.config ? this.config.dev : false;
+    }
 
 	/**
 	 * Get a stripped-down interface of this class.

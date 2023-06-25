@@ -1,9 +1,8 @@
+import { setTimeout as delay } from "timers/promises";
 import { Collection, Message } from "discord.js";
-import { setTimeout } from "timers/promises";
-import { randomUUID } from "crypto";
 import chalk from "chalk";
 
-import { GPT_MAX_CONTEXT_LENGTH, GPT_MAX_GENERATION_LENGTH, countChatMessageTokens, getChatMessageLength, getPromptLength, isPromptLengthAcceptable } from "../conversation/utils/length.js";
+import { MaxContextLength, MaxGenerationLength, countChatMessageTokens, getChatMessageLength, getPromptLength, isPromptLengthAcceptable } from "../conversation/utils/length.js";
 import { ChatAnalyzedImage, ChatImageAttachment, ChatImageAttachmentExtractors, ChatBaseImage, ChatInputImage, ChatImageAttachmentExtractorData } from "./types/image.js";
 import { ChatSettingsModel, ChatSettingsModelPromptType } from "../conversation/settings/model.js";
 import { ChatDocument, ChatDocumentExtractors, ChatExtractedDocument } from "./types/document.js";
@@ -164,12 +163,12 @@ export class ChatClient {
         let tokens: number = 0;
 
         /* The user's subscription type */
-        const subscriptionType = options.conversation.manager.bot.db.users.type(options.db);
+        const subscriptionType = await options.conversation.manager.bot.db.users.type(options.db);
 
         /* The user's selected tone */
         const tone = options.conversation.tone(options.db);
         
-        const { type, location } = this.session.manager.bot.db.users.type(options.db);
+        const { type, location } = await this.session.manager.bot.db.users.type(options.db);
 
         const limits = {
             context: this.session.manager.bot.db.settings.get<number>(options.db[location]!, "limits:contextTokens"),
@@ -178,12 +177,12 @@ export class ChatClient {
 
         /* Actual maximum token count for the prompt */
         let maxContextLength: number = type !== "plan"
-            ? Math.min(limits.context, options.settings.options.history.context ?? GPT_MAX_CONTEXT_LENGTH[subscriptionType.type])
+            ? Math.min(limits.context, options.settings.options.history.context ?? MaxContextLength[subscriptionType.type])
             : Math.min(options.settings.options.history.maxTokens, limits.context);
 
         /* Maximum generation length */
         let maxGenerationTokens: number = type !== "plan"
-            ? Math.min(limits.generation, options.settings.options.history.generation ?? GPT_MAX_GENERATION_LENGTH[subscriptionType.type])
+            ? Math.min(limits.generation, options.settings.options.history.generation ?? MaxGenerationLength[subscriptionType.type])
             : limits.generation;
 
         /* If the prompt itself exceeds the length limit, throw an error. */
@@ -381,8 +380,7 @@ export class ChatClient {
 
         for (const attachment of options.attachments) {
             /* Show a notice to the Discord user. */
-            if (options.progress) options.progress({
-                id: "", raw: null, type: MessageType.Notice,
+            await this.session.manager.progress.notice(options, {
                 text: `Looking at **\`${attachment.name}\`**`
             });
 
@@ -401,8 +399,7 @@ export class ChatClient {
                 });
 
             } catch (error) {
-                if (options.progress) options.progress({
-                    id: "", raw: null, type: MessageType.Notice,
+                await this.session.manager.progress.notice(options, {
                     text: `Failed to look at **\`${attachment.name}\`**, continuing`
                 });
 
@@ -410,7 +407,7 @@ export class ChatClient {
                     title: "Failed to analyze image", error
                 });
                 
-                await setTimeout(5000);
+                await delay(5000);
             }
         }
 
@@ -443,8 +440,7 @@ export class ChatClient {
                 })));
 
             } catch (error) {
-                if (options.progress) options.progress({
-                    id: "", raw: null, type: MessageType.Notice,
+                await this.session.manager.progress.notice(options, {
                     text: `Failed to fetch a text document, continuing`
                 });
 
@@ -452,7 +448,7 @@ export class ChatClient {
                     title: "Failed to fetch a text document", error
                 });
                 
-                await setTimeout(5000);
+                await delay(5000);
             }
         }
 
@@ -473,9 +469,6 @@ export class ChatClient {
         const model = this.modelForSetting(options.conversation.model(options.db));
         const settings = options.conversation.model(options.db);
 
-        /* Random message identifier */
-        const id: string = randomUUID();
-
         /* First off, gather all applicable Discord image attachments. */
         const attachments: ChatBaseImage[] = await this.messageImages(
             await this.findMessageImageAttachments(options.trigger)
@@ -493,14 +486,10 @@ export class ChatClient {
 
         /* Middle-man progress handler, to clean up the partial responses */
         const progress = async (message: PartialResponseMessage | ResponseMessage) => {
-            if (options.progress) options.progress({
-                ...message, id,
-                raw: null, images: message.images ?? [],
-
-                type: message.type ?? MessageType.Chat,
-                text: this.clean(message.text)
+            await this.session.manager.progress.send(options, {
+                ...message, text: this.clean(message.text)
             });
-        }
+        };
 
         /* Execute the corresponding handler. */
         const result = await model.complete({
@@ -516,9 +505,9 @@ export class ChatClient {
             },
 
             output: {
-                ...result, id,
+                ...result,
                 
-                raw: result.raw ?? null,
+                raw: result.raw ?? undefined,
                 images: result.images ?? undefined,
     
                 type: result.type ?? MessageType.Chat,

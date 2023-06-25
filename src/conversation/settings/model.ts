@@ -148,7 +148,7 @@ export class ChatSettingsModel {
     }
 
     public get id(): string {
-        return this.options.name.toLowerCase().replaceAll(" ", "-");
+        return this.options.name.replace(/[^a-zA-Z0-9 ]/g, "").replace(/\s+/g, "-").toLowerCase();
     }
 }
 
@@ -160,45 +160,11 @@ type ReplicateChatModelOptions = Omit<ChatSettingsModelOptions, "type"> & {
     formatter?: (output: string | string[]) => string;
 }
 
-export class ReplicateChatSettingsModel extends ChatSettingsModel {
-    /* Replicate options builder callback */
-    public builder: (context: ChatSettingsModelPromptContext) => Awaitable<any>;
-
-    /* Replicate options response concentator/formatter */
-    public formatter?: (output: string | string[]) => string;
-
-    constructor(options: ReplicateChatModelOptions) {
-        super({
-            ...options, prompt: { builder: () => "" },
-            type: ModelType.Replicate
-        });
-
-        this.builder = options.builder;
-        this.formatter = options.formatter;
-    }
-
-    /**
-     * Build the Replicate options object.
-     * @param prompt Prompt to generate the result for
-     * 
-     * @returns Replicate options object
-     */
-    public async build(client: ChatClient, options: ModelGenerationOptions): Promise<any> {
-        return await this.builder({
-            client, options,
-
-            conversation: options.conversation,
-            context: client.promptContext(),
-            model: this
-        });
-    }
-}
-
 export const ChatSettingsModels: ChatSettingsModel[] = [
     new ChatSettingsModel({
         name: "ChatGPT",
         description: "The usual ChatGPT",
-        emoji: { display: "<:chatgpt:1097849346164281475>", fallback: "😐" },
+        emoji: { display: "<:chatgpt:1097849346164281475>", fallback: "🤖" },
         settings: { temperature: 0.4 },
         history: { maxTokens: 4096 },
         type: ModelType.OpenAIChat,
@@ -223,7 +189,7 @@ Knowledge cut-off: September 2021
         name: "GPT-4",
         description: "OpenAI's new GPT-4 model",
         emoji: { fallback: "✨" },
-        settings: { model: "gpt-4" },
+        settings: { model: "gpt-4-0613" },
         type: ModelType.OpenAIChat,
         restricted: "premium",
         history: { context: 425, generation: 270, maxTokens: 8192 },
@@ -237,6 +203,51 @@ Knowledge cut-off: September 2021
             }
         },
         
+        prompt: {
+            builder: ({ context }) => `
+I am GPT-4, a new GPT model by OpenAI released on the 14th March 2023. I am an improved version of ChatGPT, and provide more advanced and complex replies.
+I must provide engaging & entertaining responses.
+
+Current date & time: ${context.time}, ${context.date}
+Knowledge cut-off: September 2021
+`
+        }
+    }),
+
+    new ChatSettingsModel({
+        name: "ChatGPT + Plugins",
+        description: "The ChatGPT model with plugin support",
+        emoji: { display: "<:chatgpt:1097849346164281475>", fallback: "😐" },
+        cooldown: { time: 3 * 60 * 1000 },
+        type: ModelType.OpenAIPlugins,
+        history: { maxTokens: 2048 },
+
+        billing: {
+            type: ChatSettingsModelBillingType.Custom, amount: 0
+        },
+
+        prompt: {
+            builder: ({ context }) => `
+I am ChatGPT, a large language model trained by OpenAI, released in November 2022.
+I must provide engaging & entertaining responses.
+
+Current date & time: ${context.time}, ${context.date}
+`
+        }
+    }),
+
+    new ChatSettingsModel({
+        name: "GPT-4 + Plugins",
+        description: "The GPT-4 model with plugin support",
+        emoji: { fallback: "✨" },
+        restricted: "plan",
+        type: ModelType.OpenAIPlugins,
+        history: { maxTokens: 2048 },
+
+        billing: {
+            type: ChatSettingsModelBillingType.Custom, amount: 0
+        },
+
         prompt: {
             builder: ({ context }) => `
 I am GPT-4, a new GPT model by OpenAI released on the 14th March 2023. I am an improved version of ChatGPT, and provide more advanced and complex replies.
@@ -267,6 +278,36 @@ Knowledge cut-off: September 2021
             builder: ({ context }) => `
 I am GPT-3, an autoregressive language model, initially released in 2022 and updated in November 2022, by OpenAI that uses deep learning to produce human-like text.
 I must answer as concisely as possible. I must provide engaging & entertaining responses.
+
+Current date & time: ${context.time}, ${context.date}
+Knowledge cut-off: September 2021
+`
+        }
+    }),
+
+    new ChatSettingsModel({
+        name: "ChatGPT 16K",
+        description: "The usual ChatGPT, with higher context & generation limits",
+        emoji: { display: "<:chatgpt_16k:1118928845244989500>", fallback: "🔥" },
+        settings: { model: "gpt-3.5-turbo-16k", temperature: 0.4 },
+        history: { maxTokens: 16384 },
+        type: ModelType.OpenAIChat,
+        restricted: "plan",
+
+        billing: {
+            type: ChatSettingsModelBillingType.Per1000Tokens,
+            amount: {
+                prompt: 0.003, completion: 0.004
+            }
+        },
+
+        prompt: {
+            builder: ({ context }) => `
+I am ChatGPT, a large language model trained by OpenAI, released in November 2022.
+I must provide engaging & entertaining responses.
+
+I am a special version of ChatGPT: I have the ability to store larger chat history context & generate longer answers, if the user configures the token limits in \`/settings user\` or \`/settings guild\` accordingly.
+My total context 6 generation limit is 16.000 tokens.
 
 Current date & time: ${context.time}, ${context.date}
 Knowledge cut-off: September 2021
@@ -351,52 +392,6 @@ Current date & time: ${context.time}, ${context.date}
     }),
 
     new ChatSettingsModel({
-        name: "ChatGPT + Plugins",
-        description: "The ChatGPT model with plugin support",
-        emoji: { display: "<:chatgpt:1097849346164281475>", fallback: "😐" },
-        restricted: "plan",
-        type: ModelType.OpenAIPlugins,
-        history: { maxTokens: 2048 },
-
-        billing: {
-            type: ChatSettingsModelBillingType.Custom, amount: 0
-        },
-
-        prompt: {
-            builder: ({ context }) => `
-I am ChatGPT, a large language model trained by OpenAI, released in November 2022.
-I must provide engaging & entertaining responses.
-
-Current date & time: ${context.time}, ${context.date}
-Knowledge cut-off: September 2021
-`
-        }
-    }),
-
-    new ChatSettingsModel({
-        name: "GPT-4 + Plugins",
-        description: "The GPT-4 model with plugin support",
-        emoji: { fallback: "✨" },
-        restricted: "plan",
-        type: ModelType.OpenAIPlugins,
-        history: { maxTokens: 2048 },
-
-        billing: {
-            type: ChatSettingsModelBillingType.Custom, amount: 0
-        },
-
-        prompt: {
-            builder: ({ context }) => `
-I am GPT-4, a new GPT model by OpenAI released on the 14th March 2023. I am an improved version of ChatGPT, and provide more advanced and complex replies.
-I must provide engaging & entertaining responses.
-
-Current date & time: ${context.time}, ${context.date}
-Knowledge cut-off: September 2021
-`
-        }
-    }),
-
-    new ChatSettingsModel({
         name: "Clyde",
         description: "Recreation of Discord's AI chatbot",
         emoji: { display: "<a:clyde:1100453636414378125>", fallback: "🤖" },
@@ -422,7 +417,7 @@ Knowledge cut-off: September 2021
                     .slice(undefined, 15) as GuildChannel[];
     
                 const userList: string = data.users.map((user: ClydeUser) =>
-                    `<u:${user.name}>${user.suffix ? ` (${user.suffix})` : ""}\n${Object.entries(user).filter(([ key, value ]) => value !== null && key !== "name" && key !== "suffix").map(([ name, value ]) => ` - ${name}: ${value}`).join("\n")}`
+                    `<u:${user.username}>${user.suffix ? ` (${user.suffix})` : ""}\n${Object.entries(user).filter(([ key, value ]) => value !== null && key !== "name" && key !== "suffix").map(([ name, value ]) => ` - ${name}: ${value}`).join("\n")}`
                 ).join("\n\n");
     
                 return `
@@ -449,6 +444,7 @@ ${channels.map(c => {
     else if (c instanceof VoiceChannel) return `<c:${c.name}> - voice channel - connected users: ${c.members.size > 0 ? c.members.map(m => `<u:${m.user.username}>`).join(", ") : "none"}`;
     else if (c instanceof StageChannel) return `<c:${c.name}> - stage voice channel`;
     else if (c instanceof ForumChannel) return `<c:${c.name}> - forum channel`;
+    else return `<c:${c.name}> - misc. channel`;
 }).join("\n")}
 
 Information about my environment:
@@ -467,7 +463,7 @@ I am not a personal assistant and cannot complete tasks for people. I cannot acc
 Current date & time: ${context.date}, ${context.time}
 Knowledge cut-off: 2021
 `
-        }
+            }
         }
     })
 ]

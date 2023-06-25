@@ -102,7 +102,9 @@ The user will now give you a message to translate, your goal is to apply the abo
             phrases: [
                 `Translating into ${target.name}`,
                 "Translating the message"
-            ]
+            ],
+
+            bot: this.bot, db
         }).send(interaction);
 
         const tokens = {

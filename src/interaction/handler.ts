@@ -1,8 +1,9 @@
 import { AnySelectMenuInteraction, ButtonInteraction, ModalSubmitInteraction } from "discord.js";
 
-import { DatabaseInfo, UserSubscriptionPlanType } from "../db/managers/user.js";
-import { CommandCooldown, CommandOptions, CommandRestrictionType } from "../command/command.js";
+import { CommandOptions, CommandRestrictionType } from "../command/command.js";
+import { UserSubscriptionPlanType } from "../db/schemas/user.js";
 import { CooldownData } from "../command/types/cooldown.js";
+import { DatabaseInfo } from "../db/managers/user.js";
 import { Response } from "../command/response.js";
 import { UserRole } from "../db/managers/role.js";
 import { Bot } from "../bot/bot.js";
@@ -92,9 +93,12 @@ export abstract class InteractionHandler<T extends InteractionHandlerClassType =
 	}
 
 
-	public restricted(check: CommandRestrictionType | (UserRole | UserSubscriptionPlanType)): boolean {
-		return (typeof check !== "object" ? [ check ] : check)
-			.every(c => this.options.restriction.includes(c));
+	public restricted(check: CommandRestrictionType): boolean {
+		return check.some(c => this.options.restriction.includes(c));
+	}
+
+	public voterOnly(): boolean {
+		return this.restricted([ "voter" ]);
 	}
 
 	public premiumOnly(): boolean {
@@ -102,11 +106,11 @@ export abstract class InteractionHandler<T extends InteractionHandlerClassType =
 	}
 
 	public planOnly(): boolean {
-		return this.restricted("plan");
+		return this.restricted([ "plan" ]);
 	}
 
 	public subscriptionOnly(): boolean {
-		return this.restricted("subscription");
+		return this.restricted([ "subscription" ]);
 	}
 
 
@@ -127,4 +131,8 @@ export abstract class InteractionHandler<T extends InteractionHandlerClassType =
 	 * Execute the interaction handler.
 	 */
 	public abstract run(data: InteractionHandlerRunOptions<T, U>): InteractionHandlerResponse;
+
+	public get name(): string {
+		return this.builder.data.name;
+	}
 }

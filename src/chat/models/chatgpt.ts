@@ -1,4 +1,4 @@
-import { OpenAIChatCompletionsData, OpenAIPartialCompletionsJSON } from "../../openai/types/chat.js";
+import { OpenAIChatCompletionsData, OpenAIPartialChatCompletionsJSON } from "../../openai/types/chat.js";
 import { ChatModel, ConstructorModelOptions, ModelCapability, ModelType } from "../types/model.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../../error/gpt/generation.js";
 import { ModelGenerationOptions } from "../types/options.js";
@@ -22,33 +22,32 @@ export class ChatGPTModel extends ChatModel {
      * @param options Generation options
      * @returns Generated response
      */
-    protected async chat(options: ModelGenerationOptions, prompt: PromptData, progress: (response: OpenAIPartialCompletionsJSON) => Promise<void> | void): Promise<OpenAIChatCompletionsData> {
+    protected async chat(options: ModelGenerationOptions, prompt: PromptData, progress: (response: OpenAIPartialChatCompletionsJSON) => Promise<void> | void): Promise<OpenAIChatCompletionsData> {
         let data: OpenAIChatCompletionsData | null = null;
 
         /* Turing ChatGPT API */
-        if (!options.settings.options.settings.model || options.settings.options.settings.model === "gpt-3.5-turbo") {
-        //if (false) {
+        /*if (!options.settings.options.settings.model || options.settings.options.settings.model === "gpt-3.5-turbo") {
             data = await this.client.session.manager.bot.turing.openAI({
                 model: options.settings.options.settings.model ?? "gpt-3.5-turbo",
                 temperature: options.settings.options.settings.temperature ?? 0.5,
                 messages: Object.values(prompt.parts),
-                maxTokens: prompt.max
+                maxTokens: prompt.max,
+                pw: false
             }, progress);
         
         /* Regular OpenAI API */
-        } else {
+        //} else {
             data = await this.client.session.ai.chat({
-                model: options.settings.options.settings.model ?? "gpt-3.5-turbo",
-                stream: options.partial,
-                stop: "User:",
+                model: options.settings.options.settings.model ?? "gpt-3.5-turbo-0613",
+                stream: true, stop: "User:",
     
                 user: options.conversation.userIdentifier,
     
                 temperature: options.settings.options.settings.temperature ?? 0.5,
                 max_tokens: isFinite(prompt.max) ? prompt.max : undefined,
                 messages: Object.values(prompt.parts),
-            }, progress);;
-        }
+            }, progress);
+        //}
 
         if (data === null || data.response.message.content.trim().length === 0) throw new GPTGenerationError({
             type: GPTGenerationErrorType.Empty

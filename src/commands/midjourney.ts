@@ -41,6 +41,7 @@ export default class MidjourneyCommand extends Command {
 				subscription: 2 * 60 * 1000
 			},
 
+			restriction: [ "voter" ],
 			synchronous: true
 		});
 	}

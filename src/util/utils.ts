@@ -58,8 +58,7 @@ export abstract class Utils {
 	}
 
 	/* Truncate a string. */
-	public static truncate(text: string, length: number): string {
-		const suffix: string = "...";
+	public static truncate(text: string, length: number, suffix: string = "..."): string {
 		return (text.length > length) ? text.slice(0, length - suffix.length) + suffix : text;
 	}
 
@@ -170,6 +169,10 @@ export abstract class Utils {
 
 	public static fileName(url: string): string {
 		return url.split("/").reverse()[0];
+	}
+
+	public static baseName(name: string): string {
+		return name.split(".")[0];
 	}
 
 	public static inviteLink(bot: Bot): string {

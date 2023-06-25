@@ -1,7 +1,7 @@
 import { GuildMember, SlashCommandBuilder } from "discord.js";
 
-import { SettingCategories, SettingsCategory, SettingsLocation } from "../db/managers/settings.js";
 import { Command, CommandInteraction, CommandResponse } from "../command/command.js";
+import { SettingsCategory, SettingsLocation } from "../db/managers/settings.js";
 import { ErrorResponse } from "../command/response/error.js";
 import { DatabaseInfo } from "../db/managers/user.js";
 import { Emoji } from "../util/emoji.js";

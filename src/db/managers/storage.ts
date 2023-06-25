@@ -1,10 +1,11 @@
 import { Bucket, StorageClient, StorageError } from "@supabase/storage-js";
 
 import { ImageGenerationResult, StableHordeGenerationResult } from "../../image/types/image.js";
+import { DatabaseDescription } from "../../image/description.js";
 import { GPTDatabaseError } from "../../error/gpt/db.js";
 import { ImageBuffer } from "../../chat/types/image.js";
-import { ClientDatabaseManager } from "../cluster.js";
-import { ImageDescription } from "../../image/description.js";
+import { ClusterDatabaseManager } from "../cluster.js";
+import { SubClusterDatabaseManager } from "../sub.js";
 
 type StorageBucketName = "images" | "descriptions"
 
@@ -13,15 +14,12 @@ export interface StorageImage {
     url: string;
 }
 
-export class StorageManager {
-    /* The database manager itself */
-    private readonly db: ClientDatabaseManager;
-
+export class StorageManager extends SubClusterDatabaseManager {
     /* The Supabase storage client */
     private client: StorageClient;
 
-    constructor(db: ClientDatabaseManager) {
-        this.db = db;
+    constructor(db: ClusterDatabaseManager) {
+        super(db);
         this.client = null!;
     }
 
@@ -74,7 +72,7 @@ export class StorageManager {
         return this.fetchImage(image, "images");
     }
 
-    public async uploadImageDescription(image: ImageDescription, data: ImageBuffer): Promise<void> {
+    public async uploadImageDescription(image: DatabaseDescription, data: ImageBuffer): Promise<void> {
         const name: string = image.id;
 
         const { error } = await this.client
@@ -90,7 +88,7 @@ export class StorageManager {
 
     public async uploadImages(result: StableHordeGenerationResult): Promise<StorageImage[]> {
         /* All generated images */
-        const images: ImageGenerationResult[] = result.images;
+        const images: ImageGenerationResult[] = result.images.filter(i => !i.censored);
 
         /* Upload all of the images to the storage bucket. */
         await Promise.all(images.map(async image => {

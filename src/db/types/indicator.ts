@@ -1,4 +1,4 @@
-import { DatabaseUser } from "../managers/user.js";
+import { DatabaseUser } from "../schemas/user.js";
 import { Bot } from "../../bot/bot.js";
 
 export interface LoadingEmoji {

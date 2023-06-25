@@ -1,29 +1,29 @@
 import { ActionRow, ActionRowBuilder, Attachment, AttachmentBuilder, ButtonBuilder, ButtonComponent, ButtonInteraction, ButtonStyle, ChatInputCommandInteraction, EmbedBuilder, EmbedField, SlashCommandBuilder, User } from "discord.js";
 import { setTimeout as delay } from "timers/promises";
 
-import { Command, CommandCooldown, CommandInteraction, CommandResponse } from "../command/command.js";
+import { Command, CommandInteraction, CommandResponse } from "../command/command.js";
 import { Response } from "../command/response.js";
 
 import { DatabaseImage, ImageGenerationCheckData, ImageGenerationOptions, ImageGenerationPrompt, ImageGenerationResult, ImageInput, StableHordeGenerationResult } from "../image/types/image.js";
+import { ImagineInteractionHandler, ImagineInteractionHandlerData } from "../interactions/imagine.js";
 import { StableHordeGenerationFilter, STABLE_HORDE_FILTERS } from "../image/types/filter.js";
 import { ImageGenerationSamplers, ImageGenerationSampler } from "../image/types/image.js";
 import { PremiumUpsellResponse, PremiumUpsellType } from "../command/response/premium.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
 import { StableHordeConfigModels, StableHordeModel } from "../image/types/model.js";
-import { ImagineInteractionHandler, ImagineInteractionHandlerData } from "../interactions/imagine.js";
-import { ErrorResponse, ErrorType } from "../command/response/error.js";
 import { InteractionHandlerResponse } from "../interaction/handler.js";
 import { renderIntoSingleImage } from "../image/utils/renderer.js";
 import { LoadingIndicatorManager } from "../db/types/indicator.js";
 import { StableHordeAPIError } from "../error/gpt/stablehorde.js";
+import { ALLOWED_FILE_EXTENSIONS } from "../chat/types/image.js";
+import { CommandSpecificCooldown } from "../command/command.js";
 import { ModerationResult } from "../moderation/moderation.js";
+import { NoticeResponse } from "../command/response/notice.js";
+import { ErrorResponse } from "../command/response/error.js";
 import { StorageImage } from "../db/managers/storage.js";
 import { DatabaseInfo } from "../db/managers/user.js";
 import { Utils } from "../util/utils.js";
 import { Bot } from "../bot/bot.js";
-import { ALLOWED_FILE_EXTENSIONS } from "../chat/types/image.js";
-import { NoticeResponse } from "../command/response/notice.js";
-import { CommandSpecificCooldown } from "../command/command.js";
 
 interface ImageGenerationProcessOptions {
 	interaction: CommandInteraction | ButtonInteraction;
@@ -105,8 +105,8 @@ const MaxStepGenerationCount = {
 export type StableHordeImageAction = "upscale" | "variation"
 
 export const ImageGenerationCooldown: CommandSpecificCooldown = {
-	free: 100 * 1000,
-	voter: 80 * 1000,
+	free: 180 * 1000,
+	voter: 160 * 1000,
 	subscription: 45 * 1000
 }
 
@@ -211,11 +211,11 @@ export default class ImagineCommand extends Command {
 					value: `${width}:${height}:${premium ?? false}`
 				})))
 			)
-			.addAttachmentOption(builder => builder
+			/*.addAttachmentOption(builder => builder
 				.setName("source")
 				.setDescription("Source image to transform using the prompt")
 				.setRequired(false)
-			);
+			);*/
     }
 
 	private displayPrompt(user: User, prompt: ImageGenerationPrompt, action: StableHordeImageAction | null): string {
@@ -404,7 +404,7 @@ export default class ImagineCommand extends Command {
 		
 		if (action !== "upscale") {
 			rows.push(...this.buildRow(user, result, "upscale"));
-			if (action !== "variation") rows.push(...this.buildRow(user, result, "variation"));
+			//if (action !== "variation") rows.push(...this.buildRow(user, result, "variation"));
 		}
 
 		if (rows[0] && action === null) {
@@ -477,7 +477,7 @@ export default class ImagineCommand extends Command {
 				}
 			});
 
-			const type = this.bot.db.users.type(db);
+			const type = await this.bot.db.users.type(db);
 			
 			const duration: number | null = (ImageGenerationCooldown as any)[type.type] ?? null;
 			if (duration !== null) await handler.applyCooldown(interaction, db, duration);
@@ -509,7 +509,7 @@ export default class ImagineCommand extends Command {
 				}
 			});
 
-			const type = this.bot.db.users.type(db);
+			const type = await this.bot.db.users.type(db);
 			
 			const duration: number | null = (ImageGenerationCooldown as any)[type.type] ?? null;
 			if (duration !== null) await handler.applyCooldown(interaction, db, duration);
@@ -733,8 +733,8 @@ export default class ImagineCommand extends Command {
 	}
 
     public async run(interaction: ChatInputCommandInteraction, db: DatabaseInfo): CommandResponse {
-		const canUsePremiumFeatures: boolean = this.bot.db.users.canUsePremiumFeatures(db);
-		const subscriptionType = this.bot.db.users.type(db);
+		const canUsePremiumFeatures: boolean = await this.bot.db.users.canUsePremiumFeatures(db);
+		const subscriptionType = await this.bot.db.users.type(db);
 		
 		/* How many images to generate */
 		const count: number = 

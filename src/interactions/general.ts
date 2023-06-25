@@ -41,12 +41,12 @@ export class GeneralInteractionHandler extends InteractionHandler<ButtonInteract
 
         } else if (data.action === "vote") {
 			/* When the user already voted for the bot, if applicable */
-			const when: number | null = this.bot.db.users.voted(db.user);
+			const when: number | null = await this.bot.db.users.voted(db.user);
 
 			if (when !== null) return new Response()
                 .addEmbed(builder => builder
                     .setDescription(`You have already voted for the bot <t:${Math.round(when / 1000)}:R>, thank you for your support! 🎉`)
-                    .setColor(this.bot.branding.color)
+                    .setColor("#FF3366")
                 )
                 .setEphemeral(true);
 
@@ -61,7 +61,6 @@ export class GeneralInteractionHandler extends InteractionHandler<ButtonInteract
 				if (!voted) return new ErrorResponse({
 					interaction, message: "You haven't voted for the bot yet", emoji: "😕"
 				});
-				
 
 				return new Response()
 					.addEmbed(builder => builder

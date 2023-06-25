@@ -12,12 +12,15 @@ interface StatusMessage {
     /* Display name of the status message */
     name: string;
 
+    /* Condition, which checks whether this status message can be displayed */
+    condition?: (bot: Bot) => boolean;
+
     /* Template for the status message */
     template: (bot: Bot) => Awaitable<string>;
 }
 
 /* List of status messages to use */
-const messages: StatusMessage[] = [
+const StatusMessages: StatusMessage[] = [
     {
         name: "Playing with ChatGPT",
         type: ActivityType.Playing,
@@ -43,6 +46,7 @@ const messages: StatusMessage[] = [
         name: "Listening to Conversations",
         type: ActivityType.Listening,
 
+        condition: bot => bot.statistics.conversations > 0,
         template: async (bot: Bot) => `${bot.statistics.conversations} conversations`
     },
 
@@ -50,6 +54,7 @@ const messages: StatusMessage[] = [
         name: "Watching over Users",
         type: ActivityType.Watching,
 
+        condition: bot => bot.statistics.databaseUsers > 0,
         template: async (bot: Bot) => `${bot.statistics.databaseUsers} users`
     },
 
@@ -57,6 +62,7 @@ const messages: StatusMessage[] = [
         name: "Watching over Servers",
         type: ActivityType.Watching,
 
+        condition: bot => bot.statistics.guildCount > 0,
         template: async (bot: Bot) => `over ${bot.statistics.guildCount} servers`
     }
 ]
@@ -91,15 +97,19 @@ export const chooseStatusMessage = async (bot: Bot): Promise<void> => {
         });
     }
 
+    /* Filter out all applicable status messages. */
+    const usable: StatusMessage[] = StatusMessages.filter(message => message.condition ? message.condition(bot) : true);
+    if (usable.length === 0) return;
+
     /* Choose a random status message. */
-    const message: StatusMessage = Utils.random(messages);
+    const message: StatusMessage = Utils.random(usable);
     let result: string | null = null;
 
     /* Try to execute the template of the status message. */
     try {
         result = await message.template(bot);
     } catch (error) {
-        return void bot.logger.error(`Failed to use status template ${chalk.bold(message.name)} -> ${(error as Error).message}`);
+        return bot.logger.error(`Failed to use status template ${chalk.bold(message.name)} -> ${(error as Error).message}`);
     }
 
     /* Update the bot's activity & status. */

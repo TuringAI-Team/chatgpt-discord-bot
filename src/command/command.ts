@@ -2,11 +2,12 @@ import { ContextMenuCommandBuilder, SlashCommandBuilder, SlashCommandSubcommands
 import { AutocompleteInteraction, ButtonInteraction, ChatInputCommandInteraction, ContextMenuCommandInteraction } from "discord.js";
 import { APIApplicationCommandOptionChoice } from "discord-api-types/v10";
 
-import { DatabaseInfo, UserSubscriptionPlanType } from "../db/managers/user.js";
+import { UserSubscriptionPlanType } from "../db/schemas/user.js";
+import { DatabaseInfo } from "../db/managers/user.js";
+import { CooldownData } from "./types/cooldown.js";
 import { UserRole } from "../db/managers/role.js";
 import { Response } from "./response.js";
 import { Bot } from "../bot/bot.js";
-import { CooldownData } from "./types/cooldown.js";
 
 export type CommandBuilder = 
 	SlashCommandBuilder
@@ -68,9 +69,13 @@ export class Command<U extends ContextMenuCommandInteraction | ChatInputCommandI
 		} as Required<CommandOptions>;
 	}
 
-	public restricted(check: CommandRestrictionType | (UserRole | UserSubscriptionPlanType)): boolean {
-		return (typeof check !== "object" ? [ check ] : check)
-			.every(c => this.options.restriction.includes(c));
+	public restricted(check: CommandRestrictionType): boolean {
+		if (this.options.restriction.length === 0) return false;
+		return check.some(c => this.options.restriction.includes(c));
+	}
+
+	public voterOnly(): boolean {
+		return this.restricted([ "voter" ]);
 	}
 
 	public premiumOnly(): boolean {
@@ -78,11 +83,15 @@ export class Command<U extends ContextMenuCommandInteraction | ChatInputCommandI
 	}
 
 	public planOnly(): boolean {
-		return this.restricted("plan");
+		return this.restricted([ "plan" ]);
 	}
 
 	public subscriptionOnly(): boolean {
-		return this.restricted("subscription");
+		return this.restricted([ "subscription" ]);
+	}
+
+	public private(): boolean {
+		return this.restricted([ "moderator", "owner", "advertiser", "investor" ]);
 	}
 
 
@@ -98,18 +107,14 @@ export class Command<U extends ContextMenuCommandInteraction | ChatInputCommandI
 		return this.bot.command.cooldown(interaction, this as any);
 	}
 
-
-	/**
-	 * Respond to auto-completion requests.
-	 */
-	public async complete(interaction: AutocompleteInteraction, db: DatabaseInfo): Promise<CommandOptionChoice[]> {
-		return [];
-	}
-
 	/**
 	 * Execute the command.
 	 */
 	public async run(interaction: U, db: DatabaseInfo): CommandResponse {
-		return undefined;
+		return;
+	}
+
+	public get name(): string {
+		return this.builder.name;
 	}
 }
