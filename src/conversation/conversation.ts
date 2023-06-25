@@ -510,14 +510,6 @@ export class Conversation {
 
 		const response: Response = new Response();
 		const additional: EmbedBuilder[] = [];
-
-		/* Choose an ad to display, if applicable. */
-		const ad = await this.manager.bot.db.campaign.ad({ db });
-
-		if (ad !== null) {
-			response.addComponent(ActionRowBuilder<ButtonBuilder>, ad.response.row);
-			additional.push(ad.response.embed);
-		}
 		
 		if (!subscriptionType.premium) {
 			additional.push(
@@ -544,6 +536,14 @@ export class Conversation {
 						.setColor("Orange")
 				);
 			}
+		}
+
+		/* Choose an ad to display, if applicable. */
+		const ad = await this.manager.bot.db.campaign.ad({ db });
+
+		if (ad !== null) {
+			response.addComponent(ActionRowBuilder<ButtonBuilder>, ad.response.row);
+			additional.push(ad.response.embed);
 		}
 
 		this.manager.bot.db.metrics.changeCooldownMetric({
