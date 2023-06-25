@@ -10,6 +10,8 @@ export default class ReadyEvent extends Event {
 	}
 
 	public async run(): Promise<void> {
+		return;
+
 		const name: string = `guilds/${this.bot.data.id}.json`;
 		const guilds: any[] = [];
 

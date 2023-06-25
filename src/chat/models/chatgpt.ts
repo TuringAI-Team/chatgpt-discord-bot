@@ -39,8 +39,7 @@ export class ChatGPTModel extends ChatModel {
         //} else {
             data = await this.client.session.ai.chat({
                 model: options.settings.options.settings.model ?? "gpt-3.5-turbo-0613",
-                stream: options.partial,
-                stop: "User:",
+                stream: true, stop: "User:",
     
                 user: options.conversation.userIdentifier,
     
