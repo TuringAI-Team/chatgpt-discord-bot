@@ -131,7 +131,7 @@ export class StreamBuilder<RequestBody, PartialResponseData, FinalResponseData =
         });
 
         if (latest === null) throw new GPTGenerationError({
-            type: GPTGenerationErrorType.Moderation
+            type: GPTGenerationErrorType.Empty
         });
 
         /* Final (processed) data */

@@ -27,13 +27,7 @@ export class OpenAIManager {
         >({
             body: options,
 
-            error: async response => {
-                if (response.status === 400) return new GPTGenerationError({
-                    type: GPTGenerationErrorType.Moderation
-                });
-
-                return this.error(response, "chat/completions");
-            },
+            error: async response => this.error(response, "chat/completions"),
 
             url: this.url("chat/completions"),
             headers: this.headers(),
@@ -94,13 +88,7 @@ export class OpenAIManager {
         >({
             body: options,
 
-            error: async response => {
-                if (response.status === 400) return new GPTGenerationError({
-                    type: GPTGenerationErrorType.Moderation
-                });
-
-                return this.error(response, "completions");
-            },
+            error: async response => this.error(response, "completions"),
 
             url: this.url("completions"),
             headers: this.headers(),
