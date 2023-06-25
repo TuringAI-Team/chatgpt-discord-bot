@@ -48,8 +48,6 @@ export class OpenAIManager {
                     });
                 }
 
-                if (!data.choices[0].delta.content) return null;
-
                 const updated: OpenAIPartialChatCompletionsJSON = {
                     choices: [
                         {

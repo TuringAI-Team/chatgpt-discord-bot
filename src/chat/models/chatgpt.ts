@@ -47,7 +47,7 @@ export class ChatGPTModel extends ChatModel {
                 temperature: options.settings.options.settings.temperature ?? 0.5,
                 max_tokens: isFinite(prompt.max) ? prompt.max : undefined,
                 messages: Object.values(prompt.parts),
-            }, progress);;
+            }, progress);
         //}
 
         if (data === null || data.response.message.content.trim().length === 0) throw new GPTGenerationError({
