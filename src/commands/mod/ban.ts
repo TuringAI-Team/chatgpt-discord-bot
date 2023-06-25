@@ -29,10 +29,17 @@ export default class BanCommand extends Command {
 		/* ID of the user */
 		const id: string = interaction.options.getString("id", true);
 		const target = await Utils.findUser(this.bot, id);
-		
+
 		if (target === null) return new Response()
 			.addEmbed(builder => builder
 				.setDescription("The specified user does not exist 😔")
+				.setColor("Red")
+			)
+			.setEphemeral(true);
+
+		if (id === interaction.user.id) return new Response()
+			.addEmbed(builder => builder
+				.setDescription("You can't ban yourself 😂")
 				.setColor("Red")
 			)
 			.setEphemeral(true);
