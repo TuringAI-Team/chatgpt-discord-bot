@@ -248,13 +248,13 @@ export class Conversation {
 	 * @param updatedAt Time when the last interaction with this conversation occurred, optional
 	 */
 	private bump(): void {
-		/*if (this.timer !== null) { clearTimeout(this.timer); this.timer = null; }
+		if (this.timer !== null) { clearTimeout(this.timer); this.timer = null; }
 		this.updatedAt = Date.now();
 
 		this.timer = setTimeout(async () => {
 			this.timer = null;
 			this.manager.delete(this);
-		}, this.getResetTime(true));*/
+		}, this.getResetTime(true));
 	}
 
 	/**
@@ -328,15 +328,8 @@ export class Conversation {
 				/* If all of the retries were exhausted, throw the error. */
 				if (tries === CONVERSATION_ERROR_RETRY_MAX_TRIES) {
 					this.generating = false;
-
-					if (error instanceof GPTGenerationError || error instanceof GPTAPIError) {
-						throw error;
-					} else {
-						throw new GPTGenerationError({
-							type: GPTGenerationErrorType.Other,
-							cause: error as Error
-						});
-					}
+					throw error;
+					
 				} else {
 					if (this.manager.bot.dev) this.manager.bot.logger.warn(`Request by ${chalk.bold(options.conversation.user.username)} failed, retrying [ ${chalk.bold(tries)}/${chalk.bold(CONVERSATION_ERROR_RETRY_MAX_TRIES)} ] ->`, error);
 

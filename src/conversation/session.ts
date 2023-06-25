@@ -133,10 +133,10 @@ export class Session {
         if (this.active) return;
 
         /* If the conversation has been locked, don't initialize the session. */
-        if (this.locked) throw new Error("Session is busy");
-        this.locked = true;
-
-        this.locked = false;
+        if (this.locked) throw new GPTGenerationError({
+            type: GPTGenerationErrorType.Busy
+        })
+        
         this.state = SessionState.Running;
     }
 

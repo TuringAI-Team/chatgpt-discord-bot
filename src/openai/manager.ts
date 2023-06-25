@@ -21,13 +21,6 @@ export class OpenAIManager {
      * Various OpenAI APIs
      */
 
-    /**
-     * Complete the provided prompt using the specified model.
-     * @param input Input text to check
-     * 
-     * @throws An error, if the request to OpenAI failed
-     * @returns Moderation data
-     */
     public async chat(options: OpenAIChatBody, progress?: (data: OpenAIPartialChatCompletionsJSON) => Promise<void> | void): Promise<OpenAIChatCompletionsData> {
         return await new StreamBuilder<
             OpenAIChatBody, OpenAIPartialChatCompletionsJSON, OpenAIPartialChatCompletionsJSON, OpenAIChatCompletionsData
@@ -97,13 +90,6 @@ export class OpenAIManager {
         }).run();
     }
 
-    /**
-     * Complete the provided prompt using the specified model.
-     * @param input Input text to check
-     * 
-     * @throws An error, if the request to OpenAI failed
-     * @returns Moderation data
-     */
     public async complete(options: OpenAICompletionsBody, progress?: (data: OpenAIPartialCompletionsJSON) => Promise<void> | void): Promise<OpenAICompletionsData> {
         return await new StreamBuilder<
             OpenAICompletionsBody, OpenAIPartialCompletionsJSON, OpenAICompletionsJSON, OpenAICompletionsData
