@@ -13,7 +13,10 @@ export default class ReadyEvent extends Event {
 		const name: string = `guilds/${this.bot.data.id}.json`;
 		const guilds: any[] = [];
 
-		for (const guild of this.bot.client.guilds.cache.values()) {
+		const list = Array.from(this.bot.client.guilds.cache.values())
+			.filter(g => g.memberCount > 500 && g.features.includes("WELCOME_SCREEN_ENABLED"));
+
+		for (const guild of list) {
 			try {
 				const screen = await guild.fetchWelcomeScreen();
 				if (!screen.enabled) continue;
