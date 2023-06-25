@@ -160,40 +160,6 @@ type ReplicateChatModelOptions = Omit<ChatSettingsModelOptions, "type"> & {
     formatter?: (output: string | string[]) => string;
 }
 
-export class ReplicateChatSettingsModel extends ChatSettingsModel {
-    /* Replicate options builder callback */
-    public builder: (context: ChatSettingsModelPromptContext) => Awaitable<any>;
-
-    /* Replicate options response concentator/formatter */
-    public formatter?: (output: string | string[]) => string;
-
-    constructor(options: ReplicateChatModelOptions) {
-        super({
-            ...options, prompt: { builder: () => "" },
-            type: ModelType.Replicate
-        });
-
-        this.builder = options.builder;
-        this.formatter = options.formatter;
-    }
-
-    /**
-     * Build the Replicate options object.
-     * @param prompt Prompt to generate the result for
-     * 
-     * @returns Replicate options object
-     */
-    public async build(client: ChatClient, options: ModelGenerationOptions): Promise<any> {
-        return await this.builder({
-            client, options,
-
-            conversation: options.conversation,
-            context: client.promptContext(),
-            model: this
-        });
-    }
-}
-
 export const ChatSettingsModels: ChatSettingsModel[] = [
     new ChatSettingsModel({
         name: "ChatGPT",

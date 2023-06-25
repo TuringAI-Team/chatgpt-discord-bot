@@ -1,4 +1,4 @@
-import { ClientEvents } from "discord.js";
+import { Awaitable, ClientEvents } from "discord.js";
 import { Bot } from "../bot/bot.js";
 
 export class Event {
@@ -11,7 +11,7 @@ export class Event {
 	}
 
 	/* Function to execute when the event has been emitted */
-	public run(...args: any[]): void {
+	public run(...args: any[]): Awaitable<void> {
 		/* Stub */
 	}
 }

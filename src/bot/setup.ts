@@ -64,11 +64,6 @@ const BotSetupSteps: {
             },
 
             {
-                name: "Replicate",
-                execute: async bot => bot.replicate.setup()
-            },
-
-            {
                 name: "Supabase database",
                 execute: async bot => bot.db.setup()
             },
@@ -110,9 +105,9 @@ const BotSetupSteps: {
                             .then((data: { [key: string]: Event }) => {
                                 const event: Event = new (data.default as any)(bot);
                                 
-                                bot.client.on(event.name, (...args: any[]) => {
+                                bot.client.on(event.name, async (...args: any[]) => {
                                     try {
-                                        event.run(...args);
+                                        await event.run(...args);
                                     } catch (error) {
                                         bot.logger.error(`Failed to run event ${chalk.bold(name)} ->`, error)
                                     }

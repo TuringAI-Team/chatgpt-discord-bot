@@ -3,14 +3,13 @@ import { ActivityType, Client, GatewayIntentBits, Options, Partials } from "disc
 import EventEmitter from "events";
 import chalk from "chalk";
 
+import { BotClusterManager, BotData, BotDataSessionLimit } from "./manager.js";
 import { ImageDescriptionManager } from "../image/description.js";
 import { ConversationManager } from "../conversation/manager.js";
 import { ModerationManager } from "../moderation/moderation.js";
 import { InteractionManager } from "../interaction/manager.js";
-import { ReplicateManager } from "../chat/other/replicate.js";
 import { WebhookManager } from "../conversation/webhook.js";
 import { StatusIncidentType } from "../util/statuspage.js";
-import { BotClusterManager, BotData, BotDataSessionLimit } from "./manager.js";
 import { ClusterDatabaseManager } from "../db/cluster.js";
 import { chooseStatusMessage } from "../util/status.js";
 import { executeConfigurationSteps } from "./setup.js";
@@ -118,9 +117,6 @@ export class Bot extends EventEmitter {
     /* RunPod AI manager; in charge of executing RunPod model requests */
     public readonly runpod: RunPodManager;
 
-    /* Replicate API manager */
-    public readonly replicate: ReplicateManager;
-
     /* Tenor API client */
     public gif: TenorAPI;
 
@@ -163,7 +159,6 @@ export class Bot extends EventEmitter {
         this.conversation = new ConversationManager(this);
         this.interaction = new InteractionManager(this);
         this.moderation = new ModerationManager(this);
-        this.replicate = new ReplicateManager(this);
         this.db = new ClusterDatabaseManager(this);
         this.webhook = new WebhookManager(this);
         this.command = new CommandManager(this);

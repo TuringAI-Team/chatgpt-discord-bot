@@ -24,9 +24,6 @@ export enum ModelType {
     /* OpenAI's completion API */
     OpenAICompletion,
 
-    /** Replicate text inference */
-    Replicate,
-
     /** Replication of Discord's Clyde AI */
     Clyde,
 

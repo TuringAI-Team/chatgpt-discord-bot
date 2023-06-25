@@ -52,8 +52,8 @@ export default class VideoCommand extends Command {
 			)
 		, {
 			cooldown: {
-				free: 4.5 * 60 * 100,
-				voter: 4 * 60 * 100,
+				free: 4.5 * 60 * 1000,
+				voter: 4 * 60 * 1000,
 				subscription: 1.5 * 60 * 1000
 			},
 

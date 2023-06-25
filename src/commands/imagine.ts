@@ -105,8 +105,8 @@ const MaxStepGenerationCount = {
 export type StableHordeImageAction = "upscale" | "variation"
 
 export const ImageGenerationCooldown: CommandSpecificCooldown = {
-	free: 150 * 1000,
-	voter: 140 * 1000,
+	free: 180 * 1000,
+	voter: 160 * 1000,
 	subscription: 45 * 1000
 }
 

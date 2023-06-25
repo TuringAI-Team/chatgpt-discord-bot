@@ -859,7 +859,7 @@ export class TuringAPI extends EventEmitter {
         /* API request body */
         const body: TuringAPIChatBody = {
             prompt: options.prompt,
-            chat: options.raw,
+            chat: !options.raw,
             conversationId: options.conversation.id
         };
 
