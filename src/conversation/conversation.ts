@@ -248,14 +248,13 @@ export class Conversation {
 	 * @param updatedAt Time when the last interaction with this conversation occurred, optional
 	 */
 	private bump(): void {
-		/* If a timer already exists, reset it. */
-		if (this.timer !== null) { clearTimeout(this.timer); this.timer = null; }
+		/*if (this.timer !== null) { clearTimeout(this.timer); this.timer = null; }
 		this.updatedAt = Date.now();
 
 		this.timer = setTimeout(async () => {
 			this.timer = null;
 			this.manager.delete(this);
-		}, this.getResetTime(true));
+		}, this.getResetTime(true));*/
 	}
 
 	/**

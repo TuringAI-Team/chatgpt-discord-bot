@@ -1,3 +1,5 @@
+import { OpenAIChatErrorJSON } from "./chat.js";
+
 /**
  * POST https://api.openai.com/v1/completions
  * https://platform.openai.com/docs/api-reference/completions
@@ -42,7 +44,9 @@ export interface OpenAICompletionsJSON {
     usage: OpenAIUsageCompletionsData;
 }
 
-export type OpenAIPartialCompletionsJSON = Pick<OpenAICompletionsJSON, "choices">
+export type OpenAIPartialCompletionsJSON = Pick<OpenAICompletionsJSON, "choices"> & {
+    error?: OpenAIChatErrorJSON;
+}
 
 export interface OpenAIUsageCompletionsData {
     prompt_tokens: number;

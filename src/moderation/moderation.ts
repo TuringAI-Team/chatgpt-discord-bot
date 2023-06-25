@@ -59,6 +59,7 @@ const QuickReasons: string[] = [
     "Sexual content",
     "Sexual content involving minors",
     "Gore/violent content",
+    "Incest-related content",
     "Racist content",
     "Trolling",
     "Spam",

@@ -1,4 +1,4 @@
-import { OpenAICompletionsData, OpenAICompletionsJSON, OpenAIPartialCompletionsJSON } from "../../openai/types/completions.js";
+import { OpenAICompletionsData, OpenAIPartialCompletionsJSON } from "../../openai/types/completions.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../../error/gpt/generation.js";
 import { ChatModel, ModelCapability, ModelType } from "../types/model.js";
 import { getPromptLength } from "../../conversation/utils/length.js";

@@ -71,7 +71,7 @@ export class PluginsModel extends ChatModel {
 
             user: options.db.user,
 
-            progress: async result => {
+            progress: result => {
                 const formatted = this.process(options, result);
                 if (formatted !== null) options.progress(formatted);
             },

@@ -46,13 +46,12 @@ export class OpenAIManager {
             headers: this.headers(),
 
             progress: (data, old) => {
-                /* If an error occurred, stop generation at this point. */
-                if (data.choices[0].error != undefined) {
+                if (data.error != undefined) {
                     throw new GPTAPIError({
                         endpoint: "/chat/completions",
                         code: 400,
-                        id: data.choices[0].error.code,
-                        message: data.choices[0].error.message
+                        id: data.error.type,
+                        message: data.error.message
                     });
                 }
 
@@ -67,8 +66,7 @@ export class OpenAIManager {
                             },
 
                             finish_reason: data.choices[0].finish_reason,
-                            index: data.choices[0].index,
-                            error: data.choices[0].error
+                            index: data.choices[0].index
                         }
                     ]
                 };
@@ -124,6 +122,15 @@ export class OpenAIManager {
             headers: this.headers(),
 
             progress: (data, old) => {
+                if (data.error != undefined) {
+                    throw new GPTAPIError({
+                        endpoint: "/chat/completions",
+                        code: 400,
+                        id: data.error.type,
+                        message: data.error.message
+                    });
+                }
+
                 const updated: OpenAIPartialCompletionsJSON = {
                     choices: [
                         {

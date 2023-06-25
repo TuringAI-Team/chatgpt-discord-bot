@@ -1,4 +1,4 @@
-import { ActionRowBuilder, AttachmentBuilder, BaseGuildTextChannel, ButtonBuilder, ButtonInteraction, ButtonStyle, ChannelType, ComponentEmojiResolvable, ComponentType, DiscordAPIError, DMChannel, EmbedBuilder, Guild, InteractionReplyOptions, Message, MessageCreateOptions, MessageEditOptions, MessageReplyOptions, PermissionsString, Role, TextChannel, User, WebhookMessageCreateOptions } from "discord.js";
+import { ActionRowBuilder, AttachmentBuilder, BaseGuildTextChannel, ButtonBuilder, ButtonInteraction, ButtonStyle, ChannelType, ComponentEmojiResolvable, DiscordAPIError, DMChannel, EmbedBuilder, Guild, InteractionReplyOptions, Message, MessageCreateOptions, MessageEditOptions, MessageReplyOptions, PermissionsString, Role, TextChannel, User, WebhookMessageCreateOptions } from "discord.js";
 import { randomUUID } from "crypto";
 
 import { ResponseChatNoticeMessage, MessageType, ResponseMessage } from "../chat/types/message.js";
@@ -11,7 +11,6 @@ import { InteractionHandlerRunOptions } from "../interaction/handler.js";
 import { ChatInteractionHandlerData } from "../interactions/chat.js";
 import { ChatModel, ModelCapability } from "../chat/types/model.js";
 import { ModerationResult } from "../moderation/moderation.js";
-import { DisplayCampaign } from "../db/managers/campaign.js";
 import { ChatGuildData } from "../chat/types/options.js";
 import { ChatSettingsTones } from "./settings/tone.js";
 import { Introduction } from "../util/introduction.js";

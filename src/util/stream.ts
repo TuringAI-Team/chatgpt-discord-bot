@@ -114,7 +114,8 @@ export class StreamBuilder<RequestBody, PartialResponseData, FinalResponseData =
                             else {}
 
                         } catch (error) {
-                            throw error;
+                            controller.abort();
+                            return reject(error);
                         }
                     },
                 });

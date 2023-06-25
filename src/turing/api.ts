@@ -583,15 +583,13 @@ export class TuringAPI extends EventEmitter {
             headers: this.headers(),
 
             progress: (data, old) => {
-                if (!data.choices) return;
-
                 /* If an error occurred, stop generation at this point. */
-                if (data.choices[0].error !== undefined) {
+                if (data.error !== undefined) {
                     throw new GPTAPIError({
                         endpoint: "/text/open-ai",
                         code: 400,
-                        id: data.choices[0].error.code,
-                        message: data.choices[0].error.message
+                        id: data.error.code,
+                        message: data.error.message
                     });
                 }
 
@@ -604,8 +602,7 @@ export class TuringAPI extends EventEmitter {
                             },
 
                             finish_reason: data.choices[0].finish_reason,
-                            index: data.choices[0].index,
-                            error: data.choices[0].error
+                            index: data.choices[0].index
                         }
                     ]
                 };

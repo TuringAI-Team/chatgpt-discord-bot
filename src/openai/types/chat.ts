@@ -1,4 +1,5 @@
 import { OpenAIUsageCompletionsData, OpenAICompletionsBody } from "./completions.js";
+import { OpenAIErrorType } from "./error.js";
 
 /**
  * POST https://api.openai.com/v1/chat/completions
@@ -24,7 +25,7 @@ export interface OpenAIChatResponse {
 
 export interface OpenAIChatErrorJSON {
     message: string;
-    type: string;
+    type: OpenAIErrorType;
     param: null;
     code: null;
 }
@@ -33,11 +34,11 @@ export interface OpenAIPartialChatResponse {
     delta: Partial<OpenAIChatMessage>;
     finish_reason: "stop" | "length" | null;
     index: number;
-    error?: OpenAIChatErrorJSON;
 }
 
 export interface OpenAIPartialChatCompletionsJSON {
     choices: [ OpenAIPartialChatResponse ];
+    error?: OpenAIChatErrorJSON;
 }
 
 export interface OpenAIChatCompletionsJSON {
