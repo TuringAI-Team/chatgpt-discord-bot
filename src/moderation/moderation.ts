@@ -28,6 +28,7 @@ const FlagToEmoji: Record<string, string> = {
     describe: "🔎",
     image: "🖼️",
     video: "📸",
+    music: "🎶",
     translationPrompt: "🌐",
     translationResult: "🌐",
     youTubeQuery: "▶️",
@@ -43,6 +44,7 @@ const FlagToName: Record<string, string> = {
     describe: "Image description",
     image: "Image prompt",
     video: "Video prompt",
+    music: "Music prompt",
     translationPrompt: "Translation prompt",
     translationResult: "Translation result",
     youTubeQuery: "YouTube search query",
@@ -76,7 +78,7 @@ type ModerationSendOptions = ModerationOptions & {
 }
 
 type ModerationImageSendOptions = Pick<ModerationSendOptions, "result" | "db" | "content" | "notice" | "user">
-export type ModerationSource = "chatUser" | "chatBot" | "image" | "translationPrompt" | "translationResult" | "describe" | "video" | "youTubeQuery"
+export type ModerationSource = "chatUser" | "chatBot" | "image" | "translationPrompt" | "translationResult" | "describe" | "video" | "music" | "youTubeQuery"
 
 interface AdditionalModerationOptions {
     /* Which Stable Diffusion model was used */

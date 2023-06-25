@@ -1,18 +1,33 @@
 import { AttachmentBuilder, SlashCommandBuilder } from "discord.js";
 
-import { TuringVideoModel, TuringVideoModels, TuringVideoOptions } from "../turing/api.js";
 import { Command, CommandInteraction, CommandResponse } from "../command/command.js";
+import { LoadingIndicatorManager } from "../db/types/indicator.js";
+import { RunPodMusicGenInput } from "../runpod/models/musicgen.js";
 import { ErrorResponse } from "../command/response/error.js";
 import { DatabaseInfo } from "../db/managers/user.js";
-import { ImageBuffer } from "../chat/types/image.js";
 import { Response } from "../command/response.js";
-import { Utils } from "../util/utils.js";
 import { Bot } from "../bot/bot.js";
-import { RunPodMusicGenInput } from "../runpod/models/musicgen.js";
-import { LoadingResponse } from "../command/response/loading.js";
-import { LoadingIndicator, LoadingIndicatorManager } from "../db/types/indicator.js";
 
 const MAX_MUSIC_PROMPT_LENGTH: number = 200
+
+interface MusicDurationSetting {
+	/* Duration, in seconds */
+	duration: number;
+
+	/* Which "role" this duration is restricted to */
+	restriction?: "premium" | "plan";
+}
+
+const MusicDurationSettings: MusicDurationSetting[] = [
+	{ duration: 5 },
+	{ duration: 10 },
+	{ duration: 15 },
+	{ duration: 30, restriction: "premium" },
+	{ duration: 45, restriction: "premium" },
+	{ duration: 60, restriction: "premium" },
+	{ duration: 90, restriction: "plan" },
+	{ duration: 120, restriction: "plan" }
+]
 
 export default class VideoCommand extends Command {
 	constructor(bot: Bot) {
@@ -25,6 +40,15 @@ export default class VideoCommand extends Command {
 				.setDescription("The possibilities are endless... 💫")
 				.setMaxLength(MAX_MUSIC_PROMPT_LENGTH)
 				.setRequired(true)
+			)
+
+			.addNumberOption(builder => builder
+				.setName("duration")
+				.setDescription("How long the music should be")
+				.addChoices(...MusicDurationSettings.map(s => ({
+					name: `${s.duration} seconds${s.restriction === "plan" ? " 📊" : s.restriction === "premium" ? " ✨" : ""}`,
+					value: s.duration
+				})))
 			)
 		, {
 			cooldown: {
@@ -51,18 +75,48 @@ export default class VideoCommand extends Command {
 		await interaction.deferReply().catch(() => {});
 
 		const moderation = await this.bot.moderation.check({
-			db, user: interaction.user, content: prompt, source: "video"
+			db, user: interaction.user, content: prompt, source: "music"
 		});
 
 		if (moderation.blocked) return await this.bot.moderation.message({
-            result: moderation, name: "Your video prompt"
+            result: moderation, name: "Your music prompt"
         });
+
+		/* Raw duration, specified in the command options */
+		const rawDuration: number = interaction.options.getNumber("duration", false) ?? 15;
+		const duration: MusicDurationSetting = MusicDurationSettings.find(d => d.duration === rawDuration)!;
+
+        /* Subscription type of the user & guild */
+        const subscriptionType = await this.bot.db.users.type(db);
+
+		if (duration.restriction === "premium" && !subscriptionType.premium) {
+			return void await new Response()
+				.addEmbed(builder => builder
+					.setDescription(`✨ This duration is restricted to **Premium** users.\n**Premium** *also includes further benefits, view \`/premium\` for more*. ✨`)
+					.setColor("Orange")
+				)
+				.setEphemeral(true)
+			.send(interaction);
+		}
+
+		if (duration.restriction === "plan" && subscriptionType.type !== "plan") {
+			return void await new Response()
+				.addEmbed(builder => builder
+					.setDescription(`✨ This duration is restricted to **pay-as-you-go Premium 📊** users.\n**Premium** *also includes further benefits, view \`/premium\` for differences between them & more*. ✨`)
+					.setColor("Orange")
+				)
+				.setEphemeral(true)
+			.send(interaction);
+		}
 
 		/* Music generation options */
 		const options: RunPodMusicGenInput = {
 			descriptions: [
 				prompt
 			],
+
+			modelName: "large",
+			duration: duration.duration
 		};
 
 		try {
