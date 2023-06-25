@@ -354,7 +354,7 @@ export class Generator {
 		if (message.mentions.everyone) return null;
 		if (message.channel.type === ChannelType.DM) return "dm";
 
-		if (message.reference && message.reference.messageId && message.channel.messages.cache.get(message.reference.messageId) && message.channel.messages.cache.get(message.reference.messageId)!.interaction) return "interactionReply";
+		//if (message.reference && message.reference.messageId && message.channel.messages.cache.get(message.reference.messageId) && message.channel.messages.cache.get(message.reference.messageId)!.interaction) return "interactionReply";
 		if (message.mentions.repliedUser !== null && message.mentions.repliedUser.id === this.bot.client.user.id && message.mentions.users.get(this.bot.client.user.id)) return "reply";
 
 		if (message.content.startsWith(`<@${this.bot.client.user.id}>`) || message.content.startsWith(`<@!${this.bot.client.user.id}>`) || message.content.endsWith(`<@${this.bot.client.user.id}>`) || message.content.endsWith(`<@!${this.bot.client.user.id}>`)) return "user";
