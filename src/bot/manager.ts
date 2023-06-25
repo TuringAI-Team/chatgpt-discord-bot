@@ -202,7 +202,7 @@ export class BotManager extends EventEmitter {
         const before: number = Date.now();
 
         await this.manager!.recluster!.start({
-            restartMode: "gracefulSwitch",
+            restartMode: "rolling",
             delay: 3 * 1000
         });
     
