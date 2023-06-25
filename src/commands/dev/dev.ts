@@ -104,6 +104,13 @@ export default class DeveloperCommand extends Command {
 			/* Get information about the Stable Horde API user. */
 			const user = await this.bot.image.findUser();
 
+			/* Discord gateway session limit */
+			const session = await this.bot.sessionLimit();
+
+			/* Whether enough remaining sessions are available for the bot to fully restart */
+			const shardCount: number = getInfo().TOTAL_SHARDS;
+			const enough: boolean = session.remaining >= shardCount;
+
 			return new Response()
 				.addEmbed(builder => builder
 					.setTitle("Development Statistics")
@@ -116,9 +123,7 @@ export default class DeveloperCommand extends Command {
 				.addEmbed(builder => builder
 					.setColor(this.bot.branding.color)
 					.setTitle("Clusters 🤖")
-					.setDescription(
-						clusterDebug.trim()
-					)
+					.setDescription(clusterDebug.trim())
 				)
 				.addEmbed(builder => builder
 					.setColor(this.bot.branding.color)
@@ -126,6 +131,17 @@ export default class DeveloperCommand extends Command {
 					.addFields(
 						{ name: "Kudos",            value: `${user.kudos}`, inline: true                 },
 						{ name: "Generated images", value: `${user.records.request.image}`, inline: true }
+					)
+				)
+				.addEmbed(builder => builder
+					.setColor(this.bot.branding.color)
+					.setTitle("Discord session 🖥️")
+					.setDescription(enough ? "There are enough sessions for the bot to fully restart ✅" : "There are **not** enough sessions for the bot to fully restart ⚠️")
+					.addFields(
+						{ name: "Remaining",           value: `\`${session.remaining}\`/\`${session.total}\``, inline: true },
+						{ name: "Concurrency", value: `\`${session.maxConcurrency}\`/s`, inline: true },
+						{ name: "Resets", value: `<t:${Math.floor((Date.now() + session.resetAfter) / 1000)}:R>`, inline: true },
+						{ name: "Shards", value: `${shardCount}`, inline: true }
 					)
 				);
 

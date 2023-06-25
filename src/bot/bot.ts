@@ -10,7 +10,7 @@ import { InteractionManager } from "../interaction/manager.js";
 import { ReplicateManager } from "../chat/other/replicate.js";
 import { WebhookManager } from "../conversation/webhook.js";
 import { StatusIncidentType } from "../util/statuspage.js";
-import { BotClusterManager, BotData } from "./manager.js";
+import { BotClusterManager, BotData, BotDataSessionLimit } from "./manager.js";
 import { ClusterDatabaseManager } from "../db/cluster.js";
 import { chooseStatusMessage } from "../util/status.js";
 import { executeConfigurationSteps } from "./setup.js";
@@ -327,6 +327,12 @@ export class Bot extends EventEmitter {
             ((manager: BotClusterManager, context: BotStatus) => manager.bot.status = context) as any,
             { context: { ...status, since: Date.now() } }
         );
+    }
+
+    public async sessionLimit(): Promise<BotDataSessionLimit> {
+        return await this.db.eval(async app => {
+            return app.manager.fetchSession();
+        });
     }
 
     /**

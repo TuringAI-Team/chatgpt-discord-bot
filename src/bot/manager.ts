@@ -11,6 +11,7 @@ export interface BotDataSessionLimit {
     maxConcurrency: number;
     remaining: number;
     total: number;
+    resetAfter: number;
 }
 
 export interface BotData {
@@ -216,13 +217,14 @@ export class BotManager extends EventEmitter {
 
     public async fetchSession(): Promise<BotDataSessionLimit> {
         const raw: {
-            session_start_limit: { max_concurrency: number, remaining: number, total: number }
+            session_start_limit: { max_concurrency: number, remaining: number, total: number, reset_after: number }
         } = await this.rest.get(Routes.gatewayBot()) as any;
 
         return {
             maxConcurrency: raw.session_start_limit.max_concurrency,
             remaining: raw.session_start_limit.remaining,
-            total: raw.session_start_limit.total
+            total: raw.session_start_limit.total,
+            resetAfter: raw.session_start_limit.reset_after
         };
     }
 
