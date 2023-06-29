@@ -1,5 +1,6 @@
 import { APIApplicationCommandOptionChoice, ActionRow, ActionRowBuilder, Awaitable, ButtonBuilder, ButtonComponent, ButtonInteraction, ButtonStyle, ComponentEmojiResolvable, GuildMember, Interaction, InteractionReplyOptions, InteractionUpdateOptions, ModalBuilder, SelectMenuComponentOptionData, StringSelectMenuBuilder, StringSelectMenuInteraction, TextChannel, TextInputBuilder, TextInputStyle, managerToFetchingStrategyOptions } from "discord.js";
 import { ChatInputCommandInteraction, Guild, Role, Snowflake } from "discord.js";
+import { randomUUID } from "crypto";
 import chalk from "chalk";
 
 import { TuringAlanImageGenerators, TuringAlanImageModifiers, TuringAlanSearchEngines, TuringVideoModels, alanOptions } from "../../turing/api.js";
@@ -1303,7 +1304,7 @@ export class ClusterSettingsManager extends BaseSettingsManager<ClusterDatabaseM
                 }
 
             } else if (option instanceof IntegerSettingsOption || option instanceof StringSettingsOption) {
-                const customID: string = `modal:${key}:${Date.now()}`;
+                const customID: string = randomUUID();
 
                 const modal: ModalBuilder = new ModalBuilder()
                     .setCustomId(customID)
@@ -1335,7 +1336,7 @@ export class ClusterSettingsManager extends BaseSettingsManager<ClusterDatabaseM
 
                     const timer = setTimeout(() => {
                         clean();
-                    }, 30 * 1000);
+                    }, 60 * 1000);
 
                     const listener = async (interaction: Interaction) => {
                         if (!interaction.isModalSubmit() || interaction.user.id !== db.user.id || interaction.customId !== customID) return;
@@ -1377,7 +1378,7 @@ export class ClusterSettingsManager extends BaseSettingsManager<ClusterDatabaseM
             if (Object.keys(changes).length > 0) {
                 entry = await this.apply<any>(entry, changes);
 
-                if (!interaction.replied) await interaction.update((await this.buildPage({
+                await interaction[interaction.deferred || interaction.replied ? "editReply" : "update"]((await this.buildPage({
                     category, interaction, db: entry
                 })).get() as InteractionUpdateOptions);
             } else {

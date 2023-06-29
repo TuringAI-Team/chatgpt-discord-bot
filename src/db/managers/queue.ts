@@ -13,7 +13,7 @@ export const DatabaseCacheInterval: number = 3 * 60 * 1000
 export class DatabaseQueueManager<T extends DatabaseManager<DatabaseManagerBot>> extends SubDatabaseManager<T> {}
 
 export class ClusterDatabaseQueueManager extends DatabaseQueueManager<ClusterDatabaseManager> {
-    public async update<T extends DatabaseLikeObject = DatabaseLikeObject>(type: DatabaseCollectionType, obj: T | string, updates: Partial<T>): Promise<T> {
+    public async update<T extends DatabaseLikeObject = DatabaseLikeObject>(type: DatabaseCollectionType, obj: T | string, updates: Partial<T> = {}): Promise<T> {
         return await this.db.eval<T>(async (app, { type, obj, updates }) => {
             return await app.db.queue.update(type, obj, updates);
         }, {
@@ -30,7 +30,7 @@ export class ClusterDatabaseQueueManager extends DatabaseQueueManager<ClusterDat
 
 export class AppDatabaseQueueManager extends DatabaseQueueManager<AppDatabaseManager> {
     /* All queued updates */
-    private readonly updates: Record<DatabaseCollectionType, Collection<string, DatabaseLikeObject>>;
+    public readonly updates: Record<DatabaseCollectionType, Collection<string, DatabaseLikeObject>>;
 
     constructor(db: AppDatabaseManager) {
         super(db);

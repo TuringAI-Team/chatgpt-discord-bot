@@ -129,7 +129,7 @@ export class Generator {
 		}
 
 		/* If the received message type is a notice message, display it accordingly. */
-		if (data.type === "Notice") {
+		if (data.type === MessageType.Notice) {
 			response
 				.setContent(null)
 				.addEmbed(builder => builder
@@ -142,7 +142,7 @@ export class Generator {
 		}
 
 		/* If the received data is a chat notice request, simply add the notice to the formatted message. */
-		if (data.type === "ChatNotice") {
+		if (data.type === MessageType.ChatNotice) {
 			embeds.push(new EmbedBuilder()
 				.setDescription(`${(data as ResponseChatNoticeMessage).notice} ${pending ? `**...** ${loadingEmoji}` : ""}`)
 				.setColor("Orange")

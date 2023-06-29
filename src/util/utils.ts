@@ -175,6 +175,17 @@ export abstract class Utils {
 		return name.split(".")[0];
 	}
 
+	public static chunk<T>(arr: T[], size: number): T[][] {
+		const chunks: T[][] = [];
+
+		for (let i = 0; i < arr.length; i += size) {
+			const chunk = arr.slice(i, i + size);
+			chunks.push(chunk);
+		}
+
+		return chunks;
+	}
+
 	public static inviteLink(bot: Bot): string {
 		return `https://discord.com/api/oauth2/authorize?client_id=${bot.app.config.discord.id}&permissions=277025769536&scope=bot`;
 	}

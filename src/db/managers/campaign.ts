@@ -13,6 +13,7 @@ import { Response } from "../../command/response.js";
 import { AppDatabaseManager } from "../app.js";
 import { SubDatabaseManager } from "../sub.js";
 import { DatabaseInfo } from "./user.js";
+import CampaignsCommand from "../../commands/campaigns.js";
 
 type DatabaseCampaignButton = ChatButton
 
@@ -111,9 +112,15 @@ export interface DatabaseCampaign {
     stats: DatabaseCampaignStatistics;
 }
 
+export type CreateCampaignOptions = Omit<DatabaseCampaign, "stats" | "active" | "id" | "filters" | "created">
+
+export type PartialDatabaseCampaign = Omit<DatabaseCampaign, "stats" | "active" | "id"> & {
+    id: string;
+}
+
 export interface DisplayCampaignResponse {
     embed: EmbedBuilder;
-    row: ActionRowBuilder<ButtonBuilder>;
+    row: ActionRowBuilder<ButtonBuilder> | null;
 }
 
 export interface DisplayCampaign {
@@ -129,7 +136,7 @@ export interface CampaignPickOptions {
     db: DatabaseInfo;
 }
 
-type CampaignRenderOptions = Pick<CampaignPickOptions, "db"> & { campaign: DatabaseCampaign }
+type CampaignRenderOptions = Pick<CampaignPickOptions, "db"> & { campaign: DatabaseCampaign, preview?: boolean }
 type CampaignRunFilterOptions = Pick<CampaignPickOptions, "db"> & { campaign: DatabaseCampaign }
 
 export class BaseCampaignManager<T extends DatabaseManager<DatabaseManagerBot>> extends SubDatabaseManager<T> {
@@ -141,21 +148,69 @@ export class ClusterCampaignManager extends BaseCampaignManager<ClusterDatabaseM
      * Get all available campaigns.
      * @returns Available campaigns
      */
-    private async all(): Promise<DatabaseCampaign[]> {
+    public async all(): Promise<DatabaseCampaign[]> {
         return await this.db.eval(async app => {
             return app.db.campaign.campaigns;
         });
     }
+    
     public async get(id: string): Promise<DatabaseCampaign | null> {
         return await this.db.fetchFromCacheOrDatabase<string, DatabaseCampaign>(
 			"campaigns", id
 		);
     }
 
+    public async create(options: CreateCampaignOptions): Promise<DatabaseCampaign> {
+        /* Generate a random UUID for the campaign. */
+        const id: string = randomUUID();
+
+        /* Final creation options */
+        const data: PartialDatabaseCampaign = {
+            filters: null, created: new Date().toISOString(), id,
+            ...options
+        };
+
+        const campaign: DatabaseCampaign = await this.db.createFromCacheOrDatabase<string, DatabaseCampaign, PartialDatabaseCampaign>(
+			"campaigns", id, data
+		);
+
+        await this.db.eval(async (app, { campaign }) => {
+            app.db.campaign.campaigns.push(campaign);
+        }, {
+            campaign
+        });
+
+        return campaign;
+    }
+
+    public async update(campaign: DatabaseCampaign, changes: Partial<DatabaseCampaign>): Promise<DatabaseCampaign> {
+        const updated: DatabaseCampaign = await this.db.queue.update("campaigns", campaign, changes);
+
+        await this.db.eval(async (app, { campaign }) => {
+            const index: number = app.db.campaign.campaigns.findIndex(c => c.id === campaign.id);
+            app.db.campaign.campaigns[index] = campaign;
+        }, {
+            campaign: updated
+        });
+
+        return updated;
+    }
+
+    public async delete(campaign: DatabaseCampaign): Promise<void> {
+        await this.db.eval(async (app, { campaign }) => {
+            const index: number = app.db.campaign.campaigns.findIndex(c => c.id === campaign.id);
+            app.db.campaign.campaigns.splice(index, 1);
+        }, {
+            campaign
+        });
+
+        await this.db.delete("campaigns", campaign);
+    }
+
     public async pick({ db }: Omit<CampaignPickOptions, "count">): Promise<DatabaseCampaign | null> {
         const sorted: DatabaseCampaign[] = (await this.all())
             .filter(c => c.active && this.executeFilters({ campaign: c, db }))
-            .sort((a, b) => (a.budget ?? 0) - (b.budget ?? 0));
+            .sort((a, b) => (b.budget ?? 0) - (a.budget ?? 0));
 
         return sorted[0];
     }
@@ -189,7 +244,7 @@ export class ClusterCampaignManager extends BaseCampaignManager<ClusterDatabaseM
         return true;
     }
 
-    public async render({ campaign }: CampaignRenderOptions): Promise<DisplayCampaign> {
+    public async render({ campaign, preview }: CampaignRenderOptions): Promise<DisplayCampaign> {
         const row: ActionRowBuilder<ButtonBuilder> = new ActionRowBuilder();
         const embed: EmbedBuilder = new EmbedBuilder();
 
@@ -198,7 +253,7 @@ export class ClusterCampaignManager extends BaseCampaignManager<ClusterDatabaseM
         embed.setColor(campaign.settings.color ?? this.db.config.branding.color);
         if (campaign.settings.image) embed.setImage(campaign.settings.image);
         if (campaign.settings.thumbnail) embed.setThumbnail(campaign.settings.thumbnail);
-        embed.setFooter({ text: "This is a sponsored advertisement." });
+        embed.setFooter({ text: preview ? "This is a preview of your advertisement." : "This is a sponsored advertisement." });
 
 		/* If the message has any additional buttons attached, add them to the resulting message. */
 		if (campaign.settings.buttons && campaign.settings.buttons.length > 0) {
@@ -211,7 +266,7 @@ export class ClusterCampaignManager extends BaseCampaignManager<ClusterDatabaseM
                 builder.setLabel(button.label);
 
                 if (button.id === "campaign") {
-                    builder.setCustomId(`campaign:${campaign.id}:link`);
+                    builder.setCustomId(`campaign:link:${campaign.id}`);
                     builder.setEmoji("<:share:1122241895133884456>");
                     builder.setStyle(ButtonStyle.Primary);
                 } else {
@@ -228,20 +283,32 @@ export class ClusterCampaignManager extends BaseCampaignManager<ClusterDatabaseM
 			});
 
 		    row.addComponents(buttons);
-		}
+		} else {
+            row.addComponents(
+                new ButtonBuilder()
+                    .setLabel("Visit")
+                    .setCustomId(`campaign:link:${campaign.id}`)
+                    .setEmoji("<:share:1122241895133884456>")
+                    .setStyle(ButtonStyle.Primary)
+            );
+        }
 
         return {
             db: campaign, response: {
-                embed, row
+                embed, row: row.components.length > 0 ? row : null
             }
         };
     }
 
-    public async handleInteraction({ db, data: { action, id } }: InteractionHandlerRunOptions<ButtonInteraction, CampaignInteractionHandlerData>): InteractionHandlerResponse {
-        const campaign: DatabaseCampaign | null = await this.get(id);
-        if (campaign === null) return;
-
+    public async handleInteraction(options: InteractionHandlerRunOptions<ButtonInteraction, CampaignInteractionHandlerData>): InteractionHandlerResponse {
+        const action = options.data.action;
+        
         if (action === "link") {
+            const { db, raw } = options;
+
+            const campaign: DatabaseCampaign | null = await this.get(raw[1]);
+            if (campaign === null) return;
+
             const row: ActionRowBuilder<ButtonBuilder> = new ActionRowBuilder();
 
             const url: string = this.url({ campaign, db });
@@ -256,11 +323,15 @@ export class ClusterCampaignManager extends BaseCampaignManager<ClusterDatabaseM
             return new Response()
                 .addComponent(ActionRowBuilder<ButtonBuilder>, row)
                 .setEphemeral(true);
+            
+        } else if (action === "ui") {
+            const command: CampaignsCommand = this.db.bot.command.get("campaigns");
+            return await command.handleInteraction(options);
         }
     }
 
     public url({ campaign, db }: CampaignRenderOptions): string {
-        return `https://l.turing.sh/${campaign.name}/${db.user.id}`;
+        return `https://l.turing.sh/${campaign.id}/${db.user.id}`;
     }
 }
 

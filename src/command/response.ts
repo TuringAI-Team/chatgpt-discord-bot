@@ -64,7 +64,9 @@ export class Response {
 		return this;
 	}
 
-	public addComponent<T extends ComponentBuilder>(type: { new(): T }, builder: ((component: T) => T) | T): this {
+	public addComponent<T extends ComponentBuilder>(type: { new(): T }, builder: ((component: T) => T) | T | null): this {
+		if (builder === null) return this;
+		
 		this.components.push((typeof builder === "function" ? builder(new type()) : builder).toJSON());
 		return this;
 	}

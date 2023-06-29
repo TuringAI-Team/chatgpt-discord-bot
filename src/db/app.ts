@@ -105,8 +105,24 @@ export class AppDatabaseManager extends DatabaseManager<App> {
         return final;
     }
 
+    public async delete<T extends DatabaseLikeObject = DatabaseLikeObject>(type: DatabaseCollectionType, obj: T | string): Promise<void> {
+        const id: string = typeof obj === "string" ? obj : obj.id;
+
+        const { error } = await this.client
+            .from(this.collectionName(type))
+            .delete()
+            .eq("id", id);
+
+        if (error) throw new GPTDatabaseError({
+            collection: type, raw: error
+        });
+
+        this.queue.updates[type].delete(id);
+        await this.deleteFromCache(type, id);
+    }
+
     public async setCache<T extends DatabaseLikeObject = DatabaseLikeObject>(type: DatabaseCollectionType, obj: T | string, updates?: Partial<T>): Promise<T> {
-       const id: string = typeof obj === "string" ? obj : obj.id;
+        const id: string = typeof obj === "string" ? obj : obj.id;
         let updated: T;
         
         if (typeof obj === "string") {
@@ -119,5 +135,10 @@ export class AppDatabaseManager extends DatabaseManager<App> {
 
         await this.bot.cache.set(type, id, updated);
         return updated;
+    }
+
+    public async deleteFromCache<T extends DatabaseLikeObject = DatabaseLikeObject>(type: DatabaseCollectionType, obj: T | string): Promise<void> {
+        const id: string = typeof obj === "string" ? obj : obj.id;
+        await this.bot.cache.delete(type, id);
     }
 }

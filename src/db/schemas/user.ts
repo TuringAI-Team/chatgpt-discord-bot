@@ -109,6 +109,7 @@ export class UserSchema extends DatabaseSchema<DatabaseUser, User> {
 
         user.settings = this.db.settings.load(user);
         user.metadata = this.metadata(user);
+        user.interactions = this.interactions(user);
 
         return user;
     }

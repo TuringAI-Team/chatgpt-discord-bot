@@ -183,13 +183,15 @@ export class ModerationManager {
                             .setMaxLength(150)
                     );
 
+                const customID: string = randomUUID();
+
                 const modal = new ModalBuilder()
-                    .setCustomId(`${action}-modal:${original.id}`)
+                    .setCustomId(customID)
                     .setTitle(action === "warn" ? "Send a warning to the user ✉️" : "Ban the user 🔨")
                     .addComponents(row);
 
                 const listener = async (modalInteraction: Interaction) => {
-                    if (modalInteraction.isModalSubmit() && !modalInteraction.replied && modalInteraction.customId === `${action}-modal:${original.id}` && modalInteraction.user.id === original.user.id) {
+                    if (modalInteraction.isModalSubmit() && !modalInteraction.replied && modalInteraction.customId === customID && modalInteraction.user.id === original.user.id) {
                         await modalInteraction.deferUpdate();
                         
                         /* After using the text input box, remove the event listener for this specific event. */

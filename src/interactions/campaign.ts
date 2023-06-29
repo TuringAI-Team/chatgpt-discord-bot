@@ -8,9 +8,6 @@ type CampaignInteractionAction = "link"
 export interface CampaignInteractionHandlerData {
     /* Which action to perform */
     action: CampaignInteractionAction;
-
-    /* ID of the campaign */
-    id: string;
 }
 
 export class ChatInteractionHandler extends InteractionHandler<ButtonInteraction, CampaignInteractionHandlerData> {
@@ -21,10 +18,9 @@ export class ChatInteractionHandler extends InteractionHandler<ButtonInteraction
             new InteractionHandlerBuilder()
                 .setName("campaign")
                 .setDescription("Various actions regarding the campaign feature")
-                .setType([ InteractionType.Button ]),
+                .setType([ InteractionType.Button, InteractionType.StringSelectMenu ]),
 
             {
-                id: "string",
                 action: "string"
             }
         );

@@ -71,6 +71,31 @@ export default class VideoCommand extends Command {
 			message: `The specified prompt is **too long**, it can't be longer than **${MAX_MUSIC_PROMPT_LENGTH}** characters`
 		});
 
+		/* Raw duration, specified in the command options */
+		const rawDuration: number = interaction.options.getNumber("duration", false) ?? 15;
+		const duration: MusicDurationSetting = MusicDurationSettings.find(d => d.duration === rawDuration)!;
+
+        /* Subscription type of the user & guild */
+        const subscriptionType = await this.bot.db.users.type(db);
+
+		if (duration.restriction === "premium" && !subscriptionType.premium) {
+			return new Response()
+				.addEmbed(builder => builder
+					.setDescription(`✨ This duration is restricted to **Premium** users.\n**Premium** *also includes further benefits, view \`/premium\` for more*. ✨`)
+					.setColor("Orange")
+				)
+				.setEphemeral(true);
+		}
+
+		if (duration.restriction === "plan" && subscriptionType.type !== "plan") {
+			return new Response()
+				.addEmbed(builder => builder
+					.setDescription(`✨ This duration is restricted to **pay-as-you-go Premium 📊** users.\n**Premium** *also includes further benefits, view \`/premium\` for differences between them & more*. ✨`)
+					.setColor("Orange")
+				)
+				.setEphemeral(true);
+		}
+
 		/* Defer the reply, as this might take a while. */
 		await interaction.deferReply().catch(() => {});
 
@@ -81,33 +106,6 @@ export default class VideoCommand extends Command {
 		if (moderation.blocked) return await this.bot.moderation.message({
             result: moderation, name: "Your music prompt"
         });
-
-		/* Raw duration, specified in the command options */
-		const rawDuration: number = interaction.options.getNumber("duration", false) ?? 15;
-		const duration: MusicDurationSetting = MusicDurationSettings.find(d => d.duration === rawDuration)!;
-
-        /* Subscription type of the user & guild */
-        const subscriptionType = await this.bot.db.users.type(db);
-
-		if (duration.restriction === "premium" && !subscriptionType.premium) {
-			return void await new Response()
-				.addEmbed(builder => builder
-					.setDescription(`✨ This duration is restricted to **Premium** users.\n**Premium** *also includes further benefits, view \`/premium\` for more*. ✨`)
-					.setColor("Orange")
-				)
-				.setEphemeral(true)
-			.send(interaction);
-		}
-
-		if (duration.restriction === "plan" && subscriptionType.type !== "plan") {
-			return void await new Response()
-				.addEmbed(builder => builder
-					.setDescription(`✨ This duration is restricted to **pay-as-you-go Premium 📊** users.\n**Premium** *also includes further benefits, view \`/premium\` for differences between them & more*. ✨`)
-					.setColor("Orange")
-				)
-				.setEphemeral(true)
-			.send(interaction);
-		}
 
 		/* Music generation options */
 		const options: RunPodMusicGenInput = {

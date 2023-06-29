@@ -19,7 +19,7 @@ export default class StatisticsCommand extends Command {
 		const fields = [
 			{
 				key: "Servers 🖥️",
-				value: this.bot.statistics.guildCount
+				value: `${new Intl.NumberFormat("en-US").format(this.bot.statistics.guildCount)}`
 			},
 
 			{
@@ -34,7 +34,7 @@ export default class StatisticsCommand extends Command {
 
 			{
 				key: "Users 🫂",
-				value: `${this.bot.statistics.discordUsers} <:discord:1097815072602067016> — ${this.bot.statistics.databaseUsers} <:chatgpt_blurple:1081530335306727545>`
+				value: `${new Intl.NumberFormat("en-US").format(this.bot.statistics.discordUsers)} <:discord:1097815072602067016> — ${new Intl.NumberFormat("en-US").format(this.bot.statistics.databaseUsers)} <:chatgpt_blurple:1081530335306727545>`
 			},
 
 			{

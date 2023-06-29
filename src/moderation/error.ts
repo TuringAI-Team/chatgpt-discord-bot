@@ -2,7 +2,6 @@ import { InteractionResponse, Message } from "discord.js";
 import words from "random-words";
 
 import { Response, ResponseSendClass } from "../command/response.js";
-import { Utils } from "../util/utils.js";
 import { Bot } from "../bot/bot.js";
 
 export interface ErrorHandlingOptions {
