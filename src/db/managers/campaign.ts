@@ -1,4 +1,5 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle, ColorResolvable, EmbedBuilder, Snowflake } from "discord.js";
+import { ActionRowBuilder, Awaitable, ButtonBuilder, ButtonInteraction, ButtonStyle, ColorResolvable, EmbedBuilder, Snowflake } from "discord.js";
+import ChartJsImage from "chartjs-to-image";
 import { randomUUID } from "crypto";
 import chalk from "chalk";
 import { URL } from "url";
@@ -6,6 +7,7 @@ import { URL } from "url";
 import { InteractionHandlerResponse, InteractionHandlerRunOptions } from "../../interaction/handler.js";
 import { CampaignInteractionHandlerData } from "../../interactions/campaign.js";
 import { DatabaseManager, DatabaseManagerBot } from "../manager.js";
+import CampaignsCommand from "../../commands/campaigns.js";
 import { GPTDatabaseError } from "../../error/gpt/db.js";
 import { ChatButton } from "../../chat/types/button.js";
 import { ClusterDatabaseManager } from "../cluster.js";
@@ -13,7 +15,6 @@ import { Response } from "../../command/response.js";
 import { AppDatabaseManager } from "../app.js";
 import { SubDatabaseManager } from "../sub.js";
 import { DatabaseInfo } from "./user.js";
-import CampaignsCommand from "../../commands/campaigns.js";
 
 type DatabaseCampaignButton = ChatButton
 
@@ -94,7 +95,7 @@ export interface DatabaseCampaign {
     active: boolean;
 
     /* What the budget of this campaign is */
-    budget: number | null;
+    budget: number;
 
     /** Discord IDs of the members of this campaign */
     members: Snowflake[];
@@ -134,6 +135,18 @@ export interface CampaignPickOptions {
 
     /* Which user to display this campaign to */
     db: DatabaseInfo;
+}
+
+interface CampaignChart {
+    name: string;
+    data: Buffer;
+}
+
+interface CampaignChartDesigner {
+    name: string;
+    type: "chart" | "pie";
+
+    run: (campaign: DatabaseCampaign, chart: ChartJsImage) => Awaitable<any>;
 }
 
 type CampaignRenderOptions = Pick<CampaignPickOptions, "db"> & { campaign: DatabaseCampaign, preview?: boolean }
@@ -209,10 +222,37 @@ export class ClusterCampaignManager extends BaseCampaignManager<ClusterDatabaseM
 
     public async pick({ db }: Omit<CampaignPickOptions, "count">): Promise<DatabaseCampaign | null> {
         const sorted: DatabaseCampaign[] = (await this.all())
-            .filter(c => c.active && this.executeFilters({ campaign: c, db }))
-            .sort((a, b) => (b.budget ?? 0) - (a.budget ?? 0));
+            .filter(c => c.active && this.executeFilters({ campaign: c, db }));
 
-        return sorted[0];
+        /* Final chosen campaign */
+        let final: DatabaseCampaign = null!;
+
+        const totalBudget: number = sorted.reduce(
+            (previous, campaign) => previous + campaign.budget, 0
+        );
+
+        const random: number = Math.floor(Math.random() * 100) + 1;
+
+        let start: number = 0;
+        let end: number = 0;
+
+        for (const campaign of sorted) {
+            let percent: number = Math.round((campaign.budget / totalBudget) * 100);
+            end += percent;
+
+            if (percent > 20) percent = 20 - (percent - 20);
+            if (percent < 5) percent = 5 + (10 - percent);
+
+            if (random > start && random <= end) {
+                final = campaign;
+                break;
+            }
+
+            start += percent;
+        }
+
+        if (final === null) return null;
+        return final;
     }
 
 	/**
@@ -298,6 +338,55 @@ export class ClusterCampaignManager extends BaseCampaignManager<ClusterDatabaseM
                 embed, row: row.components.length > 0 ? row : null
             }
         };
+    }
+
+    public async charts(campaign: DatabaseCampaign): Promise<CampaignChart[]> {
+        const designers: CampaignChartDesigner[] = [
+            {
+                name: "Countries",
+                type: "pie",
+
+                run: campaign => {
+                    return {
+                        data: {
+                            datasets: [ {
+                                data: Object.values(campaign.stats.clicks.geo)
+                            } ],
+                        
+                            labels: Object.keys(campaign.stats.clicks.geo)
+                        }
+                    };
+                }
+            }
+        ];
+
+        const final: CampaignChart[] = [];
+
+        for (const designer of designers) {
+            const chart = new ChartJsImage();
+
+            /* Render the actual chart & get its configuration. */
+            const config = await designer.run(campaign, chart);
+
+            chart.setConfig({
+                ...config,
+                
+                options: {
+                    plugins: {
+                        legend: { position: "top" }
+                    }
+                },
+                
+                type: designer.type
+            });
+
+            final.push({
+                name: designer.name,
+                data: await chart.toBinary()
+            });
+        }
+
+        return final;
     }
 
     public async handleInteraction(options: InteractionHandlerRunOptions<ButtonInteraction, CampaignInteractionHandlerData>): InteractionHandlerResponse {

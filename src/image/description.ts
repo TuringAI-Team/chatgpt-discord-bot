@@ -336,7 +336,6 @@ export class ImageDescriptionManager {
 
         for (const line of result.lines) {
             for (const word of line.words) {
-                /* Draw a box, where the word is on the image. */
                 context.fillStyle = style;
                 context.fillRect(word.left, word.top, word.width, word.height);
             }

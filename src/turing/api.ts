@@ -8,6 +8,7 @@ import { ChatSettingsPlugin, ChatSettingsPluginIdentifier } from "../conversatio
 import { countChatMessageTokens, getPromptLength } from "../conversation/utils/length.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
 import { OpenAIUsageCompletionsData } from "../openai/types/completions.js";
+import { RunPodPath, RunPodRawStreamResponseData } from "../runpod/api.js";
 import { ChoiceSettingOptionChoice } from "../db/managers/settings.js";
 import { ChatOutputImage, ImageBuffer } from "../chat/types/image.js";
 import { Conversation } from "../conversation/conversation.js";
@@ -17,18 +18,18 @@ import { DatabaseInfo } from "../db/managers/user.js";
 import { DatabaseUser } from "../db/schemas/user.js";
 import { GPTAPIError } from "../error/gpt/api.js";
 import { StreamBuilder } from "../util/stream.js";
-import { RunPodPath } from "../runpod/api.js";
 import { Utils } from "../util/utils.js";
 import { Bot } from "../bot/bot.js";
 
 type TuringAPIPath = 
     `cache/${string}`
-    | "imgs/filter" | "imgs/dalle"
+    | `imgs/${"filter" | "dalle"}`
     | `text/${string}` | `text/alan/${TuringAlanChatModel}` | `text/plugins/${TuringChatPluginsModel}`
     | `video/${TuringVideoModelName}`
     | `chart/${MetricsType}`
     | `imgs/mj/${"describe" | "imagine" | MidjourneyAction}`
     | `runpod/${RunPodPath}`
+    | "audio/transcript"
 
 interface TuringAPIFilterResult {
     isNsfw: boolean;
@@ -557,12 +558,43 @@ export type TuringChatOpenAIBody = Pick<OpenAIChatBody, "model" | "messages" | "
     pw?: boolean;
 }
 
+export interface TuringTranscribeBody {
+    ai: "whisper" | "whisper-fast";
+    model: "tiny" | "base" | "small" | "medium";
+    url: string;
+}
+
+export interface TuringTranscribeSegment {
+    text: string;
+}
+
+export interface TuringTranscribeRawResult {
+    segments: TuringTranscribeSegment[];
+}
+
+export interface TuringTranscribeResult {
+    text: string;
+    segments: TuringTranscribeSegment[];
+}
+
 export class TuringAPI extends EventEmitter {
     public readonly bot: Bot;
 
     constructor(bot: Bot) {
         super();
         this.bot = bot;
+    }
+
+    public async transcribe(options: TuringTranscribeBody): Promise<TuringTranscribeResult> {
+        const body: RunPodRawStreamResponseData<TuringTranscribeRawResult> = await this.request("audio/transcript", "POST", options);
+        if (body.status === "FAILED") throw new Error("Failed");
+
+        const segments: TuringTranscribeSegment[] = body.output!.segments.map(s => ({ text: s.text.trim() }));
+        const final: string = segments.map(s => s.text).join("\n");
+
+        return {
+            segments, text: final
+        };
     }
 
     public async openAI(options: TuringChatOpenAIBody, progress?: (data: OpenAIPartialChatCompletionsJSON) => Promise<void> | void): Promise<OpenAIChatCompletionsData> {

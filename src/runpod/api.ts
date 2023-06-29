@@ -33,13 +33,15 @@ interface RunPodRawSyncResponseData<T> {
     id: string;
     output: T;
     status: RunPodExecutionStatus;
+    error?: string;
 }
 
-interface RunPodRawStreamResponseData<T> {
+export interface RunPodRawStreamResponseData<T> {
     delayTime?: number;
     executionTime?: number;
     id: string;
     output?: T;
+    error?: string;
     status: RunPodExecutionStatus;
 }
 
@@ -60,6 +62,8 @@ export class RunPodManager {
             model, input
         });
 
+        this.error(data);
+
         return {
             duration: data.executionTime,
             output: data.output
@@ -75,6 +79,8 @@ export class RunPodManager {
             latest = await this.bot.turing.request(`runpod/status/${latest.id}`, "POST", {
                 model
             });
+
+            this.error(latest);
             
             if (progress && latest.status !== "COMPLETED" && latest.status !== "FAILED") {
                 try {
@@ -106,5 +112,14 @@ export class RunPodManager {
             results: result.output.output.map(data => ImageBuffer.load(data)),
             raw: result
         };
+    }
+
+    private error(data: RunPodRawSyncResponseData<any> | RunPodRawStreamResponseData<any>): void {
+        if (data.status !== "FAILED" || !data.error) return;
+
+        throw new GPTGenerationError({
+            type: GPTGenerationErrorType.Other,
+            data: data.error
+        });
     }
 }

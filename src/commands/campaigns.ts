@@ -1,4 +1,4 @@
-import { ActionRowBuilder, Awaitable, ButtonBuilder, ButtonInteraction, ButtonStyle, ChatInputCommandInteraction, ColorResolvable, Colors, Interaction, InteractionReplyOptions, MessageEditOptions, ModalBuilder, ModalSubmitInteraction, SlashCommandBuilder, Snowflake, StringSelectMenuBuilder, StringSelectMenuInteraction, TextInputBuilder, TextInputStyle, User, resolveColor } from "discord.js";
+import { ActionRowBuilder, AttachmentBuilder, Awaitable, ButtonBuilder, ButtonInteraction, ButtonStyle, ChatInputCommandInteraction, ColorResolvable, Colors, Interaction, InteractionReplyOptions, MessageEditOptions, ModalBuilder, ModalSubmitInteraction, SlashCommandBuilder, Snowflake, StringSelectMenuBuilder, StringSelectMenuInteraction, TextInputBuilder, TextInputStyle, User, resolveColor } from "discord.js";
 import { randomUUID } from "crypto";
 import words from "random-words";
 
@@ -88,6 +88,26 @@ const CampaignParameters: CampaignParameter[] = [
         },
         update: value => ({ link: value }),
         previous: c => c.link
+    },
+
+    {
+        name: "Budget",
+        type: TextInputStyle.Short,
+        length: { min: 1, max: 10 },
+        validate: value => {
+            const num: number = parseFloat(value);
+            if (isNaN(num)) return { message: "not a valid number" };
+
+            if (num === 0) return { message: "has to be bigger than zero" };
+            if (num > 1000) return { message: "may not be bigger than $1000" }
+
+            const decimalPlaces: number = (num.toString().split(".")[1] || '').length;
+            if (decimalPlaces > 2) return { message: "may not have more than 2 decimal places" };
+
+            return true;
+        },
+        update: value => ({ budget: parseFloat(value) }),
+        previous: c => c.budget.toString()
     },
 
     {
@@ -501,6 +521,26 @@ export default class CampaignsCommand extends Command {
                 return new Response()
                     .addComponent(ActionRowBuilder<ButtonBuilder>, row)
                     .addEmbed(embed).setEphemeral(true);
+                    
+            } else if (action === "stats") {
+                const charts = await this.bot.db.campaign.charts(campaign);
+                const response = new Response().setEphemeral(true);
+
+                for (const chart of charts) {
+                    const id: string = randomUUID();
+
+                    response.addAttachment(
+                        new AttachmentBuilder(chart.data).setName(`${id}.png`)
+                    );
+
+                    response.addEmbed(builder => builder
+                        .setTitle(chart.name)
+                        .setImage(`attachment://${id}.png`)
+                        .setColor(this.bot.branding.color)
+                    );
+                }
+
+                return response;
             }
 
             const overview: Response = await this.buildOverview({ db, interaction, campaign });
