@@ -85,9 +85,11 @@ export default class SummarizeCommand extends Command {
 		, {
 			cooldown: {
 				free: 5 * 60 * 1000,
-				voter: 4 * 60 * 1000,
+				voter: 5 * 60 * 1000,
 				subscription: 60 * 1000
-			}
+			},
+
+			restriction: [ "voter" ]
 		});
 	}
 
@@ -250,8 +252,8 @@ export default class SummarizeCommand extends Command {
 
 				/* Generate the summarization result using ChatGPT. */
 				const raw = await this.bot.turing.openAI({
-					messages: prompt.messages, model: "gpt-3.5-turbo",
-					temperature: 0.6, maxTokens: 4097 - prompt.tokens - 2
+					messages: prompt.messages, model: "gpt-3.5-turbo-0613",
+					temperature: 0.6, maxTokens: 500
 				});
 
 				/* Summary of the subtitles, by ChatGPT */

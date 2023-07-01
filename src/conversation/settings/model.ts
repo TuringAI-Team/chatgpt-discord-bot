@@ -152,14 +152,6 @@ export class ChatSettingsModel {
     }
 }
 
-type ReplicateChatModelOptions = Omit<ChatSettingsModelOptions, "type"> & {
-    /* Replicate options builder callback */
-    builder: (context: ChatSettingsModelPromptContext) => Awaitable<any>;
-
-    /* Replicate options response concentator/formatter */
-    formatter?: (output: string | string[]) => string;
-}
-
 export const ChatSettingsModels: ChatSettingsModel[] = [
     new ChatSettingsModel({
         name: "ChatGPT",
@@ -171,7 +163,10 @@ export const ChatSettingsModels: ChatSettingsModel[] = [
 
         billing: {
             type: ChatSettingsModelBillingType.Per1000Tokens,
-            amount: 0.0015
+            amount: {
+                prompt: 0.0015,
+                completion: 0.002
+            }
         },
 
         prompt: {
@@ -336,39 +331,6 @@ I must provide engaging & entertaining responses.
 
 Current date & time: ${context.time}, ${context.date}
 Knowledge cut-off: September 2021, like ChatGPT
-`
-        }
-    }),
-
-    new ChatSettingsModel({
-        name: "Bard",
-        emoji: { display: "<:bard:1108815821997879317>", fallback: "✨" },
-        description: "Your creative and helpful collaborator, by Google",
-        cooldown: { multiplier: 0.8 },
-        settings: { model: "bard" },
-        type: ModelType.Turing,
-
-        billing: { type: ChatSettingsModelBillingType.Free, amount: 0 },
-        prompt: { builder: () => "" }
-    }),
-
-    new ChatSettingsModel({
-        name: "Koala",
-        description: "A chatbot trained by fine-tuning Meta's LLaMA on data collected from the internet",
-        emoji: { display: "<:koala:1102622567845593209>", fallback: "🐨" },
-        settings: { model: "koala" },
-        history: { maxTokens: 1500 },
-        type: ModelType.Turing,
-
-        billing: {
-            type: ChatSettingsModelBillingType.PerSecond,
-            amount: 0.0023
-        },
-
-        prompt: {
-            builder: ({ context }) => `
-I am Koala, a fine-tuned language model based on LLaMA 13B, trained on data collected from the internet.
-Current date & time: ${context.time}, ${context.date}
 `
         }
     }),

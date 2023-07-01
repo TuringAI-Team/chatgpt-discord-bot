@@ -157,6 +157,12 @@ export class BaseCampaignManager<T extends DatabaseManager<DatabaseManagerBot>> 
 }
 
 export class ClusterCampaignManager extends BaseCampaignManager<ClusterDatabaseManager> {
+    public async refresh(): Promise<DatabaseCampaign[]> {
+        return await this.db.eval(async app => {
+            return await app.db.campaign.load();
+        });
+    }
+
     /**
      * Get all available campaigns.
      * @returns Available campaigns
@@ -437,6 +443,8 @@ export class AppCampaignManager extends BaseCampaignManager<AppDatabaseManager> 
      * Fetch all campaigns from the database.
      */
     public async load(): Promise<DatabaseCampaign[]> {
+        if (this.campaigns.length > 0) this.campaigns = [];
+
         const { data, error } = await this.db.client.from(this.collectionName())
             .select("*");
 
@@ -453,6 +461,7 @@ export class AppCampaignManager extends BaseCampaignManager<AppDatabaseManager> 
         if (this.db.bot.dev) this.db.bot.logger.debug(`Loaded`, chalk.bold(campaigns.length), `campaign${campaigns.length > 1 ? "s" : ""} from the database.`);
         this.campaigns = campaigns;
 
+        this.campaigns.forEach(c => this.db.setCache("campaigns", c));
         return campaigns;
     }
 

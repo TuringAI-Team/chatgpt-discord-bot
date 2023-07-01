@@ -99,7 +99,7 @@ const CampaignParameters: CampaignParameter[] = [
             if (isNaN(num)) return { message: "not a valid number" };
 
             if (num === 0) return { message: "has to be bigger than zero" };
-            if (num > 1000) return { message: "may not be bigger than $1000" }
+            if (num > 1000) return { message: "may not be bigger than $1000" };
 
             const decimalPlaces: number = (num.toString().split(".")[1] || '').length;
             if (decimalPlaces > 2) return { message: "may not have more than 2 decimal places" };
@@ -200,6 +200,9 @@ const CampaignParameters: CampaignParameter[] = [
     },
 ]
 
+/* Maximum amount of campaigns a user may be part of */
+const MaxCampaignsPerUser: number = 2
+
 export default class CampaignsCommand extends Command {
     constructor(bot: Bot) {
         super(bot,
@@ -209,7 +212,7 @@ export default class CampaignsCommand extends Command {
         , { restriction: [ "advertiser", "investor", "owner" ] });
     }
 
-    public async buildOverviewToolbar({ campaign, db, interaction }: BuildOverviewOptions): Promise<ActionRowBuilder<ButtonBuilder>[]> {
+    public async buildOverviewToolbar({ campaign }: BuildOverviewOptions): Promise<ActionRowBuilder<ButtonBuilder>[]> {
         const buildID = (action: string) => `campaign:ui:${action}:${campaign.id}`;
 
         const buttons: ButtonBuilder[] = [
@@ -225,13 +228,13 @@ export default class CampaignsCommand extends Command {
                 .setStyle(ButtonStyle.Secondary)
                 .setCustomId(buildID("toggle")),
 
-                new ButtonBuilder()
+            new ButtonBuilder()
                 .setLabel("Preview")
                 .setEmoji("📜")
                 .setStyle(ButtonStyle.Secondary)
                 .setCustomId(buildID("preview")),
 
-                new ButtonBuilder()
+            new ButtonBuilder()
                 .setLabel("Statistics")
                 .setEmoji("📊")
                 .setStyle(ButtonStyle.Secondary)
@@ -262,10 +265,8 @@ export default class CampaignsCommand extends Command {
         const modifiers = await this.buildModifierRows({ db, interaction, campaign });
         const toolbar = await this.buildOverviewToolbar(options);
 
-        const memberIDs: Snowflake[] = campaign.members;
-
         const members: User[] = await Promise.all(
-            memberIDs.map(id => this.bot.client.users.fetch(id))
+            campaign.members.map(id => this.bot.client.users.fetch(id))
         );
 
         const fields: { name: string, value: string }[] = [
@@ -294,14 +295,14 @@ export default class CampaignsCommand extends Command {
         return response;
     }
 
-    public async buildSelector({ campaigns, db, interaction }: BuildSelectorOptions): Promise<StringSelectMenuBuilder> {
+    public async buildSelector({ campaigns }: BuildSelectorOptions): Promise<StringSelectMenuBuilder> {
         const builder: StringSelectMenuBuilder = new StringSelectMenuBuilder()
             .setCustomId("campaign:ui:selector")
             .setPlaceholder("Choose a campaign ...")
             .addOptions(campaigns.map(c => ({
 				label: c.name,
                 emoji: c.active ? "✅" : "❌",
-				description: `${c.budget !== null ? `${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(c.budget)} • ` : ""}${c.members.length} member${c.members.length > 1 ? "s" : ""}${c.filters && c.filters.length > 0 ? ` • ${c.filters.length} filter${c.filters.length > 1 ? "s" : ""}` : ""}`,
+				description: `${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(c.budget)} • ${c.members.length} member${c.members.length > 1 ? "s" : ""}${c.filters && c.filters.length > 0 ? ` • ${c.filters.length} filter${c.filters.length > 1 ? "s" : ""}` : ""}`,
 				value: c.id
             })));
 
@@ -314,15 +315,27 @@ export default class CampaignsCommand extends Command {
                 .setLabel("Create a campaign")
                 .setEmoji("🔧")
                 .setCustomId("campaign:ui:create")
-                .setStyle(ButtonStyle.Primary)
+                .setStyle(ButtonStyle.Secondary),
+
+                new ButtonBuilder()
+                .setLabel("Refresh campaigns")
+                .setEmoji("🔄")
+                .setCustomId("campaign:ui:refresh")
+                .setStyle(ButtonStyle.Secondary)
         ];
 
         return new ActionRowBuilder<ButtonBuilder>().addComponents(buttons);
     }
 
-    public async buildFinder({ db, interaction }: BuildFinderOptions): Promise<Response> {
+    public async campaigns({ db }: BuildFinderOptions): Promise<DatabaseCampaign[]> {
         const campaigns: DatabaseCampaign[] = (await this.bot.db.campaign.all())
-            .filter(c => c.members.includes(db.user.id));
+            .filter(c => this.bot.db.role.owner(db.user) || c.members.includes(db.user.id));
+
+        return campaigns;
+    }
+
+    public async buildFinder({ db, interaction }: BuildFinderOptions): Promise<Response> {
+        const campaigns: DatabaseCampaign[] = await this.campaigns({ db, interaction });
 
         const selector = campaigns.length > 0 ? await this.buildSelector({ db, interaction, campaigns }) : null;
         const toolbar = await this.buildFinderToolbar({ db, interaction, campaigns });
@@ -339,7 +352,7 @@ export default class CampaignsCommand extends Command {
         return response.setEphemeral(true);
     }
 
-    public async buildModifierRows({ db, interaction, campaign }: BuildOverviewOptions): Promise<ActionRowBuilder<ButtonBuilder>[]> {
+    public async buildModifierRows({ campaign }: BuildOverviewOptions): Promise<ActionRowBuilder<ButtonBuilder>[]> {
         const buttons: ButtonBuilder[] = CampaignParameters.map(p => new ButtonBuilder()
             .setLabel(p.name).setEmoji("📝")
             .setCustomId(`campaign:ui:modify:${campaign.id}:${p.name}`)
@@ -380,6 +393,12 @@ export default class CampaignsCommand extends Command {
             await interaction.update(response.get() as MessageEditOptions);
 
         } else if (action === "create") {
+            const campaigns: DatabaseCampaign[] = await this.campaigns({ db, interaction });
+
+            if (campaigns.length > MaxCampaignsPerUser) return new ErrorResponse({
+                message: `You cannot be part of more than **${MaxCampaignsPerUser}** campaigns`
+            })
+
             const name: string = (words as any)({
                 join: "-", exactly: 4
             });
@@ -399,6 +418,16 @@ export default class CampaignsCommand extends Command {
 
             const overview: Response = await this.buildOverview({ db, interaction, campaign });
             await interaction.update(overview.get() as MessageEditOptions);
+
+        } else if (action === "refresh") {
+            await interaction.deferReply({ ephemeral: true });
+            const campaigns: DatabaseCampaign[] = await this.bot.db.campaign.refresh();
+
+            return new Response()
+                .addEmbed(builder => builder
+                    .setDescription(`Loaded **${campaigns.length}** campaigns ✅`)
+                    .setColor("Green")
+                );
 
         } else if (action === "modify") {
             /* ID of the campaign */

@@ -37,13 +37,13 @@ const BotSetupSteps: {
         },
 
         {
-            name: "Database manager",
-            execute: app => app.db.setup()
+            name: "Cache manager",
+            execute: app => app.cache.setup()
         },
 
         {
-            name: "Cache manager",
-            execute: app => app.cache.setup()
+            name: "Database manager",
+            execute: app => app.db.setup()
         },
 
         {

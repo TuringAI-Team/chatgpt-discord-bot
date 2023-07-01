@@ -196,8 +196,7 @@ export default class DeveloperCommand extends Command {
 			/* Fetch all Premium users from the database. */
 			const { data, error } = await this.bot.db.client
 				.from(this.bot.db.collectionName("users"))
-				.select("*")
-				.neq("subscription", null);
+				.select("*").neq("subscription", null);
 
 			if (data === null || error !== null) return new Response()
 				.addEmbed(builder => builder

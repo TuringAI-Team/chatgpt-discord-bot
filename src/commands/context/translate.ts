@@ -30,9 +30,9 @@ export default class TranslateContentContextMenuCommand extends ContextMenuComma
 			.setName("Translate")
         , {
             cooldown: {
-                free: 90 * 1000,
-                voter: 70 * 1000,
-                subscription: 20 * 1000
+                free: 3 * 60 * 1000,
+                voter: 2.5 * 60 * 1000,
+                subscription: 30 * 1000
             }
         });
 	}
@@ -114,7 +114,8 @@ The user will now give you a message to translate, your goal is to apply the abo
 
         /* Generate the translation result using ChatGPT. */
         const raw = await this.bot.turing.openAI({
-            messages, model: "gpt-3.5-turbo", maxTokens: 4097 - tokens.prompt - 2, temperature: 0
+            messages, model: "gpt-3.5-turbo-0613",
+            maxTokens: 500, temperature: 0.1
         });
 
         tokens.completion = getPromptLength(raw.response.message.content);

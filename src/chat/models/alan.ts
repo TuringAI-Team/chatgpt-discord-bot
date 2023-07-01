@@ -84,7 +84,9 @@ export class TuringAlanModel extends ChatModel {
             prompt: prompt.prompt,
             user: options.db.user,
 
-            progress: async result => options.progress(await this.process(options, result)),
+            progress: result => {
+                this.process(options, result).then(data => options.progress(data));
+            },
 
             image: {
                 input: inputImage,

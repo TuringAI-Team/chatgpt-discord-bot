@@ -1,7 +1,6 @@
 import { OpenAICompletionsBody, OpenAICompletionsData, OpenAICompletionsJSON, OpenAIPartialCompletionsJSON, OpenAIUsageCompletionsData } from "./types/completions.js";
 import { OpenAIChatBody, OpenAIChatCompletionsData, OpenAIChatMessage, OpenAIPartialChatCompletionsJSON } from "./types/chat.js";
 import { countChatMessageTokens, getPromptLength } from "../conversation/utils/length.js"
-import { GPTGenerationErrorType, GPTGenerationError } from "../error/gpt/generation.js";
 import { OpenAIErrorData } from "./types/error.js";
 import { StreamBuilder } from "../util/stream.js";
 import { GPTAPIError } from "../error/gpt/api.js";
