@@ -136,7 +136,7 @@ export default class ImagineCommand extends Command {
 				.setName("steps")
 				.setDescription("How many steps to generate the images for")
 				.setRequired(false)
-				.setMinValue(5)
+				.setMinValue(15)
 				.setMaxValue(MaxStepGenerationCount.subscription)
 			)
 			.addNumberOption(builder => builder
@@ -455,7 +455,9 @@ export default class ImagineCommand extends Command {
 				style: prompt.style ? prompt.style.id : undefined,
 
 				height: size.height, width: size.width,
-				image: image !== null ? image.toString() : undefined
+				image: image !== null ? image.toString() : undefined,
+
+				ai: "kandinsky"
 			}
 		};
 

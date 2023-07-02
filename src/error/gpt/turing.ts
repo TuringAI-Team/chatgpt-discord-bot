@@ -1,5 +1,5 @@
-import { GPTAPIErrorOptions } from "./api.js";
 import { GPTError, GPTErrorType } from "./base.js";
+import { GPTAPIErrorOptions } from "./api.js";
 
 export interface TuringErrorBody<T = any> {
     success: boolean;

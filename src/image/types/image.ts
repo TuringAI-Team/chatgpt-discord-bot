@@ -1,5 +1,6 @@
-import { ImagePrompt } from "./prompt.js";
+import { ImageAPIModel } from "../manager.js";
 import { ImageSampler } from "./sampler.js";
+import { ImagePrompt } from "./prompt.js";
 
 export interface ImageResult {
     id: string;
@@ -36,6 +37,7 @@ export interface DatabaseImage {
 export type ImageGenerationType = "generate" | "img2img" | "upscale"
 
 export interface ImageGenerationBody {
+    ai: ImageAPIModel;
     prompt: string;
     negative_prompt?: string;
     image?: string;

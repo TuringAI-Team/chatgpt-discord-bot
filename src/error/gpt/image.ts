@@ -15,6 +15,6 @@ export class ImageAPIError extends TuringAPIError<ImageAPIErrorData> {
     }
     
     public toString(): string {
-        return `Failed to request image endpoint ${this.options.data.endpoint} with status code ${this.options.data.code}: ${this.data && typeof this.data.message === "string" ? this.data.message : this.data}`;
+        return `Failed to request image endpoint ${this.options.data.endpoint} with status code ${this.options.data.code}: ${this.data && typeof this.data.message === "string" ? this.data.message : this.data ? JSON.stringify(this.data) : "(none)"}`;
     }
 }

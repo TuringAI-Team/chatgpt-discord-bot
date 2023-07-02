@@ -14,7 +14,7 @@ import { ChatInputImage } from "../chat/types/image.js";
 import { MetricsType } from "../db/managers/metrics.js";
 import { DatabaseInfo } from "../db/managers/user.js";
 import { DatabaseUser } from "../db/schemas/user.js";
-import { ImageAPIPath } from "../image/manager.js";
+import { ImageAPIModel } from "../image/manager.js";
 import { GPTAPIError } from "../error/gpt/api.js";
 import { StreamBuilder } from "../util/stream.js";
 import { Bot } from "../bot/bot.js";
@@ -27,7 +27,7 @@ type TuringAPIPath =
     | `video/${TuringVideoModelName}`
     | `chart/${MetricsType}`
     | `image/mj/${"describe" | "imagine" | MidjourneyAction}`
-    | `image/${ImageAPIPath}`
+    | `image/${ImageAPIModel}` | "image"
     | `runpod/${RunPodPath}`
     | "audio/transcript"
 
@@ -851,8 +851,6 @@ export class TuringAPI extends EventEmitter {
             chat: !options.raw,
             conversationId: options.conversation.id
         };
-
-        console.log(options.model)
 
         const data: TuringChatResult = await this.request({
             path: `text/${options.model}`, method: "POST", body

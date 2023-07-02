@@ -1,4 +1,4 @@
-import { Collection } from "discord.js";
+import { randomUUID } from "crypto";
 
 import { DatabaseImage, ImageGenerationBody, ImageGenerationOptions, ImageGenerationType, ImageRawGenerationResult, ImageResult } from "./types/image.js";
 import { StorageImage } from "../db/managers/storage.js";
@@ -7,13 +7,11 @@ import { ImageAPIError } from "../error/gpt/image.js";
 import { ImagePrompt } from "./types/prompt.js";
 import { Utils } from "../util/utils.js";
 import { Bot } from "../bot/bot.js";
-import { randomUUID } from "crypto";
 
-export type ImageAPIPath = "sdxl"
+export type ImageAPIModel = "sdxl" | "kandinsky"
 
 export class ImageManager {
     private readonly bot: Bot;
-
 
     constructor(bot: Bot) {
         this.bot = bot;
@@ -29,15 +27,17 @@ export class ImageManager {
 
     public async generate({ body }: ImageGenerationOptions): Promise<ImageRawGenerationResult> {
         const raw = await this.bot.turing.request<ImageRawGenerationResult>({
-            path: "image/sdxl", method: "POST", raw: true, body: {
+            path: "image", method: "POST", raw: true, body: {
                 ...body,
                 
                 width: body.action !== "upscale" ? body.width : undefined,
-                height: body.action !== "upscale" ? body.height : undefined
+                height: body.action !== "upscale" ? body.height : undefined,
+
+                ai: body.action === "upscale" || body.action === "img2img" ? "sdxl" : body.ai
             }
         });
 
-        if (!raw.success) await this.error(raw, "sdxl");
+        if (!raw.success) await this.error(raw, body.ai);
 
         raw.data.images = raw.data.images.map(image => ({
             ...image, id: randomUUID()
@@ -62,7 +62,7 @@ export class ImageManager {
         };
     }
 
-    private async error(raw: TuringAPIRawResponse, path: ImageAPIPath): Promise<void> {
+    private async error(raw: TuringAPIRawResponse, path: ImageAPIModel): Promise<void> {
         throw new ImageAPIError({
             code: 400, endpoint: `/image/${path}`, body: raw.data
         });

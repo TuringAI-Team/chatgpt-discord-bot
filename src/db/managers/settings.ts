@@ -519,7 +519,7 @@ export const SettingOptions: SettingsOption[] = [
         category: "image",
         emoji: { fallback: "🪜" },
         description: "How many steps to generate with",
-        max: 50, min: 20, suffix: "step",
+        max: 50, min: 15, suffix: "step",
         default: 30,
         location: SettingsLocation.User
     }),
