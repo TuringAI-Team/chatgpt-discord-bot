@@ -11,13 +11,13 @@ import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generat
 import { ChatGenerationOptions, ModelGenerationOptions } from "./types/options.js";
 import { ChatInput, ChatInteraction } from "../conversation/conversation.js";
 import { ChatModel, ModelCapability, ModelType } from "./types/model.js";
-import { OpenAIChatMessage } from "../openai/types/chat.js";
+import { OpenAIChatMessage } from "../turing/types/chat.js";
 import { LanguageManager } from "../db/types/locale.js";
-import { Session } from "../conversation/session.js";
 import { Utils } from "../util/utils.js";
 
 /* List of available model providers */
 import { ChatModels } from "./models/index.js";
+import { ConversationManager } from "../conversation/manager.js";
 
 export interface ChatClientResult {
     input: ChatInput;
@@ -39,16 +39,16 @@ interface PromptMessageBuildOptions {
 }
 
 export interface PromptData {
-    /* The formatted prompt; all parts concatenated */
+    /** The formatted prompt; all parts concatenated */
     prompt: string;
 
-    /* The various parts of the prompt */
+    /** The various parts of the prompt */
     parts: PromptParts;
 
-    /* Maximum amount of tokens to use for GPT-3 */
+    /** Maximum amount of tokens to use for GPT-3 */
     max: number;
 
-    /* Amount of tokens used for the prompt */
+    /** Amount of tokens used for the prompt */
     length: number;
 }
 
@@ -82,14 +82,14 @@ You must pretend to "view" these text attachments, do not talk about the format 
 const PROMPT_GEN_LOOP_LIMIT: number = 50
 
 export class ChatClient {
-    /* Session - in charge of this instance */
-    public readonly session: Session;
+    /* Conversation manager - in charge of this instance */
+    public readonly manager: ConversationManager;
 
     /* Model type -> execution function mappings */
     private readonly models: Collection<ModelType, ChatModel>;
 
-    constructor(session: Session) {
-        this.session = session;
+    constructor(manager: ConversationManager) {
+        this.manager = manager;
         this.models = new Collection();
 
         /* Initialize the models. */
@@ -168,11 +168,11 @@ export class ChatClient {
         /* The user's selected tone */
         const tone = options.conversation.tone(options.db);
         
-        const { type, location } = await this.session.manager.bot.db.users.type(options.db);
+        const { type, location } = await this.manager.bot.db.users.type(options.db);
 
         const limits = {
-            context: this.session.manager.bot.db.settings.get<number>(options.db[location]!, "limits:contextTokens"),
-            generation: this.session.manager.bot.db.settings.get<number>(options.db[location]!, "limits:generationTokens")
+            context: this.manager.bot.db.settings.get<number>(options.db[location]!, "limits:contextTokens"),
+            generation: this.manager.bot.db.settings.get<number>(options.db[location]!, "limits:generationTokens")
         };
 
         /* Actual maximum token count for the prompt */
@@ -191,7 +191,7 @@ export class ChatClient {
         });
 
         /* Initial, formatted prompt */
-        const initial: string = await options.conversation.manager.session.client.initialPrompt(options, data);
+        const initial: string = await this.initialPrompt(options, data);
 
         /* If the prompt is supposed to be passed verbatim to the model, ... */
         if (options.settings.options.prompt.type === ChatSettingsModelPromptType.Raw) {
@@ -333,8 +333,7 @@ export class ChatClient {
 
     private messageImageAttachmentData(message: Message): ChatImageAttachmentExtractorData {
         return {
-            bot: this.session.manager.bot,
-            message
+            bot: this.manager.bot, message
         };
     }
 
@@ -380,7 +379,7 @@ export class ChatClient {
 
         for (const attachment of options.attachments) {
             /* Show a notice to the Discord user. */
-            await this.session.manager.progress.notice(options, {
+            await this.manager.progress.notice(options, {
                 text: `Looking at **\`${attachment.name}\`**`
             });
 
@@ -399,11 +398,11 @@ export class ChatClient {
                 });
 
             } catch (error) {
-                await this.session.manager.progress.notice(options, {
+                await this.manager.progress.notice(options, {
                     text: `Failed to look at **\`${attachment.name}\`**, continuing`
                 });
 
-                await this.session.manager.bot.error.handle({
+                await this.manager.bot.error.handle({
                     title: "Failed to analyze image", error
                 });
                 
@@ -411,7 +410,7 @@ export class ChatClient {
             }
         }
 
-        if (this.session.manager.bot.dev) this.session.manager.bot.logger.debug(
+        if (this.manager.bot.dev) this.manager.bot.logger.debug(
             `Analyzed ${chalk.bold(results.length)} image${results.length > 1 ? "s" : ""}, attached by ${chalk.bold(options.conversation.user.username)}, using model ${chalk.bold(ModelType[options.model.settings.type])} in ${chalk.bold(`${Date.now() - start}ms`)}.`
         );
 
@@ -440,11 +439,11 @@ export class ChatClient {
                 })));
 
             } catch (error) {
-                await this.session.manager.progress.notice(options, {
+                await this.manager.progress.notice(options, {
                     text: `Failed to fetch a text document, continuing`
                 });
 
-                await this.session.manager.bot.error.handle({
+                await this.manager.bot.error.handle({
                     title: "Failed to fetch a text document", error
                 });
                 
@@ -486,7 +485,7 @@ export class ChatClient {
 
         /* Middle-man progress handler, to clean up the partial responses */
         const progress = async (message: PartialResponseMessage | ResponseMessage) => {
-            await this.session.manager.progress.send(options, {
+            await this.manager.progress.send(options, {
                 ...message, text: this.clean(message.text)
             });
         };
@@ -522,7 +521,7 @@ export class ChatClient {
 
         /* If the model does not exist, throw an important error. */
         if (model === null) {
-            this.session.manager.bot.logger.error(`No model provider exists for type ${chalk.bold(ModelType[type])}; this isn't supposed to happen!`);
+            this.manager.bot.logger.error(`No model provider exists for type ${chalk.bold(ModelType[type])}; this isn't supposed to happen!`);
             throw new Error("No model provider found");
         }
 

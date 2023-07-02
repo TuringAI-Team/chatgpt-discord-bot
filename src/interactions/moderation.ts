@@ -1,4 +1,4 @@
-import { ButtonInteraction, CacheType, StringSelectMenuInteraction } from "discord.js";
+import { ButtonInteraction, StringSelectMenuInteraction } from "discord.js";
 
 import { InteractionHandler, InteractionHandlerBuilder, InteractionHandlerResponse, InteractionHandlerRunOptions, InteractionType } from "../interaction/handler.js";
 import { ModerationToolbarAction } from "../moderation/moderation.js";

@@ -165,7 +165,7 @@ export class Generator {
 			const buttons: ButtonBuilder[] = [];
 
 			/* If the message got cut off, add a Continue button. */
-			if (data.raw && data.raw.finishReason === "maxLength" && model.options.name !== "GPT-4") buttons.push(
+			if (data.raw && data.raw.finishReason === "length" && model.options.name !== "GPT-4") buttons.push(
 				new ButtonBuilder()
 					.setCustomId(`chat:continue:${conversation.id}`)
 					.setStyle(ButtonStyle.Success)
@@ -251,7 +251,7 @@ export class Generator {
 		}
 
 		/* If the generated message finished due to reaching the token limit, show a notice. */
-		if (!pending && data.raw && data.raw.finishReason === "maxLength") {
+		if (!pending && data.raw && data.raw.finishReason === "length") {
 			embeds.push(new EmbedBuilder()
 				.setDescription(`This message reached the length limit, and was not fully generated.${!this.bot.db.users.canUsePremiumFeatures(db) ? "\n✨ _**Premium** heavily increases the length limit, and grants you exclusive features - view \`/premium\` for more_." : ""}`)
 				.setColor("Yellow")
@@ -442,24 +442,11 @@ export class Generator {
 
 			/* If the conversation is still `null`, try to create a conversation from the database for this user. */
 			if (conversation === null) conversation = await this.bot.conversation.create(author);
-		
-			/* If the conversation's session is locked at this point - meaning that is either initializing or refreshing - notify the user. */
-			if (conversation.manager.session.locked) return void await new Response()
-				.addEmbed(builder => builder
-					.setDescription("Your assigned session is currently starting up ⏳")
-					.setColor("Yellow")
-			).send(message);
 
 			/* Initialize the user's conversation, if not done already. */
 			if (!conversation.active) await conversation.init();
 
 		} catch (error) {
-			if (error instanceof Error && error.message == "Session is busy") return void await new Response()
-				.addEmbed(builder => builder
-					.setDescription("Your assigned session is currently starting up ⏳")
-					.setColor("Yellow")
-			).send(message);
-
 			const response = await this.bot.error.handle({
 				error, title: "Failed to set up conversation session", notice: "We experienced an issue while trying to resume your conversation."
 			});
@@ -467,8 +454,8 @@ export class Generator {
 			return void response.send(message);
 		}
 
-		const attachedImages: boolean = (await conversation.manager.session.client.findMessageImageAttachments(message)).length > 0;
-		const attachedDocuments: boolean = conversation.manager.session.client.hasMessageDocuments(message);
+		const attachedImages: boolean = (await conversation.manager.client.findMessageImageAttachments(message)).length > 0;
+		const attachedDocuments: boolean = conversation.manager.client.hasMessageDocuments(message);
 
 		/* If the user sen't an empty message, respond with the introduction message. */
 		if (content.length === 0 && !attachedImages && !attachedDocuments) {
@@ -517,7 +504,7 @@ export class Generator {
 		const settingsModel: ChatSettingsModel = conversation.model(db);
 
 		/* Model to use for chat generation, as specified by the user's configured model */
-		const model: ChatModel = conversation.manager.session.client.modelForSetting(settingsModel);
+		const model: ChatModel = conversation.manager.client.modelForSetting(settingsModel);
 		
 		/* If the user is trying to use a Premium-only model, while not having access to one anymore, simply set it back to the default. */
 		if (settingsModel.premiumOnly && !this.bot.db.users.canUsePremiumFeatures(db)) {

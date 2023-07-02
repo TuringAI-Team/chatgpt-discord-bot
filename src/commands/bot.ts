@@ -1,8 +1,8 @@
 import { ActionRowBuilder, ButtonBuilder, EmbedBuilder, SlashCommandBuilder } from "discord.js";
+import { getInfo } from "discord-hybrid-sharding";
 
 import { Command, CommandInteraction, CommandResponse } from "../command/command.js";
 import { Introduction } from "../util/introduction.js";
-import { getInfo } from "discord-hybrid-sharding";
 import { Response } from "../command/response.js";
 import { Bot } from "../bot/bot.js";
 
@@ -50,6 +50,7 @@ export default class StatisticsCommand extends Command {
 
 		const response: Response = new Response()
 			.addComponent(ActionRowBuilder<ButtonBuilder>, Introduction.buttons(this.bot))
+			.setEphemeral(true);
 
 		response.addEmbed(builder => builder
 			.setTitle("Bot Statistics")
@@ -57,8 +58,7 @@ export default class StatisticsCommand extends Command {
 			.setTimestamp(this.bot.statistics.since)
 
 			.addFields(fields.map(({ key, value }) => ({
-				name: key, value: value.toString(),
-				inline: true
+				name: key, value: value.toString(), inline: true
 			})))
 		);
 
@@ -72,6 +72,6 @@ export default class StatisticsCommand extends Command {
 			response.addEmbed(embed);
 		}
 
-        return response.setEphemeral(true);
+        return response;
     }
 }

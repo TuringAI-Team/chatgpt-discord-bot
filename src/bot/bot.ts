@@ -330,15 +330,9 @@ export class Bot extends EventEmitter {
      * Current status of the bot
      */
     public async status(): Promise<BotStatus> {
-        //const status: BotStatus = (await this.client.cluster.evalOnManager(
-        //    ((manager: BotClusterManager) => manager.bot.status) as any)
-        //) as unknown as BotStatus;
-        
-        //return status;
-
-        return {
-            type: "operational", since: this.since
-        };
+        return await this.db.eval(async app => {
+            return app.manager.status;
+        });
     }
 
     /**

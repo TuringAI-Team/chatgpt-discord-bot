@@ -27,7 +27,7 @@ export default class ChatCommand extends Command {
 					},
 
 					{
-						name: "How can I change the model and tone?",
+						name: "How can I change the model & tone?",
 						value: `You can either run \`/settings\` and go to the **Chat** category beforehand to change the tone & model, or you can press the buttons below a generated message to choose the model & tone from a dropdown menu.`
 					},
 					

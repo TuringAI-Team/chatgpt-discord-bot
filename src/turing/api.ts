@@ -1,14 +1,12 @@
 import { fetchEventSource } from "@waylaidwanderer/fetch-event-source";
 import { Awaitable } from "discord.js";
 import { EventEmitter } from "events";
-import { inspect } from "util";
 
-import { OpenAIChatBody, OpenAIChatCompletionsData, OpenAIChatMessage, OpenAIPartialChatCompletionsJSON } from "../openai/types/chat.js";
 import { ChatSettingsPlugin, ChatSettingsPluginIdentifier } from "../conversation/settings/plugin.js";
 import { countChatMessageTokens, getPromptLength } from "../conversation/utils/length.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
-import { OpenAIUsageCompletionsData } from "../openai/types/completions.js";
 import { RunPodPath, RunPodRawStreamResponseData } from "../runpod/api.js";
+import { TuringAPIError, TuringErrorBody } from "../error/gpt/turing.js";
 import { ChoiceSettingOptionChoice } from "../db/managers/settings.js";
 import { ChatOutputImage, ImageBuffer } from "../chat/types/image.js";
 import { Conversation } from "../conversation/conversation.js";
@@ -16,25 +14,30 @@ import { ChatInputImage } from "../chat/types/image.js";
 import { MetricsType } from "../db/managers/metrics.js";
 import { DatabaseInfo } from "../db/managers/user.js";
 import { DatabaseUser } from "../db/schemas/user.js";
+import { ImageAPIPath } from "../image/manager.js";
 import { GPTAPIError } from "../error/gpt/api.js";
 import { StreamBuilder } from "../util/stream.js";
-import { Utils } from "../util/utils.js";
 import { Bot } from "../bot/bot.js";
+import { OpenAIChatMessage, TuringOpenAIChatBody, TuringOpenAIPartialResult, TuringOpenAIResult } from "./types/chat.js";
+import { GoogleChatResult, TuringGoogleChatBody } from "./types/google.js";
 
 type TuringAPIPath = 
     `cache/${string}`
-    | `imgs/${"filter" | "dalle"}`
-    | `text/${string}` | `text/alan/${TuringAlanChatModel}` | `text/plugins/${TuringChatPluginsModel}`
+    | "text/filter" | `text/${string}` | `text/alan/${TuringAlanChatModel}` | `text/gpt/${TuringChatPluginsModel}`
     | `video/${TuringVideoModelName}`
     | `chart/${MetricsType}`
-    | `imgs/mj/${"describe" | "imagine" | MidjourneyAction}`
+    | `image/mj/${"describe" | "imagine" | MidjourneyAction}`
+    | `image/${ImageAPIPath}`
     | `runpod/${RunPodPath}`
     | "audio/transcript"
 
+type TuringAPIFilter = "nsfw" | "cp" | "toxicity"
+
 interface TuringAPIFilterResult {
-    isNsfw: boolean;
-    isYoung: boolean;
-    isCP: boolean;
+    nsfw: boolean;
+    youth: boolean;
+    cp: boolean;
+    toxic: boolean;
 }
 
 type TuringChatModel = string
@@ -413,7 +416,7 @@ export const MetricsCharts: MetricsChart[] = [
 	},
 
 	{
-		description: "Actions done using Midjourney",
+		description: "Actions performed using MJ",
 		name: "mj-actions",
 		type: "midjourney",
 
@@ -425,7 +428,7 @@ export const MetricsCharts: MetricsChart[] = [
 	},
 
 	{
-		description: "Ratings for Midjourney images",
+		description: "Ratings for MJ images",
 		name: "mj-ratings",
 		type: "midjourney",
 
@@ -455,9 +458,10 @@ interface TuringChatPluginsBody {
     max_tokens?: number;
     messages: OpenAIChatMessage[];
     plugins: ChatSettingsPluginIdentifier[];
+    stream?: boolean;
 }
 
-export type TuringChatPluginsModel = "gpt-3.5-turbo-0613" | "gpt-4-0613"
+export type TuringChatPluginsModel = "gpt-3.5-turbo" | "gpt-4"
 
 export interface TuringChatPluginsOptions {
     /* Which model to use */
@@ -479,14 +483,11 @@ export interface TuringChatPluginsOptions {
     user: DatabaseUser;
 }
 
-export interface TuringChatPluginsPartialResult {
-    result: string;
-    done: boolean;
+export type TuringChatPluginsResult = TuringOpenAIResult & {
     tool: string | null;
-    credits: number;
 }
 
-export type TuringChatPluginsResult = TuringChatPluginsPartialResult
+export type TuringChatPluginsPartialResult = TuringChatPluginsResult
 
 export type MidjourneyModelIdentifier = "5.1" | "5" | "niji" | "4" | "3" | "2" | "1"
 
@@ -553,11 +554,6 @@ export interface TuringChatBingResult {
     done: boolean;
 }
 
-export type TuringChatOpenAIBody = Pick<OpenAIChatBody, "model" | "messages" | "temperature"> & {
-    maxTokens?: number;
-    pw?: boolean;
-}
-
 export interface TuringTranscribeBody {
     ai: "whisper" | "whisper-fast";
     model: "tiny" | "base" | "small" | "medium";
@@ -577,6 +573,22 @@ export interface TuringTranscribeResult {
     segments: TuringTranscribeSegment[];
 }
 
+type TuringAPIMethod = "GET" | "POST" | "DELETE"
+
+interface TuringAPIRequest {
+    method?: TuringAPIMethod;
+    body?: any;
+    path: TuringAPIPath;
+    raw?: boolean;
+}
+
+export interface TuringAPIRawResponse<T = any> {
+    data: T;
+    code: number;
+    success: boolean;
+    error: TuringErrorBody | null;
+}
+
 export class TuringAPI extends EventEmitter {
     public readonly bot: Bot;
 
@@ -585,11 +597,14 @@ export class TuringAPI extends EventEmitter {
         this.bot = bot;
     }
 
-    public async transcribe(options: TuringTranscribeBody): Promise<TuringTranscribeResult> {
-        const body: RunPodRawStreamResponseData<TuringTranscribeRawResult> = await this.request("audio/transcript", "POST", options);
-        if (body.status === "FAILED") throw new Error("Failed");
+    public async transcribe(body: TuringTranscribeBody): Promise<TuringTranscribeResult> {
+        const data: RunPodRawStreamResponseData<TuringTranscribeRawResult> = await this.request({
+            path: "audio/transcript", method: "POST", body
+        });
 
-        const segments: TuringTranscribeSegment[] = body.output!.segments.map(s => ({ text: s.text.trim() }));
+        if (data.status === "FAILED") throw new Error("Failed");
+
+        const segments: TuringTranscribeSegment[] = data.output!.segments.map(s => ({ text: s.text.trim() }));
         const final: string = segments.map(s => s.text).join("\n");
 
         return {
@@ -597,72 +612,21 @@ export class TuringAPI extends EventEmitter {
         };
     }
 
-    public async openAI(options: TuringChatOpenAIBody, progress?: (data: OpenAIPartialChatCompletionsJSON) => Promise<void> | void): Promise<OpenAIChatCompletionsData> {
+    public async openAI(options: TuringOpenAIChatBody, progress?: (data: TuringOpenAIPartialResult) => Awaitable<void>): Promise<TuringOpenAIResult> {
         return await new StreamBuilder<
-            TuringChatOpenAIBody, OpenAIPartialChatCompletionsJSON, OpenAIPartialChatCompletionsJSON, OpenAIChatCompletionsData
+            TuringOpenAIChatBody, TuringOpenAIPartialResult, TuringOpenAIResult
         >({
-            body: options,
-
-            error: async response => {
-                if (response.status === 400) return new GPTGenerationError({
-                    type: GPTGenerationErrorType.Moderation
-                });
-
-                return this.error(response, "text/open-ai", true);
+            body: {
+                ...options, stream: true
             },
 
-            url: this.url("text/open-ai"),
+            error: async response => this.error(response, "text/gpt", "error"),
+
+            url: this.url("text/gpt"),
             headers: this.headers(),
 
-            progress: (data, old) => {
-                /* If an error occurred, stop generation at this point. */
-                if (data.error !== undefined) {
-                    throw new GPTAPIError({
-                        endpoint: "/text/open-ai",
-                        code: 400,
-                        id: data.error.code,
-                        message: data.error.message
-                    });
-                }
-
-                const updated: OpenAIPartialChatCompletionsJSON = {
-                    choices: [
-                        {
-                            delta: {
-                                content: old !== null && old.choices[0].delta.content ? `${old.choices[0].delta.content}${data.choices[0].delta.content ? data.choices[0].delta.content : ""}` : data.choices[0].delta.content,
-                                role: "assistant"
-                            },
-
-                            finish_reason: data.choices[0].finish_reason,
-                            index: data.choices[0].index
-                        }
-                    ]
-                };
-
-                if (progress) progress(updated);
-                return updated;
-            },
-
-            process: final => {
-                if (!final.choices) return null;
-
-                const usage: OpenAIUsageCompletionsData = {
-                    completion_tokens: getPromptLength(final.choices[0].delta.content!),
-                    prompt_tokens: countChatMessageTokens(options.messages),
-                    total_tokens: 0
-                }
-    
-                usage.total_tokens = usage.completion_tokens + usage.total_tokens;
-    
-                return {
-                    response: {
-                        message: final.choices[0].delta as OpenAIChatMessage,
-                        finish_reason: final.choices[0].finish_reason!,
-                        index: final.choices[0].index
-                    },
-    
-                    usage
-                };
+            progress: data => {
+                if (progress) progress(data);
             }
         }).run();
     }
@@ -710,7 +674,7 @@ export class TuringAPI extends EventEmitter {
             this.on("cancelled", listener);
 
             try {
-                await fetchEventSource(this.url(`imgs/mj/${action ?? "imagine"}`), {
+                await fetchEventSource(this.url(`image/mj/${action ?? "imagine"}`), {
                     headers: this.headers() as any,
                     body: JSON.stringify(body),
                     mode: "cors",
@@ -738,7 +702,7 @@ export class TuringAPI extends EventEmitter {
 
                         /* If the request failed for some reason, throw an exception. */
                         if (response.status !== 200) {
-                            const error = await this.error(response, `imgs/mj/${action ?? "imagine"}`, true);
+                            const error = await this.error(response, `image/mj/${action ?? "imagine"}`, "error");
 
                             controller.abort();
                             reject(error);
@@ -792,8 +756,10 @@ export class TuringAPI extends EventEmitter {
             ...settings.filter
         } : undefined;
 
-        const result: TuringRawChartResult = await this.request(`chart/${type}`, "POST", {
-            period, filter
+        const result: TuringRawChartResult = await this.request({
+            path: `chart/${type}`, method: "POST", body: {
+                period, filter
+            }
         });
 
         return {
@@ -802,9 +768,11 @@ export class TuringAPI extends EventEmitter {
     }
 
     public async resetAlanConversation({ conversation }: Pick<TuringAlanOptions, "conversation">): Promise<void> {
-        await this.request("text/alan/chatgpt", "DELETE", {
-            userName: conversation.user.username,
-            conversationId: conversation.id
+        await this.request({
+            path: "text/alan/chatgpt", method: "DELETE", body: {
+                userName: conversation.user.username,
+                conversationId: conversation.id
+            }
         });
     }
 
@@ -828,38 +796,20 @@ export class TuringAPI extends EventEmitter {
                 pluginList: []
             },
 
-            error: response => this.error(response, "text/alan/chatgpt", true),
+            error: response => this.error(response, "text/alan", "error"),
             headers: this.headers(), progress,
-            url: this.url("text/alan/chatgpt")
+            url: this.url("text/alan")
         }).run();
     }
 
-    public async generateImages(options: TuringImageOptions): Promise<TuringImageResult> {
+    public async generateVideo(body: TuringVideoOptions): Promise<TuringVideoResult> {
+        const name: TuringVideoModelName = typeof body.model === "object" ? body.model.id : body.model;
         const before: number = Date.now();
 
-        /* Generate the images using the API. */
-        const data: { result: { response: { data: { url: string }[] } } }
-            = await this.request("imgs/dalle", "POST", { prompt: options.prompt, n: options.count });
+        const raw: { url: string } | string = await this.request({
+            path: `video/${name}`, method: "POST", body
+        });
 
-        const buffers: ImageBuffer[] = [];
-
-        for (const attachment of data.result.response.data) {
-            const buffer = await Utils.fetchBuffer(attachment.url);
-            if (buffer !== null) buffers.push(buffer);
-        }
-
-        return {
-            duration: Date.now() - before,
-            images: buffers
-        };
-    }
-
-    public async generateVideo(options: TuringVideoOptions): Promise<TuringVideoResult> {
-        const name: TuringVideoModelName = typeof options.model === "object" ? options.model.id : options.model;
-        const before: number = Date.now();
-
-        /* Generate the video using the API. */
-        const raw: { url: string } | string = await this.request(`video/${name}`, "POST", options);
         const url: string = typeof raw === "object" ? raw.url : raw;
 
         return {
@@ -867,36 +817,48 @@ export class TuringAPI extends EventEmitter {
         };
     }
 
-    public async filter(prompt: string, model: string = "stable_diffusion"): Promise<TuringAPIFilterResult> {
-        return this.request("imgs/filter", "POST", {
-            prompt, model
+    public async filter(prompt: string, which: TuringAPIFilter[]): Promise<TuringAPIFilterResult> {
+        return this.request({
+            path: "text/filter", method: "POST", body: {
+                prompt, filters: which
+            }
         });
     }
 
-    public async chatPlugins({ messages, model, plugins, progress }: TuringChatPluginsOptions): Promise<TuringChatPluginsResult> {
+    public async chatPlugins({ messages, model, plugins, tokens, progress }: TuringChatPluginsOptions): Promise<TuringChatPluginsResult> {
         return await new StreamBuilder<
             TuringChatPluginsBody, TuringChatPluginsPartialResult, TuringChatPluginsResult
         >({
             body: {
-                messages, plugins: plugins.map(p => p.id), model
+                messages, plugins: plugins.map(p => p.id), model, max_tokens: tokens, stream: true
             },
 
-            error: response => this.error(response, "text/plugins", true),
-            headers: this.headers(), progress,
-            url: this.url("text/plugins")
+            error: response => this.error(response, "text/gpt", "error"),
+            url: this.url("text/gpt"),
+            headers: this.headers(),
+
+            progress: data => {
+                if (progress) progress(data);
+            }
         }).run();
     }
 
+    public async google(body: TuringGoogleChatBody): Promise<GoogleChatResult> {
+        return await this.request({
+            path: "text/google", method: "POST", body
+        });
+    }
+
     public async chat(options: TuringChatOptions): Promise<TuringChatResult> {
-        /* API request body */
         const body: TuringAPIChatBody = {
             prompt: options.prompt,
             chat: !options.raw,
             conversationId: options.conversation.id
         };
 
-        /* Response data from the API */
-        const data = await this.request<TuringChatResult>(`text/${options.model}`, "POST", body);
+        const data: TuringChatResult = await this.request({
+            path: `text/${options.model}`, method: "POST", body
+        });
 
         return {
             response: data.response.trim()
@@ -904,24 +866,42 @@ export class TuringAPI extends EventEmitter {
     }
 
     public async resetConversation(model: TuringChatModel): Promise<void> {
-        await this.request(`text/${model}`, "DELETE");
+        await this.request({
+            path: `text/${model}`, method: "DELETE"
+        });
     }
 
-    public async request<T>(path: TuringAPIPath, method: "GET" | "POST" | "DELETE" = "GET", data?: { [key: string]: any }): Promise<T> {
+    public async request<T>(options: TuringAPIRequest & { raw: true }): Promise<TuringAPIRawResponse<T>>;
+    public async request<T>(options: TuringAPIRequest & { raw?: boolean }): Promise<T>;
+
+    public async request<T>(options: TuringAPIRequest): Promise<T | TuringAPIRawResponse<T>> {
+        const { path, body, method, raw } = options;
+
         /* Make the actual request. */
         const response = await fetch(this.url(path), {
             method,
             
-            body: data !== undefined ? JSON.stringify(data) : undefined,
+            body: body !== undefined ? JSON.stringify(body) : undefined,
             headers: this.headers()
         });
 
         /* If the request wasn't successful, throw an error. */
-        if (!response.status.toString().startsWith("2") || (await response.clone().json().catch(() => null))?.error) await this.error(response, path);
+        if (!response.status.toString().startsWith("2") && !raw) await this.error(response, path);
 
         /* Get the response body. */
-        const body: T = await response.clone().json().catch(() => null) as T ?? await response.text() as T;
-        return body;
+        const data: T = await response.clone().json().catch(() => null) as T ?? await response.clone().text() as T;
+
+        if (raw) {
+            const error: TuringErrorBody | null = await this.error(response, path, "data");
+            const success: boolean = response.status.toString().startsWith("2");
+
+            return {
+                code: response.status, data,
+                success, error
+            };
+        } else {
+            return data;
+        }
     }
 
     public url(path: TuringAPIPath): string {
@@ -931,22 +911,36 @@ export class TuringAPI extends EventEmitter {
 
         return `${base}/${path}`;
     }
+    private async error(response: Response, path: TuringAPIPath, type: "error"): Promise<TuringAPIError | null>;
+    private async error(response: Response, path: TuringAPIPath, type: "data"): Promise<TuringErrorBody | null>;
+    private async error(response: Response, path: TuringAPIPath, type?: "throw"): Promise<void>;
 
-    private async error(response: Response, path: TuringAPIPath, dry: true): Promise<GPTAPIError>;
-    private async error(response: Response, path: TuringAPIPath, dry?: false): Promise<void>;
+    private async error(response: Response, path: TuringAPIPath, type: "error" | "data" | "throw" = "throw"): Promise<TuringErrorBody | TuringAPIError | null | void> {
+        let body: TuringErrorBody | null = await response.clone().json().catch(() => null);
 
-    private async error(response: Response, path: TuringAPIPath, dry?: boolean): Promise<GPTAPIError | void> {
-        const body: any | null = await response.clone().json().catch(() => null);
+        if (body === null || body.success === true) {
+            if (!response.status.toString().startsWith("2")) {
+                const error = new TuringAPIError({
+                    body: null, code: response.status, endpoint: path
+                });
     
-        const error: GPTAPIError = new GPTAPIError({
-            code: body && body.error ? 400 : response.status,
-            message: body && body.error ? inspect(body.error.toString(), { depth: 1 }) : null,
-            endpoint: `/${path}`,
-            id: null
-        });
+                if (type === "throw") throw error;
+                else return error;
+            }
 
-        if (dry) return error;
-        else throw error;
+            if (type !== "throw") return null;
+            else return;
+        }
+
+        if (type === "data") return body;
+        else if (type === "throw" || type === "error") {
+            const error = new TuringAPIError({
+                body: body, code: response.status, endpoint: path
+            });
+
+            if (type === "throw") throw error;
+            else return error;
+        }
     }
 
     private headers(): HeadersInit {

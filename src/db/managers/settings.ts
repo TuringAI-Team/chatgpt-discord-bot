@@ -4,14 +4,13 @@ import { randomUUID } from "crypto";
 import chalk from "chalk";
 
 import { TuringAlanImageGenerators, TuringAlanImageModifiers, TuringAlanSearchEngines, TuringVideoModels, alanOptions } from "../../turing/api.js";
-import { CONVERSATION_DEFAULT_COOLDOWN, Conversation } from "../../conversation/conversation.js";
+import { ConversationDefaultCooldown, Conversation } from "../../conversation/conversation.js";
 import { LoadingIndicatorManager, LoadingIndicators } from "../types/indicator.js";
 import { GenerationSizes, getAspectRatio } from "../../commands/imagine.js";
 import { ChatSettingsPlugins } from "../../conversation/settings/plugin.js";
 import { InteractionHandlerResponse } from "../../interaction/handler.js";
 import { ChatSettingsModels } from "../../conversation/settings/model.js";
 import { ChatSettingsTones } from "../../conversation/settings/tone.js";
-import { StableHordeConfigModels } from "../../image/types/model.js";
 import { DatabaseManager, DatabaseManagerBot } from "../manager.js";
 import { DatabaseSettings, DatabaseUser } from "../schemas/user.js";
 import { ErrorResponse } from "../../command/response/error.js";
@@ -67,6 +66,12 @@ export const SettingCategories: SettingsCategory[] = [
     },
 
     {
+        name: "Plugins",
+        type: "plugins",
+        emoji: { fallback: "🚀" }
+    },
+
+    {
         name: "Premium",
         type: "premium",
         emoji: { fallback: "✨" },
@@ -81,21 +86,15 @@ export const SettingCategories: SettingsCategory[] = [
     },
 
     {
-        name: "Plugins",
-        type: "plugins",
-        emoji: { fallback: "🚀" }
-    },
-
-    {
-        name: "Custom character",
-        type: "character",
-        emoji: { fallback: "🧙🏽" }
-    },
-
-    {
         name: "Image",
         type: "image",
         emoji: { fallback: "🖼️" }
+    },
+
+    {
+        name: "Character",
+        type: "character",
+        emoji: { fallback: "🧙🏽" }
     },
 
     {
@@ -526,24 +525,8 @@ export const SettingOptions: SettingsOption[] = [
     }),
 
     new ChoiceSettingsOption({
-        key: "model",
-        name: "/imagine model",
-        category: "image",
-        emoji: { fallback: "💨" },
-        description: "Which Stable Diffusion model to use",
-        location: SettingsLocation.User,
-
-        choices: StableHordeConfigModels.map(model => ({
-			name: model.name ?? model.id,
-            emoji: model.nsfw ? { fallback: "🔞" } : undefined,
-            restricted: model.premium ? "premium" : undefined,
-			value: model.id
-		}))
-    }),
-
-    new ChoiceSettingsOption({
         key: "size",
-        name: "/imagine image resolution/size",
+        name: "/imagine image resolution",
         category: "image",
         emoji: { fallback: "📸" },
         description: "How big the generated images should be",
@@ -551,7 +534,7 @@ export const SettingOptions: SettingsOption[] = [
 
         choices: GenerationSizes.map(({ width, height, premium }) => ({
             name: `${width}x${height} (${getAspectRatio(width, height)})`,
-            value: `${width}:${height}:${premium}`,
+            value: `${width}:${height}`,
             restricted: premium ? "premium" : undefined,
         }))
     }),
@@ -718,7 +701,7 @@ export const SettingOptions: SettingsOption[] = [
         emoji: { fallback: "⏰" },
         description: "Cool-down overwrite for users on the server",
         location: SettingsLocation.Guild,
-        default: Math.floor(CONVERSATION_DEFAULT_COOLDOWN.time / 1000), min: 5, max: 300,
+        default: Math.floor(ConversationDefaultCooldown.time / 1000), min: 5, max: 300,
         suffix: "second",
 
         explanation: {

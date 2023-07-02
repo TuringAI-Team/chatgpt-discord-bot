@@ -1,8 +1,9 @@
 import { Awaitable, ChannelType, GuildBasedChannel, GuildEmoji, GuildMember, Invite, MessageMentions, TextChannel } from "discord.js";
 
-import { OpenAIChatCompletionsData, OpenAIPartialChatCompletionsJSON } from "../../openai/types/chat.js";
 import { DatabaseSubscription, DatabaseUser } from "../../db/schemas/user.js";
 import { ChatGuildData, ModelGenerationOptions } from "../types/options.js";
+import { TuringOpenAIPartialResult } from "../../turing/types/chat.js";
+import { getPromptLength } from "../../conversation/utils/length.js";
 import { Conversation } from "../../conversation/conversation.js";
 import { ChatOutputImage, ImageBuffer } from "../types/image.js";
 import { ModelCapability, ModelType } from "../types/model.js";
@@ -235,7 +236,7 @@ export class ClydeModel extends ChatGPTModel {
 
         if (conversation.user.id === member.id) final.suffix = "user I'm talking to";
 
-        const voted: number | null = await this.client.session.manager.bot.db.users.voted(db);
+        const voted: number | null = await this.client.manager.bot.db.users.voted(db);
 
         const subscription: DatabaseSubscription | null = db.subscription;
         const plan: DatabasePlan | null = db.plan;
@@ -299,8 +300,8 @@ export class ClydeModel extends ChatGPTModel {
         /* Clean up the user's prompt; format all channel names, mentions and emoji names. */
         const cleanedPrompt: ClydeFormatterResult = await this.format(options.conversation, options.guild!, options.prompt, "input");
 
-        const progress = async (response: OpenAIPartialChatCompletionsJSON) => {
-            const final: ClydeFormatterResult = await this.format(options.conversation, options.guild!, response.choices[0].delta.content!, "output", true);
+        const progress = async (response: TuringOpenAIPartialResult) => {
+            const final: ClydeFormatterResult = await this.format(options.conversation, options.guild!, response.result, "output", true);
             options.progress(final);
         };
 
@@ -321,7 +322,7 @@ export class ClydeModel extends ChatGPTModel {
             if (member === null) continue;
 
             /* The user's database instance, if available */
-            const db: DatabaseUser | null = await this.client.session.manager.bot.db.users.getUser(id);
+            const db: DatabaseUser | null = await this.client.manager.bot.db.users.getUser(id);
             if (db === null) continue;
 
             users.push(
@@ -332,22 +333,22 @@ export class ClydeModel extends ChatGPTModel {
         options.prompt = cleanedPrompt.text;
 
         const prompt: PromptData = await this.client.buildPrompt<ClydePromptData>(options, { users });
-        const data: OpenAIChatCompletionsData = await this.chat(options, prompt, progress);
+        const data = await this.chat(options, prompt, progress);
 
         /* Apply the final replacements to the message, e.g. for embedding GIFs and mentiong users correctly. */
-        const final: ClydeFormatterResult = await this.format(options.conversation, options.guild!, data.response.message.content, "output");
+        const final: ClydeFormatterResult = await this.format(options.conversation, options.guild!, data.result, "output");
 
         return {
             raw: {
-                finishReason: data.response.finish_reason ? data.response.finish_reason === "length" ? "maxLength" : "stop" : undefined,
+                finishReason: data.finishReason ? data.finishReason === "length" ? "length" : "stop" : undefined,
                 
                 usage: {
-                    completion: data.usage.completion_tokens,
-                    prompt: data.usage.prompt_tokens
+                    completion: getPromptLength(data.result),
+                    prompt: prompt.length
                 }
             },
 
-            text: data.response.message.content,
+            text: data.result,
             display: final.text,
             images: final.images.length > 0 ? final.images : undefined
         };

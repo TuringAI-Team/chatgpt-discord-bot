@@ -54,7 +54,7 @@ export class TuringConnectionManager {
             
             exchanges: [ { exchange: exchangeName, type: "topic" } ],
             queueBindings: [ { exchange: exchangeName, routingKey: routingKey } ]
-        }, (message, reply) => this.handler.handle(message, reply));
+        }, message => this.handler.handle(message));
 
         this.publisher = this.client.createPublisher({
             exchanges: [

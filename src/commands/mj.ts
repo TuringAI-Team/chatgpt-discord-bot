@@ -1,21 +1,22 @@
-import { ActionRow, ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonComponent, ButtonInteraction, ButtonStyle, EmbedBuilder, InteractionResponse, SlashCommandBuilder } from "discord.js";
+import { ActionRow, ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonComponent, ButtonInteraction, ButtonStyle, EmbedBuilder, SlashCommandBuilder } from "discord.js";
 
 import { MidjourneyAction, MidjourneyModelIdentifier, MidjourneyModels, MidjourneyPartialResult, MidjourneyResult } from "../turing/api.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
 import { Command, CommandInteraction, CommandResponse } from "../command/command.js";
-import { MaxImagePromptLength, RateActions, RateAction } from "./imagine.js";
-import { MidjourneyInteractionHandler } from "../interactions/midjourney.js";
+import { MJInteractionHandler } from "../interactions/midjourney.js";
 import { InteractionHandlerResponse } from "../interaction/handler.js";
 import { LoadingIndicatorManager } from "../db/types/indicator.js";
+import { RateAction, RateActions } from "../image/types/rate.js";
 import { NoticeResponse } from "../command/response/notice.js";
 import { ErrorResponse } from "../command/response/error.js";
 import { GPTDatabaseError } from "../error/gpt/db.js";
 import { DatabaseInfo } from "../db/managers/user.js";
+import { MaxImagePromptLength } from "./imagine.js";
 import { Response } from "../command/response.js";
 import { Utils } from "../util/utils.js";
 import { Bot } from "../bot/bot.js";
 
-export default class MidjourneyCommand extends Command {
+export default class MJCommand extends Command {
 	constructor(bot: Bot) {
 		super(bot, new SlashCommandBuilder()
 			.setName("mj")
@@ -159,7 +160,7 @@ export default class MidjourneyCommand extends Command {
 		});
 	}
 
-	public async handleInteraction(handler: MidjourneyInteractionHandler, interaction: ButtonInteraction, db: DatabaseInfo, data: string[]): InteractionHandlerResponse {
+	public async handleInteraction(handler: MJInteractionHandler, interaction: ButtonInteraction, db: DatabaseInfo, data: string[]): InteractionHandlerResponse {
 		/* The action to perform */
 		const action: MidjourneyAction | "rate" | "cancel" = data.shift()! as any;
 
@@ -280,7 +281,7 @@ export default class MidjourneyCommand extends Command {
 		await interaction.deferReply().catch(() => {});
 
 		const moderation = await this.bot.moderation.checkImagePrompt({
-			db, user: interaction.user, content: prompt, nsfw: false, model: "midjourney"
+			db, user: interaction.user, content: prompt, model: "midjourney"
 		});
 
 		/* If the message was flagged, send a warning message. */

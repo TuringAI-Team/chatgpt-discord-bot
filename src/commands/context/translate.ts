@@ -5,8 +5,7 @@ import { LanguageManager, UserLanguage } from "../../db/types/locale.js";
 import { ContextMenuCommand } from "../../command/types/context.js";
 import { LoadingResponse } from "../../command/response/loading.js";
 import { NoticeResponse } from "../../command/response/notice.js";
-import { Conversation } from "../../conversation/conversation.js";
-import { OpenAIChatMessage } from "../../openai/types/chat.js";
+import { OpenAIChatMessage } from "../../turing/types/chat.js";
 import { CommandResponse } from "../../command/command.js";
 import { DatabaseInfo } from "../../db/managers/user.js";
 import { Response } from "../../command/response.js";
@@ -114,11 +113,11 @@ The user will now give you a message to translate, your goal is to apply the abo
 
         /* Generate the translation result using ChatGPT. */
         const raw = await this.bot.turing.openAI({
-            messages, model: "gpt-3.5-turbo-0613",
-            maxTokens: 500, temperature: 0.1
+            messages, model: "gpt-3.5-turbo",
+            max_tokens: 500, temperature: 0.1
         });
 
-        tokens.completion = getPromptLength(raw.response.message.content);
+        tokens.completion = getPromptLength(raw.result);
 
         const data: ChatTranslationResult | null = (content => {
             try {
@@ -127,7 +126,7 @@ The user will now give you a message to translate, your goal is to apply the abo
 
             } catch (error) {}
             return null;
-        })(raw.response.message.content);
+        })(raw.result);
 
         if (data === null || data.content === "null") return new NoticeResponse({
 			message: `**[This message](${message.url})** could not be translated 😔`,

@@ -1,7 +1,7 @@
 import { get_encoding } from "@dqbd/tiktoken";
 export const encoder = get_encoding("cl100k_base");
 
-import { OpenAIChatMessage } from "../../openai/types/chat.js";
+import { OpenAIChatMessage } from "../../turing/types/chat.js";
 
 /* Maximum context history length in total */
 export const MaxContextLength = {

@@ -7,7 +7,7 @@ import { Command, CommandInteraction, CommandResponse } from "../command/command
 import { ErrorResponse, ErrorType } from "../command/response/error.js";
 import { YouTubeSubtitle, YouTubeVideo } from "../util/youtube.js";
 import { LoadingIndicatorManager } from "../db/types/indicator.js";
-import { OpenAIChatMessage } from "../openai/types/chat.js";
+import { OpenAIChatMessage } from "../turing/types/chat.js";
 import { LanguageManager } from "../db/types/locale.js";
 import { DatabaseInfo } from "../db/managers/user.js";
 import { Response } from "../command/response.js";
@@ -252,12 +252,12 @@ export default class SummarizeCommand extends Command {
 
 				/* Generate the summarization result using ChatGPT. */
 				const raw = await this.bot.turing.openAI({
-					messages: prompt.messages, model: "gpt-3.5-turbo-0613",
-					temperature: 0.6, maxTokens: 500
+					messages: prompt.messages, model: "gpt-3.5-turbo",
+					temperature: 0.6, max_tokens: 500
 				});
 
 				/* Summary of the subtitles, by ChatGPT */
-				const summary: string = raw.response.message.content;
+				const summary: string = raw.result;
 
 				/* How many tokens the final summary uses up */
 				const tokens: number = getPromptLength(summary);

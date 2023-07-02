@@ -95,10 +95,6 @@ type VoteMetricsEntry = MetricsEntry<"vote", {
 }>
 
 type ImageMetricsEntry = MetricsEntry<"image", {
-    models: {
-        [key: string]: number;
-    };
-
     counts: {
         [key: number]: number;
     };
@@ -106,8 +102,6 @@ type ImageMetricsEntry = MetricsEntry<"image", {
     steps: {
         [key: number]: number;
     };
-
-    kudos: number;
 }>
 
 type CommandsMetricsEntry = MetricsEntry<"commands", {

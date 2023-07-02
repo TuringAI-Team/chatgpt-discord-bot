@@ -17,7 +17,7 @@ export type DatabaseLikeObject = {
 export class DatabaseManager<T extends DatabaseManagerBot = Bot> {
     public readonly bot: T;
 
-    /* Supabase client */
+    /* Supabase database client */
     public client: SupabaseClient;
     
     constructor(bot: T) {

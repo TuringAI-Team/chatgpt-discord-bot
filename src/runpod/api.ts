@@ -58,8 +58,10 @@ export class RunPodManager {
     }
 
     public async execute<InputData = any, OutputData = any>({ model, input }: RunPodExecuteOptions<InputData>): Promise<RunPodResult<OutputData>> {
-        const data: RunPodRawSyncResponseData<OutputData> = await this.bot.turing.request("runpod/runsync", "POST", {
-            model, input
+        const data: RunPodRawSyncResponseData<OutputData> = await this.bot.turing.request({
+            path: "runpod/runsync", method: "POST", body: {
+                model, input
+            }
         });
 
         this.error(data);
@@ -71,13 +73,17 @@ export class RunPodManager {
     }
 
     public async stream<InputData = any, OutputData = any>({ model, input, interval, progress }: RunPodStreamExecuteOptions<InputData, OutputData>): Promise<RunPodResult<OutputData>> {
-        let latest: RunPodRawStreamResponseData<OutputData> = await this.bot.turing.request("runpod/run", "POST", {
-            model, input
+        let latest: RunPodRawStreamResponseData<OutputData> = await this.bot.turing.request({
+            path: "runpod/run", method: "POST", body: {
+                model, input
+            }
         });
 
         do {
-            latest = await this.bot.turing.request(`runpod/status/${latest.id}`, "POST", {
-                model
+            latest = await this.bot.turing.request({
+                path: `runpod/status/${latest.id}`, method: "POST", body: {
+                    model
+                }
             });
 
             this.error(latest);

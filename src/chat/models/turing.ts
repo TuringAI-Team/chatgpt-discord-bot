@@ -15,12 +15,6 @@ export class TuringModel extends ChatModel {
         });
     }
 
-    public async reset(options: ChatResetOptions): Promise<void> {
-        if (options.model.id === "bard") {
-            await this.client.session.manager.bot.turing.resetConversation(options.model.id);
-        }
-    }
-
     public async complete(options: ModelGenerationOptions): Promise<PartialResponseMessage> {
         const model = options.conversation.model(options.db);
 
@@ -32,7 +26,7 @@ export class TuringModel extends ChatModel {
             : options.prompt;
 
         /* Generate a response for the user's prompt using the Turing API. */
-        const result: TuringChatResult = await this.client.session.manager.bot.turing.chat({
+        const result: TuringChatResult = await this.client.manager.bot.turing.chat({
             model: options.settings.options.settings.model!,
             conversation: options.conversation,
             prompt: prompt,

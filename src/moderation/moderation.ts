@@ -81,11 +81,8 @@ type ModerationImageSendOptions = Pick<ModerationSendOptions, "result" | "db" | 
 export type ModerationSource = "chatUser" | "chatBot" | "image" | "translationPrompt" | "translationResult" | "describe" | "video" | "music" | "youTubeQuery"
 
 interface AdditionalModerationOptions {
-    /* Which Stable Diffusion model was used */
+    /* Which image generation model was used */
     model?: string;
-
-    /* Whether NSFW content is allowed */
-    nsfw: boolean;
 }
 
 export interface ModerationOptions {
@@ -595,29 +592,15 @@ export class ModerationManager {
                 name: "Model 😊",
                 value: `\`${additional.model}\``,
                 inline: true
-            },
-
-            {
-                name: "NSFW 🔞",
-                value: additional.nsfw ? "✅" : "❌",
-                inline: true
             }
         );
 
         await channel.send(reply.get() as MessageCreateOptions);
     }
 
-    public async checkImagePrompt({ user, db, content, nsfw, model }: ImagePromptModerationOptions): Promise<ModerationResult> {
+    public async checkImagePrompt({ user, db, content, model }: ImagePromptModerationOptions): Promise<ModerationResult> {
         let result = await this.check({
-            user, db, content, source: "image",
-    
-            /* Check for all possible filters *except* for NSFW filters, to give people some freedom with their prompts. */ 
-            filter: nsfw ? action => {
-                if (action.description === "Block sexual words") return true;
-                return false;
-            } : undefined,
-    
-            additional: { model, nsfw }
+            user, db, content, source: "image", additional: { model }
         });
     
         return result;
@@ -641,7 +624,7 @@ export class ModerationManager {
 
         /* If this moderation request is related to image generation, run the Turing API filter too. */
         const turing = (source === "image" || source === "video") && additional
-            ? await this.bot.turing.filter(content, additional.model).catch(() => null)
+            ? await this.bot.turing.filter(content, [ "nsfw", "cp" ]).catch(() => null)
             : null;
 
         /* Whether the message should be completely blocked */
@@ -652,9 +635,9 @@ export class ModerationManager {
 
         /* If the Turing filter was used, do the additional checks. */
         if (additional && turing) {
-            if (turing.isNsfw && !additional.nsfw) flagged = true;
+            if (turing.nsfw) flagged = true;
         
-            if (turing.isCP) {
+            if (turing.cp || turing.youth) {
                 blocked = true;
                 flagged = true;
             }

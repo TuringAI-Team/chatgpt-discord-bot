@@ -4,12 +4,12 @@ import { UserPlanCreditBonusAmount } from "../../db/managers/plan.js";
 import { ModelGenerationOptions } from "../../chat/types/options.js";
 import { ChatClient, PromptContext } from "../../chat/client.js";
 import { RestrictionType } from "../../db/types/restriction.js";
-import { OpenAIChatBody } from "../../openai/types/chat.js";
 import { CooldownModifier } from "../utils/cooldown.js";
 import { ClydeUser } from "../../chat/models/clyde.js";
 import { ModelType } from "../../chat/types/model.js";
 import { DisplayEmoji } from "../../util/emoji.js";
 import { Conversation } from "../conversation.js";
+import { TuringOpenAIChatBody } from "../../turing/types/chat.js";
 
 export type ChatSettingsModelPromptBuilder = (context: ChatSettingsModelPromptContext) => Awaitable<string>
 
@@ -80,7 +80,7 @@ export interface ChatSettingsModelBillingSettings {
     extra?: UserPlanCreditBonusAmount;
 }
 
-export type ChatSettingsModelAdditionalSettings = Partial<Pick<OpenAIChatBody, "temperature" | "frequency_penalty" | "presence_penalty" | "model" | "top_p">>
+export type ChatSettingsModelAdditionalSettings = Partial<Pick<TuringOpenAIChatBody, "temperature" | "model" | "top_p">>
 
 export declare interface ChatSettingsModelOptions {
     /* Name of the model */
@@ -184,7 +184,7 @@ Knowledge cut-off: September 2021
         name: "GPT-4",
         description: "OpenAI's new GPT-4 model",
         emoji: { fallback: "✨" },
-        settings: { model: "gpt-4-0613" },
+        settings: { model: "gpt-4" },
         type: ModelType.OpenAIChat,
         restricted: "premium",
         history: { context: 425, generation: 270, maxTokens: 8192 },
@@ -202,77 +202,6 @@ Knowledge cut-off: September 2021
             builder: ({ context }) => `
 I am GPT-4, a new GPT model by OpenAI released on the 14th March 2023. I am an improved version of ChatGPT, and provide more advanced and complex replies.
 I must provide engaging & entertaining responses.
-
-Current date & time: ${context.time}, ${context.date}
-Knowledge cut-off: September 2021
-`
-        }
-    }),
-
-    new ChatSettingsModel({
-        name: "ChatGPT + Plugins",
-        description: "The ChatGPT model with plugin support",
-        emoji: { display: "<:chatgpt:1097849346164281475>", fallback: "😐" },
-        cooldown: { time: 3 * 60 * 1000 },
-        type: ModelType.OpenAIPlugins,
-        history: { maxTokens: 2048 },
-
-        billing: {
-            type: ChatSettingsModelBillingType.Custom, amount: 0
-        },
-
-        prompt: {
-            builder: ({ context }) => `
-I am ChatGPT, a large language model trained by OpenAI, released in November 2022.
-I must provide engaging & entertaining responses.
-
-Current date & time: ${context.time}, ${context.date}
-`
-        }
-    }),
-
-    new ChatSettingsModel({
-        name: "GPT-4 + Plugins",
-        description: "The GPT-4 model with plugin support",
-        emoji: { fallback: "✨" },
-        restricted: "plan",
-        type: ModelType.OpenAIPlugins,
-        history: { maxTokens: 2048 },
-
-        billing: {
-            type: ChatSettingsModelBillingType.Custom, amount: 0
-        },
-
-        prompt: {
-            builder: ({ context }) => `
-I am GPT-4, a new GPT model by OpenAI released on the 14th March 2023. I am an improved version of ChatGPT, and provide more advanced and complex replies.
-I must provide engaging & entertaining responses.
-
-Current date & time: ${context.time}, ${context.date}
-Knowledge cut-off: September 2021
-`
-        }
-    }),
-
-    new ChatSettingsModel({
-        name: "GPT-3",
-        description: "OpenAI's original GPT-3; less restrictions than ChatGPT",
-        emoji: { display: "<:gpt3:1097849352657047562>", fallback: "🤖" },
-        settings: { temperature: 0.7, model: "text-davinci-003" },
-        restricted: "premium",
-        history: { context: 600, generation: 350, maxTokens: 4097 },
-        type: ModelType.OpenAICompletion,
-        cooldown: { time: 15 * 1000 },
-
-        billing: {
-            type: ChatSettingsModelBillingType.Per1000Tokens,
-            amount: 0.02
-        },
-
-        prompt: {
-            builder: ({ context }) => `
-I am GPT-3, an autoregressive language model, initially released in 2022 and updated in November 2022, by OpenAI that uses deep learning to produce human-like text.
-I must answer as concisely as possible. I must provide engaging & entertaining responses.
 
 Current date & time: ${context.time}, ${context.date}
 Knowledge cut-off: September 2021
@@ -331,6 +260,30 @@ I must provide engaging & entertaining responses.
 
 Current date & time: ${context.time}, ${context.date}
 Knowledge cut-off: September 2021, like ChatGPT
+`
+        }
+    }),
+
+    new ChatSettingsModel({
+        name: "PaLM 2",
+        emoji: { display: "<:palm:1125109625998553181>", fallback: "🌴" },
+        description: "Next-generation large language model by Google",
+        settings: { model: "chat-bison" },
+        history: { maxTokens: 1025 },
+        cooldown: { multiplier: 0.5 },
+        type: ModelType.Google,
+
+        billing: {
+            type: ChatSettingsModelBillingType.PerMessage,
+            amount: 0.004
+        },
+
+        prompt: {
+            builder: ({ context }) => `
+You are PaLM 2 a AI chatbot created by Google.
+You must provide engaging & entertaining responses.
+
+Current date & time: ${context.time}, ${context.date}
 `
         }
     }),
@@ -402,7 +355,7 @@ ${emojis.length > 0 ? `Custom server emoji names on this server, I must use "<e:
 
 Channels on this server:
 ${channels.map(c => {
-    if (c instanceof TextChannel) return `<c:${c.name}>${c.topic ? ` - topic: ${c.topic}` : ""}${c.nsfw ? " - nsfw channel" : ""}`;
+    if (c instanceof TextChannel) return `<c:${c.name}>${c.topic ? ` - topic: ${c.topic}` : ""}${c.nsfw ? " - NSFW channel" : ""}`;
     else if (c instanceof VoiceChannel) return `<c:${c.name}> - voice channel - connected users: ${c.members.size > 0 ? c.members.map(m => `<u:${m.user.username}>`).join(", ") : "none"}`;
     else if (c instanceof StageChannel) return `<c:${c.name}> - stage voice channel`;
     else if (c instanceof ForumChannel) return `<c:${c.name}> - forum channel`;

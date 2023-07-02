@@ -8,7 +8,7 @@ export enum MessageType {
 	Chat = "Chat"
 }
 
-export type MessageStopReason = "maxLength" | "stop"
+export type MessageFinishReason = "length" | "stop"
 
 export interface MessageDataTokenUsage {
 	completion: number;
@@ -20,7 +20,7 @@ export interface MessageData {
 	usage?: MessageDataTokenUsage;
 
 	/* Why the message stopped generating */
-	finishReason?: MessageStopReason;
+	finishReason?: MessageFinishReason;
 
 	/* How long the message took to generate, in milliseconds */
 	duration?: number;

@@ -45,7 +45,7 @@ export class TuringConnectionHandler {
      * @param message The received message
      * @param reply Callback to reply to the received message
      */
-    public async handle(message: RabbitMQMessage, reply: RabbitMQReplyCallback): Promise<void> {
+    public async handle(message: RabbitMQMessage): Promise<void> {
         try {
             /* Convert the message buffer into a string. */
             const data: string = message.body.toString();

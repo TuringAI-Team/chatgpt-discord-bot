@@ -57,9 +57,7 @@ export class ErrorManager {
     public async handle(options: ErrorHandlingOptions): Promise<void>;
 
     public async handle(options: ErrorHandlingOptions): Promise<Message | InteractionResponse | Response | null | void> {
-        const { error: err, title, notice, original } = options;
-        const error: Error = err as Error;
-        
+        const { error, title, notice, original } = options;        
         const channel = await this.bot.moderation.channel("error");
 
         /* Add the error to the database. */
@@ -82,11 +80,11 @@ export class ErrorManager {
 
         /* Build a formatted response for the user, if requested. */
         if (notice && original) {
-            const response = this.build({ error: err, title, notice, original, db });
+            const response = this.build({ error, title, notice, original, db });
             return await response.send(original);
 
         } else if (notice) {
-            return this.build({ error: err, title, notice, db });
+            return this.build({ error, title, notice, db });
         }
     }
 

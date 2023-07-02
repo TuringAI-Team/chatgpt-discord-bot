@@ -1,23 +1,54 @@
-import { APIUser, Collection, Snowflake, User } from "discord.js";
+import { APIUser, Collection, Message, Snowflake, User } from "discord.js";
 
+import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
+import { ModerationResult } from "../moderation/moderation.js";
+import { ResponseMessage } from "../chat/types/message.js";
+import { ChatGuildData } from "../chat/types/options.js";
 import { ProgressManager } from "./utils/progress.js";
+import { DatabaseInfo } from "../db/managers/user.js";
 import { Conversation } from "./conversation.js";
+import { ChatClient, ChatClientResult } from "../chat/client.js";
 import { Generator } from "./generator.js";
-import { Session } from "./session.js";
 import { Bot } from "../bot/bot.js";
 
-/* Manager in charge of managing all conversations */
+/* Message generation options */
+export interface GenerationOptions {
+    /* Conversation to use */
+    conversation: Conversation;
+
+    /* Discord message that invoked the generation */
+    trigger: Message;
+
+    /* Function to call on message updates */
+    progress: (message: ResponseMessage) => Promise<void> | void;
+
+    /* Guild data, if available */
+    guild: ChatGuildData | null;
+
+    /* Moderation result of the invocation message */
+    moderation: ModerationResult | null;
+
+    /* Database instances */
+    db: DatabaseInfo;
+
+    /* Prompt to use for generation */
+    prompt: string;
+
+    /* Whether partial messages should be shown */
+    partial: boolean;
+}
+
 export class ConversationManager {
     public readonly bot: Bot;
-
-    /* The session itself */
-    public session: Session;
 
     /* List of currently running conversations */
     public readonly conversations: Collection<Snowflake, Conversation>;
 
     /* Response generator; used for handling Discord messages */
     public readonly generator: Generator;
+
+    /* Client, in charge of building prompts and generating the actual responses */
+    public readonly client: ChatClient;
 
     /* The progress() callback handler; used for sending progress callbacks */
     public readonly progress: ProgressManager;
@@ -32,10 +63,10 @@ export class ConversationManager {
         /* Create the Discord message generator. */
         this.generator = new Generator(this.bot);
         this.progress = new ProgressManager(this);
+        this.client = new ChatClient(this);
         
-        /* Initialize the lists with empty values. */
+        /* Initialize the map with empty values. */
         this.conversations = new Collection();
-        this.session = null!;
     }
 
     /**
@@ -43,14 +74,32 @@ export class ConversationManager {
      * @returns How many sessions were initialized
      */
     public async setup(): Promise<void> {
-        /* Create a new session. */
-        this.session = new Session(this, {
-            token: this.bot.app.config.openAI.key
-        });
-
-        /* Try to initialize the session. */
-        await this.session.init();
         this.active = true;
+    }
+
+    /**
+     * Generate ChatGPT's response for the specified prompt.
+     * @param options Generation options 
+     * 
+     * @throws Any exception that may occur
+     * @returns Given chat response
+     */
+    public async generate({ prompt, conversation, progress, trigger, db, guild, partial }: GenerationOptions): Promise<ChatClientResult> {
+        if (!this.active) throw new GPTGenerationError({
+            type: GPTGenerationErrorType.Inactive
+        });
+        
+        try {
+            /* Send the request, to complete the prompt. */
+            const data = await this.client.ask({
+                progress, conversation, trigger, prompt, db, guild, partial
+            });
+
+            return data;
+
+        } catch (error) {
+            throw error;
+        }
     }
 
     /**

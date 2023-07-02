@@ -274,17 +274,8 @@ export class UserManager extends SubClusterDatabaseManager {
         await this.db.queue.update("errors", error.id, error);
     }
 
-    public async updateImage(image: DatabaseImage): Promise<void> {
-        /* Remove the `url` property from all image generation results, as it expires anyway. */
-        const data: DatabaseImage = {
-            ...image,
-
-            results: image.results.map(
-                ({ censored, id, seed }) => ({ censored, id, seed })
-            ) as any
-        };
-
-        await this.db.queue.update("images", image.id, data);
+    public async updateImage(image: DatabaseImage): Promise<DatabaseImage> {
+        return await this.db.queue.update<DatabaseImage>("images", image.id, image);
     }
 
     public async updateImageDescription(image: DatabaseDescription | string, updates: DatabaseDescription): Promise<DatabaseDescription> {

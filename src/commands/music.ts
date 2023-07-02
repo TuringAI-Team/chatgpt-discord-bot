@@ -113,8 +113,8 @@ export default class VideoCommand extends Command {
 				prompt
 			],
 
-			modelName: "large",
-			duration: duration.duration
+			duration: duration.duration,
+			modelName: "large"
 		};
 
 		try {

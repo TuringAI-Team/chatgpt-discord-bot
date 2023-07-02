@@ -36,7 +36,7 @@ export class TuringAlanModel extends ChatModel {
 
         /* Display name of the image generator */
         const imageGenerator: TuringAlanImageGenerator = TuringAlanImageGenerators.find(
-            g => g.type === this.client.session.manager.bot.db.settings.get(options.db.user, "alan:imageGenerator")
+            g => g.type === this.client.manager.bot.db.settings.get(options.db.user, "alan:imageGenerator")
         )!;
         
         if (result.generated === "image" && result.results && result.generationPrompt) {
@@ -63,7 +63,7 @@ export class TuringAlanModel extends ChatModel {
     }
 
     public async reset({ conversation }: ChatResetOptions): Promise<void> {
-        await this.client.session.manager.bot.turing.resetAlanConversation({ conversation });
+        // await this.client.manager.bot.turing.resetAlanConversation({ conversation });
     }
 
     public async complete(options: ModelGenerationOptions): Promise<PartialResponseMessage> {
@@ -79,7 +79,7 @@ export class TuringAlanModel extends ChatModel {
         : null;
 
         /* Generate a response for the user's prompt using the Turing API. */
-        const result: TuringAlanResult = await this.client.session.manager.bot.turing.alan({
+        const result: TuringAlanResult = await this.client.manager.bot.turing.alan({
             conversation: options.conversation,
             prompt: prompt.prompt,
             user: options.db.user,

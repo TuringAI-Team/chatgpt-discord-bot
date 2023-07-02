@@ -18,14 +18,11 @@ export enum ModelType {
     /* OpenAI ChatGPT API */
     OpenAIChat,
 
-    /* OpenAI ChatGPT API with plugin support */
-    OpenAIPlugins,
-
-    /* OpenAI's completion API */
-    OpenAICompletion,
-
     /** Replication of Discord's Clyde AI */
     Clyde,
+
+    /** Google's API, using the Turing API */
+    Google,
 
     /** Turing API */
     Turing,
@@ -83,7 +80,7 @@ export abstract class ChatModel {
      */
     public async analyze(options: GPTImageAnalyzeOptions): Promise<ChatAnalyzedImage> {
         /* Analyze & describe the image. */
-        const result = await this.client.session.manager.bot.description.describe({
+        const result = await this.client.manager.bot.description.describe({
             input: options.attachment
         });
 

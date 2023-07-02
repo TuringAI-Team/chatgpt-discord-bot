@@ -1,35 +1,33 @@
 import { Canvas, Image } from "@napi-rs/canvas";
-import mergeImages from "merge-images";
 import { readFile } from "fs/promises";
+import mergeImages from "merge-images";
 
-import { StableHordeGenerationResult, ImageGenerationOptions } from "../types/image.js";
 import { StorageImage } from "../../db/managers/storage.js";
 import { ImageBuffer } from "../../chat/types/image.js";
+import { DatabaseImage } from "../types/image.js";
 import { Utils } from "../../util/utils.js";
 import { Bot } from "../../bot/bot.js";
 
-type SpecialImageName = "censored"
+type AssetName = "censored"
 
 /* All special images */
-const SpecialImages: Record<SpecialImageName, Buffer> = {
+const Assets: Record<AssetName, Buffer> = {
     /* This will be loaded when the app starts ... */
 } as any
 
-const loadSpecialImages = async (): Promise<void> => {
-    /* Paths of all images */
+const loadAssets = async (): Promise<void> => {
     const paths: string[] = await Utils.search("./assets/imagine", "png");
 
     for (const path of paths) {
-        /* Get the name of the asset. */
-        const name: SpecialImageName = Utils.baseName(Utils.fileName(path)) as SpecialImageName;
+        const name: AssetName = Utils.baseName(Utils.fileName(path)) as AssetName;
 
         const buffer: Buffer = await readFile(path);
-        SpecialImages[name] = buffer;
+        Assets[name] = buffer;
     }
 }
 
-/* Load all special assets from the directory. */
-loadSpecialImages();
+/* Load all assets from the directory. */
+loadAssets();
 
 /**
  * Render the specified image generation results into a single image, to display in a Discord embed.
@@ -39,12 +37,12 @@ loadSpecialImages();
  * 
  * @returns A buffer, containing the final merged PNG image
  */
-export const renderIntoSingleImage = async (bot: Bot, options: ImageGenerationOptions, result: StableHordeGenerationResult): Promise<Buffer> => {
+export const renderIntoSingleImage = async (bot: Bot, db: DatabaseImage): Promise<Buffer> => {
     /* Fetch all the images. */
-    const images: Buffer[] = await Promise.all(result.images.map(async image => {
-        if (image.censored) return SpecialImages.censored;
+    const images: Buffer[] = await Promise.all(db.results.map(async image => {
+        if (image.reason === "CONTENT_FILTERED") return Assets.censored;
 
-        const storage: StorageImage = await bot.image.getImageData(image);
+        const storage: StorageImage = bot.image.url(db, image);
         const data: ImageBuffer = (await Utils.fetchBuffer(storage.url))!;
 
         return data.buffer;
@@ -58,13 +56,13 @@ export const renderIntoSingleImage = async (bot: Bot, options: ImageGenerationOp
     const rows: number = Math.ceil(images.length / perRow);
 
     /* Width & height of the canvas */
-    const width: number = options.params.width * perRow;
-    const height: number = rows * options.params.height;
+    const width: number = db.options.width * perRow;
+    const height: number = rows * db.options.height;
 
     /* Merge all of the images together. */
     const data = await mergeImages(images.map((img, index) => {
-        const x: number = (index % perRow) * options.params.width;
-        const y: number = Math.floor(index / perRow) * options.params.height;
+        const x: number = (index % perRow) * db.options.width;
+        const y: number = Math.floor(index / perRow) * db.options.height;
 
         return {
             src: img,

@@ -55,12 +55,6 @@ export default class DeveloperCommand extends Command {
 
 		/* View debug information */
 		if (action === "debug") {
-			const count: number = (await this.bot.client.cluster.broadcastEval(() => this.bot.conversation.session.debug.count).catch(() => [0]))
-				.reduce((value, count) => value + count, 0);
-
-			const tokens: number = (await this.bot.client.cluster.broadcastEval(() => this.bot.conversation.session.debug.tokens).catch(() => [0]))
-				.reduce((value, count) => value + count, 0);
-
 			const runningRequests: number = (await this.bot.client.cluster.broadcastEval(() => this.bot.conversation.conversations.filter(c => c.generating).size).catch(() => [0]))
 				.reduce((value, count) => value + count, 0);
 
@@ -75,11 +69,6 @@ export default class DeveloperCommand extends Command {
 				{
 					key: "Running since 🕒",
 					value: `**${dayjs.duration(Date.now() - uptime).format("DD:HH:mm:ss")}**`
-				},
-
-				{
-					key: "Processed messages 💬",
-					value: `**\`${count}\`**`
 				},
 
 				{
@@ -101,9 +90,6 @@ export default class DeveloperCommand extends Command {
 				else clusterDebug = `${clusterDebug}\n\`#${i + 1}\` • **Reloading** ... ⌛`;
 			}
 
-			/* Get information about the Stable Horde API user. */
-			const user = await this.bot.image.findUser();
-
 			/* Discord gateway session limit */
 			const session = await this.bot.sessionLimit();
 
@@ -124,14 +110,6 @@ export default class DeveloperCommand extends Command {
 					.setColor(this.bot.branding.color)
 					.setTitle("Clusters 🤖")
 					.setDescription(clusterDebug.trim())
-				)
-				.addEmbed(builder => builder
-					.setColor(this.bot.branding.color)
-					.setTitle("Stable Horde 🖼️")
-					.addFields(
-						{ name: "Kudos",            value: `${user.kudos}`, inline: true                 },
-						{ name: "Generated images", value: `${user.records.request.image}`, inline: true }
-					)
 				)
 				.addEmbed(builder => builder
 					.setColor(this.bot.branding.color)

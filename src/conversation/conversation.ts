@@ -4,7 +4,6 @@ import chalk from "chalk";
 
 import { ChatSettingsModel, ChatSettingsModelBillingType, ChatSettingsModels } from "./settings/model.js";
 import { DatabaseUser, UserSubscriptionPlanType, UserSubscriptionType } from "../db/schemas/user.js";
-import { CampaignPickOptions, DatabaseCampaign, DisplayCampaign } from "../db/managers/campaign.js";
 import { DatabaseConversation, DatabaseResponseMessage } from "../db/schemas/conversation.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
 import { ChatSettingsTone, ChatSettingsTones } from "./settings/tone.js";
@@ -21,7 +20,7 @@ import { ChatModel } from "../chat/types/model.js";
 import { GPTAPIError } from "../error/gpt/api.js";
 import { GeneratorOptions } from "./generator.js";
 import { Response } from "../command/response.js";
-import { GenerationOptions } from "./session.js";
+import { GenerationOptions } from "./manager.js";
 import { BotDiscordClient } from "../bot/bot.js";
 import { Utils } from "../util/utils.js";
 
@@ -73,10 +72,10 @@ export interface ChatChargeOptions {
 }
 
 /* How many tries to allow to retry after an error occurred duration generation */
-const CONVERSATION_ERROR_RETRY_MAX_TRIES: number = 5
+const ConversationMaximumTries: number = 5
 
 /* Usual cool-down for interactions in the conversation */
-export const CONVERSATION_COOLDOWN_MODIFIER: Record<UserSubscriptionPlanType, CooldownModifier> = {
+export const ConversationCooldownModifier: Record<UserSubscriptionPlanType, CooldownModifier> = {
 	free: {
 		multiplier: 1
 	},
@@ -94,8 +93,8 @@ export const CONVERSATION_COOLDOWN_MODIFIER: Record<UserSubscriptionPlanType, Co
 	}
 }
 
-export const CONVERSATION_DEFAULT_COOLDOWN: Required<Pick<CooldownModifier, "time">> = {
-	time: 90 * 1000
+export const ConversationDefaultCooldown: Required<Pick<CooldownModifier, "time">> = {
+	time: 120 * 1000
 }
 
 export declare interface Conversation {
@@ -136,7 +135,7 @@ export class Conversation {
 		this.manager = manager;
 
 		this.cooldown = new Cooldown({
-			conversation: this, time: CONVERSATION_DEFAULT_COOLDOWN.time!
+			conversation: this, time: ConversationDefaultCooldown.time!
 		});
 
 		this.ttl = 30 * 60 * 1000;
@@ -265,7 +264,7 @@ export class Conversation {
 		const settingsModel: ChatSettingsModel = this.model(db);
 		const settingsTone: ChatSettingsTone = this.tone(db);
 
-		const model: ChatModel = this.manager.session.client.modelForSetting(settingsModel);
+		const model: ChatModel = this.manager.client.modelForSetting(settingsModel);
 
 		/* Before resetting the conversation, call the chat model's reset callback. */
 		await model.reset({
@@ -319,23 +318,22 @@ export class Conversation {
 		do {
 			/* Try to generate the response using the chat model. */
 			try {
-				data = await this.manager.session.generate(options);
+				data = await this.manager.generate(options);
 
 			} catch (error) {
 				this.bump();
 				tries++;
 
 				/* If all of the retries were exhausted, throw the error. */
-				if (tries === CONVERSATION_ERROR_RETRY_MAX_TRIES) {
-					this.generating = false;
+				if (tries === ConversationMaximumTries) {
 					throw error;
 					
 				} else {
-					if (this.manager.bot.dev) this.manager.bot.logger.warn(`Request by ${chalk.bold(options.conversation.user.username)} failed, retrying [ ${chalk.bold(tries)}/${chalk.bold(CONVERSATION_ERROR_RETRY_MAX_TRIES)} ] ->`, error);
+					if (this.manager.bot.dev) this.manager.bot.logger.warn(`Request by ${chalk.bold(options.conversation.user.username)} failed, retrying [ ${chalk.bold(tries)}/${chalk.bold(ConversationMaximumTries)} ] ->`, error);
 
 					/* Display a notice message to the user on Discord. */
 					await this.manager.progress.notice(options, {
-						text: `Something went wrong while processing your message, retrying [ **${tries}**/**${CONVERSATION_ERROR_RETRY_MAX_TRIES}** ]`
+						text: `Something went wrong while processing your message, retrying [ **${tries}**/**${ConversationMaximumTries}** ]`
 					});
 				}
 
@@ -357,18 +355,15 @@ export class Conversation {
 
 				/* Throw through any type of generation error, as they should be handled instantly. */
 				if ((error instanceof GPTGenerationError && error.options.data.cause && !(error.options.data.cause instanceof GPTAPIError)) || (error instanceof GPTAPIError && !error.isServerSide())) {
-					this.generating = false;
 					throw error;
 
-				} else
-
-				if (error instanceof GPTGenerationError && (error.options.data.type === GPTGenerationErrorType.Empty || error.options.data.type === GPTGenerationErrorType.Length)) {
-					this.generating = false;
+				} else if (error instanceof GPTGenerationError && (error.options.data.type === GPTGenerationErrorType.Empty || error.options.data.type === GPTGenerationErrorType.Length)) {
 					throw error;
-
 				}
+			} finally {
+				this.generating = false;
 			}
-		} while (tries < CONVERSATION_ERROR_RETRY_MAX_TRIES && data === null);
+		} while (tries < ConversationMaximumTries && data === null);
 
 		/* Unlock the conversation after generation has finished. */
 		this.generating = false;
@@ -481,8 +476,8 @@ export class Conversation {
 		}
 		
 		/* Cool-down duration & modifier */
-		const baseModifier: number = CONVERSATION_COOLDOWN_MODIFIER[type.type].multiplier && !model.premiumOnly
-			? CONVERSATION_COOLDOWN_MODIFIER[type.type].multiplier! : 1;
+		const baseModifier: number = ConversationCooldownModifier[type.type].multiplier && !model.premiumOnly
+			? ConversationCooldownModifier[type.type].multiplier! : 1;
 
 		/* Cool-down modifier, set by the model */
 		const modelModifier: number = model.options.cooldown && model.options.cooldown.multiplier
@@ -491,7 +486,7 @@ export class Conversation {
 
 		const baseDuration: number = model.options.cooldown && model.options.cooldown.time && model.premiumOnly
 			? model.options.cooldown.time
-			: CONVERSATION_COOLDOWN_MODIFIER[type.type].time ?? this.cooldown.options.time;
+			: ConversationCooldownModifier[type.type].time ?? this.cooldown.options.time;
 
 		const finalDuration: number = baseDuration * baseModifier * modelModifier;
 		return Math.round(finalDuration);
@@ -660,10 +655,6 @@ export class Conversation {
 	public get previous(): ChatInteraction | null {
 		if (this.history.length === 0) return null;
 		return this.history[this.history.length - 1];
-	}
-
-	public get userIdentifier(): string {
-		return this.user.id;
 	}
 
 	public get id(): string {

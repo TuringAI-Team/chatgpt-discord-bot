@@ -1,6 +1,6 @@
 import { Bucket, StorageClient, StorageError } from "@supabase/storage-js";
 
-import { ImageGenerationResult, StableHordeGenerationResult } from "../../image/types/image.js";
+import { DatabaseImage, ImageRawGeneration, ImageResult } from "../../image/types/image.js";
 import { DatabaseDescription } from "../../image/description.js";
 import { GPTDatabaseError } from "../../error/gpt/db.js";
 import { ImageBuffer } from "../../chat/types/image.js";
@@ -51,25 +51,25 @@ export class StorageManager extends SubClusterDatabaseManager {
      * 
      * @returns URL to the public image
      */
-    public async fetchImage(image: ImageGenerationResult | string, bucket: StorageBucketName): Promise<StorageImage> {
+    public imageURL(db: DatabaseImage, image: ImageResult | ImageRawGeneration, bucket: StorageBucketName): StorageImage {
         const { data } = this.client
-            .from("images")
-            .getPublicUrl(typeof image === "object" ? `${image.id}.png` : image);
+            .from("images").getPublicUrl(`${db.id}/${image.id}.png`);
 
         return { url: data.publicUrl };
     }
 
-    public async uploadImageGenerationResult(image: ImageGenerationResult, data: Buffer): Promise<StorageImage> {
+    public async uploadImageResult(db: DatabaseImage, image: ImageResult | ImageRawGeneration, data: Buffer): Promise<StorageImage> {
         const { error } = await this.client
             .from("images")
-            .upload(`${image.id}.png`, data, {
+            .upload(`${db.id}/${image.id}.png`, data, {
                 cacheControl: "86400",
                 contentType: "image/png"
             });
 
         /* Check for any errors. */
         this.error(error);
-        return this.fetchImage(image, "images");
+
+        return this.imageURL(db, image, "images");
     }
 
     public async uploadImageDescription(image: DatabaseDescription, data: ImageBuffer): Promise<void> {
@@ -86,18 +86,17 @@ export class StorageManager extends SubClusterDatabaseManager {
         this.error(error);
     }
 
-    public async uploadImages(result: StableHordeGenerationResult): Promise<StorageImage[]> {
+    public async uploadImageResults(db: DatabaseImage, images: ImageRawGeneration[]): Promise<StorageImage[]> {
         /* All generated images */
-        const images: ImageGenerationResult[] = result.images.filter(i => !i.censored);
+        images = images.filter(i => i.finishReason !== "CONTENT_FILTERED");
 
         /* Upload all of the images to the storage bucket. */
         await Promise.all(images.map(async image => {
-            const data: Buffer = Buffer.from(await (await fetch(image.url)).arrayBuffer());
-            return this.uploadImageGenerationResult(image, data);
+            const buffer: Buffer = ImageBuffer.load(image.base64).buffer;  
+            await this.uploadImageResult(db, image, buffer);
         }));
 
-        /* Fetch all of the uploaded images again. */
-        return Promise.all(images.map(image => this.fetchImage(image, "images")));
+        return images.map(image => this.imageURL(db, image, "images"));
     }
 
     /**

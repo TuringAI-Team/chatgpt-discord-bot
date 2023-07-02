@@ -1,6 +1,6 @@
 import { ActionRowBuilder, Awaitable, ButtonBuilder, ButtonStyle, ComponentEmojiResolvable, EmbedBuilder, MessageEditOptions, StringSelectMenuBuilder, StringSelectMenuInteraction, StringSelectMenuOptionBuilder, User } from "discord.js";
 
-import { CONVERSATION_COOLDOWN_MODIFIER, CONVERSATION_DEFAULT_COOLDOWN } from "../conversation/conversation.js";
+import { ConversationCooldownModifier, ConversationDefaultCooldown } from "../conversation/conversation.js";
 import { Cooldown } from "../conversation/utils/cooldown.js";
 import { Response } from "../command/response.js";
 import { Bot } from "../bot/bot.js";
@@ -124,7 +124,7 @@ export const IntroductionPages: IntroductionPage[] = [
 
                 {
                     name: "Way lower cool-down ⏰",
-                    value: `Chat with **ChatGPT** for as long as you want - without being interrupted by an annoying cool-down! ⏰\nYour cool-down will be lowered to an amazing **${Math.floor(Cooldown.calculate(CONVERSATION_DEFAULT_COOLDOWN.time, CONVERSATION_COOLDOWN_MODIFIER.subscription) / 1000)} seconds**, for all normal models.`
+                    value: `Chat with **ChatGPT** for as long as you want - without being interrupted by an annoying cool-down! ⏰\nYour cool-down will be lowered to an amazing **${Math.floor(Cooldown.calculate(ConversationDefaultCooldown.time, ConversationCooldownModifier.subscription) / 1000)} seconds**, for all normal models.`
                 },
 
                 {
@@ -180,11 +180,6 @@ export class Introduction {
                     new ButtonBuilder()	
                         .setURL("https://github.com/TuringAI-Team/chatgpt-discord-bot")
                         .setEmoji("<:github:1097828013871222865>")
-                        .setStyle(ButtonStyle.Link),
-    
-                    new ButtonBuilder()	
-                        .setURL("https://bit.ly/chatgpt-whatsapp")
-                        .setEmoji("<:WhatsApp:1079831241601323078>")
                         .setStyle(ButtonStyle.Link)
                 );
     }
@@ -236,7 +231,7 @@ export class Introduction {
             .addEmbed(embed);
     
         /* Add the selection menu for the pages. */
-        rows.forEach(row => response.addComponent(undefined!, row));
+        rows.forEach(row => response.addComponent(ActionRowBuilder<any>, row));
     
         return response;
     }

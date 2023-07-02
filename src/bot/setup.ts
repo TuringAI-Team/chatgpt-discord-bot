@@ -59,11 +59,6 @@ const BotSetupSteps: {
 
     bot: [
             {
-                name: "Stable Horde",
-                execute: async bot => bot.image.setup()
-            },
-
-            {
                 name: "Supabase database",
                 execute: async bot => bot.db.setup()
             },

@@ -1,12 +1,11 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle, EmbedBuilder, GuildMember, InteractionReplyOptions } from "discord.js";
 
 import { MidjourneyResult, TuringVideoModel, TuringVideoModelName, TuringVideoResult } from "../../turing/api.js";
-import { DescribeSummary, DatabaseDescription } from "../../image/description.js";
-import { StableHordeGenerationResult } from "../../image/types/image.js";
 import { DatabaseUser, UserSubscriptionType } from "../schemas/user.js";
 import { RunPodMusicGenResult } from "../../runpod/models/musicgen.js";
 import { ChatInteraction } from "../../conversation/conversation.js";
 import { DatabaseManager, DatabaseManagerBot } from "../manager.js";
+import { DatabaseDescription } from "../../image/description.js";
 import { ErrorResponse } from "../../command/response/error.js";
 import { CommandInteraction } from "../../command/command.js";
 import { SummaryPrompt } from "../../commands/summarize.js";
@@ -15,10 +14,11 @@ import { ClusterDatabaseManager } from "../cluster.js";
 import { YouTubeVideo } from "../../util/youtube.js";
 import { Response } from "../../command/response.js";
 import { DatabaseGuild } from "../schemas/guild.js";
+import { AppDatabaseManager } from "../app.js";
 import { SubDatabaseManager } from "../sub.js";
 import { Utils } from "../../util/utils.js";
 import { DatabaseInfo } from "./user.js";
-import { AppDatabaseManager } from "../app.js";
+import { DatabaseImage } from "../../image/types/image.js";
 
 type DatabaseEntry = DatabaseUser | DatabaseGuild
 
@@ -53,9 +53,7 @@ export type UserPlanChatExpense = UserPlanExpense<{
     duration?: number;
 }>
 
-export type UserPlanImageExpense = UserPlanExpense<{
-    kudos: number;
-}>
+export type UserPlanImageExpense = UserPlanExpense
 
 export type UserPlanDallEExpense = UserPlanExpense<{
     count: number;
@@ -159,7 +157,7 @@ export const PlanExpenseEntryViewers: {
     translate: PlanExpenseEntryViewer<UserPlanTranslateExpense>,
     music: PlanExpenseEntryViewer<UserPlanMusicExpense>
 } = {
-    image: e => `used \`${e.data.kudos}\` kudos`,
+    image: null,
     "dall-e": e => `**${e.data.count}** image${e.data.count > 1 ? "s" : ""}`,
     midjourney: e => `prompt \`${e.data.prompt}\``,
     video: e => `took **${e.data.duration} ms** using model \`${e.data.model}\``,
@@ -262,18 +260,10 @@ export class ClusterPlanManager extends BasePlanManager<ClusterDatabaseManager> 
     }
 
     public async expenseForImage(
-        entry: DatabaseInfo, result: StableHordeGenerationResult
+        entry: DatabaseInfo, result: DatabaseImage
     ): Promise<UserPlanImageExpense | null> {
         return this.expense(entry, {
-            type: "image", used: result.kudos / 4500, data: { kudos: result.kudos }, bonus: 0.10
-        });
-    }
-
-    public async expenseForDallEImage(
-        entry: DatabaseInfo, count: number
-    ): Promise<UserPlanDallEExpense | null> {
-        return this.expense(entry, {
-            type: "dall-e", used: count * 0.02, data: { count }, bonus: 0.10
+            type: "image", used: result.cost, data: null, bonus: 0.10
         });
     }
 
@@ -281,20 +271,14 @@ export class ClusterPlanManager extends BasePlanManager<ClusterDatabaseManager> 
         entry: DatabaseInfo, result: MidjourneyResult
     ): Promise<UserPlanMidjourneyExpense | null> {
         return this.expense(entry, {
-            type: "midjourney", used: result.credits, data: { prompt: result.prompt }, bonus: 0.15
+            type: "midjourney", used: result.credits, data: { prompt: result.prompt }, bonus: 0.10
         });
     }
 
     public async expenseForImageDescription(
-        entry: DatabaseInfo, result: DatabaseDescription, summary: DescribeSummary | null
+        entry: DatabaseInfo, result: DatabaseDescription
     ): Promise<UserPlanImageDescribeExpense | null> {
-        let cost: number = 0;
-
-        /* Cost for the BLIP image description */
-        cost += (Math.max(result.duration, 1000) / 1000) * 0.0004;
-
-        /* Cost for the ChatGPT summary */
-        if (summary !== null) cost += ((summary.tokens.prompt + summary.tokens.completion) / 1000) * 0.0015;
+        let cost: number = (Math.max(result.duration, 1000) / 1000) * 0.0004;
 
         return this.expense(entry, {
             type: "describe", used: cost, data: { duration: result.duration }, bonus: 0.10
