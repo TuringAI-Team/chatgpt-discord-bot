@@ -28,6 +28,6 @@ export class TuringAPIError<T = any> extends GPTError<TuringErrorOptions<T>> {
      * @returns Human-readable error message
      */
     public toString(): string {
-        return `Failed to request image endpoint ${this.options.data.endpoint} with status code ${this.options.data.code}${typeof this.data !== "object" ? `: ${this.data}` : ""}`;
+        return `Failed to request API endpoint ${this.options.data.endpoint} with status code ${this.options.data.code}${typeof this.data !== "object" ? `: ${this.data}` : ""}`;
     }
 }

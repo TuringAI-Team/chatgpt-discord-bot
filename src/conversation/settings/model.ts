@@ -240,31 +240,6 @@ Knowledge cut-off: September 2021
     }),
 
     new ChatSettingsModel({
-        name: "Vicuna",
-        emoji: { display: "<:vicuna:1100453628256456765>", fallback: "🦙" },
-        description: "An open-source chatbot impressing GPT-4 with 90% ChatGPT quality",
-        history: { messages: 3, maxTokens: 1500 },
-        settings: { model: "vicuna" },
-        cooldown: { multiplier: 2.5 },
-        type: ModelType.Turing,
-
-        billing: {
-            type: ChatSettingsModelBillingType.PerSecond,
-            amount: 0.0023
-        },
-
-        prompt: {
-            builder: ({ context }) => `
-I am Vicuna, a fine-tuned language model based on LLaMA 13B, and was trained on ChatGPT responses.
-I must provide engaging & entertaining responses.
-
-Current date & time: ${context.time}, ${context.date}
-Knowledge cut-off: September 2021, like ChatGPT
-`
-        }
-    }),
-
-    new ChatSettingsModel({
         name: "PaLM 2",
         emoji: { display: "<:palm:1125109625998553181>", fallback: "🌴" },
         description: "Next-generation large language model by Google",
@@ -293,7 +268,7 @@ Current date & time: ${context.time}, ${context.date}
         description: "A combination of various AIs, creating the ultimate chatbot",
         emoji: { display: "<:turing_neon:1100498729414434878>", fallback: "🧑‍💻" },
         cooldown: { time: 1.5 * 60 * 1000 },
-        type: ModelType.TuringAlan,
+        type: ModelType.Alan,
         history: { maxTokens: 1024 },
 
         billing: {

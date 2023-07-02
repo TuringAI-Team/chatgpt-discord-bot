@@ -24,11 +24,8 @@ export enum ModelType {
     /** Google's API, using the Turing API */
     Google,
 
-    /** Turing API */
-    Turing,
-
     /** Turing Alan model, utilizing various AI technologies */
-    TuringAlan,
+    Alan,
 
     /** Debug model provider */
     Dummy

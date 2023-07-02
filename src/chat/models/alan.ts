@@ -10,7 +10,7 @@ export class TuringAlanModel extends ChatModel {
     constructor(client: ChatClient) {
         super(client, {
             name: "Alan",
-            type: ModelType.TuringAlan,
+            type: ModelType.Alan,
 
             capabilities: [ ModelCapability.ImageViewing ]
         });

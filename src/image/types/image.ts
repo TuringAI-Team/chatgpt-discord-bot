@@ -35,13 +35,9 @@ export interface DatabaseImage {
 
 export type ImageGenerationType = "generate" | "img2img" | "upscale"
 
-export interface ImageGenerationPrompt {
-    text: string;
-    weight?: number;
-}
-
 export interface ImageGenerationBody {
-    prompts: ImageGenerationPrompt[];
+    prompt: string;
+    negative_prompt?: string;
     image?: string;
     action?: ImageGenerationType;
     width: number;

@@ -3,7 +3,7 @@ import { ActionRow, ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonCo
 import { Command, CommandInteraction, CommandResponse } from "../command/command.js";
 import { Response } from "../command/response.js";
 
-import { DatabaseImage, ImageGenerationBody, ImageGenerationOptions, ImageGenerationPrompt, ImageGenerationType, ImageResult } from "../image/types/image.js";
+import { DatabaseImage, ImageGenerationBody, ImageGenerationOptions, ImageGenerationType, ImageResult } from "../image/types/image.js";
 import { ImagineInteractionHandler, ImagineInteractionHandlerData } from "../interactions/imagine.js";
 import { PremiumUpsellResponse, PremiumUpsellType } from "../command/response/premium.js";
 import { ImageSampler, ImageSamplers } from "../image/types/sampler.js";
@@ -442,21 +442,13 @@ export default class ImagineCommand extends Command {
 			interaction, guidance, sampler, seed, size, user, count, steps, db, moderation, prompt, action, image
 		} = options;
 
-		const prompts: ImageGenerationPrompt[] = [
-			{
-				text: prompt.prompt
-			}
-		];
-
-		if (prompt.negative) prompts.push({
-			text: prompt.negative,
-			weight: -1
-		});
-
 		/* Image generation options */
 		const body: ImageGenerationOptions = {
 			body: {
-				prompts, action: action ?? "generate",
+				action: action ?? "generate",
+
+				prompt: prompt.prompt,
+				negative_prompt: prompt.negative ? prompt.negative : undefined,
 
 				sampler, steps, number: count,
 				cfg_scale: guidance, seed: seed ?? undefined,
@@ -519,7 +511,7 @@ export default class ImagineCommand extends Command {
 
 				return new ErrorResponse({
 					interaction, command: this, emoji: null,
-					message: "**Your image prompt was flagged as inappropriate.** *If you violate our **usage policies**, we may have to take moderative actions; otherwise you can ignore this notice*."
+					message: "## **Your image prompt was flagged as inappropriate 🔞**\nWe have recently decided to **block** all NSFW content from `/imagine`. Any further attempts at generating **NSFW** content may result in a **warning** or **ban** from using the bot."
 				});
 			}
 

@@ -230,8 +230,6 @@ interface TuringAlanBody {
     imageGenerator: TuringAlanImageGenerator["type"];
     imageModificator: TuringAlanImageModifier["type"];
     videoGenerator: TuringAlanParameter;
-    pluginList: string[];
-    photodescription: string | null;
     photo?: string;
     message: string;
 }
@@ -790,10 +788,8 @@ export class TuringAPI extends EventEmitter {
                 imageGenerator: this.bot.db.settings.get(user, "alan:imageGenerator"),
                 imageModificator: imageModifier !== "none" ? `controlnet-${imageModifier}` : imageModifier,
                 searchEngine: this.bot.db.settings.get(user, "alan:searchEngine"),
-                photodescription: image.output && image.output.prompt ? image.output.prompt : null,
                 photo: image.output && image.output.url ? image.output.url : image.input ? image.input.url : undefined,
-                videoGenerator: "none",
-                pluginList: []
+                videoGenerator: "none"
             },
 
             error: response => this.error(response, "text/alan", "error"),
@@ -855,6 +851,8 @@ export class TuringAPI extends EventEmitter {
             chat: !options.raw,
             conversationId: options.conversation.id
         };
+
+        console.log(options.model)
 
         const data: TuringChatResult = await this.request({
             path: `text/${options.model}`, method: "POST", body
