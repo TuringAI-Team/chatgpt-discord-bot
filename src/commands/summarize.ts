@@ -7,7 +7,7 @@ import { Command, CommandInteraction, CommandResponse } from "../command/command
 import { ErrorResponse, ErrorType } from "../command/response/error.js";
 import { YouTubeSubtitle, YouTubeVideo } from "../util/youtube.js";
 import { LoadingIndicatorManager } from "../db/types/indicator.js";
-import { OpenAIChatMessage } from "../turing/types/chat.js";
+import { OpenAIChatMessage } from "../turing/types/openai/chat.js";
 import { LanguageManager } from "../db/types/locale.js";
 import { DatabaseInfo } from "../db/managers/user.js";
 import { Response } from "../command/response.js";

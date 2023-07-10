@@ -1,10 +1,13 @@
 import { AttachmentBuilder, SlashCommandBuilder } from "discord.js";
+import { Image, createCanvas } from "@napi-rs/canvas";
+import { readFile } from "fs/promises";
 
 import { Command, CommandInteraction, CommandResponse } from "../command/command.js";
 import { LoadingIndicatorManager } from "../db/types/indicator.js";
 import { RunPodMusicGenInput } from "../runpod/models/musicgen.js";
 import { ErrorResponse } from "../command/response/error.js";
 import { DatabaseInfo } from "../db/managers/user.js";
+import { ImageBuffer } from "../chat/types/image.js";
 import { Response } from "../command/response.js";
 import { Bot } from "../bot/bot.js";
 
@@ -28,6 +31,10 @@ const MusicDurationSettings: MusicDurationSetting[] = [
 	{ duration: 90, restriction: "plan" },
 	{ duration: 120, restriction: "plan" }
 ]
+
+/* Background image, to use for the generated video */
+const BackgroundImage: Image = new Image();
+BackgroundImage.src = await readFile("./assets/music/background.png");
 
 export default class VideoCommand extends Command {
 	constructor(bot: Bot) {
@@ -62,13 +69,43 @@ export default class VideoCommand extends Command {
 		});
 	}
 
+	public async convert(audio: ImageBuffer, prompt: string, duration: MusicDurationSetting): Promise<ImageBuffer> {
+		const canvas = createCanvas(BackgroundImage.width, BackgroundImage.height);
+		const context = canvas.getContext("2d");
+
+        /* Draw the original image first. */
+        context.drawImage(BackgroundImage, 0, 0);
+
+		context.font = "50px Calibri";
+		context.textAlign = "center";
+		context.lineWidth = 5;
+
+		context.fillStyle = "#ffffff";
+		context.strokeStyle = "#000000";
+		
+		const x: number = canvas.width / 2;
+		const y: number = canvas.height / 2;
+
+		context.strokeText(prompt, x, y);
+		context.fillText(prompt, x, y);
+
+		/* The source image for the video */
+        const src = new ImageBuffer(await canvas.encode("png"));
+
+		const video: ImageBuffer = await this.bot.turing.MP3toMP4({
+			audio: audio.toString(), image: src.toString(), duration: duration.duration
+		});
+
+		return video;
+	}
+
     public async run(interaction: CommandInteraction, db: DatabaseInfo): CommandResponse {
 		/* Which prompt to use for generation */
 		const prompt: string = interaction.options.getString("prompt", true);
 
 		if (prompt.length > MAX_MUSIC_PROMPT_LENGTH) return new ErrorResponse({
 			interaction, command: this,
-			message: `The specified prompt is **too long**, it can't be longer than **${MAX_MUSIC_PROMPT_LENGTH}** characters`
+			message: `Your specified prompt is **too long**, it can't be longer than **${MAX_MUSIC_PROMPT_LENGTH}** characters`
 		});
 
 		/* Raw duration, specified in the command options */
@@ -137,12 +174,20 @@ export default class VideoCommand extends Command {
 			await this.bot.db.users.incrementInteractions(db, "songs");
 			await this.bot.db.plan.expenseForMusic(db, result);
 
-			const response: Response = new Response()
-				.setContent(`**${prompt}** — *${(result.raw.duration / 1000).toFixed(1)} seconds*`);
+			await new Response()
+				.addEmbed(builder => builder
+					.setTitle(`Converting **...** ${indicator}`)
+					.setColor("Orange")
+				)
+			.send(interaction);
+
+			const response: Response = new Response();
 
 			for (const buffer of result.results) {
+				const video: ImageBuffer = await this.convert(buffer, prompt, duration);
+
 				response.addAttachment(
-					new AttachmentBuilder(buffer.buffer).setName(`${prompt}.mp3`)
+					new AttachmentBuilder(video.buffer).setName(`${prompt}.mp4`)
 				)
 			}
 

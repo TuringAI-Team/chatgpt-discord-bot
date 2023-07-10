@@ -1,13 +1,14 @@
 import { Awaitable, Snowflake, User } from "discord.js";
+import { randomUUID } from "crypto";
 
 import { DatabaseModerationResult } from "../../moderation/moderation.js";
+import { DatabaseGuild, DatabaseGuildSubscription } from "./guild.js";
 import { SettingsLocation } from "../managers/settings.js";
 import { type AppDatabaseManager } from "../app.js";
 import { DatabasePlan } from "../managers/plan.js";
 import { VoteDuration } from "../../util/vote.js";
 import { UserRoles } from "../managers/role.js";
 import { DatabaseSchema } from "./schema.js";
-import { DatabaseGuild, DatabaseGuildSubscription } from "./guild.js";
 
 export type DatabaseSubscriptionType = "guild" | "user"
 
@@ -77,6 +78,9 @@ export interface DatabaseUserInfraction {
     /* Type of moderation action */
     type: DatabaseUserInfractionType;
 
+    /* ID of the infraction */
+    id: string;
+
     /* When this action was taken */
     when: number;
 
@@ -111,10 +115,14 @@ export class UserSchema extends DatabaseSchema<DatabaseUser, User> {
         user.metadata = this.metadata(user);
         user.interactions = this.interactions(user);
 
+        user.infractions = user.infractions.map(
+            i => !i.id ? ({ ...i, id: randomUUID().slice(undefined, 8) }) : i
+        );
+
         return user;
     }
 
-    public template(id: string, source: User): Awaitable<DatabaseUser> {
+    public template(id: string): Awaitable<DatabaseUser> {
         return {
             id,
             created: new Date().toISOString(),
@@ -212,7 +220,7 @@ export class UserSchema extends DatabaseSchema<DatabaseUser, User> {
         /* Raw infraction data */
         const data: DatabaseUserInfraction = {
             by, reason, type, moderation, automatic,
-            when: Date.now()
+            when: Date.now(), id: randomUUID().slice(undefined, 8)
         };
 
         if (type !== "moderation" && type !== "ban" && type !== "unban") data.seen = seen ?? false;
@@ -223,6 +231,18 @@ export class UserSchema extends DatabaseSchema<DatabaseUser, User> {
                 ...(await this.get(user))?.infractions ?? [],
                 data
             ]
+        });
+    }
+
+    public async removeInfraction(user: DatabaseUser, which: DatabaseUserInfraction | string): Promise<DatabaseUser> {
+        /* ID of the infraction to remove */
+        const id: string = typeof which === "object" ? which.id : which;
+
+        /* Filter out the infraction to remove from the user's list of infractions. */
+        const infractions: DatabaseUserInfraction[] = user.infractions.filter(i => i.id !== id);
+
+        return this.update(user, {
+            infractions
         });
     }
 

@@ -2,7 +2,7 @@ import { Awaitable } from "discord.js";
 import chalk from "chalk";
 
 import { Bot, BotDiscordClient, BotStatistics } from "./bot.js";
-import { DatabaseCacheInterval } from "../db/managers/queue.js";
+import { DatabaseSaveInterval } from "../db/managers/queue.js";
 import { Git, GitCommit } from "../util/git.js";
 
 enum BotTaskType {
@@ -37,7 +37,7 @@ const BOT_TASKS: BotTask[] = [
 
     {
         name: "Save database changes",
-        interval: DatabaseCacheInterval,
+        interval: DatabaseSaveInterval,
 
         condition: bot => bot.data.id === 0,
         callback: async bot => await bot.db.queue.work()

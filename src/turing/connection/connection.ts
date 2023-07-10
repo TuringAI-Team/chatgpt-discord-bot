@@ -3,6 +3,7 @@ import { Connection as RabbitMQClient, Consumer as RabbitMQConsumer, Publisher a
 import { TuringConnectionHandler } from "./handler.js";
 import { Bot } from "../../bot/bot.js";
 import { App } from "../../app.js";
+import chalk from "chalk";
 
 export class TuringConnectionManager {
     public readonly app: App;
@@ -45,6 +46,9 @@ export class TuringConnectionManager {
         /* Wait for the client to connect. */
         await this.wait();
 
+        /* Load all packets. */
+        await this.handler.setup();
+
         const exchangeName: string = this.exchangeName();
         const routingKey: string = this.routingKey();
 
@@ -65,9 +69,14 @@ export class TuringConnectionManager {
 
             maxAttempts: 3
         });
+
+        this.handleErrors(this.consumer);
+        this.handleErrors(this.client);
     }
 
     public async stop(): Promise<void> {
+        if (!this.publisher || !this.consumer || !this.client) return;
+
         /* Wait for pending confirmations and closes the underlying channel. */
         await this.publisher.close();
 
@@ -76,6 +85,14 @@ export class TuringConnectionManager {
 
         /* Close the client itself. */
         await this.client.close();
+    }
+
+    private handleErrors(obj: RabbitMQClient | RabbitMQConsumer) {
+        const type = obj instanceof RabbitMQClient ? "client" : "consumer";
+
+        obj.on("error", error => {
+            this.app.logger.error(chalk.bold(`RabbitMQ ${type}`), "experienced an error", "->", error);
+        });
     }
 
     private exchangeName(): string {

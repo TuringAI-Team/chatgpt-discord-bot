@@ -148,6 +148,26 @@ class DeveloperModerationFilter extends AutoModerationFilter {
     }
 }
 
+class TuringModerationFilter extends AutoModerationFilter {
+    constructor() {
+        super({
+            description: "Turing API filter"
+        });
+    }
+
+    public async filter({ bot, content, source }: AutoModerationFilterData): Promise<AutoModerationAction | null> {
+        if (source !== "image" && source !== "video" && source !== "music") return null;
+
+        const data = await bot.turing.filter(content, [ "nsfw", "cp", "toxicity" ]);
+        if (data === null) return null;
+
+        if (data.nsfw || data.toxic) return { type: "flag" };
+        if (data.cp || data.youth) return { type: "block" };
+
+        return null;
+    }
+}
+
 export const AutoModerationFilters: AutoModerationFilter[] = [
     new AutoModerationWordFilter({
         description: "Block pedophilia words",
@@ -187,5 +207,6 @@ export const AutoModerationFilters: AutoModerationFilter[] = [
         ]
     }),
 
-    new DeveloperModerationFilter()
+    new DeveloperModerationFilter(),
+    new TuringModerationFilter( )
 ]

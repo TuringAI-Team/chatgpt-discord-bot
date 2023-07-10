@@ -1,11 +1,9 @@
 import { AnySelectMenuInteraction, ButtonInteraction, ModalSubmitInteraction } from "discord.js";
 
 import { CommandOptions, CommandRestrictionType } from "../command/command.js";
-import { UserSubscriptionPlanType } from "../db/schemas/user.js";
 import { CooldownData } from "../command/types/cooldown.js";
 import { DatabaseInfo } from "../db/managers/user.js";
 import { Response } from "../command/response.js";
-import { UserRole } from "../db/managers/role.js";
 import { Bot } from "../bot/bot.js";
 
 export type InteractionHandlerClassType = ButtonInteraction | AnySelectMenuInteraction | ModalSubmitInteraction
@@ -25,7 +23,7 @@ interface InteractionHandlerData {
 
 export type AnyInteractionHandlerValues = Record<string, string | number | boolean | null>
 
-type InteractionHandlerAllowedTypes = `${"number" | "string" | "boolean" | "any"}${"?" | ""}`
+type InteractionHandlerAllowedTypes = `${"number" | "string" | "boolean"}${"?" | ""}` | "any"
 type InteractionHandlerTemplate<T = { [key: string]: any }> = Record<keyof T, InteractionHandlerAllowedTypes>
 
 export interface InteractionHandlerRunOptions<T extends InteractionHandlerClassType = InteractionHandlerClassType, U = AnyInteractionHandlerValues> {

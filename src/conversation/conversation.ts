@@ -72,7 +72,7 @@ export interface ChatChargeOptions {
 }
 
 /* How many tries to allow to retry after an error occurred duration generation */
-const ConversationMaximumTries: number = 5
+const ConversationMaximumTries: number = 3
 
 /* Usual cool-down for interactions in the conversation */
 export const ConversationCooldownModifier: Record<UserSubscriptionPlanType, CooldownModifier> = {
@@ -119,14 +119,14 @@ export class Conversation {
 	public history: ChatInteraction[];
 
 	/* Last interaction with this conversation */
-	public updatedAt: number | null;
+	public updated: number;
 
 	/* Cool-down manager */
 	public cooldown: Cooldown;
 
 	/* How long this conversation stays cached in memory */
 	public ttl: number;
-	private timer: NodeJS.Timeout | null;
+	public timer: NodeJS.Timeout | null;
 
 	/* The conversation's database entry */
 	public db: DatabaseConversation | null;
@@ -135,7 +135,7 @@ export class Conversation {
 		this.manager = manager;
 
 		this.cooldown = new Cooldown({
-			conversation: this, time: ConversationDefaultCooldown.time!
+			conversation: this
 		});
 
 		this.ttl = 30 * 60 * 1000;
@@ -148,8 +148,8 @@ export class Conversation {
 		this.history = [];
 
 		/* Set up some default values. */
+		this.updated = Date.now();
 		this.generating = false;
-		this.updatedAt = null;
 		this.active = false;
 	}
 
@@ -235,25 +235,22 @@ export class Conversation {
 		this.active = true;
 	}
 
-	/* Get the timestamp, for when the conversation resets due to inactivity. */
-	private getResetTime(relative: boolean = false): number {
-		/* Time, when the conversation should reset */
-		const timeToReset: number = (this.updatedAt ?? Date.now()) + this.ttl;
-		return Math.max(relative ? timeToReset - Date.now() : timeToReset, 0); 
+	private resetTime(): number {
+		const timeToReset: number = this.updated + this.ttl;
+		return Math.max(timeToReset - Date.now(), 0); 
 	}
 
 	/**
 	 * Apply the reset timer, to reset the conversation after inactivity.
-	 * @param updatedAt Time when the last interaction with this conversation occurred, optional
 	 */
 	private bump(): void {
-		if (this.timer !== null) { clearTimeout(this.timer); this.timer = null; }
-		this.updatedAt = Date.now();
+		this.updated = Date.now();
 
-		this.timer = setTimeout(async () => {
-			this.timer = null;
-			this.manager.delete(this);
-		}, this.getResetTime(true));
+		if (this.timer === null) {
+			this.timer = setTimeout(async () => {
+				this.manager.delete(this);
+			}, this.resetTime());
+		} else this.timer = this.timer.refresh();
 	}
 
 	/**
@@ -331,9 +328,13 @@ export class Conversation {
 				} else {
 					if (this.manager.bot.dev) this.manager.bot.logger.warn(`Request by ${chalk.bold(options.conversation.user.username)} failed, retrying [ ${chalk.bold(tries)}/${chalk.bold(ConversationMaximumTries)} ] ->`, error);
 
+					const db = await this.manager.bot.error.handle({
+						error, title: `Error while processing a message [**${tries}**/**${ConversationMaximumTries}**]`, raw: true
+					});
+
 					/* Display a notice message to the user on Discord. */
 					await this.manager.progress.notice(options, {
-						text: `Something went wrong while processing your message, retrying [ **${tries}**/**${ConversationMaximumTries}** ]`
+						text: `Something went wrong while processing your message [\`${db.id}\`]`
 					});
 				}
 
@@ -486,7 +487,7 @@ export class Conversation {
 
 		const baseDuration: number = model.options.cooldown && model.options.cooldown.time && model.premiumOnly
 			? model.options.cooldown.time
-			: ConversationCooldownModifier[type.type].time ?? this.cooldown.options.time;
+			: ConversationCooldownModifier[type.type].time ?? ConversationDefaultCooldown.time;
 
 		const finalDuration: number = baseDuration * baseModifier * modelModifier;
 		return Math.round(finalDuration);

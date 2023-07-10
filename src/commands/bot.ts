@@ -49,11 +49,10 @@ export default class StatisticsCommand extends Command {
 		];
 
 		const response: Response = new Response()
-			.addComponent(ActionRowBuilder<ButtonBuilder>, Introduction.buttons(this.bot))
-			.setEphemeral(true);
+			.addComponent(ActionRowBuilder<ButtonBuilder>, Introduction.buttons(this.bot));
 
 		response.addEmbed(builder => builder
-			.setTitle("Bot Statistics")
+			//.setTitle("Bot Statistics")
 			.setColor(this.bot.branding.color)
 			.setTimestamp(this.bot.statistics.since)
 
@@ -62,7 +61,7 @@ export default class StatisticsCommand extends Command {
 			})))
 		);
 
-		/* If there are partners configured in the configuration, display them here. */
+		/* If there are partners set in the configuration, display them here. */
 		if (this.bot.branding.partners && this.bot.branding.partners.length > 0) {
 			const embed: EmbedBuilder = new EmbedBuilder()
 				.setTitle("Partners 🤝")

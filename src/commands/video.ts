@@ -83,7 +83,7 @@ export default class VideoCommand extends Command {
 
 		try {
 			/* Try to generate the actual video. */
-			const result = await this.bot.turing.generateVideo(options);
+			const result = await this.bot.turing.video(options);
 
 			/* Fetch the actual video file. */
 			const buffer: ImageBuffer | null = await Utils.fetchBuffer(result.url);

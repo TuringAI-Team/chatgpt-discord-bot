@@ -1,10 +1,11 @@
 import { Bucket, StorageClient, StorageError } from "@supabase/storage-js";
 
-import { DatabaseImage, ImageRawGeneration, ImageResult } from "../../image/types/image.js";
+import { DatabaseImage, ImageRawResult, ImageResult } from "../../image/types/image.js";
 import { DatabaseDescription } from "../../image/description.js";
 import { GPTDatabaseError } from "../../error/gpt/db.js";
 import { ImageBuffer } from "../../chat/types/image.js";
 import { ClusterDatabaseManager } from "../cluster.js";
+import { DatabaseCollectionType } from "../manager.js";
 import { SubClusterDatabaseManager } from "../sub.js";
 
 type StorageBucketName = "images" | "descriptions"
@@ -39,7 +40,7 @@ export class StorageManager extends SubClusterDatabaseManager {
      */
     public async bucket(name: StorageBucketName): Promise<Bucket> {
         const { data, error } = await this.client.getBucket(name);
-        this.error(error);
+        this.error(error, name);
 
         if (data === null) throw new Error(`Bucket ${name} doesn't exist`);
         return data;
@@ -51,14 +52,14 @@ export class StorageManager extends SubClusterDatabaseManager {
      * 
      * @returns URL to the public image
      */
-    public imageURL(db: DatabaseImage, image: ImageResult | ImageRawGeneration, bucket: StorageBucketName): StorageImage {
+    public imageURL(db: DatabaseImage, image: ImageResult, bucket: StorageBucketName): StorageImage {
         const { data } = this.client
-            .from("images").getPublicUrl(`${db.id}/${image.id}.png`);
+            .from(bucket).getPublicUrl(`${db.id}/${image.id}.png`);
 
         return { url: data.publicUrl };
     }
 
-    public async uploadImageResult(db: DatabaseImage, image: ImageResult | ImageRawGeneration, data: Buffer): Promise<StorageImage> {
+    public async uploadImageResult(db: DatabaseImage, image: ImageResult, data: Buffer): Promise<StorageImage> {
         const { error } = await this.client
             .from("images")
             .upload(`${db.id}/${image.id}.png`, data, {
@@ -67,7 +68,7 @@ export class StorageManager extends SubClusterDatabaseManager {
             });
 
         /* Check for any errors. */
-        this.error(error);
+        this.error(error, "images");
 
         return this.imageURL(db, image, "images");
     }
@@ -83,12 +84,12 @@ export class StorageManager extends SubClusterDatabaseManager {
             });
 
         /* Check for any errors. */
-        this.error(error);
+        this.error(error, "descriptions");
     }
 
-    public async uploadImageResults(db: DatabaseImage, images: ImageRawGeneration[]): Promise<StorageImage[]> {
+    public async uploadImageResults(db: DatabaseImage, images: ImageRawResult[]): Promise<StorageImage[]> {
         /* All generated images */
-        images = images.filter(i => i.finishReason !== "CONTENT_FILTERED");
+        images = images.filter(i => i.status !== "filtered");
 
         /* Upload all of the images to the storage bucket. */
         await Promise.all(images.map(async image => {
@@ -105,7 +106,7 @@ export class StorageManager extends SubClusterDatabaseManager {
      * 
      * @throws A GPTDatabaseError, if needed
      */
-    private error(error: StorageError | null): void {
+    private error(error: StorageError | null, collection?: DatabaseCollectionType): void {
         if (error !== null) throw new GPTDatabaseError({
             collection: "images",
             raw: error

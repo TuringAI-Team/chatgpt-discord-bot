@@ -11,7 +11,7 @@ const BasePhrases: string[] = [
 
 interface LoadingResponseOptions {
     /* Additional phrases to choose from */
-    phrases?: string[];
+    phrases?: string[] | string;
 
     /* Whether generic phrases should be shown */
     generic?: boolean;
@@ -26,7 +26,7 @@ export class LoadingResponse extends Response {
         super();
 
         /* Random phrases to display */
-        const phrases: string[] = options.phrases ?? [];
+        const phrases: string[] = options.phrases ? Array.isArray(options.phrases) ? options.phrases : [ options.phrases ] : [];
         if (options.generic ?? true) phrases.unshift(...BasePhrases);
 
         let indicator: LoadingIndicator | null = options.bot && options.db

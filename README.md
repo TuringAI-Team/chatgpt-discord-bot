@@ -1,18 +1,13 @@
-<h1 align="center"><b>Turing</b> <img src="https://cdn.discordapp.com/attachments/1061155385563676772/1100473069279133878/3S2ykOT.png" width="28"></h1>
+<h1 align="center"><b>Turing</b> <img src="https://cdn.discordapp.com/avatars/1053015370115588147/07cbfe46f7dd3235e09b7021863a2a0a.png?size=256" width="28" style="border-radius: 50%; margin-bottom: -5px"></h1>
 <p align="center"><i>The ultimate AI-powered Discord bot</i></p>
 
 
 ## Requirements
-### *OpenAI*
-To set up this bot yourself, you will need an [**OpenAI API key**](https://platform.openai.com/account/api-keys), with a connected credit card.
+### *Turing API*
+The **[Turing API](https://github.com/TuringAI-Team/turing-ai-api)** plays an important role in the bot, as it's used for most of the features, like **image generation**, **image viewing**, **chatting** & **moderation filters**. You will be able to find various documentation about the API *[here](https://link.turing.sh/docs)*.
 
-### *Replicate*
-To generate & view images, the bot uses various models from **[Replicate](https://replicate.com)**. Head over to [**here**](https://replicate.com/account) to view your API key, once you have created an account & connected a credit card.
 
-### ...
-**TODO**: Add documentation for the other APIs used in the bot
-
-## Create a Discord bot
+## Create a Discord bot application
 You will need to create a Discord bot application [*here*](https://discord.com/developers/applications). The bot does not require any special intents.
 Then, save the token and application ID for the next step.
 

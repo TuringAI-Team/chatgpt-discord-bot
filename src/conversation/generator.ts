@@ -821,6 +821,7 @@ export class Generator {
 					...response.get() as MessageCreateOptions,
 					failIfNotExists: false
 				});
+				
 				return await message.channel.send(response.get() as MessageCreateOptions);
 			} catch (_) {
 				return null;

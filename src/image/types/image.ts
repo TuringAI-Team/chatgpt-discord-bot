@@ -1,11 +1,18 @@
-import { ImageAPIModel } from "../manager.js";
+import { Awaitable } from "discord.js";
+
+import { ImageGenerationRatio } from "../../commands/imagine.js";
 import { ImageSampler } from "./sampler.js";
 import { ImagePrompt } from "./prompt.js";
+import { ImageConfigModel } from "./model.js";
 
 export interface ImageResult {
     id: string;
     seed: number;
-    reason: ImageFinishReason;
+    status: ImageStatus;
+}
+
+export type ImageRawResult = ImageResult & {
+    base64: string;
 }
 
 export interface DatabaseImage {
@@ -34,41 +41,49 @@ export interface DatabaseImage {
     cost: number;
 }
 
-export type ImageGenerationType = "generate" | "img2img" | "upscale"
+export type ImageGenerationType = "generate" | "upscale"
 
 export interface ImageGenerationBody {
-    ai: ImageAPIModel;
     prompt: string;
     negative_prompt?: string;
     image?: string;
-    action?: ImageGenerationType;
     width: number;
     height: number;
     steps: number;
     number: number;
-    sampler: ImageSampler;
+    sampler?: ImageSampler;
     cfg_scale?: number;
     seed?: number;
     style?: string;
     model?: string;
     strength?: number;
+    ratio: ImageGenerationRatio;
 }
 
 export interface ImageGenerationOptions {
-    body: ImageGenerationBody;
+    body: Partial<ImageGenerationBody>;
+    model: ImageConfigModel;
+    progress: (data: ImagePartialGenerationResult) => Awaitable<void>;
 }
 
-type ImageFinishReason = "SUCCESS" | "CONTENT_FILTERED" | "ERROR"
+type ImageStatus = "success" | "filtered" | "failed"
 
-export interface ImageRawGeneration {
-    base64: string;
-    finishReason: ImageFinishReason;
-    seed: number;
+export type ImageGenerationStatus = "queued" | "generating" | "done" | "failed"
+
+export interface ImagePartialGenerationResult {
     id: string;
+    status: ImageGenerationStatus;
+    results: ImageRawResult[];
+    progress: number | null;
+    cost: number | null;
+    error: string | null;
 }
 
-export interface ImageRawGenerationResult {
-    images: ImageRawGeneration[];
-    cost: number;
+export interface ImageGenerationResult {
     id: string;
+    status: ImageGenerationStatus;
+    results: ImageRawResult[];
+    time: number | null;
+    error: string | null;
+    cost: number | null;
 }

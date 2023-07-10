@@ -5,7 +5,7 @@ import { ImageGenerationType } from "../image/types/image.js";
 import ImagineCommand from "../commands/imagine.js";
 import { Bot } from "../bot/bot.js";
 
-type ImagineInteractionAction = ImageGenerationType | "rate" | "redo"
+type ImagineInteractionAction = ImageGenerationType | "redo"
 
 export interface ImagineInteractionHandlerData {
     /* Which action to perform */

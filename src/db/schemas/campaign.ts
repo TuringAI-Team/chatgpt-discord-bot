@@ -1,7 +1,8 @@
+import { Awaitable } from "discord.js";
+
 import { DatabaseCampaign, PartialDatabaseCampaign } from "../managers/campaign.js";
 import { type AppDatabaseManager } from "../app.js";
 import { DatabaseSchema } from "./schema.js";
-import { Awaitable } from "discord.js";
 
 export class CampaignSchema extends DatabaseSchema<DatabaseCampaign, PartialDatabaseCampaign> {
     constructor(db: AppDatabaseManager) {
@@ -10,7 +11,7 @@ export class CampaignSchema extends DatabaseSchema<DatabaseCampaign, PartialData
         });
     }
 
-    public template(id: string, source?: PartialDatabaseCampaign | undefined): Awaitable<DatabaseCampaign | null> {
+    public template(id: string, source?: PartialDatabaseCampaign): Awaitable<DatabaseCampaign | null> {
         if (!source) return null;
 
         return {

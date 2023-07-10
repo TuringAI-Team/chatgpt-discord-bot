@@ -9,6 +9,8 @@ export interface ErrorHandlingOptions {
     notice?: string;
     original?: ResponseSendClass;
     title?: string;
+    raw?: boolean;
+    partial?: boolean;
 }
 
 export interface DatabaseError {
@@ -43,9 +45,9 @@ export class ErrorManager {
         
         response.addEmbed(builder => builder
             .setTitle("Uh-oh... 😬")
-            .setDescription(`${options.notice} *The developers have been notified*.`)
+            .setDescription(`${options.notice}${!options.partial ? ` *The developers have been notified*.` : ""}`)
             .setFooter({ text: `discord.gg/${this.bot.app.config.discord.inviteCode} • ${options.db.id}` })
-            .setColor("Red")
+            .setColor(options.partial ? "Orange" : "Red")
         );
 
         response.setEphemeral(true);
@@ -53,11 +55,12 @@ export class ErrorManager {
     }
 
     public async handle(options: ErrorHandlingOptions & Required<Pick<ErrorHandlingOptions, "notice" | "original">>): Promise<Message | InteractionResponse | null>;
+    public async handle(options: ErrorHandlingOptions & Required<Pick<ErrorHandlingOptions, "raw">>): Promise<DatabaseError>;
     public async handle(options: ErrorHandlingOptions & Required<Pick<ErrorHandlingOptions, "notice">>): Promise<Response>;
     public async handle(options: ErrorHandlingOptions): Promise<void>;
 
-    public async handle(options: ErrorHandlingOptions): Promise<Message | InteractionResponse | Response | null | void> {
-        const { error, title, notice, original } = options;        
+    public async handle(options: ErrorHandlingOptions): Promise<Message | InteractionResponse | Response | DatabaseError | null | void> {
+        const { error, title, notice, original, raw } = options;        
         const channel = await this.bot.moderation.channel("error");
 
         /* Add the error to the database. */
@@ -85,6 +88,9 @@ export class ErrorManager {
 
         } else if (notice) {
             return this.build({ error, title, notice, db });
+            
+        } else if (raw) {
+            return db;
         }
     }
 

@@ -1,5 +1,6 @@
 import { Awaitable, ChannelType, ForumChannel, GuildChannel, GuildEmoji, StageChannel, TextChannel, VoiceChannel } from "discord.js";
 
+import { TuringOpenAIChatBody } from "../../turing/types/openai/chat.js";
 import { UserPlanCreditBonusAmount } from "../../db/managers/plan.js";
 import { ModelGenerationOptions } from "../../chat/types/options.js";
 import { ChatClient, PromptContext } from "../../chat/client.js";
@@ -9,7 +10,6 @@ import { ClydeUser } from "../../chat/models/clyde.js";
 import { ModelType } from "../../chat/types/model.js";
 import { DisplayEmoji } from "../../util/emoji.js";
 import { Conversation } from "../conversation.js";
-import { TuringOpenAIChatBody } from "../../turing/types/chat.js";
 
 export type ChatSettingsModelPromptBuilder = (context: ChatSettingsModelPromptContext) => Awaitable<string>
 
@@ -231,10 +231,36 @@ I am ChatGPT, a large language model trained by OpenAI, released in November 202
 I must provide engaging & entertaining responses.
 
 I am a special version of ChatGPT: I have the ability to store larger chat history context & generate longer answers, if the user configures the token limits in \`/settings user\` or \`/settings guild\` accordingly.
-My total context 6 generation limit is 16.000 tokens.
+My total context generation limit is 16.384 tokens.
 
 Current date & time: ${context.time}, ${context.date}
 Knowledge cut-off: September 2021
+`
+        }
+    }),
+
+    new ChatSettingsModel({
+        name: "Claude",
+        emoji: { display: "<:anthropic:1097849339432423454>", fallback: "🆑" },
+        description: "Next-generation AI assistant by Anthropic",
+        history: { maxTokens: 100000 },
+        cooldown: { multiplier: 1.5 },
+        type: ModelType.Anthropic,
+
+        billing: {
+            type: ChatSettingsModelBillingType.Per1000Tokens,
+            amount: {
+                completion: 0.00551,
+                prompt: 0.00163
+            }
+        },
+
+        prompt: {
+            builder: ({ context }) => `
+I am Claude, an AI chatbot created by Anthropic.
+I must provide engaging & entertaining responses.
+
+Current date & time: ${context.time}, ${context.date}
 `
         }
     }),
@@ -255,7 +281,7 @@ Knowledge cut-off: September 2021
 
         prompt: {
             builder: ({ context }) => `
-You are PaLM 2 a AI chatbot created by Google.
+You are PaLM 2, an AI chatbot created by Google.
 You must provide engaging & entertaining responses.
 
 Current date & time: ${context.time}, ${context.date}
@@ -266,7 +292,7 @@ Current date & time: ${context.time}, ${context.date}
     new ChatSettingsModel({
         name: "Alan",
         description: "A combination of various AIs, creating the ultimate chatbot",
-        emoji: { display: "<:turing_neon:1100498729414434878>", fallback: "🧑‍💻" },
+        emoji: { display: "<:turing_logo:1114952278483411095>", fallback: "🧑‍💻" },
         cooldown: { time: 1.5 * 60 * 1000 },
         type: ModelType.Alan,
         history: { maxTokens: 1024 },

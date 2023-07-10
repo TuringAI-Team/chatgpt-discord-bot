@@ -1,10 +1,10 @@
 import { Awaitable } from "discord.js";
 import chalk from "chalk";
 
-import { DatabaseUserInfraction, DatabaseUserInfractionType } from "../../db/schemas/user.js";
+import { DatabaseUser, DatabaseUserInfraction, DatabaseUserInfractionType } from "../../db/schemas/user.js";
 import { AutoModerationFilter, AutoModerationFilters } from "./filters.js";
+import { ModerationOptions, ModerationResult, ModerationSource } from "../moderation.js";
 import { DatabaseInfo } from "../../db/managers/user.js";
-import { ModerationSource } from "../moderation.js";
 import { Bot } from "../../bot/bot.js";
 
 export interface AutoModerationFilterOptions {
@@ -17,11 +17,10 @@ export interface AutoModerationFilterData {
     content: string;
     db: DatabaseInfo;
     source: ModerationSource;
-    filterCallback?: AutoModerationFilterCallback;
 }
 
 /* Which action to perform regarding the flagged content */
-export type AutoModerationActionType = DatabaseUserInfractionType | "block" | "flag"
+export type AutoModerationActionType = "ban" | "warn" | "block" | "flag"
 
 export type AutoModerationAction = Pick<DatabaseUserInfraction, "reason"> & {
     /* Which action to perform */
@@ -61,7 +60,7 @@ export class AutoModerationManager {
         this.bot = bot;
     }
 
-    public async execute(options: AutoModerationFilterData): Promise<AutoModerationActionData | null> {
+    public async filter(options: AutoModerationFilterData): Promise<AutoModerationActionData | null> {
         /* Which action was performedm, if any */
         let flagged: { data: AutoModerationAction, action: AutoModerationFilter } | null = null;
 
@@ -71,9 +70,6 @@ export class AutoModerationManager {
                 const result = await filter.execute(options);
 
                 if (result !== null) {
-                    /* If this filter should be skipped, do so. */
-                    if (options.filterCallback && options.filterCallback(result, filter)) continue;
-
                     flagged = { data: result, action: filter };
                     break;
                 }
@@ -91,5 +87,19 @@ export class AutoModerationManager {
             ...flagged.data,
             action: flagged.action.description
         };
+    }
+
+    public async execute({ auto, db }: ModerationOptions & { auto: AutoModerationActionData, result: ModerationResult }): Promise<DatabaseUserInfraction> {
+        let updated: DatabaseUser = null!;
+        
+        if (auto.type === "ban") {
+            updated = await this.bot.db.users.ban(db.user, { status: true, automatic: true, reason: auto.reason });
+
+        } else if (auto.type === "warn") {
+            updated = await this.bot.db.users.warn(db.user, { automatic: true, reason: auto.reason });
+        }
+
+        if (!updated) throw new Error();
+        return updated.infractions[updated.infractions.length - 1];
     }
 }

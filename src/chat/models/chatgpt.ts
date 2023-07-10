@@ -2,7 +2,7 @@ import { ComponentEmojiResolvable } from "discord.js";
 
 import { ChatSettingsPlugin, ChatSettingsPluginIdentifier, ChatSettingsPlugins } from "../../conversation/settings/plugin.js";
 import { ChatModel, ConstructorModelOptions, ModelCapability, ModelType } from "../types/model.js";
-import { TuringOpenAIPartialResult, TuringOpenAIResult } from "../../turing/types/chat.js";
+import { TuringOpenAIPartialResult, TuringOpenAIResult } from "../../turing/types/openai/chat.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../../error/gpt/generation.js";
 import { TuringChatPluginsModel, TuringChatPluginsResult } from "../../turing/api.js";
 import { MultipleChoiceSettingsOption } from "../../db/managers/settings.js";

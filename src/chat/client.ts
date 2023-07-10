@@ -11,13 +11,10 @@ import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generat
 import { ChatGenerationOptions, ModelGenerationOptions } from "./types/options.js";
 import { ChatInput, ChatInteraction } from "../conversation/conversation.js";
 import { ChatModel, ModelCapability, ModelType } from "./types/model.js";
-import { OpenAIChatMessage } from "../turing/types/chat.js";
+import { ConversationManager } from "../conversation/manager.js";
+import { OpenAIChatMessage } from "../turing/types/openai/chat.js";
 import { LanguageManager } from "../db/types/locale.js";
 import { Utils } from "../util/utils.js";
-
-/* List of available model providers */
-import { ChatModels } from "./models/index.js";
-import { ConversationManager } from "../conversation/manager.js";
 
 export interface ChatClientResult {
     input: ChatInput;
@@ -45,7 +42,7 @@ export interface PromptData {
     /** The various parts of the prompt */
     parts: PromptParts;
 
-    /** Maximum amount of tokens to use for GPT-3 */
+    /** Maximum amount of tokens to use for the model */
     max: number;
 
     /** Amount of tokens used for the prompt */
@@ -91,13 +88,30 @@ export class ChatClient {
     constructor(manager: ConversationManager) {
         this.manager = manager;
         this.models = new Collection();
+    }
 
-        /* Initialize the models. */
-        for (const model of ChatModels) {
-            /* Create an instance of the model provider. */
-            const instance = new model(this);
-            this.models.set(instance.settings.type, instance);
-        }
+    public async setup(): Promise<void> {
+        /* Initialize all of the models. */
+		return new Promise((resolve, reject) => {
+			Utils.search("./build/chat/models", "js")
+				.then(async (files: string[]) => {
+					await Promise.all(files.map(async path => {
+						await import(path)
+							.then((data: { [key: string]: any }) => {
+								const list = Object.values(data).filter(data => data.name);
+
+								for (const data of list) {
+									const instance: ChatModel = new (data as any)(this);
+									this.models.set(instance.settings.type, instance);
+								}
+							})
+							.catch(reject);
+					}));
+
+					resolve();
+				})
+				.catch(reject);
+		});
     }
 
     /**

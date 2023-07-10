@@ -12,7 +12,7 @@ type MetricsUpdateValue = `+${string | number}` | `-${string | number}` | string
 type MetricsUpdateObject<T extends MetricsEntry> = Record<keyof T["data"], MetricsUpdateValue>
 
 type MetricsData = { [key: string]: any }
-export type MetricsType = "cooldown" | "guilds" | "users" | "chat" | "premium" | "vote" | "image" | "commands" | "midjourney"
+export type MetricsType = "cooldown" | "guilds" | "users" | "chat" | "premium" | "vote" | "image" | "commands"
 
 interface MetricsEntry<T extends MetricsType = MetricsType, U extends MetricsData = MetricsData> {
     /* Type of metric */
@@ -108,14 +108,6 @@ type CommandsMetricsEntry = MetricsEntry<"commands", {
     [key: string]: number;
 }>
 
-type MidjourneyMetricsEntry = MetricsEntry<"midjourney", {
-    generation: number;
-    upscale: number;
-    variation: number;
-    rate: Record<number, number>;
-    credits: number;
-}>
-
 export class DatabaseMetricsManager<T extends DatabaseManager<DatabaseManagerBot>> extends SubDatabaseManager<T> {}
 
 export class ClusterDatabaseMetricsManager extends DatabaseMetricsManager<ClusterDatabaseManager> {
@@ -149,10 +141,6 @@ export class ClusterDatabaseMetricsManager extends DatabaseMetricsManager<Cluste
 
     public changeCommandsMetric(updates: Partial<MetricsUpdateObject<CommandsMetricsEntry>>): Promise<CommandsMetricsEntry["data"]> {
         return this.change("commands", updates);
-    }
-
-    public changeMidjourneyMetric(updates: Partial<MetricsUpdateObject<MidjourneyMetricsEntry>>): Promise<MidjourneyMetricsEntry["data"]> {
-        return this.change("midjourney", updates);
     }
 
     private async change<T extends MetricsEntry>(

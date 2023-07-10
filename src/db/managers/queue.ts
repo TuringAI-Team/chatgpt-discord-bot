@@ -8,7 +8,7 @@ import { SubDatabaseManager } from "../sub.js";
 import { Utils } from "../../util/utils.js";
 
 /* How often to save cached entries to the database */
-export const DatabaseCacheInterval: number = 3 * 60 * 1000
+export const DatabaseSaveInterval: number = 3 * 60 * 1000
 
 export class DatabaseQueueManager<T extends DatabaseManager<DatabaseManagerBot>> extends SubDatabaseManager<T> {}
 

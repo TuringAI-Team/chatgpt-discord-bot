@@ -4,8 +4,8 @@ import { Collection } from "discord.js";
 import { AnyInteractionHandlerValues, InteractionHandler, InteractionHandlerClassType, InteractionHandlerRunOptions, InteractionValidationError } from "./handler.js";
 import { CommandPrepareData } from "../command/manager.js";
 import { Response } from "../command/response.js";
-import { Bot } from "../bot/bot.js";
 import { Utils } from "../util/utils.js";
+import { Bot } from "../bot/bot.js";
 
 export class InteractionManager {
 	protected readonly bot: Bot;

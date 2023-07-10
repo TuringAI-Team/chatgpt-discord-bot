@@ -1,12 +1,12 @@
 export interface RateAction {
-	emoji: string;
+	icon: string;
 	value: number;
 }
 
 export const RateActions: RateAction[] = [
-	{ emoji: "😖", value: 0.2 },
-	{ emoji: "☹️",  value: 0.4 },
-	{ emoji: "😐", value: 0.6 },
-	{ emoji: "😀", value: 0.8 },
-	{ emoji: "😍", value: 1.0 }
+	{ icon: "😖", value: 0.2 },
+	{ icon: "☹️",  value: 0.4 },
+	{ icon: "😐", value: 0.6 },
+	{ icon: "😀", value: 0.8 },
+	{ icon: "😍", value: 1.0 }
 ]

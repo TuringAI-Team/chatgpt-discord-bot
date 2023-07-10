@@ -72,21 +72,11 @@ export const IntroductionPages: IntroductionPage[] = [
         design: { title: "Image generation", emoji: "🖼️", description: "Overview of the image generation features in the bot" },
 
         build: (builder, { bot }) => builder
-            .setDescription(`${bot.client.user.username} isn't just meant for chatting; you can also generate images using \`/imagine\` & \`/mj\`.`)
+            .setDescription(`${bot.client.user.username} isn't just meant for chatting; you can also generate images using \`/imagine\`.`)
             .addFields([
                 {
                     name: "Come up with a good prompt 🤔",
-                    value: "Think of a good **Stable Diffusion** prompt; or use `/imagine ai` to let ChatGPT do it for you!"
-                },
-
-                {
-                    name: "Select an awesome model 🖥️",
-                    value: "We have an exhaustive list of **Stable Diffusion** models thanks to **[Stable Horde](https://stablehorde.net)**; scroll through them using `/imagine models`."
-                },
-
-                {
-                    name: "Wait for the results ⏰",
-                    value: "In case you change your mind, you can just **cancel** the image generation at any time, by clicking the `Cancel` button."
+                    value: "Think of a good **image prompt**; or use one of the **prompt enhancers** to let ChatGPT do it for you!"
                 }
             ])
     },

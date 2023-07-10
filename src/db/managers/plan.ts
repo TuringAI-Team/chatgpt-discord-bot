@@ -1,6 +1,6 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle, EmbedBuilder, GuildMember, InteractionReplyOptions } from "discord.js";
 
-import { MidjourneyResult, TuringVideoModel, TuringVideoModelName, TuringVideoResult } from "../../turing/api.js";
+import { TuringVideoModel, TuringVideoModelName, TuringVideoResult } from "../../turing/api.js";
 import { DatabaseUser, UserSubscriptionType } from "../schemas/user.js";
 import { RunPodMusicGenResult } from "../../runpod/models/musicgen.js";
 import { ChatInteraction } from "../../conversation/conversation.js";
@@ -9,6 +9,7 @@ import { DatabaseDescription } from "../../image/description.js";
 import { ErrorResponse } from "../../command/response/error.js";
 import { CommandInteraction } from "../../command/command.js";
 import { SummaryPrompt } from "../../commands/summarize.js";
+import { DatabaseImage } from "../../image/types/image.js";
 import { ProgressBar } from "../../util/progressBar.js";
 import { ClusterDatabaseManager } from "../cluster.js";
 import { YouTubeVideo } from "../../util/youtube.js";
@@ -18,11 +19,10 @@ import { AppDatabaseManager } from "../app.js";
 import { SubDatabaseManager } from "../sub.js";
 import { Utils } from "../../util/utils.js";
 import { DatabaseInfo } from "./user.js";
-import { DatabaseImage } from "../../image/types/image.js";
 
 type DatabaseEntry = DatabaseUser | DatabaseGuild
 
-type UserPlanExpenseType = "image" | "dall-e" | "midjourney" | "video" | "summary" | "chat" | "describe" | "translate" | "music"
+type UserPlanExpenseType = "image" | "video" | "summary" | "chat" | "describe" | "translate" | "music"
 
 type UserPlanExpenseData = {
     [key: string]: string | number | boolean | UserPlanExpenseData;
@@ -57,10 +57,6 @@ export type UserPlanImageExpense = UserPlanExpense
 
 export type UserPlanDallEExpense = UserPlanExpense<{
     count: number;
-}>
-
-export type UserPlanMidjourneyExpense = UserPlanExpense<{
-    prompt: string;
 }>
 
 export type UserPlanImageDescribeExpense = UserPlanExpense<{
@@ -148,8 +144,6 @@ export type PlanExpenseEntryViewer<T extends UserPlanExpense = any> = (
 
 export const PlanExpenseEntryViewers: {
     image: PlanExpenseEntryViewer<UserPlanImageExpense>,
-    "dall-e": PlanExpenseEntryViewer<UserPlanDallEExpense>,
-    midjourney: PlanExpenseEntryViewer<UserPlanMidjourneyExpense>,
     video: PlanExpenseEntryViewer<UserPlanVideoExpense>,
     summary: PlanExpenseEntryViewer<UserPlanSummaryExpense>,
     chat: PlanExpenseEntryViewer<UserPlanChatExpense>,
@@ -158,8 +152,6 @@ export const PlanExpenseEntryViewers: {
     music: PlanExpenseEntryViewer<UserPlanMusicExpense>
 } = {
     image: null,
-    "dall-e": e => `**${e.data.count}** image${e.data.count > 1 ? "s" : ""}`,
-    midjourney: e => `prompt \`${e.data.prompt}\``,
     video: e => `took **${e.data.duration} ms** using model \`${e.data.model}\``,
     summary: e => `used **${e.data.tokens}** tokens`,
     chat: e => `using \`${e.data.model}\`${e.data.tokens ? `, **${e.data.tokens.prompt}** prompt & **${e.data.tokens.completion}** completion tokens` : ""}`,
@@ -264,14 +256,6 @@ export class ClusterPlanManager extends BasePlanManager<ClusterDatabaseManager> 
     ): Promise<UserPlanImageExpense | null> {
         return this.expense(entry, {
             type: "image", used: result.cost, data: null, bonus: 0.10
-        });
-    }
-
-    public async expenseForMidjourneyImage(
-        entry: DatabaseInfo, result: MidjourneyResult
-    ): Promise<UserPlanMidjourneyExpense | null> {
-        return this.expense(entry, {
-            type: "midjourney", used: result.credits, data: { prompt: result.prompt }, bonus: 0.10
         });
     }
 

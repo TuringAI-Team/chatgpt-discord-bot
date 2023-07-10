@@ -3,7 +3,7 @@ import { Awaitable } from "discord.js";
 import { ModelGenerationOptions } from "../../chat/types/options.js";
 import { ChatClient, PromptContext } from "../../chat/client.js";
 import { RestrictionType } from "../../db/types/restriction.js";
-import { OpenAIChatMessage } from "../../turing/types/chat.js";
+import { OpenAIChatMessage } from "../../turing/types/openai/chat.js";
 import { DisplayEmoji } from "../../util/emoji.js";
 import { Conversation } from "../conversation.js";
 

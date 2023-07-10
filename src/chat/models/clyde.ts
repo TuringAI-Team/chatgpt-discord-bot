@@ -2,7 +2,7 @@ import { Awaitable, ChannelType, GuildBasedChannel, GuildEmoji, GuildMember, Inv
 
 import { DatabaseSubscription, DatabaseUser } from "../../db/schemas/user.js";
 import { ChatGuildData, ModelGenerationOptions } from "../types/options.js";
-import { TuringOpenAIPartialResult } from "../../turing/types/chat.js";
+import { TuringOpenAIPartialResult } from "../../turing/types/openai/chat.js";
 import { getPromptLength } from "../../conversation/utils/length.js";
 import { Conversation } from "../../conversation/conversation.js";
 import { ChatOutputImage, ImageBuffer } from "../types/image.js";
@@ -220,9 +220,6 @@ export class ClydeModel extends ChatGPTModel {
         });
     }
 
-    /**
-     * Display the presence & activity status of a guild member. 
-     */
     private async toClydeUser(conversation: Conversation, member: GuildMember, db: DatabaseUser): Promise<ClydeUser> {
         /* Roles of the member */
         const roles = Array.from(member.roles.cache.values());

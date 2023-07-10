@@ -3,22 +3,23 @@ import { ActionRow, ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonCo
 import { Command, CommandInteraction, CommandResponse } from "../command/command.js";
 import { Response } from "../command/response.js";
 
-import { DatabaseImage, ImageGenerationBody, ImageGenerationOptions, ImageGenerationType, ImageResult } from "../image/types/image.js";
+import { DatabaseImage, ImageGenerationBody, ImageGenerationOptions, ImageGenerationType, ImagePartialGenerationResult, ImageResult } from "../image/types/image.js";
 import { ImagineInteractionHandler, ImagineInteractionHandlerData } from "../interactions/imagine.js";
+import { ImagePrompt, ImagePromptEnhancer, ImagePromptEnhancers } from "../image/types/prompt.js";
 import { PremiumUpsellResponse, PremiumUpsellType } from "../command/response/premium.js";
 import { ImageSampler, ImageSamplers } from "../image/types/sampler.js";
 import { InteractionHandlerResponse } from "../interaction/handler.js";
 import { LoadingIndicatorManager } from "../db/types/indicator.js";
 import { ImageStyle, ImageStyles } from "../image/types/style.js";
 import { RateAction, RateActions } from "../image/types/rate.js";
+import { LoadingResponse } from "../command/response/loading.js";
 import { CommandSpecificCooldown } from "../command/command.js";
 import { renderIntoSingleImage } from "../image/utils/merge.js";
 import { ModerationResult } from "../moderation/moderation.js";
 import { ErrorResponse } from "../command/response/error.js";
-import { ImagePrompt } from "../image/types/prompt.js";
-import { ImageAPIError } from "../error/gpt/image.js";
 import { DatabaseInfo } from "../db/managers/user.js";
 import { ImageBuffer } from "../chat/types/image.js";
+import { ImageModel } from "../image/types/model.js";
 import { Utils } from "../util/utils.js";
 import { Bot } from "../bot/bot.js";
 
@@ -28,7 +29,9 @@ interface ImageGenerationProcessOptions {
 	guidance: number;
 	sampler: ImageSampler;
 	seed: number | null;
-	size: ImageGenerationSize;
+	ratio: ImageGenerationRatio | string;
+	model: ImageModel | null;
+	enhancer: ImagePromptEnhancer | null;
 	steps: number;
 	count: number;
 	moderation: ModerationResult | null;
@@ -38,27 +41,21 @@ interface ImageGenerationProcessOptions {
 	image: ImageBuffer | null;
 }
 
-/* How long an image prompt can be, max. */
+/* How long an image prompt can be, maximum */
 export const MaxImagePromptLength: number = 200
 
-interface ImageGenerationSize {
-	width: number;
-	height: number;
-	premium: boolean;
+export interface ImageGenerationRatio {
+	a: number;
+	b: number;
 }
 
-export const GenerationSizes: ImageGenerationSize[] = [
-	{ width: 512, height: 512, premium: false },
-	{ width: 256, height: 256, premium: false },
-	{ width: 512, height: 256, premium: false },
-	{ width: 576, height: 448, premium: false },
-	{ width: 768, height: 512, premium: true  },
-	{ width: 512, height: 896, premium: true  },
-	{ width: 896, height: 512, premium: true  }
-]
+export interface ImageGenerationSize {
+	width: number;
+	height: number;
+}
 
 const DefaultGenerationOptions: Omit<Partial<ImageGenerationBody>, "prompts" | "action"> = {
-	steps: 30, cfg_scale: 10, sampler: "K_EULER", number: 2
+	steps: 40, cfg_scale: 10, number: 2
 }
 
 const DefaultPrompt: Partial<ImagePrompt> = {
@@ -73,24 +70,9 @@ const MaxStepGenerationCount = {
 }
 
 export const ImageGenerationCooldown: CommandSpecificCooldown = {
-	free: 180 * 1000,
-	voter: 160 * 1000,
-	subscription: 45 * 1000
-}
-
-/**
- * Calculate the aspect ratio for a given resolution.
- * 
- * @param width Width 
- * @param height Height
- * 
- * @returns Aspect ratio, as a string 
- */
-export const getAspectRatio = (width: number, height: number): string => {
-	const gcd = (a: number, b: number): number => b ? gcd(b, a % b) : a;
-	const ratio = gcd(width, height);
-
-	return `${width / ratio}:${height / ratio}`;
+	free: 3 * 60 * 1000,
+	voter: 2.5 * 60 * 1000,
+	subscription: 60 * 1000
 }
 
 export default class ImagineCommand extends Command {
@@ -111,6 +93,14 @@ export default class ImagineCommand extends Command {
 				.setDescription("The possibilities are endless... 💫")
 				.setMaxLength(MaxImagePromptLength)
 				.setRequired(true)
+			)
+			.addStringOption(builder => builder
+				.setName("model")
+				.setDescription("Which model to use")
+				.addChoices(...this.bot.image.model.all().map(model => ({
+					name: `${model.name} • ${model.description}`, value: model.id
+				})))
+				.setRequired(false)
 			)
 			.addStringOption(builder => builder
 				.setName("style")
@@ -158,33 +148,37 @@ export default class ImagineCommand extends Command {
 				.setName("seed")
 				.setDescription("Unique image generation seed, in order to reproduce image generation results")
 				.setMinValue(1)
+				.setMaxValue(99999999)
 				.setRequired(false)
 			)
 			.addStringOption(builder => builder
-				.setName("size")
-				.setDescription("Which resolution the images should have")
+				.setName("ratio")
+				.setDescription("Which aspect ratio the images should have, e.g 16:9 or 1.5:1")
 				.setRequired(false)
-				.addChoices(...GenerationSizes.map(({ width, height, premium }) => ({
-					name: `${width}x${height} (${getAspectRatio(width, height)})${premium ? " 🌟" : ""}`,
-					value: `${width}:${height}`
-				})))
+			)
+			.addStringOption(builder => builder
+				.setName("enhance")
+				.setDescription("How to enhance your given prompt; if applicable")
+				.setRequired(false)
+				.addChoices(...ImagePromptEnhancers.map(({ name, emoji, id }) => ({
+					name: `${emoji} ${name}`, value: id
+				})))	
 			);
     }
 
 	private displayPrompt(user: User, prompt: ImagePrompt, action: ImageGenerationType | null): string {
-		return `**${this.bot.image.prompt(prompt, 150)}** — @${user.username}${action !== null ? ` ${action === "upscale" ? "🔎" : action === "img2img" ? "🔄" : ""}` : ""}`;
+		return `**${this.bot.image.prompt(prompt, 150)}** — @${user.username}${action !== null ? ` ${action === "upscale" ? "🔎" : ""}` : ""}`;
 	}
 
-	private async formatPartialResponse(user: User, db: DatabaseInfo, options: ImageGenerationProcessOptions, moderation: ModerationResult | null): Promise<Response> {
-		/* The user's loading indicator */
-		const loadingEmoji: string = LoadingIndicatorManager.toString(
+	private async buildPartialResponse(user: User, db: DatabaseInfo, data: ImagePartialGenerationResult, options: ImageGenerationProcessOptions, moderation: ModerationResult | null): Promise<Response> {
+		const loadingIndicator = LoadingIndicatorManager.toString(
 			LoadingIndicatorManager.getFromUser(this.bot, db.user)
 		);
 
 		const response = new Response()
 			.addEmbed(builder => builder
 				.setTitle(this.displayPrompt(user, options.prompt, options.action))
-				.setDescription(`**Generating** ... ${loadingEmoji}`)
+				.setDescription(`**${data.progress !== null ? `${Math.floor(data.progress * 100)}%` : Utils.titleCase(data.status)}** ... ${loadingIndicator}`)
 				.setColor("Orange")
 			);
 
@@ -227,11 +221,14 @@ export default class ImagineCommand extends Command {
 			response.addEmbed(embeds[0]);
 		}
 
-		const censored: boolean = db.results.some(i => i.reason === "CONTENT_FILTERED");
-
-		if (censored) response.addEmbed(builder => builder
+		if (db.results.some(i => i.status === "filtered")) response.addEmbed(builder => builder
 			.setDescription(`Some of the generated images were deemed as **not safe for work**.`)
 			.setColor("Orange")
+		);
+
+		if (db.results.some(i => i.status === "failed")) response.addEmbed(builder => builder
+			.setDescription(`Some of the requested images **failed** to generate.`)
+			.setColor("Red")
 		);
 
 		/* Add the various message component rows. */
@@ -244,16 +241,20 @@ export default class ImagineCommand extends Command {
 	private formatFields(db: DatabaseImage): EmbedField[] {
 		const fields: Omit<EmbedField, "inline">[] = [];
 
-		if (db.options.width !== GenerationSizes[0].width || db.options.height !== GenerationSizes[0].height) fields.push({
-			name: "Size", value: `${db.options.width}x${db.options.height}`
-		});
+		const model: ImageModel = this.bot.image.model.get(db.model);
+		fields.push({ name: "Model", value: model.name });
+
+		if (db.options.ratio.a !== 1 || db.options.ratio.b !== 1) {
+			const { width, height } = this.bot.image.findBestSize(db.options.ratio);
+			fields.push({ name: "Ratio", value: `\`${db.options.ratio.a}\`:\`${db.options.ratio.b}\` (**${width}**x**${height}**)` });
+		}
 
 		if (db.options.steps !== DefaultGenerationOptions.steps) fields.push({
 			name: "Steps", value: `${db.options.steps!}`
 		});
 
 		if (db.prompt.negative && db.prompt.negative !== DefaultPrompt.negative) fields.push({
-			name: "Negative", value: db.prompt.negative
+			name: "Negative", value: `\`${db.prompt.negative}\``
 		});
 
 		if (db.options.cfg_scale !== DefaultGenerationOptions.cfg_scale) fields.push({
@@ -262,10 +263,16 @@ export default class ImagineCommand extends Command {
 
 		if (db.options.style) {
 			const style: ImageStyle = ImageStyles.find(s => s.id === db.options.style)!;
+			fields.push({ name: "Style", value: `${style.name} ${style.emoji}` });
+		}
 
-			fields.push({
-				name: "Style", value: `${style.name} ${style.emoji}`
-			});
+		if (db.prompt.mode && db.prompt.mode !== "none") {
+			const enhancer: ImagePromptEnhancer = ImagePromptEnhancers.find(e => e.id === db.prompt.mode)!;
+		
+			fields.push(
+				{ name: "Prompt enhancer", value: `${enhancer.name} ${enhancer.emoji}` },
+				{ name: "Original prompt", value: `\`${db.prompt.original}\`` }
+			);
 		}
 
 		return fields.map(field => ({ ...field, inline: true }));
@@ -292,8 +299,8 @@ export default class ImagineCommand extends Command {
 				new ButtonBuilder()
 					.setCustomId(`i:${action}:${user.id}:${db.id}:${index}`)
 					.setLabel(`${action.charAt(0).toUpperCase()}${index + 1}`)
-					.setStyle(image.reason === "CONTENT_FILTERED" ? ButtonStyle.Danger : ButtonStyle.Secondary)
-					.setDisabled(image.reason === "CONTENT_FILTERED")
+					.setStyle(image.status === "success" ? ButtonStyle.Secondary : ButtonStyle.Danger)
+					.setDisabled(image.status !== "success")
 			);
 		});
 
@@ -348,21 +355,16 @@ export default class ImagineCommand extends Command {
 
 		/* The user wants to re-generate an image */
 		if (data.action === "redo") {
-			const response = this.startImageGeneration({
-				interaction, image: null,
-				
+			await interaction.deferReply().catch(() => {});
+
+			const response = this.start({
+				interaction, image: null, enhancer: null,
 				prompt: image.prompt, user: interaction.user, action: "generate",
 
 				guidance: image.options.cfg_scale!,
 				sampler: image.options.sampler!, seed: image.options.seed ?? null,
-				steps: image.options.steps!, count: image.options.number!, moderation: null, db, 
-				
-				size: {
-					width: image.options.width!,
-					height: image.options.height!,
-
-					premium: false
-				}
+				steps: image.options.steps!, count: image.options.number!, moderation: null, db,
+				ratio: image.options.ratio!, model: this.bot.image.model.get(image.model)
 			});
 
 			const type = await this.bot.db.users.type(db);
@@ -384,21 +386,14 @@ export default class ImagineCommand extends Command {
 			const buffer = await Utils.fetchBuffer(url);
 			if (buffer === null) return;
 
-			const response = this.startImageGeneration({
-				interaction, image: buffer,
-				
-				prompt: image.prompt, user: interaction.user, action: "upscale",
+			const response = this.start({
+				interaction, user: interaction.user, enhancer: null,
+				prompt: image.prompt, action: "upscale",
 
 				guidance: image.options.cfg_scale!,
 				sampler: image.options.sampler!, seed: image.options.seed ?? null,
 				steps: image.options.steps!, count: image.options.number!, moderation: null, db, 
-				
-				size: {
-					width: image.options.width!,
-					height: image.options.height!,
-
-					premium: false
-				}
+				ratio: image.options.ratio!, image: buffer, model: null
 			});
 
 			const type = await this.bot.db.users.type(db);
@@ -408,81 +403,96 @@ export default class ImagineCommand extends Command {
 
 			return response;
 
-		/* The user wants to rate an upscaled image */
-		} else if (data.action === "rate") {
-			if (interaction.user.id !== db.user.id) return void await interaction.deferUpdate();
-
-			/* The selected result to rate */
-			const result: ImageResult = image.results.find((_, index) => index === data.resultIndex)!;
-
-			/* Find the corresponding rating action. */
-			const rating: RateAction = RateActions.find(r => r.emoji === interaction.component.emoji?.name)!;
-
-			/* All components on the original message */
-			const row: ActionRow<ButtonComponent> = interaction.message.components[0] as ActionRow<ButtonComponent>;
-
-			row.components.forEach(button => {
-				if (button.customId === interaction.customId) (button.data as any).style = ButtonStyle.Primary;
-				(button.data as any).disabled = true;
-			});
-
-			await interaction.message.edit({
-				embeds: interaction.message.embeds, components: [ row ]
-			});
-
-			await interaction.deferUpdate();
-
 		} else {
 			await interaction.deferUpdate();
 		}
 	}
 
-	public async startImageGeneration(options: ImageGenerationProcessOptions): CommandResponse {
+	public async start(options: ImageGenerationProcessOptions): CommandResponse {
 		const {
-			interaction, guidance, sampler, seed, size, user, count, steps, db, moderation, prompt, action, image
+			interaction, guidance, sampler, seed, ratio: rawRatio, user, count, steps, db, moderation, action, image: source, model, enhancer
 		} = options;
+
+		/* The user's image prompt */
+		let prompt: ImagePrompt = options.prompt;
+
+		const handler = async (data: ImagePartialGenerationResult) => {
+			if (data.progress === null) return;
+
+			const partial: Response = await this.buildPartialResponse(user, db, data, options, moderation);
+			await partial.send(interaction);
+		};
+
+		/* Parse & validate the given aspect ratio. */
+		const ratio: ImageGenerationRatio | null = typeof rawRatio === "object" ? rawRatio : this.bot.image.validRatio(rawRatio);
+
+		if (ratio === null) return new ErrorResponse({
+			interaction, command: this, message: "You specified an **invalid** aspect ratio"
+		});
+
+		/* Find the best size for the specified aspect ratio. */
+		const { width, height } = this.bot.image.findBestSize(ratio);
+
+		if (enhancer !== null && enhancer.id !== "none") {
+			/* Enhance the user's prompt. */
+			prompt = await this.bot.image.enhance(prompt, enhancer);
+
+			await new LoadingResponse({
+				bot: this.bot, db, generic: false, phrases: "Enhancing your prompt"
+			}).send(interaction);
+		}
+
+		/* The image generation style to apply additionally */
+		const style: ImageStyle | null = prompt.style ?
+			ImageStyles.find(f => f.id === prompt.style) ?? null
+			: null;
+
+		/* The formatted prompt, to pass to the API */
+		let formattedPrompt: string = `${prompt.prompt}`;
+		if (style !== null) formattedPrompt += `, ${style.tags.join(", ")}`;
 
 		/* Image generation options */
 		const body: ImageGenerationOptions = {
 			body: {
-				action: action ?? "generate",
-
-				prompt: prompt.prompt,
+				prompt: formattedPrompt,
 				negative_prompt: prompt.negative ? prompt.negative : undefined,
 
 				sampler, steps, number: count,
 				cfg_scale: guidance, seed: seed ?? undefined,
-				style: prompt.style ? prompt.style.id : undefined,
+				style: prompt.style ?? undefined,
 
-				height: size.height, width: size.width,
-				image: image !== null ? image.toString() : undefined,
+				width, height, ratio
+			},
 
-				ai: "kandinsky"
-			}
+			model: model ?? this.bot.image.model.default(),
+			progress: handler
 		};
 
 		try {
-			const partial: Response = await this.formatPartialResponse(user, db, options, moderation);
-			await partial.send(interaction);
-
 			/* Generate the image. */
-			const result = await this.bot.image.generate(body);
+			const result = action == "upscale" && source
+				? await this.bot.image.upscale({ image: source, prompt: prompt.prompt })
+				: await this.bot.image.generate(body);
 			
 			/* Whether the generated images are still usable */
-			const usable: boolean = result.images.filter(i => i.finishReason !== "CONTENT_FILTERED").length > 0;
+			const usable: boolean = result.results.filter(i => i.status === "success").length > 0;
+			const failed: boolean = result.status === "failed";
+
+			if (failed) return new ErrorResponse({
+				interaction, command: this, message: `**${result.error ?? "The images failed to generate"}**; *please try your request again later*.`
+			});
 
 			if (!usable) return new ErrorResponse({
-				interaction, command: this, emoji: "🔞",
-				message: "All of the generated images were deemed as **not safe for work**"
+				interaction, command: this, message: "All of the generated images were deemed as **not safe for work**"
 			});
 
 			/* Add the generated results to the database. */
 			const image: DatabaseImage = await this.bot.db.users.updateImage(
-				this.bot.image.toDatabase(prompt, body.body, result, new Date().toISOString(), action)
+				this.bot.image.toDatabase(prompt, body, result, new Date().toISOString(), action)
 			);
 
 			/* Upload the generated images to the storage bucket. */
-			await this.bot.db.storage.uploadImageResults(image, result.images);
+			await this.bot.db.storage.uploadImageResults(image, result.results);
 
 			/* Increment the user's usage. */
 			await this.bot.db.users.incrementInteractions(db, "images");
@@ -501,25 +511,8 @@ export default class ImagineCommand extends Command {
 			await final.send(interaction);
 
 		} catch (error) {
-			/* If the image generation was blocked by Stable Horde itself, show a notice to the user. */
-			if (error instanceof ImageAPIError && error.filtered) {
-				const result: ModerationResult = {
-					blocked: true, flagged: true, source: "image"
-				};
-
-				await this.bot.moderation.sendImageModerationMessage({
-					content: prompt.prompt, user: interaction.user, db, result, notice: "flagged by external filters"
-				});
-
-				return new ErrorResponse({
-					interaction, command: this, emoji: null,
-					message: "## **Your image prompt was flagged as inappropriate 🔞**\nWe have recently decided to **block** all NSFW content from `/imagine`. Any further attempts at generating **NSFW** content may result in a **warning** or **ban** from using the bot."
-				});
-			}
-
-
 			return await this.bot.error.handle({
-				title: "Failed to generate image", notice: "It seems like we encountered an error while trying to generate the images for you.", error
+				title: "Failed to generate image", notice: "It seems like we encountered an error while generating the images for you.", error
 			});		
 		}
 	}
@@ -534,9 +527,10 @@ export default class ImagineCommand extends Command {
 			?? this.bot.db.settings.get<number>(db.user, "image:count");
 
 		/* How many steps to generate the images with */
-		const steps: number =
-			interaction.options.getInteger("steps")
-			?? Math.min(this.bot.db.settings.get<number>(db.user, "image:steps"), MaxStepGenerationCount[subscriptionType.type]);
+		const steps: number = Math.min(
+			interaction.options.getInteger("steps") ?? DefaultGenerationOptions.steps!,
+			MaxStepGenerationCount[subscriptionType.type]
+		);
 
 		/* To which scale the AI should follow the prompt; higher values mean that the AI will respect the prompt more */
 		const guidance: number = Math.round(interaction.options.getNumber("guidance") ?? DefaultGenerationOptions.cfg_scale!);
@@ -549,15 +543,6 @@ export default class ImagineCommand extends Command {
 			type: PremiumUpsellType.SDSteps
 		});
 
-		/* Size the images should be */
-		const rawSize: string[] = interaction.options.getString("size") ? interaction.options.getString("size", true).split(":") : this.bot.db.settings.get<string>(db.user, "image:size").split(":");
-		const size: ImageGenerationSize = { width: parseInt(rawSize[0]), height: parseInt(rawSize[1]), premium: rawSize[2] == "true" };
-
-		/* If the user is trying to generate an image with more steps than possible for a normal user, send them a notice. */
-		if (size.premium && !canUsePremiumFeatures) return new PremiumUpsellResponse({
-			type: PremiumUpsellType.SDSize
-		});
-
 		/* Which prompt to use for generation */
 		const prompt: string = interaction.options.getString("prompt", true);
 		const negativePrompt: string | null = interaction.options.getString("negative");
@@ -565,11 +550,22 @@ export default class ImagineCommand extends Command {
 		/* Random seed, to reproduce the generated images in the future */
 		const seed: number | null = interaction.options.getInteger("seed") ?? null;
 
+		/* Which model to use */
+		const modelID: string = interaction.options.getString("model", false) ?? this.bot.db.settings.get(db.user, "image:model");
+		const model: ImageModel = this.bot.image.model.get(modelID);
+
+		/* Ratio that the images should be */
+		const ratio: string = interaction.options.getString("ratio") && model.settings.modifyResolution
+			? interaction.options.getString("ratio", true) : "1:1";
+
 		/* Which style to apply additionally */
-		const styleID: string | null = interaction.options.getString("style");
-		
-		const style: ImageStyle | null = styleID !== null
-			? ImageStyles.find(f => f.id === styleID)! : null;
+		const styleID: string = interaction.options.getString("style", false) ?? this.bot.db.settings.get(db.user, "image:style");
+		const style: ImageStyle = ImageStyles.find(f => f.id === styleID)!;
+
+		const enhancerID: string = interaction.options.getString("enhance", false) ?? this.bot.db.settings.get(db.user, "image:enhancer");
+		const enhancer: ImagePromptEnhancer = ImagePromptEnhancers.find(e => e.id === enhancerID)!;
+
+		await interaction.deferReply().catch(() => {});
 
 		const moderation: ModerationResult = await this.bot.moderation.checkImagePrompt({
 			db, user: interaction.user, content: prompt
@@ -580,13 +576,13 @@ export default class ImagineCommand extends Command {
             result: moderation, name: "Your image prompt"
         });
 
-		return this.startImageGeneration({
-			interaction, guidance, count, moderation, sampler, seed, size, steps, db,
+		return this.start({
+			interaction, guidance, count, moderation, sampler, seed, ratio, steps, db, model, enhancer,
 			user: interaction.user,
 			
 			prompt: {
 				prompt: prompt, negative: negativePrompt ?? undefined,
-				style: style ?? undefined
+				style: style ? style.id : undefined
 			},
 			
 			action: "generate", image: null

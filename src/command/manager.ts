@@ -191,7 +191,7 @@ export class CommandManager {
 			createdAt: Date.now(), duration
 		});
 
-		await this.bot.db.metrics.changeCooldownMetric({ [name]: "+1" });
+		await this.bot.db.metrics.changeCooldownMetric({ [command.name]: "+1" });
 		await this.bot.db.users.incrementInteractions(db, "cooldownMessages");
 
 		/* Delete the user's cooldown from the database, once it expires. */
@@ -248,7 +248,8 @@ export class CommandManager {
 			.addEmbed(builder => builder
 				.setTitle("The bot is currently reloading**...** ⏳")
 				.setColor("Orange")
-			).setEphemeral(true).send(interaction);
+			).setEphemeral(true)
+		.send(interaction);
 
 		/* Get the current cool-down of the command. */
 		const cooldown: CooldownData | null = await this.cooldown(interaction, command);
@@ -269,7 +270,8 @@ export class CommandManager {
 				.setDescription(status.notice !== undefined ? `*${status.notice}*` : null)
 				.setTimestamp(status.since)
 				.setColor("Orange")
-			).setEphemeral(true).send(interaction);
+			).setEphemeral(true)
+		.send(interaction);
 
 		/* If this command is Premium-only and the user doesn't have a subscription, ... */
 		if ((command.planOnly() || command.premiumOnly()) && !subscription.premium) {

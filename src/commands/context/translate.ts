@@ -5,7 +5,7 @@ import { LanguageManager, UserLanguage } from "../../db/types/locale.js";
 import { ContextMenuCommand } from "../../command/types/context.js";
 import { LoadingResponse } from "../../command/response/loading.js";
 import { NoticeResponse } from "../../command/response/notice.js";
-import { OpenAIChatMessage } from "../../turing/types/chat.js";
+import { OpenAIChatMessage } from "../../turing/types/openai/chat.js";
 import { CommandResponse } from "../../command/command.js";
 import { DatabaseInfo } from "../../db/managers/user.js";
 import { Response } from "../../command/response.js";

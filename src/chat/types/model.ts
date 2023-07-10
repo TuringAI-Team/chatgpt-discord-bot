@@ -24,6 +24,9 @@ export enum ModelType {
     /** Google's API, using the Turing API */
     Google,
 
+    /** Anthropic's API, using the Turing API */
+    Anthropic,
+
     /** Turing Alan model, utilizing various AI technologies */
     Alan,
 

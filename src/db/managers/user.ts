@@ -72,6 +72,12 @@ export class UserManager extends SubClusterDatabaseManager {
         }, options);
     }
 
+    public async removeInfraction(user: DatabaseUser, which: DatabaseUserInfraction | string): Promise<DatabaseUser> {
+        return await this.db.schema("users", user, async (_, schema: UserSchema, entry, context) => {
+            return schema.removeInfraction(entry, context);
+        }, which);
+    }
+
     public async banned(user: DatabaseUser): Promise<DatabaseUserInfraction | null> {
         return await this.db.schema("users", user, async (_, schema: UserSchema, entry) => {
             return schema.banned(entry);
@@ -104,7 +110,7 @@ export class UserManager extends SubClusterDatabaseManager {
 
         /* Loop through the user's infractions, and when the infractions that should be marked as read were found, change their `seen` status. */
         arr = arr.map(
-            i => marked.find(m => m.when === i.when) !== undefined ? { ...i, seen: true } : i
+            i => marked.find(m => m.id === i.id) !== undefined ? { ...i, seen: true } : i
         );
 
         return await this.db.queue.update("users", user, { infractions: arr });

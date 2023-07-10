@@ -1,7 +1,5 @@
-import { type OpenAIChatMessage } from "./chat.js";
-
 export interface TuringGoogleChatBody {
-    model: "chat-bison";
+    model: "chat-bison" | string;
     messages: GoogleChatMessage[];
     max_tokens?: number;
     temperature?: number;

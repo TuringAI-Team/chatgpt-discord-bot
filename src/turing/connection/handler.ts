@@ -1,13 +1,11 @@
-import { AsyncMessage as RabbitMQMessage, Envelope, MessageBody } from "rabbitmq-client";
+import { AsyncMessage as RabbitMQMessage } from "rabbitmq-client";
 import { Collection } from "discord.js";
 import chalk from "chalk";
 
 import { Packet, PacketData, PacketDirection, PacketMetadata, PacketName, PacketSendOptions, RawPacketData } from "./packet/packet.js";
 import { TuringConnectionManager } from "./connection.js";
 import { LogType } from "../../util/logger.js";
-import { Packets } from "./packets/index.js";
-
-type RabbitMQReplyCallback = (body: MessageBody, envelope?: Envelope) => Promise<void>
+import { Utils } from "../../util/utils.js";
 
 export class TuringConnectionHandler {
     private readonly manager: TuringConnectionManager;
@@ -17,15 +15,30 @@ export class TuringConnectionHandler {
 
     constructor(manager: TuringConnectionManager) {
         this.manager = manager;
-
         this.packets = new Collection();
+    }
 
-        /* Initialize the packets. */
-        for (const packet of Packets) {
-            /* Create an instance of the packet. */
-            const instance = new packet(this.manager);
-            this.packets.set(instance.options.name, instance);
-        }
+    public async setup(): Promise<void> {
+        return new Promise((resolve, reject) => {
+			Utils.search("./build/turing/connection/packets", "js")
+				.then(async (files: string[]) => {
+					await Promise.all(files.map(async path => {
+						await import(path)
+							.then((data: { [key: string]: any }) => {
+								const list = Object.values(data).filter(data => data.name);
+
+								for (const data of list) {
+									const instance: Packet = new (data as any)(this);
+									this.packets.set(instance.options.name, instance);
+								}
+							})
+							.catch(reject);
+					}));
+
+					resolve();
+				})
+				.catch(reject);
+		});
     }
 
 	public get<T extends Packet = Packet>(name: PacketName, type: PacketDirection = PacketDirection.Both): T | null {

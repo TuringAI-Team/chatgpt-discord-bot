@@ -1,20 +1,57 @@
 import { randomUUID } from "crypto";
 
-import { DatabaseImage, ImageGenerationBody, ImageGenerationOptions, ImageGenerationType, ImageRawGenerationResult, ImageResult } from "./types/image.js";
+import { DatabaseImage, ImageGenerationBody, ImageGenerationOptions, ImageGenerationResult, ImageGenerationType, ImagePartialGenerationResult, ImageResult } from "./types/image.js";
+import { ImageGenerationRatio, ImageGenerationSize } from "../commands/imagine.js";
+import { ImageUpscaleOptions, ImageUpscaleResult } from "./types/upscale.js";
+import { ImagePrompt, ImagePromptEnhancer } from "./types/prompt.js";
+import { ImageConfigModels, ImageModel } from "./types/model.js";
 import { StorageImage } from "../db/managers/storage.js";
-import { TuringAPIRawResponse } from "../turing/api.js";
-import { ImageAPIError } from "../error/gpt/image.js";
-import { ImagePrompt } from "./types/prompt.js";
+import { StreamBuilder } from "../util/stream.js";
+import { TuringAPIPath } from "../turing/api.js";
 import { Utils } from "../util/utils.js";
 import { Bot } from "../bot/bot.js";
 
-export type ImageAPIModel = "sdxl" | "kandinsky"
+export type ImageAPIPath = "sdxl" | "kandinsky" | "runpod" | "sh"
+
+export class ImageModelManager {
+    private models: ImageModel[];
+
+    constructor(manager: ImageManager) {
+        this.models = ImageConfigModels.map(m => ({
+            ...m,
+            
+            settings: {
+                ...m.settings,
+                modifyResolution: true
+            },
+
+            body: {}
+        }));
+    }
+
+    public all(): ImageModel[] {
+        return this.models;
+    }
+
+    public default(): ImageModel {
+        return this.models[0];
+    }
+
+    public get(id: string): ImageModel {
+        const existing = this.models.find(m => m.id === id) ?? null;
+        if (existing === null) throw new Error("Invalid model");
+
+        return existing;
+    }
+}
 
 export class ImageManager {
     private readonly bot: Bot;
+    public readonly model: ImageModelManager;
 
     constructor(bot: Bot) {
         this.bot = bot;
+        this.model = new ImageModelManager(this);
     }
 
     public prompt(prompt: ImagePrompt, length: number = 250): string {
@@ -25,46 +62,98 @@ export class ImageManager {
         return this.bot.db.storage.imageURL(db, image, "images");
     }
 
-    public async generate({ body }: ImageGenerationOptions): Promise<ImageRawGenerationResult> {
-        const raw = await this.bot.turing.request<ImageRawGenerationResult>({
-            path: "image", method: "POST", raw: true, body: {
-                ...body,
-                
-                width: body.action !== "upscale" ? body.width : undefined,
-                height: body.action !== "upscale" ? body.height : undefined,
+    public validRatio(ratio: string, max: number = 3): ImageGenerationRatio | null {
+        const [ a, b ] = ratio.split(":").map(Number);
+        if (!b || isNaN(a) || isNaN(b)) return null;
 
-                ai: body.action === "upscale" || body.action === "img2img" ? "sdxl" : body.ai
-            }
-        });
+        /* Make sure that the ratio is in the valid range. */
+        if (a <= 0 || b <= 0 || a / b > max || b / a > max) return null;
 
-        if (!raw.success) await this.error(raw, body.ai);
-
-        raw.data.images = raw.data.images.map(image => ({
-            ...image, id: randomUUID()
-        }));
-
-        raw.data.id = randomUUID();
-        return raw.data;
+        return { a, b };
     }
 
-    public toDatabase(prompt: ImagePrompt, body: ImageGenerationBody, result: ImageRawGenerationResult, time: string, action: ImageGenerationType): DatabaseImage {
+    public findBestSize({ a, b }: ImageGenerationRatio, maxWidth: number = 1024, maxHeight: number = 1024, step: number = 64): ImageGenerationSize {
+        const pixelCount = Math.max(512 * 512, Math.ceil(a * b / step / step) * step * step);
+
+        let width = Math.round(Math.sqrt(pixelCount * a / b));
+        let height = Math.round(Math.sqrt(pixelCount * b / a));
+
+        width += width % step > 0 ? step - width % step : 0;
+        height += height % step > 0 ? step - height % step : 0;
+
+        return width > maxWidth ? {
+            width: maxWidth, height: Math.round(maxWidth * b / a / step) * step
+        } : height > maxHeight ? {
+            width: Math.round(maxHeight * a / b / step) * step, height: maxHeight
+        } : {
+            width, height
+        };
+    }
+    
+    public async enhance(prompt: ImagePrompt, enhancer: ImagePromptEnhancer): Promise<ImagePrompt> {
         return {
-            id: result.id, created: time, action, prompt, model: body.model!,
-            
-            cost: result.cost,
-            options: body,
-            
-            results: result.images.map(image => ({
-                id: image.id,
-                reason: image.finishReason,
-                seed: image.seed
-            }))
+            ...prompt,
+
+            original: prompt.prompt,
+            mode: enhancer.id
         };
     }
 
-    private async error(raw: TuringAPIRawResponse, path: ImageAPIModel): Promise<void> {
-        throw new ImageAPIError({
-            code: 400, endpoint: `/image/${path}`, body: raw.data
+    public async upscale({ image, prompt }: ImageUpscaleOptions): Promise<ImageUpscaleResult> {
+        return {
+            results: [
+                { base64: image.toString(), id: randomUUID(), seed: 0, status: "success" }
+            ], cost: 0, id: randomUUID(), status: "done", error: null
+        };
+
+        /*const response = await this.bot.turing.request({
+            path: "image/sdxl", method: "POST", body: {
+                action: "upscale", prompt, image: image.toString(), stream: false
+            }
         });
+
+        console.log(response);
+
+        return {
+            results: [
+                {
+                    base64: "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAUSURBVBhXY2TQ+8/AwMAExAwMDAANRwExebjz3gAAAABJRU5ErkJggg==",
+                    id: randomUUID(), seed: Math.floor(Math.random() * 1000000), status: "success"
+                }
+            ], cost: 0.1, id: randomUUID(), status: "done", error: null
+        };*/
+    }
+
+    public async generate({ body, model, progress }: ImageGenerationOptions): Promise<ImageGenerationResult> {
+        const path: TuringAPIPath = `image/${model.path}`;
+
+        return await new StreamBuilder<
+            any, ImagePartialGenerationResult, ImageGenerationResult
+        >({
+            body: {
+                ...body, ...model.body ?? {}, stream: true
+            },
+
+            error: response => this.bot.turing.error(response, path, "error"),
+            headers: this.bot.turing.headers(),
+            url: this.bot.turing.url(path),
+
+            progress
+        }).run();
+    }
+
+    public toDatabase(prompt: ImagePrompt, { body, model }: ImageGenerationOptions, result: ImageGenerationResult | ImageUpscaleResult, time: string, action: ImageGenerationType): DatabaseImage {
+        return {
+            id: result.id, created: time, action, prompt, model: model.id,
+            
+            options: body as ImageGenerationBody,
+            cost: result.cost ?? 0,
+            
+            results: result.results.map(image => ({
+                id: image.id,
+                status: image.status,
+                seed: image.seed
+            }))
+        };
     }
 }

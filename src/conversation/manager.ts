@@ -10,6 +10,7 @@ import { Conversation } from "./conversation.js";
 import { ChatClient, ChatClientResult } from "../chat/client.js";
 import { Generator } from "./generator.js";
 import { Bot } from "../bot/bot.js";
+import chalk from "chalk";
 
 /* Message generation options */
 export interface GenerationOptions {
@@ -74,6 +75,7 @@ export class ConversationManager {
      * @returns How many sessions were initialized
      */
     public async setup(): Promise<void> {
+        await this.client.setup();
         this.active = true;
     }
 
@@ -127,6 +129,9 @@ export class ConversationManager {
      * @param conversation Conversation to delete
      */
     public delete(conversation: Conversation): void {
+        if (this.bot.dev) this.bot.logger.debug("Conversation", chalk.bold(`@${conversation.user.username}`), "was reset due to inactivity.");
+
+        if (conversation.timer !== null) clearTimeout(conversation.timer);
         conversation.history = [];
 
         /* Remove the conversation from the collection, let Node do the rest. */

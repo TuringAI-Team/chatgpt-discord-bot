@@ -93,7 +93,6 @@ export interface ModerationOptions {
     content: string;
 
     /* Other data */
-    filter?: (action: AutoModerationFilter) => boolean;
     additional?: AdditionalModerationOptions;
 }
 
@@ -131,6 +130,9 @@ export interface ModerationResult {
 
     /* Auto moderation filter result */
     auto?: AutoModerationActionData;
+
+    /* The received infraction, if applicable */
+    infraction?: DatabaseUserInfraction;
 
     /* Source of the moderation request */
     source: ModerationSource;
@@ -304,7 +306,7 @@ export class ModerationManager {
         }
     
         if (infractions.length > 0) description = infractions
-            .map(i => `${ActionToEmoji[i.type]} \`${i.type}\`${i.by ? ` by **${moderators.get(i.by)!.username}**` : ""} @ <t:${Math.round(i.when / 1000)}:f>${i.seen !== undefined ? i.seen ? " ✅" : " ❌" : ""}${i.reason ? ` » *\`${i.reason}\`*` : ""}${i.automatic ? " 🤖" : " 👤"}`)
+            .map(i => `${ActionToEmoji[i.type]} \`${i.type}\` # \`${i.id}\`${i.by ? ` by **${moderators.get(i.by)!.username}**` : ""} @ <t:${Math.round(i.when / 1000)}:f>${i.seen !== undefined ? i.seen ? " ✅" : " ❌" : ""}${i.reason ? ` » *\`${i.reason}\`*` : ""}`)
             .join("\n");
     
         if (infractions.length > 0) description = `__**${infractions.length}** infractions__\n\n${description}`;
@@ -615,33 +617,17 @@ export class ModerationManager {
      * @param options Generation options
      * @returns Moderation results
      */
-    public async check({ db, content, source, filter, additional, user }: ModerationOptions): Promise<ModerationResult> {
+    public async check({ db, content, source, additional, user }: ModerationOptions): Promise<ModerationResult> {
         /* Run the AutoMod filter on the message. */
-        const auto: AutoModerationActionData | null = await this.automod.execute({
-            content, db, source, bot: this.bot,
-            filterCallback: filter ? (_, action) => filter(action) : undefined
+        const auto: AutoModerationActionData | null = await this.automod.filter({
+            content, db, source, bot: this.bot
         });
-
-        /* If this moderation request is related to image generation, run the Turing API filter too. */
-        const turing = (source === "image" || source === "video") && additional
-            ? await this.bot.turing.filter(content, [ "nsfw", "cp" ]).catch(() => null)
-            : null;
 
         /* Whether the message should be completely blocked */
         let blocked: boolean = auto !== null && auto.type !== "flag";
 
         /* Whether the message has been flagged as inappropriate */
-        let flagged: boolean = blocked || auto !== null && auto.type === "flag";
-
-        /* If the Turing filter was used, do the additional checks. */
-        if (additional && turing) {
-            if (turing.nsfw) flagged = true;
-        
-            if (turing.cp || turing.youth) {
-                blocked = true;
-                flagged = true;
-            }
-        }
+        let flagged: boolean = blocked || (auto !== null && auto.type === "flag");
 
         /* Final moderation result */
         const data: ModerationResult = {
@@ -667,7 +653,7 @@ export class ModerationManager {
 
         /* Send the moderation message to the private channel. */
         if (flagged || blocked) await this.send({
-            content, db, user, source, additional, filter, result: data
+            content, db, user, source, additional, result: data
         });
 
         /* Add a flag to the user too, for reference. */
@@ -675,14 +661,10 @@ export class ModerationManager {
             flagged: data.flagged, blocked: data.blocked, source: source, reference: content, translation: data.translation, auto: data.auto
         });
 
-        /* If the moderation filter requested it, ban the user. */
-        if (auto !== null && auto.type === "ban") {
-            await this.bot.db.users.ban(db.user, { status: true, automatic: true, reason: auto.reason });
-
-        /* If the moderation filter requested it, give a warning to the user. */
-        } else if (auto !== null && auto.type === "warn") {
-            await this.bot.db.users.warn(db.user, { automatic: true, reason: auto.reason });
-        }
+        /* Apply all AutoMod infractions, if applicable. */
+        if (auto !== null) await this.automod.execute({
+            auto, content, db, source, result: data, user, additional
+        });
 
         return data;
     }
@@ -744,11 +726,11 @@ export class ModerationManager {
 					.setDescription(`You received **${unread.length > 1 ? "several warnings" : "a warning"}**, as a consequence of your messages with the bot. *${unread.length > 1 ? "These are only warnings" : "This is only a warning"}; you can continue to use the bot. If you however keep violating our **usage policies**, we may have to take further moderative actions*.`)
 					
 					.addFields(unread.map(i => ({
-						name: `${i.reason} ⚠️`,
+						name: `${i.reason} ⚠️ (*\`${i.id}\`*)`,
 						value: `*<t:${Math.floor(i.when / 1000)}:F>*`
 					})))
 
-					.setFooter({ text: "If you have any further questions about these warnings, join our support server." })
+					.setFooter({ text: `If you have any further questions about ${unread.length > 1 ? "these warnings" : "this warning"}, join our support server.` })
 					.setColor("Red")
 				)
                 .setEphemeral(true)
@@ -760,15 +742,12 @@ export class ModerationManager {
 			const collector = reply.createMessageComponentCollector<ComponentType.Button>({
 				componentType: ComponentType.Button,
 				filter: i => i.user.id === author.id && i.customId === buttonID,
-				time: 60 * 1000,
-				max: 1
+				time: 60 * 1000, max: 1
 			});
 
 			/* When the collector is done, delete the reply message & continue the execution. */
 			await new Promise<void>(resolve => collector.on("end", async collected => {
-				await Promise.all(collected.map(entry => entry.deferUpdate()))
-					.catch(() => {});
-
+				await Promise.all(collected.map(entry => entry.deferUpdate())).catch(() => {});
 				resolve();
 			}));
 

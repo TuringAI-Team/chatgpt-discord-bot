@@ -1,6 +1,5 @@
-import { Canvas, Image } from "@napi-rs/canvas";
+import { Image, createCanvas } from "@napi-rs/canvas";
 import { readFile } from "fs/promises";
-import mergeImages from "merge-images";
 
 import { StorageImage } from "../../db/managers/storage.js";
 import { ImageBuffer } from "../../chat/types/image.js";
@@ -8,7 +7,7 @@ import { DatabaseImage } from "../types/image.js";
 import { Utils } from "../../util/utils.js";
 import { Bot } from "../../bot/bot.js";
 
-type AssetName = "censored"
+type AssetName = "censored" | "warning"
 
 /* All special images */
 const Assets: Record<AssetName, Buffer> = {
@@ -40,7 +39,8 @@ loadAssets();
 export const renderIntoSingleImage = async (bot: Bot, db: DatabaseImage): Promise<Buffer> => {
     /* Fetch all the images. */
     const images: Buffer[] = await Promise.all(db.results.map(async image => {
-        if (image.reason === "CONTENT_FILTERED") return Assets.censored;
+        if (image.status === "filtered") return Assets.censored;
+        else if (image.status === "failed") return Assets.warning;
 
         const storage: StorageImage = bot.image.url(db, image);
         const data: ImageBuffer = (await Utils.fetchBuffer(storage.url))!;
@@ -59,19 +59,18 @@ export const renderIntoSingleImage = async (bot: Bot, db: DatabaseImage): Promis
     const width: number = db.options.width * perRow;
     const height: number = rows * db.options.height;
 
-    /* Merge all of the images together. */
-    const data = await mergeImages(images.map((img, index) => {
+    const canvas = createCanvas(width, height);
+    const context = canvas.getContext("2d");
+
+    images.forEach((result, index) => {
         const x: number = (index % perRow) * db.options.width;
         const y: number = Math.floor(index / perRow) * db.options.height;
 
-        return {
-            src: img,
-            x, y
-        };
-    }), {
-        Canvas: Canvas, Image: Image,
-        width, height
-    } as any);
+        const image: Image = new Image();
+        image.src = result;
 
-    return Buffer.from(data.replaceAll("data:image/png;base64,", ""), "base64");
+        context.drawImage(image, x, y, db.options.width, db.options.height);
+    });
+
+    return await canvas.encode("png")
 }

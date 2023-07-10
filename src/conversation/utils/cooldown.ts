@@ -5,9 +5,6 @@ import { Conversation } from "../conversation.js";
 export interface CooldownOptions {
     /* Which conversation this cooldown is for */
     conversation: Conversation;
-
-    /* How long the cooldown takes to expire */
-    time: number;
 }
 
 export interface CooldownState {
@@ -49,7 +46,7 @@ export class Cooldown extends EventEmitter {
      * 
      * @returns When the cooldown expires
      */
-    public use(time?: number): number {
+    public use(time: number): number {
         /* Set up the time-out. */
         this.timer = setTimeout(() => {
             this.state = {
@@ -59,13 +56,13 @@ export class Cooldown extends EventEmitter {
                 expiresIn: null
             };
 
-        }, time ?? this.options.time);
+        }, time);
 
         this.state = {
             active: true,
 
             startedAt: Date.now(),  
-            expiresIn: (time ?? this.options.time)
+            expiresIn: time
         };
 
         return this.state.expiresIn!;
@@ -101,14 +98,10 @@ export class Cooldown extends EventEmitter {
         return true;
     }
 
-    public calculate(other: CooldownModifier): number {
-        return Cooldown.calculate(this.options.time, other);
-    }
-
     public static calculate(input: number, modifier: CooldownModifier): number {
         if (modifier.multiplier) return input * modifier.multiplier;
         else if (modifier.time) return modifier.time;
 
-        return -1;
+        throw new Error("Either multiplier or time must be given");
     }
 }

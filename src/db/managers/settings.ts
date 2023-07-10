@@ -6,7 +6,6 @@ import chalk from "chalk";
 import { TuringAlanImageGenerators, TuringAlanImageModifiers, TuringAlanSearchEngines, TuringVideoModels, alanOptions } from "../../turing/api.js";
 import { ConversationDefaultCooldown, Conversation } from "../../conversation/conversation.js";
 import { LoadingIndicatorManager, LoadingIndicators } from "../types/indicator.js";
-import { GenerationSizes, getAspectRatio } from "../../commands/imagine.js";
 import { ChatSettingsPlugins } from "../../conversation/settings/plugin.js";
 import { InteractionHandlerResponse } from "../../interaction/handler.js";
 import { ChatSettingsModels } from "../../conversation/settings/model.js";
@@ -26,6 +25,9 @@ import { Languages } from "../types/locale.js";
 import { Utils } from "../../util/utils.js";
 import { DatabaseInfo } from "./user.js";
 import { Bot } from "../../bot/bot.js";
+import { ImageConfigModels } from "../../image/types/model.js";
+import { ImagePromptEnhancers } from "../../image/types/prompt.js";
+import { ImageStyles } from "../../image/types/style.js";
 
 export enum SettingsLocation {
     Guild = "guild",
@@ -502,6 +504,53 @@ export type GetSettingsTypeParameter<T> = T extends SettingsOption<infer R> ? R 
 export type SettingsName = string
 
 export const SettingOptions: SettingsOption[] = [
+    new ChoiceSettingsOption({
+        key: "model",
+        name: "/imagine model",
+        category: "image",
+        emoji: { fallback: "🤖" },
+        description: "Which image AI model to use",
+        location: SettingsLocation.User,
+
+        explanation: {
+            description: "This setting changes which AI image generation model will be used for `/imagine` by default, unless modified by the `model` parameter. Some models are only available to **Premium** ✨ users."
+        },
+
+        choices: ImageConfigModels.map(({ name, description, id }) => ({
+            name, description, value: id
+        }))
+    }),
+
+    new ChoiceSettingsOption({
+        key: "enhancer",
+        name: "/imagine prompt enhancer",
+        category: "image",
+        emoji: { fallback: "✨" },
+        description: "Which prompt enhancer to use",
+        location: SettingsLocation.User,
+
+        explanation: {
+            description: "With this setting, you can change if & how **ChatGPT** should improve or recreate your prompt for the image, in order for the results to look better."
+        },
+
+        choices: ImagePromptEnhancers.map(({ name, emoji, id }) => ({
+            name, emoji, value: id
+        }))
+    }),
+
+    new ChoiceSettingsOption({
+        key: "style",
+        name: "/imagine style",
+        category: "image",
+        emoji: { fallback: "🤖" },
+        description: "Which style to use",
+        location: SettingsLocation.User,
+
+        choices: ImageStyles.map(({ name, emoji, id }) => ({
+            name, emoji, value: id
+        }))
+    }),
+
     new IntegerSettingsOption({
         key: "count",
         name: "/imagine image count",
@@ -511,32 +560,6 @@ export const SettingOptions: SettingsOption[] = [
         max: 4, min: 1, suffix: "image",
         default: 2,
         location: SettingsLocation.User
-    }),
-
-    new IntegerSettingsOption({
-        key: "steps",
-        name: "/imagine generation steps",
-        category: "image",
-        emoji: { fallback: "🪜" },
-        description: "How many steps to generate with",
-        max: 50, min: 15, suffix: "step",
-        default: 30,
-        location: SettingsLocation.User
-    }),
-
-    new ChoiceSettingsOption({
-        key: "size",
-        name: "/imagine image resolution",
-        category: "image",
-        emoji: { fallback: "📸" },
-        description: "How big the generated images should be",
-        location: SettingsLocation.User,
-
-        choices: GenerationSizes.map(({ width, height, premium }) => ({
-            name: `${width}x${height} (${getAspectRatio(width, height)})`,
-            value: `${width}:${height}`,
-            restricted: premium ? "premium" : undefined,
-        }))
     }),
 
     new ChoiceSettingsOption({

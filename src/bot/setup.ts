@@ -64,7 +64,7 @@ const BotSetupSteps: {
             },
 
             {
-                name: "Conversation sessions",
+                name: "Conversation manager",
                 execute: async bot => bot.conversation.setup()
             },
 

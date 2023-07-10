@@ -1,7 +1,7 @@
 import { Collection, ColorResolvable, EmbedBuilder, REST, Routes } from "discord.js";
 import { Cluster, ClusterManager, ReClusterManager } from "discord-hybrid-sharding";
-import { setTimeout as delay } from "node:timers/promises";
-import { EventEmitter } from "node:events";
+import { setTimeout as delay } from "timers/promises";
+import { EventEmitter } from "events";
 import chalk from "chalk";
 
 import { App, StrippedApp } from "../app.js";
@@ -237,8 +237,9 @@ export class BotManager extends EventEmitter {
 				this.app.stop(1);
 			});
 
-        
-        await delay(2000);
+        while (this.manager!.totalClusters === -1) {
+            await delay(100);
+        }
             
         /* Current shard counter */
         let counter: number = 0;
@@ -248,6 +249,9 @@ export class BotManager extends EventEmitter {
             counter = 0;
         }, 15 * 1000);
 
+        /* Delay between cluster spawning */
+        const delayTime: number = 3000;
+
         for (let i = 0; i < this.manager!.totalClusters; i++) {
             /* Increment the current shard counter. */
             counter += this.manager!.shardsPerClusters ?? this.app.config.shardsPerCluster;
@@ -256,8 +260,7 @@ export class BotManager extends EventEmitter {
             if (this.app.config.dev) this.app.logger.debug(`Spawning cluster ${chalk.bold(`#${i + 1}`)} ...`);
             await this.manager!.queue.next();
 
-            if (counter >= this.session!.maxConcurrency) await delay(7500);
-            else await delay(3000);
+            await delay(counter >= this.session!.maxConcurrency ? delayTime * 2.5 : delayTime);
         }
 
         clearInterval(resetTimer);

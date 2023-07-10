@@ -36,15 +36,14 @@ export class GoogleModel extends ChatModel {
         const prompt = await this.client.buildPrompt(options);
         const messages: GoogleChatMessage[] = [];
 
+        messages.push({
+            role: "system", content: [ prompt.parts.Initial, prompt.parts.Personality ].filter(Boolean).map(m => m!.content).join("\n\n")
+        });
+
         for (const entry of options.conversation.history.slice(-5)) {
             messages.push(
-                {
-                    role: "user", content: entry.input.content
-                },
-
-                {
-                    role: "bot", content: entry.output.text
-                }
+                { role: "user", content: entry.input.content },
+                { role: "bot", content: entry.output.text }
             );
         }
 
@@ -52,10 +51,8 @@ export class GoogleModel extends ChatModel {
             role: "user", content: options.prompt
         });
 
-        /* Generate a response for the user's prompt using the Turing API. */
         const result = await this.client.manager.bot.turing.google({
-            messages, max_tokens: prompt.max,
-            model: "chat-bison"
+            messages, max_tokens: prompt.max, model: options.settings.options.settings.model!
         });
 
         return this.process(result);
