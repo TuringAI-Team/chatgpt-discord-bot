@@ -41,7 +41,7 @@ export class AnthropicModel extends ChatModel {
         });
 
         /* Which model to use, depending on the context & generation limits */
-        const model: AnthropicChatModel = prompt.length + prompt.max >= 9000 ? "claude-instant-1-100k" : "claude-instant-1";
+        const model: AnthropicChatModel = options.settings.options.settings.model ?? "claude-instant-1";
 
         const result = await this.client.manager.bot.turing.anthropic({
             messages, max_tokens: prompt.max, model, temperature: 0.3

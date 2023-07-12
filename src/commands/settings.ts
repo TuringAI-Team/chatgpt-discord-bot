@@ -16,7 +16,7 @@ export default class SettingsCommand extends Command {
 		
 		(this.builder as SlashCommandBuilder)
 			.addSubcommand(builder => builder
-				.setName("user")
+				.setName("me")
 				.setDescription("Customize the bot for yourself")
 				.addStringOption(builder => builder
 					.setName("category")
@@ -28,8 +28,8 @@ export default class SettingsCommand extends Command {
 				)
 			)
 			.addSubcommand(builder => builder
-				.setName("guild")
-				.setDescription("Customize the bot for this entire server")
+				.setName("server")
+				.setDescription("Customize the bot for your entire server")
 				.addStringOption(builder => builder
 					.setName("category")
 					.setDescription("Which category to view")
@@ -43,8 +43,9 @@ export default class SettingsCommand extends Command {
 
     public async run(interaction: CommandInteraction, db: DatabaseInfo): CommandResponse {
 		/* Which settings type to view */
-		const type: SettingsLocation = interaction.options.getSubcommand(true) as SettingsLocation;
-
+		const action: "server" | "me" = interaction.options.getSubcommand(true) as any;
+		const type: SettingsLocation = action === "me" ? SettingsLocation.User : SettingsLocation.Guild;
+		
 		if (type === SettingsLocation.Guild && db.guild === null) return new ErrorResponse({
 			interaction, message: "You can only view & change guild settings on **servers**", emoji: "😔"
 		});

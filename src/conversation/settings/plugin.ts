@@ -84,5 +84,11 @@ export const ChatSettingsPlugins: ChatSettingsPlugin[] = [
         name: "GitHub", emoji: { display: "<:github:1097828013871222865>", fallback: "🐙" },
         description: "Search for users & projects on GitHub.",
         id: "github"
+    }),
+
+    new ChatSettingsPlugin({
+        name: "Code Interpreter", emoji: { fallback: "📡" },
+        description: "Execute code in a sandbox using WandBox.",
+        id: "code-interpreter"
     })
 ]

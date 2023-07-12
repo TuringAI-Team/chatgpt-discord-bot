@@ -87,7 +87,7 @@ export abstract class ChatModel {
         return {
             description: result.result.description,
             text: result.result.ocr ? result.result.ocr.content : null,
-            cost: result.duration * 0.0004
+            cost: result.cost ?? undefined
         };
     }
 

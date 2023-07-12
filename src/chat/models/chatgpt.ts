@@ -23,12 +23,15 @@ export class ChatGPTModel extends ChatModel {
         });
     }
 
-    private processPlugins(prompt: PromptData, data: TuringChatPluginsResult): PartialResponseMessage | null {
+    private processPlugins(options: ModelGenerationOptions, prompt: PromptData, data: TuringChatPluginsResult): PartialResponseMessage | null {
         if (data.result.length === 0) return null;
 
         /* Which plugin was used, if applicable */
         const plugin: ChatSettingsPlugin | null = data.tool !== null
             ? ChatSettingsPlugins.find(p => p.id === data.tool) ?? null : null;
+
+        /* Whether the raw tool result should be shown */
+        const raw: boolean = this.client.manager.bot.db.settings.get(options.db.user, "plugins:debug");
 
         return {
             text: data.result,
@@ -53,6 +56,13 @@ export class ChatGPTModel extends ChatModel {
                     label: plugin !== null ? plugin.options.name : Utils.titleCase(data.tool),
                     emoji: plugin !== null && plugin.options.emoji !== null ? Emoji.display(plugin.options.emoji, true) as ComponentEmojiResolvable : undefined,
                     id: "settings:menu:user:plugins"
+                }
+            ] : [],
+
+            embeds: raw && data.toolResult !== null && data.toolInput !== null ? [
+                {
+                    description: `\`\`\`${Utils.truncate(JSON.stringify(data.toolInput, undefined, 2), 500)}\`\`\`\n\`\`\`${Utils.truncate(JSON.stringify(data.toolResult, undefined, 2), 1000)}\`\`\``,
+                    color: this.client.manager.bot.branding.color
                 }
             ] : []
         };
@@ -95,6 +105,9 @@ export class ChatGPTModel extends ChatModel {
             /* Which model to use */
             const model: TuringChatPluginsModel = options.model.settings.name.includes("ChatGPT") ? "gpt-3.5-turbo" : "gpt-4";
 
+            /* Fix various plugins that provide up-to-date information past the knowledge cut-off date. */
+            prompt.parts.Initial.content = `${prompt.parts.Initial.content}\nI do not have a knowledge cut-off, I have access to up-to-date news and information using plugins.`;
+
             /* Generate a response for the user's prompt using the Turing API. */
             const result: TuringChatPluginsResult = await this.client.manager.bot.turing.chatPlugins({
                 messages: Object.values(prompt.parts),
@@ -103,14 +116,14 @@ export class ChatGPTModel extends ChatModel {
                 user: options.db.user,
 
                 progress: result => {
-                    const formatted = this.processPlugins(prompt, result);
+                    const formatted = this.processPlugins(options, prompt, result);
                     if (formatted !== null) options.progress(formatted);
                 },
 
                 model, plugins
             });
 
-            const final = this.processPlugins(prompt, result);
+            const final = this.processPlugins(options, prompt, result);
             if (final === null) throw new GPTGenerationError({ type: GPTGenerationErrorType.Empty });
 
             return final;

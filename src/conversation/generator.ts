@@ -246,6 +246,7 @@ export class Generator {
 					.setDescription(embed.description ?? null)
 					.setColor(embed.color ?? null)
 					.setTimestamp(embed.time ? undefined : null)
+					.setFooter(embed.footer ? { text: embed.footer } : null)
 				);
 			});
 		}

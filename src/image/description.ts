@@ -107,7 +107,7 @@ export class ImageDescriptionManager {
         return hash;
     }
 
-    public async describe(options: ImageDescriptionOptions): Promise<DatabaseDescription & { cached: boolean }> {
+    public async describe(options: ImageDescriptionOptions): Promise<DatabaseDescription & { cached: boolean, cost: number | null }> {
         let { input, cached, buffer }: Required<Omit<ImageDescriptionOptions, "buffer">> & { buffer: ImageBuffer | null } = {
             cached: options.cached ?? true,
             buffer: options.buffer ?? null,
@@ -121,7 +121,7 @@ export class ImageDescriptionManager {
         /* First, try to find a cached image description. */
         if (cached) {
             const entry: DatabaseDescription | null = await this.get({ ...input, hash });
-            if (entry !== null) return { ...entry, cached: true };
+            if (entry !== null) return { ...entry, cached: true, cost: null };
         }
 
         /* Additionally, run OCR text recognition, to further improve results. */
@@ -150,7 +150,7 @@ export class ImageDescriptionManager {
         await this.save(result, buffer);
 
         return {
-            ...result, cached: false
+            ...result, cached: false, cost: duration * 0.0004
         };
     }
 

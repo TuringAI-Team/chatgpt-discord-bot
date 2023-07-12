@@ -86,7 +86,7 @@ export const IntroductionPages: IntroductionPage[] = [
         design: { title: "Various LLMs", emoji: "💬", description: "Information about the growing list of language models the bot supports" },
 
         build: (builder, { bot }) => builder
-            .setDescription(`${bot.client.user.username} isn't only limited to **ChatGPT**; we also offer various other language models, including **GPT-4**, **Claude** and **Alpaca**.`)
+            .setDescription(`${bot.client.user.username} isn't only limited to **ChatGPT**; we also offer various other language models, including **GPT-4**, **Claude** and **PaLM 2**.`)
             .addFields([
                 {
                     name: "Constantly growing selection 📈",
@@ -95,7 +95,7 @@ export const IntroductionPages: IntroductionPage[] = [
 
                 {
                     name: "Easy to switch 🔁",
-                    value: "Simply switch the current model using `/tone`, and select one of your choice."
+                    value: "Simply switch the current model, by running `/settings me` and going to the **Chat** category, then select a model of your choice from the list."
                 }
             ])
     },

@@ -1,6 +1,5 @@
 import { Attachment, Embed, Message, Sticker, StickerFormatType } from "discord.js";
 
-import { TenorGIF } from "../../util/tenor.js";
 import { Utils } from "../../util/utils.js";
 import { Bot } from "../../bot/bot.js";
 
@@ -10,7 +9,6 @@ export const ALLOWED_FILE_EXTENSIONS: string[] = [ "webp", "png", "jpeg", "jpg" 
 
 const DISCORD_CDN_REGEX = /https:\/\/(media|cdn)\.discordapp\.(com|net)\/attachments\/\d+\/\d+\/\S+\.(png|jpe?g|webp)/ig
 const EMOJI_REGEX = /<(a?)?:[\w-]+:(\d{18,19})?>/gu
-const TENOR_GIF_REGEX = /-gif-(\d+)/g
 
 export class ImageBuffer {
     private data: Buffer;
@@ -157,28 +155,7 @@ export const ChatImageAttachmentExtractors: ChatImageAttachmentExtractor[] = [
                 url: e.image!.url
             }));
         }
-    },
-
-    /*{
-        type: "Tenor GIF",
-        condition: ({ message }) => message.content.matchAll(TENOR_GIF_REGEX) !== null,
-
-        extract: async ({ bot, message }) => {
-            const matches = message.content.matchAll(TENOR_GIF_REGEX);
-            if (matches === null) return null;
-
-            const arr: string[] = Array.from(matches, m => m[1]);
-            if (arr.length === 0) return null;
-
-            const results: TenorGIF[] = await bot.gif.info(arr).catch(() => []);
-            if (results.length === 0) return null;
-
-            return results.map(r => ({
-                name: r.title,
-                url: r.media.gif.url
-            }));
-        }
-    }*/
+    }
 ]
 
 export interface ChatBaseImage {

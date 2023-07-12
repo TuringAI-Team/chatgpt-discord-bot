@@ -1,3 +1,5 @@
+import { ColorResolvable } from "discord.js";
+
 import { LoadingIndicator, LoadingIndicatorManager } from "../../db/types/indicator.js";
 import { DatabaseInfo } from "../../db/managers/user.js";
 import { Utils } from "../../util/utils.js";
@@ -10,13 +12,16 @@ const BasePhrases: string[] = [
 ]
 
 interface LoadingResponseOptions {
-    /* Additional phrases to choose from */
+    /** Additional phrases to choose from */
     phrases?: string[] | string;
 
-    /* Whether generic phrases should be shown */
+    /** Whether generic phrases should be shown */
     generic?: boolean;
 
-    /* Additional database instances & bot manager */
+    /** Which color to use for the message */
+    color?: ColorResolvable;
+
+    /** Additional database instances & bot manager */
     db?: DatabaseInfo;
     bot: Bot;
 }
@@ -35,7 +40,7 @@ export class LoadingResponse extends Response {
 
         this.addEmbed(builder => builder
             .setTitle(`${Utils.random(phrases)} **...** ${indicator !== null ? LoadingIndicatorManager.toString(indicator) : "🤖"}`) 
-            .setColor(options.bot.branding.color)
+            .setColor(options.color ?? options.bot.branding.color)
         );
     }
 }

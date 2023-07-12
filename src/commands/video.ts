@@ -9,7 +9,7 @@ import { Response } from "../command/response.js";
 import { Utils } from "../util/utils.js";
 import { Bot } from "../bot/bot.js";
 
-const MAX_VIDEO_PROMPT_LENGTH: number = 200
+const MaxVideoPromptLength: number = 200
 
 export default class VideoCommand extends Command {
 	constructor(bot: Bot) {
@@ -20,7 +20,7 @@ export default class VideoCommand extends Command {
 			.addStringOption(builder => builder
 				.setName("prompt")
 				.setDescription("The possibilities are endless... 💫")
-				.setMaxLength(MAX_VIDEO_PROMPT_LENGTH)
+				.setMaxLength(MaxVideoPromptLength)
 				.setRequired(true)
 			)
 
@@ -49,9 +49,9 @@ export default class VideoCommand extends Command {
 		/* Which prompt to use for generation */
 		const prompt: string = interaction.options.getString("prompt", true);
 
-		if (prompt.length > MAX_VIDEO_PROMPT_LENGTH) return new ErrorResponse({
+		if (prompt.length > MaxVideoPromptLength) return new ErrorResponse({
 			interaction, command: this,
-			message: `The specified prompt is **too long**, it can't be longer than **${MAX_VIDEO_PROMPT_LENGTH}** characters`
+			message: `The specified prompt is **too long**, it can't be longer than **${MaxVideoPromptLength}** characters`
 		});
 
 		/* Which generation model to use; otherwise pick the default one */

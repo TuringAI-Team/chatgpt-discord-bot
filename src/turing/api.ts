@@ -420,6 +420,8 @@ export interface TuringChatPluginsOptions {
 }
 
 export type TuringChatPluginsResult = TuringOpenAIResult & {
+    toolResult: any | null;
+    toolInput: any | null;
     tool: string | null;
 }
 

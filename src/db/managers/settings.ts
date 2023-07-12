@@ -12,10 +12,13 @@ import { ChatSettingsModels } from "../../conversation/settings/model.js";
 import { ChatSettingsTones } from "../../conversation/settings/tone.js";
 import { DatabaseManager, DatabaseManagerBot } from "../manager.js";
 import { DatabaseSettings, DatabaseUser } from "../schemas/user.js";
+import { ImagePromptEnhancers } from "../../image/types/prompt.js";
 import { ErrorResponse } from "../../command/response/error.js";
+import { ImageConfigModels } from "../../image/types/model.js";
 import { ChatGuildData } from "../../chat/types/options.js";
 import { RestrictionType } from "../types/restriction.js";
 import { DisplayEmoji, Emoji } from "../../util/emoji.js";
+import { ImageStyles } from "../../image/types/style.js";
 import { ClusterDatabaseManager } from "../cluster.js";
 import { Response } from "../../command/response.js";
 import { DatabaseGuild } from "../schemas/guild.js";
@@ -25,9 +28,6 @@ import { Languages } from "../types/locale.js";
 import { Utils } from "../../util/utils.js";
 import { DatabaseInfo } from "./user.js";
 import { Bot } from "../../bot/bot.js";
-import { ImageConfigModels } from "../../image/types/model.js";
-import { ImagePromptEnhancers } from "../../image/types/prompt.js";
-import { ImageStyles } from "../../image/types/style.js";
 
 export enum SettingsLocation {
     Guild = "guild",
@@ -38,16 +38,16 @@ export enum SettingsLocation {
 export type SettingsDatabaseEntry = DatabaseUser | DatabaseGuild
 
 export interface SettingsCategory {
-    /* Type of the category */
+    /** Type of the category */
     type: SettingsCategoryName;
 
-    /* Display name of the category */
+    /** Display name of the category */
     name: string;
 
-    /* Emoji for this category */
+    /** Emoji for this category */
     emoji: DisplayEmoji;
 
-    /* Whether this category is restricted to a specific group of users */
+    /** Whether this category is restricted to a specific group of users */
     restricted?: RestrictionType;
 }
 
@@ -113,54 +113,54 @@ export const SettingCategories: SettingsCategory[] = [
 ]
 
 export enum SettingsOptionType {
-    /* Simple true-false value */
+    /** Simple true-false value */
     Boolean,
 
-    /* Users can enter their own message */
+    /** Users can enter their own message */
     String,
 
-    /* Users can choose from a list */
+    /** Users can choose from a list */
     Choices,
 
-    /* Users can type in a number, within a range */
+    /** Users can type in a number, within a range */
     Number,
 
-    /* Users can choose a Discord role */
+    /** Users can choose a Discord role */
     Role
 }
 
 interface BaseSettingsOptionData<T = any> {
-    /* Key name of the settings option */
+    /** Key name of the settings option */
     key: SettingsName;
 
-    /* Display name of the settings option */
+    /** Display name of the settings option */
     name: string;
 
-    /* Category of this settings option */
+    /** Category of this settings option */
     category: SettingsCategoryName;
 
-    /* Emoji for the settings option */
+    /** Emoji for the settings option */
     emoji: DisplayEmoji;
 
-    /* Description of the settings option */
+    /** Description of the settings option */
     description: string;
 
-    /* Type of the setting */
+    /** Type of the setting */
     type: SettingsOptionType;
 
-    /* Location of the setting */
+    /** Location of the setting */
     location: SettingsLocation;
 
-    /* Explanation of this setting */
+    /** Explanation of this setting */
     explanation?: SettingsOptionExplanation;
 
-    /* Handler to execute when this setting is changed */
+    /** Handler to execute when this setting is changed */
     handler?: (bot: Bot, entry: SettingsDatabaseEntry, value: T) => Awaitable<void>;
 
-    /* Validator to run when the settings get loaded */
+    /** Validator to run when the settings get loaded */
     validate?: (value: T, entry: SettingsDatabaseEntry) => boolean | T;
 
-    /* Default value of this settings option */
+    /** Default value of this settings option */
     default: T;
 }
 
@@ -328,29 +328,30 @@ export class StringSettingsOption extends SettingsOption<string, BaseSettingsOpt
 }
 
 export type ChoiceSettingOptionChoice = Pick<APIApplicationCommandOptionChoice<string>, "name" | "value"> & {
-    /* Description for this choice */
+    /** Description for this choice */
     description?: string;
 
-    /* Emoji for this choice */
+    /** Emoji for this choice */
     emoji?: DisplayEmoji | string;
 
-    /* Whether this option is restricted to a specific group of users */
+    /** Whether this option is restricted to a specific group of users */
     restricted?: RestrictionType;
 }
 
 interface ChoiceSettingOptionData {
     choices: ChoiceSettingOptionChoice[];
+    optional?: boolean;
 }
 
-export class ChoiceSettingsOption extends SettingsOption<string, BaseSettingsOptionData & ChoiceSettingOptionData> {
+export class ChoiceSettingsOption extends SettingsOption<string | null, BaseSettingsOptionData & ChoiceSettingOptionData> {
     constructor(data: Omit<SettingOptionsData, "default"> & Partial<Pick<SettingOptionsData, "default">> & ChoiceSettingOptionData) {
         super({
-            ...data, default: data.default ?? data.choices[0].value,
+            ...data, default: data.default ?? data.choices[0].value, optional: data.optional ?? false,
             type: SettingsOptionType.Choices
         });
     }
 
-    public add({ builder, current }: SettingsOptionAddContext<string>): ActionRowBuilder {
+    public add({ builder, current }: SettingsOptionAddContext<string | null>): ActionRowBuilder {
         return builder
             .addComponents(
                 new StringSelectMenuBuilder()
@@ -360,6 +361,10 @@ export class ChoiceSettingsOption extends SettingsOption<string, BaseSettingsOpt
                         ...this.data.explanation ? [ {
                             label: "What's this setting?", description: "View what this setting does here.",
                             emoji: "❓", value: "explanation"
+                        } ] : [],
+
+                        ...this.data.optional ? [ {
+                            label: "(none)", description: "Disable this setting.", value: "(none)"
                         } ] : [],
 
                         ...this.data.choices.map(({ name, value, description, emoji, restricted }) => ({
@@ -373,7 +378,8 @@ export class ChoiceSettingsOption extends SettingsOption<string, BaseSettingsOpt
             );
     }
 
-    public validate(value: string): string | boolean {
+    public validate(value: string | null): string | boolean {
+        if (this.data.optional && value === null) return true;
         return this.data.choices.find(c => c.value === value) != undefined;
     }
 }
@@ -383,10 +389,10 @@ type MultipleChoiceSettingsObject = {
 }
 
 interface MultipleChoiceSettingOptionData {
-    /* Which choices to display */
+    /** Which choices to display */
     choices: ChoiceSettingOptionChoice[];
 
-    /* How many options can be selected, maximum */
+    /** How many options can be selected, maximum */
     max?: number;
 }
 
@@ -545,7 +551,9 @@ export const SettingOptions: SettingsOption[] = [
         emoji: { fallback: "🤖" },
         description: "Which style to use",
         location: SettingsLocation.User,
-
+        optional: true,
+        default: null,
+        
         choices: ImageStyles.map(({ name, emoji, id }) => ({
             name, emoji, value: id
         }))
@@ -864,13 +872,13 @@ export const SettingOptions: SettingsOption[] = [
 
         choices: [
             {
-                name: "Use a custom character",
-                description: "Configure a custom name & avatar for the bot with a small attribution to the bot",
+                name: "Use a custom character", emoji: "✅",
+                description: "Configure a custom name & avatar for the bot",
                 value: "on"
             },
 
             {
-                name: "Don't use a custom character",
+                name: "Don't use a custom character", emoji: "❌",
                 value: "off"
             }
         ],
@@ -921,10 +929,20 @@ export const SettingOptions: SettingsOption[] = [
 
         choices: ChatSettingsPlugins.map(plugin => ({
             name: plugin.options.name,
+            emoji: plugin.options.emoji !== null ? plugin.options.emoji as DisplayEmoji : undefined,
             description: plugin.options.description,
             value: plugin.id,
-            emoji: plugin.options.emoji !== null ? plugin.options.emoji as DisplayEmoji : undefined,
         }))
+    }),
+
+    new BooleanSettingsOption({
+        key: "debug",
+        name: "Whether raw tool results should be shown in an embed",
+        category: "plugins",
+        emoji: { fallback: "🐛" },
+        description: "Which ChatGPT/GPT-4 plugins to enable",
+        location: SettingsLocation.User,
+        default: false
     }),
 
     new MultipleChoiceSettingsOption({
@@ -992,12 +1010,11 @@ export class BaseSettingsManager<T extends DatabaseManager<DatabaseManagerBot>> 
     }
 
     public load(entry: SettingsDatabaseEntry): DatabaseSettings {
-        const get = (option: SettingsOption) => entry.settings ? this.get(entry, this.settingsString(option)) : undefined ?? this.settingsDefault(entry, option);
         const settings: Partial<DatabaseSettings> = {};
 
         for (const option of this.options(this.location(entry))) {
             /* Current, unmodified value */
-            let value = get(option);
+            let value = entry.settings ? this.get(entry, this.settingsString(option)) : undefined ?? this.settingsDefault(entry, option);
 
             /* Try to validate the current setting value. */
             const validation = option.validate(value, entry);
@@ -1045,7 +1062,9 @@ export class BaseSettingsManager<T extends DatabaseManager<DatabaseManagerBot>> 
     }
 
     public get<T extends any>(entry: SettingsDatabaseEntry, key: SettingKeyAndCategory): T {
-        let value: T = entry.settings[key] as T ?? this.template(this.location(entry))[key];
+        let value: T = entry.settings[key] as T;
+        if (value === undefined) value = this.template(this.location(entry))[key];
+
         return value;
     }
 }
@@ -1176,12 +1195,6 @@ export class ClusterSettingsManager extends BaseSettingsManager<ClusterDatabaseM
             });
         }
 
-        if (Date.now() - interaction.message.createdTimestamp > 10 * 60 * 1000) {
-            return new ErrorResponse({
-                interaction, message: `This settings menu can't be used anymore; run \`/settings\` again to continue`, emoji: "😔"
-            });
-        }
-
         /* Current settings category & index */
         const category: SettingsCategory | null = this.categories(origin).find(c => c.type === categoryType) ?? null;
         const categoryIndex: number = this.categories(origin).findIndex(c => c.type === categoryType);
@@ -1243,70 +1256,75 @@ export class ClusterSettingsManager extends BaseSettingsManager<ClusterDatabaseM
             } else if ((option instanceof ChoiceSettingsOption || option instanceof MultipleChoiceSettingsOption) && interaction instanceof StringSelectMenuInteraction) {
                 const newValueName: string = interaction.values[0];
 
-                const choice: ChoiceSettingOptionChoice | null = option.data.choices.find(c => c.value === newValueName) ?? null;
-                if (choice === null) return;
+                if (newValueName === "(none)") {
+                    changes[key] = null;
 
-                if (choice.restricted === "tester" && !this.db.role.tester(db.user)) {
-                    return void await new Response()
-                        .addEmbed(builder => builder
-                            .setDescription(`The choice **${choice.name}**${choice.emoji ? ` ${typeof choice.emoji === "object" ? Emoji.display(choice.emoji, true) : choice.emoji}` : ""} is restricted to **testers**. ⚒️`)
-                            .setColor("Orange")
-                        )
-                        .setEphemeral(true)
-                    .send(interaction);
-                }
-
-                if (choice.restricted === "premium" && !subscriptionType.premium) {
-                    return void await new Response()
-                        .addEmbed(builder => builder
-                            .setDescription(`✨ The choice **${choice.name}**${choice.emoji ? ` ${typeof choice.emoji === "object" ? Emoji.display(choice.emoji, true) : choice.emoji}` : ""} is restricted to **Premium** users.\n**Premium** *also includes further benefits, view \`/premium\` for more*. ✨`)
-                            .setColor("Orange")
-                        )
-                        .setEphemeral(true)
-                    .send(interaction);
-                }
-
-                if (choice.restricted === "subscription" && subscriptionType.type !== "subscription") {
-                    return void await new Response()
-                        .addEmbed(builder => builder
-                            .setDescription(`✨ The choice **${choice.name}**${choice.emoji ? ` ${typeof choice.emoji === "object" ? Emoji.display(choice.emoji, true) : choice.emoji}` : ""} is restricted to **fixed Premium 💸** users.\n**Premium** *also includes further benefits, view \`/premium\` for differences between them & more*. ✨`)
-                            .setColor("Orange")
-                        )
-                        .setEphemeral(true)
-                    .send(interaction);
-                }
-
-                if (choice.restricted === "plan" && subscriptionType.type !== "plan") {
-                    return void await new Response()
-                        .addEmbed(builder => builder
-                            .setDescription(`✨ The choice **${choice.name}**${choice.emoji ? ` ${typeof choice.emoji === "object" ? Emoji.display(choice.emoji, true) : choice.emoji}` : ""} is restricted to **pay-as-you-go Premium 📊** users.\n**Premium** *also includes further benefits, view \`/premium\` for differences between them & more*. ✨`)
-                            .setColor("Orange")
-                        )
-                        .setEphemeral(true)
-                    .send(interaction);
-                }
-
-                if (option instanceof ChoiceSettingsOption) {
-                    changes[key] = newValueName;
-
-                } else if (option instanceof MultipleChoiceSettingsOption) {
-                    const updated: Partial<MultipleChoiceSettingsObject> = {};
-                    
-                    option.data.choices.forEach(c => {
-                        updated[c.value] = (newValueName === c.value ? !previous[newValueName] : previous[c.value]) ?? false;
-                    });
-
-                    if (option.data.max && Object.values(updated).filter(Boolean).length > option.data.max) {
+                } else {
+                    const choice: ChoiceSettingOptionChoice | null = option.data.choices.find(c => c.value === newValueName) ?? null;
+                    if (choice === null) return;
+    
+                    if (choice.restricted === "tester" && !this.db.role.tester(db.user)) {
                         return void await new Response()
                             .addEmbed(builder => builder
-                                .setDescription(`The option **${option.data.name}**${option.data.emoji ? ` ${typeof option.data.emoji === "object" ? Emoji.display(option.data.emoji, true) : option.data.emoji}` : ""} is limited to **${option.data.max}** selected choices at a time.`)
-                                .setColor("Red")
+                                .setDescription(`The choice **${choice.name}**${choice.emoji ? ` ${typeof choice.emoji === "object" ? Emoji.display(choice.emoji, true) : choice.emoji}` : ""} is restricted to **testers**. ⚒️`)
+                                .setColor("Orange")
                             )
                             .setEphemeral(true)
                         .send(interaction);
                     }
-                    
-                    changes[key] = updated;
+    
+                    if (choice.restricted === "premium" && !subscriptionType.premium) {
+                        return void await new Response()
+                            .addEmbed(builder => builder
+                                .setDescription(`✨ The choice **${choice.name}**${choice.emoji ? ` ${typeof choice.emoji === "object" ? Emoji.display(choice.emoji, true) : choice.emoji}` : ""} is restricted to **Premium** users.\n**Premium** *also includes further benefits, view \`/premium\` for more*. ✨`)
+                                .setColor("Orange")
+                            )
+                            .setEphemeral(true)
+                        .send(interaction);
+                    }
+    
+                    if (choice.restricted === "subscription" && subscriptionType.type !== "subscription") {
+                        return void await new Response()
+                            .addEmbed(builder => builder
+                                .setDescription(`✨ The choice **${choice.name}**${choice.emoji ? ` ${typeof choice.emoji === "object" ? Emoji.display(choice.emoji, true) : choice.emoji}` : ""} is restricted to **fixed Premium 💸** users.\n**Premium** *also includes further benefits, view \`/premium\` for differences between them & more*. ✨`)
+                                .setColor("Orange")
+                            )
+                            .setEphemeral(true)
+                        .send(interaction);
+                    }
+    
+                    if (choice.restricted === "plan" && subscriptionType.type !== "plan") {
+                        return void await new Response()
+                            .addEmbed(builder => builder
+                                .setDescription(`✨ The choice **${choice.name}**${choice.emoji ? ` ${typeof choice.emoji === "object" ? Emoji.display(choice.emoji, true) : choice.emoji}` : ""} is restricted to **pay-as-you-go Premium 📊** users.\n**Premium** *also includes further benefits, view \`/premium\` for differences between them & more*. ✨`)
+                                .setColor("Orange")
+                            )
+                            .setEphemeral(true)
+                        .send(interaction);
+                    }
+    
+                    if (option instanceof ChoiceSettingsOption) {
+                        changes[key] = newValueName;
+    
+                    } else if (option instanceof MultipleChoiceSettingsOption) {
+                        const updated: Partial<MultipleChoiceSettingsObject> = {};
+                        
+                        option.data.choices.forEach(c => {
+                            updated[c.value] = (newValueName === c.value ? !previous[newValueName] : previous[c.value]) ?? false;
+                        });
+    
+                        if (option.data.max && Object.values(updated).filter(Boolean).length > option.data.max) {
+                            return void await new Response()
+                                .addEmbed(builder => builder
+                                    .setDescription(`The option **${option.data.name}**${option.data.emoji ? ` ${typeof option.data.emoji === "object" ? Emoji.display(option.data.emoji, true) : option.data.emoji}` : ""} is limited to **${option.data.max}** selected choices at a time.`)
+                                    .setColor("Red")
+                                )
+                                .setEphemeral(true)
+                            .send(interaction);
+                        }
+                        
+                        changes[key] = updated;
+                    }
                 }
 
             } else if (option instanceof IntegerSettingsOption || option instanceof StringSettingsOption) {

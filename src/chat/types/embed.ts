@@ -12,4 +12,7 @@ export interface ChatEmbed {
 
     /* Whether the current time should be shown in the footer */
     time?: boolean;
+
+    /* Text to display in the footer */
+    footer?: string;
 }

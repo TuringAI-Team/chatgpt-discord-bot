@@ -61,6 +61,9 @@ export class AutoModerationManager {
     }
 
     public async filter(options: AutoModerationFilterData): Promise<AutoModerationActionData | null> {
+        /* Exempt all owners from the moderation filters. */
+        if (this.bot.db.role.owner(options.db.user)) return null;
+
         /* Which action was performedm, if any */
         let flagged: { data: AutoModerationAction, action: AutoModerationFilter } | null = null;
 
@@ -76,7 +79,7 @@ export class AutoModerationManager {
 
             /* If an error occurred, simply continue with the next filter. */
             } catch (error) {
-                this.bot.logger.warn(`Failed to execute moderation filter ${chalk.bold(filter.description)} ->`, error); 
+                this.bot.logger.warn("Failed to execute moderation filter", chalk.bold(filter.description), "->", error); 
             }
         }
 
@@ -89,17 +92,14 @@ export class AutoModerationManager {
         };
     }
 
-    public async execute({ auto, db }: ModerationOptions & { auto: AutoModerationActionData, result: ModerationResult }): Promise<DatabaseUserInfraction> {
-        let updated: DatabaseUser = null!;
-        
+    public async execute({ auto, db }: ModerationOptions & { auto: AutoModerationActionData, result: ModerationResult }): Promise<DatabaseUser> {
         if (auto.type === "ban") {
-            updated = await this.bot.db.users.ban(db.user, { status: true, automatic: true, reason: auto.reason });
+            return await this.bot.db.users.ban(db.user, { status: true, automatic: true, reason: auto.reason });
 
         } else if (auto.type === "warn") {
-            updated = await this.bot.db.users.warn(db.user, { automatic: true, reason: auto.reason });
+            return await this.bot.db.users.warn(db.user, { automatic: true, reason: auto.reason });
         }
 
-        if (!updated) throw new Error();
-        return updated.infractions[updated.infractions.length - 1];
+        return db.user;
     }
 }

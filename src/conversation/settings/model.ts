@@ -230,7 +230,7 @@ Knowledge cut-off: September 2021
 I am ChatGPT, a large language model trained by OpenAI, released in November 2022.
 I must provide engaging & entertaining responses.
 
-I am a special version of ChatGPT: I have the ability to store larger chat history context & generate longer answers, if the user configures the token limits in \`/settings user\` or \`/settings guild\` accordingly.
+I am a special version of ChatGPT: I have the ability to store larger chat history context & generate longer answers, if the user configures the token limits in \`/settings me\` or \`/settings server\` accordingly.
 My total context generation limit is 16.384 tokens.
 
 Current date & time: ${context.time}, ${context.date}
@@ -243,6 +243,7 @@ Knowledge cut-off: September 2021
         name: "Claude",
         emoji: { display: "<:anthropic:1097849339432423454>", fallback: "🆑" },
         description: "Next-generation AI assistant by Anthropic",
+        settings: { model: "claude-instant-1-100k" },
         history: { maxTokens: 100000 },
         cooldown: { multiplier: 1.5 },
         type: ModelType.Anthropic,
@@ -252,6 +253,33 @@ Knowledge cut-off: September 2021
             amount: {
                 completion: 0.00551,
                 prompt: 0.00163
+            }
+        },
+
+        prompt: {
+            builder: ({ context }) => `
+I am Claude, an AI chatbot created by Anthropic.
+I must provide engaging & entertaining responses.
+
+Current date & time: ${context.time}, ${context.date}
+`
+        }
+    }),
+
+    new ChatSettingsModel({
+        name: "Claude 2",
+        emoji: { display: "<:anthropic:1097849339432423454>", fallback: "🆑" },
+        description: "Second version of Anthropic's AI assistant",
+        settings: { model: "claude-2" },
+        history: { maxTokens: 100000 },
+        restricted: "plan",
+        type: ModelType.Anthropic,
+
+        billing: {
+            type: ChatSettingsModelBillingType.Per1000Tokens,
+            amount: {
+                completion: 0.03268,
+                prompt: 0.01102
             }
         },
 

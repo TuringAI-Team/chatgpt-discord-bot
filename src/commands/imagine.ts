@@ -11,7 +11,6 @@ import { ImageSampler, ImageSamplers } from "../image/types/sampler.js";
 import { InteractionHandlerResponse } from "../interaction/handler.js";
 import { LoadingIndicatorManager } from "../db/types/indicator.js";
 import { ImageStyle, ImageStyles } from "../image/types/style.js";
-import { RateAction, RateActions } from "../image/types/rate.js";
 import { LoadingResponse } from "../command/response/loading.js";
 import { CommandSpecificCooldown } from "../command/command.js";
 import { renderIntoSingleImage } from "../image/utils/merge.js";
@@ -106,7 +105,7 @@ export default class ImagineCommand extends Command {
 				.setName("style")
 				.setDescription("Which style to use")
 				.addChoices(...ImageStyles.map(style => ({
-					name: `${style.name} ${style.emoji}`, value: style.id
+					name: `${style.emoji} ${style.name}`, value: style.id
 				})))
 				.setRequired(false)
 			)
@@ -246,7 +245,7 @@ export default class ImagineCommand extends Command {
 
 		if (db.options.ratio.a !== 1 || db.options.ratio.b !== 1) {
 			const { width, height } = this.bot.image.findBestSize(db.options.ratio);
-			fields.push({ name: "Ratio", value: `\`${db.options.ratio.a}\`:\`${db.options.ratio.b}\` (**${width}**x**${height}**)` });
+			fields.push({ name: "Ratio", value: `\`${db.options.ratio.a}:${db.options.ratio.b}\` (**${width}**x**${height}**)` });
 		}
 
 		if (db.options.steps !== DefaultGenerationOptions.steps) fields.push({
@@ -434,12 +433,24 @@ export default class ImagineCommand extends Command {
 		const { width, height } = this.bot.image.findBestSize(ratio);
 
 		if (enhancer !== null && enhancer.id !== "none") {
-			/* Enhance the user's prompt. */
-			prompt = await this.bot.image.enhance(prompt, enhancer);
-
 			await new LoadingResponse({
 				bot: this.bot, db, generic: false, phrases: "Enhancing your prompt"
 			}).send(interaction);
+
+			/* Try to enhance the user's prompt. */
+			try {
+				const enhanced: ImagePrompt = await this.bot.image.enhance(prompt, enhancer);
+				prompt = enhanced;
+
+			} catch (error) {
+                await this.bot.error.handle({
+                    title: "Failed to enhance a prompt", error
+                });
+
+				await new LoadingResponse({
+					bot: this.bot, db, generic: false, color: "Orange", phrases: "Something went wrong while trying to enhance your prompt, continuing"
+				}).send(interaction);
+			}
 		}
 
 		/* The image generation style to apply additionally */
@@ -513,7 +524,7 @@ export default class ImagineCommand extends Command {
 		} catch (error) {
 			return await this.bot.error.handle({
 				title: "Failed to generate image", notice: "It seems like we encountered an error while generating the images for you.", error
-			});		
+			});
 		}
 	}
 
@@ -559,8 +570,8 @@ export default class ImagineCommand extends Command {
 			? interaction.options.getString("ratio", true) : "1:1";
 
 		/* Which style to apply additionally */
-		const styleID: string = interaction.options.getString("style", false) ?? this.bot.db.settings.get(db.user, "image:style");
-		const style: ImageStyle = ImageStyles.find(f => f.id === styleID)!;
+		const styleID: string | null = interaction.options.getString("style", false) ?? this.bot.db.settings.get(db.user, "image:style");
+		const style: ImageStyle | null = styleID !== null ? ImageStyles.find(f => f.id === styleID)! : null;
 
 		const enhancerID: string = interaction.options.getString("enhance", false) ?? this.bot.db.settings.get(db.user, "image:enhancer");
 		const enhancer: ImagePromptEnhancer = ImagePromptEnhancers.find(e => e.id === enhancerID)!;

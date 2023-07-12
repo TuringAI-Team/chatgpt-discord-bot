@@ -1,8 +1,8 @@
 import { ActionRowBuilder, Awaitable, ButtonBuilder, ButtonInteraction, ButtonStyle, ColorResolvable, EmbedBuilder, Snowflake } from "discord.js";
 import ChartJsImage from "chartjs-to-image";
 import { randomUUID } from "crypto";
-import chalk from "chalk";
 import { URL } from "url";
+import chalk from "chalk";
 
 import { InteractionHandlerResponse, InteractionHandlerRunOptions } from "../../interaction/handler.js";
 import { CampaignInteractionHandlerData } from "../../interactions/campaign.js";
@@ -461,7 +461,7 @@ export class AppCampaignManager extends BaseCampaignManager<AppDatabaseManager> 
         if (this.db.bot.dev) this.db.bot.logger.debug(`Loaded`, chalk.bold(campaigns.length), `campaign${campaigns.length > 1 ? "s" : ""} from the database.`);
         this.campaigns = campaigns;
 
-        this.campaigns.forEach(c => this.db.setCache("campaigns", c));
+        this.campaigns.forEach(c => this.db.setCache("campaigns", c.id, c));
         return campaigns;
     }
 

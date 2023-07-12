@@ -100,28 +100,18 @@ export class ImageManager {
     }
 
     public async upscale({ image, prompt }: ImageUpscaleOptions): Promise<ImageUpscaleResult> {
-        return {
-            results: [
-                { base64: image.toString(), id: randomUUID(), seed: 0, status: "success" }
-            ], cost: 0, id: randomUUID(), status: "done", error: null
-        };
-
-        /*const response = await this.bot.turing.request({
+        const response: any = await this.bot.turing.request({
             path: "image/sdxl", method: "POST", body: {
                 action: "upscale", prompt, image: image.toString(), stream: false
             }
         });
 
-        console.log(response);
-
         return {
-            results: [
-                {
-                    base64: "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAUSURBVBhXY2TQ+8/AwMAExAwMDAANRwExebjz3gAAAABJRU5ErkJggg==",
-                    id: randomUUID(), seed: Math.floor(Math.random() * 1000000), status: "success"
-                }
-            ], cost: 0.1, id: randomUUID(), status: "done", error: null
-        };*/
+            results: response.images.map((data: any) => ({
+                id: randomUUID(), base64: data.base64, seed: data.seed,
+                status: data.finishReason === "SUCCESS" ? "success" : "filtered"
+            })), cost: response.cost, id: randomUUID(), status: "done", error: null
+        };
     }
 
     public async generate({ body, model, progress }: ImageGenerationOptions): Promise<ImageGenerationResult> {

@@ -29,11 +29,11 @@ export class VoteManager {
      * 
      * @returns Whether the user has voted for the bot
      */
-    public async voted(user: User, db: DatabaseUser): Promise<boolean> {
+    public async voted(db: DatabaseUser): Promise<boolean> {
         if (await this.bot.db.users.voted(db) !== null) return true;
 
         /* Check whether the user has voted, using the API. */
-        const { voted }: { voted: number } = await this.request(`${this.botPath("check")}?userId=${user.id}`, "GET");
+        const { voted }: { voted: number } = await this.request(`${this.botPath("check")}?userId=${db.id}`, "GET");
         if (!voted) return false;
 
         /* Update the user's vote status in the database. */

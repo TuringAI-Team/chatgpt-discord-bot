@@ -52,7 +52,7 @@ export default class StatisticsCommand extends Command {
 			.addComponent(ActionRowBuilder<ButtonBuilder>, Introduction.buttons(this.bot));
 
 		response.addEmbed(builder => builder
-			//.setTitle("Bot Statistics")
+			.setTitle("Bot Statistics")
 			.setColor(this.bot.branding.color)
 			.setTimestamp(this.bot.statistics.since)
 
@@ -66,7 +66,7 @@ export default class StatisticsCommand extends Command {
 			const embed: EmbedBuilder = new EmbedBuilder()
 				.setTitle("Partners 🤝")
 				.setColor(this.bot.branding.color)
-				.setDescription(this.bot.branding.partners.map(p => `${p.emoji ? `${p.emoji} ` : ""} [**${p.name}**](${p.url})${p.description ? ` — *${p.description}*` : ""}`).join("\n"));
+				.setDescription(this.bot.branding.partners.map(p => `${p.emoji ? `${p.emoji} ` : ""}[**${p.name}**](${p.url})${p.description ? ` — *${p.description}*` : ""}`).join("\n"));
 
 			response.addEmbed(embed);
 		}

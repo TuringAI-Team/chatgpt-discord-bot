@@ -1,7 +1,7 @@
 import { ButtonInteraction, StringSelectMenuInteraction } from "discord.js";
 
 import { InteractionHandler, InteractionHandlerBuilder, InteractionHandlerResponse, InteractionHandlerRunOptions, InteractionType } from "../interaction/handler.js";
-import { ErrorResponse, ErrorType } from "../command/response/error.js";
+import { ErrorResponse } from "../command/response/error.js";
 import { Introduction } from "../util/introduction.js";
 import { Response } from "../command/response.js";
 import { Bot } from "../bot/bot.js";
@@ -56,7 +56,7 @@ export class GeneralInteractionHandler extends InteractionHandler<ButtonInteract
 
 			try {
 				/* Try to check whether the user voted for the bot using the top.gg API. */
-				const voted: boolean = await this.bot.vote.voted(interaction.user, db.user);
+				const voted: boolean = await this.bot.vote.voted(db.user);
 
 				if (!voted) return new ErrorResponse({
 					interaction, message: "You haven't voted for the bot yet", emoji: "😕"

@@ -1,7 +1,7 @@
 import { type OpenAIChatMessage } from "./openai/chat.js";
 
 type AnthropicStopReason = "stop_sequence" | "max_tokens"
-export type AnthropicChatModel = "claude-instant-1" | "claude-instant-1-100k"
+export type AnthropicChatModel = "claude-instant-1" | "claude-instant-1-100k" | "claude-2" | string
 
 export interface TuringAnthropicChatBody {
     model: AnthropicChatModel;

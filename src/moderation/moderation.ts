@@ -624,10 +624,10 @@ export class ModerationManager {
         });
 
         /* Whether the message should be completely blocked */
-        let blocked: boolean = auto !== null && auto.type !== "flag";
+        const blocked: boolean = auto !== null && auto.type !== "flag";
 
         /* Whether the message has been flagged as inappropriate */
-        let flagged: boolean = blocked || (auto !== null && auto.type === "flag");
+        const flagged: boolean = blocked || (auto !== null && auto.type === "flag");
 
         /* Final moderation result */
         const data: ModerationResult = {
@@ -644,11 +644,10 @@ export class ModerationManager {
                 to: "en"
             }).catch(() => null);
 
-            /* Add the translation result. */
             if (translation !== null && translation.from.language.iso !== "en") data.translation = {
                 content: translation.text,
                 detected: translation.from.language.iso
-            }
+            };
         }
 
         /* Send the moderation message to the private channel. */
