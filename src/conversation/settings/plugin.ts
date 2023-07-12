@@ -90,5 +90,11 @@ export const ChatSettingsPlugins: ChatSettingsPlugin[] = [
         name: "Code Interpreter", emoji: { fallback: "📡" },
         description: "Execute code in a sandbox using WandBox.",
         id: "code-interpreter"
+    }),
+
+    new ChatSettingsPlugin({
+        name: "Diagrams", emoji: { fallback: "📊" },
+        description: "Display beautiful charts & diagrams.",
+        id: "diagrams"
     })
 ]

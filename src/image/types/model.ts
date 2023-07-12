@@ -21,6 +21,9 @@ export interface ImageConfigModel {
     /** Various settings for the model */
     settings?: ImageModelSettings;
 
+    /** Additional tags for the prompt, e.g. trigger words */
+    tags?: string[];
+
     /** API path for this model */
     path: ImageAPIPath;
 
@@ -57,9 +60,9 @@ export const ImageConfigModels: ImageConfigModel[] = [
     },
 
     {
-        name: "Stable Diffusion",
-        description: "The usual Stable Diffusion model",
-        id: "sd",
+        name: "Project Unreal Engine 5",
+        description: "Trained to look like Unreal Engine 5 renders",
+        id: "ue5",
         path: "sh",
 
         body: {
@@ -83,6 +86,8 @@ export const ImageConfigModels: ImageConfigModel[] = [
         description: "Stable Diffusion-based model for generating anime",
         id: "anything-diffusion",
         path: "sh",
+
+        tags: [ "anime", "booru" ],
         
         body: {
             model: "Anything Diffusion"

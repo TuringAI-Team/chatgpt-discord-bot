@@ -161,8 +161,8 @@ class TuringModerationFilter extends AutoModerationFilter {
         const data = await bot.turing.filter(content, [ "nsfw", "cp", "toxicity" ]);
         if (data === null) return null;
 
-        if (data.nsfw || data.toxic) return { type: "flag" };
-        if (data.cp || data.youth) return { type: "block" };
+        if (data.nsfw || data.toxic) return { type: "flag", reason: "Automatic filter" };
+        if (data.cp || data.youth) return { type: "block", reason: "Automatic filter" };
 
         return null;
     }

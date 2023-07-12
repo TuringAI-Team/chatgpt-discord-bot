@@ -28,7 +28,7 @@ export class TuringConnectionHandler {
 								const list = Object.values(data).filter(data => data.name);
 
 								for (const data of list) {
-									const instance: Packet = new (data as any)(this);
+									const instance: Packet = new (data as any)(this.manager);
 									this.packets.set(instance.options.name, instance);
 								}
 							})

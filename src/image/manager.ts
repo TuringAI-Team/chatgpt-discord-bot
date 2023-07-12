@@ -25,7 +25,7 @@ export class ImageModelManager {
                 modifyResolution: true
             },
 
-            body: {}
+            body: {}, tags: []
         }));
     }
 

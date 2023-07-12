@@ -537,7 +537,7 @@ export class ModerationManager {
         const channel = await this.channel("moderation");
 
         /* Description of the warning embed */
-        const description: string = Utils.truncate(result.translation ? `(Translated from \`${result.translation.detected}\`)\n*\`\`\`\n${result.translation.content}\n\`\`\`*` : `\`\`\`\n${content}\n\`\`\``, 4096);
+        const description: string = Utils.truncate(result.translation ? `(Translated from \`${result.translation.detected}\`)\n*\`\`\`\n${result.translation.content.replaceAll("`", "")}\n\`\`\`*` : `\`\`\`\n${content.replaceAll("`", "")}\n\`\`\``, 4096);
 
         /* Toolbar component rows */
         const rows = this.buildToolbar(db, result);

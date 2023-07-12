@@ -440,7 +440,7 @@ export default class ImagineCommand extends Command {
 			/* Try to enhance the user's prompt. */
 			try {
 				const enhanced: ImagePrompt = await this.bot.image.enhance(prompt, enhancer);
-				prompt = enhanced;
+				if (enhanced.prompt !== prompt.prompt) prompt = enhanced;
 
 			} catch (error) {
                 await this.bot.error.handle({
@@ -460,7 +460,9 @@ export default class ImagineCommand extends Command {
 
 		/* The formatted prompt, to pass to the API */
 		let formattedPrompt: string = `${prompt.prompt}`;
+
 		if (style !== null) formattedPrompt += `, ${style.tags.join(", ")}`;
+		if (model !== null && model.tags.length > 0) formattedPrompt += `, ${model.tags.join(", ")}`;
 
 		/* Image generation options */
 		const body: ImageGenerationOptions = {

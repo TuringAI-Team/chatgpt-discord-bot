@@ -33,9 +33,5 @@ export const ImagePromptEnhancers: ImagePromptEnhancer[] = [
 
     {
         name: "Improve my prompt", emoji: "✨", id: "improve"
-    },
-
-    {
-        name: "Create a better prompt based on the topic of mine", emoji: "✍️", id: "rewrite"
     }
 ]
