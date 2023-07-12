@@ -7,6 +7,9 @@ export interface ChatEmbed {
     /* Description of the embed */
     description?: string;
 
+    /* Image URL of the embed */
+    image?: string;
+
     /* Color of the embed */
     color?: ColorResolvable;
 

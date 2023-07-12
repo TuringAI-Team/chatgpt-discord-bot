@@ -59,12 +59,21 @@ export class ChatGPTModel extends ChatModel {
                 }
             ] : [],
 
-            embeds: raw && data.toolResult !== null && data.toolInput !== null ? [
-                {
-                    description: `\`\`\`${Utils.truncate(JSON.stringify(data.toolInput, undefined, 2), 500)}\`\`\`\n\`\`\`${Utils.truncate(JSON.stringify(data.toolResult, undefined, 2), 1000)}\`\`\``,
-                    color: this.client.manager.bot.branding.color
-                }
-            ] : []
+            embeds: [
+                ...data.toolResult !== null && data.toolResult.image ? [
+                    {
+                        image: data.toolResult.image,
+                        color: this.client.manager.bot.branding.color
+                    }
+                ] : [],
+                
+                ...raw && data.toolResult !== null && data.toolInput !== null ? [
+                    {
+                        description: `\`\`\`${Utils.truncate(JSON.stringify(data.toolInput, undefined, 2), 500).replaceAll("`", "\\`")}\`\`\`\n\`\`\`${Utils.truncate(JSON.stringify(data.toolResult, undefined, 2), 1000).replaceAll("`", "\\`")}\`\`\``,
+                        color: this.client.manager.bot.branding.color
+                    }
+                ] : []
+            ]
         };
     }
 

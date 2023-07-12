@@ -419,8 +419,12 @@ export interface TuringChatPluginsOptions {
     user: DatabaseUser;
 }
 
+type TuringChatPluginsToolResult = Record<any, any> & {
+    image?: string;
+}
+
 export type TuringChatPluginsResult = TuringOpenAIResult & {
-    toolResult: any | null;
+    toolResult: TuringChatPluginsToolResult | null;
     toolInput: any | null;
     tool: string | null;
 }

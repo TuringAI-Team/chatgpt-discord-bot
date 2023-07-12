@@ -179,7 +179,7 @@ export class CommandManager {
 	 */
 	public async applyCooldown(interaction: ChatInputCommandInteraction | InteractionHandlerClassType, db: DatabaseInfo, command: Command | InteractionHandler, time?: number): Promise<void> {
 		/* If the command doesn't have a cool-down time set, abort. */
-		if (!command.options.cooldown || this.bot.db.role.owner(db.user)) return;
+		if (this.bot.db.role.owner(db.user)) return;
 		const name: string = this.commandName(interaction, command);
 		
 		/* How long the cool-down should last */
