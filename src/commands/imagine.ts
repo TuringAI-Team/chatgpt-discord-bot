@@ -69,8 +69,8 @@ const MaxStepGenerationCount = {
 }
 
 export const ImageGenerationCooldown: CommandSpecificCooldown = {
-	free: 3 * 60 * 1000,
-	voter: 2.5 * 60 * 1000,
+	free: 4 * 60 * 1000,
+	voter: 3.5 * 60 * 1000,
 	subscription: 60 * 1000
 }
 
@@ -509,15 +509,13 @@ export default class ImagineCommand extends Command {
 
 			/* Increment the user's usage. */
 			await this.bot.db.users.incrementInteractions(db, "images");
+			await this.bot.db.plan.expenseForImage(db, image);
 			
 			await this.bot.db.metrics.changeImageMetric({
+				models: { [(model ?? this.bot.image.model.default()).id]: "+1" },
 				counts: { [count]: "+1" },
 				steps: { [steps]: "+1" }
 			});
-
-			await this.bot.db.plan.expenseForImage(
-				db, image
-			);
 
 			/* Generate the final message, showing the generated results. */
 			const final: Response = await this.buildResultResponse(user, image, action, moderation);

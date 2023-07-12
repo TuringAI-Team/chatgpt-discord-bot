@@ -1,8 +1,8 @@
 import { ButtonInteraction } from "discord.js";
 
 import { InteractionHandler, InteractionHandlerBuilder, InteractionHandlerResponse, InteractionHandlerRunOptions, InteractionType } from "../interaction/handler.js";
+import ImagineCommand, { ImageGenerationCooldown } from "../commands/imagine.js";
 import { ImageGenerationType } from "../image/types/image.js";
-import ImagineCommand from "../commands/imagine.js";
 import { Bot } from "../bot/bot.js";
 
 type ImagineInteractionAction = ImageGenerationType | "redo"
@@ -39,7 +39,8 @@ export class ImagineInteractionHandler extends InteractionHandler<ButtonInteract
             },
 
             {
-                synchronous: true
+                synchronous: true,
+                cooldown: ImageGenerationCooldown
             }
         );
     }

@@ -95,6 +95,6 @@ export const ChatSettingsPlugins: ChatSettingsPlugin[] = [
     new ChatSettingsPlugin({
         name: "Diagrams", emoji: { fallback: "📊" },
         description: "Display beautiful charts & diagrams.",
-        id: "diagrams"
+        id: "mermaid"
     })
 ]

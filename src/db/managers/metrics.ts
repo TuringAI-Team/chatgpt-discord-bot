@@ -102,6 +102,10 @@ type ImageMetricsEntry = MetricsEntry<"image", {
     steps: {
         [key: number]: number;
     };
+
+    models: {
+        [key: string]: number;
+    }
 }>
 
 type CommandsMetricsEntry = MetricsEntry<"commands", {
