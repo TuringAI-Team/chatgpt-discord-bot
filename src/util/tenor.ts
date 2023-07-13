@@ -101,7 +101,7 @@ export class TenorAPI {
         });
 
         /* If the request wasn't successful, throw an error. */
-        if (!response.status.toString().startsWith("2") || (await response.clone().json().catch(() => null))?.error) await this.error(response, path);
+        if (!response.ok || (await response.clone().json().catch(() => null))?.error) await this.error(response, path);
 
         /* Get the response body. */
         const body: T = await response.json().catch(() => null) as T ?? await response.text() as T;

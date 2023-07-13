@@ -513,6 +513,12 @@ export class Generator {
 			db.user = await this.bot.db.settings.apply(db.user, {
 				"chat:model": ChatSettingsModels[0].id
 			});
+
+			return void await new Response()
+				.addEmbed(builder => builder
+					.setDescription(`The selected model **${settingsModel.options.name}** ${Emoji.display(settingsModel.options.emoji, true)} is restricted to **Premium** users.\n**Premium** *also includes further benefits, view \`/premium\` for more*. ✨`)
+					.setColor("Orange")
+				).send(message);
 		}
 
 		/* If the user attached images to their messages, but doesn't have Premium access, ignore their request. */

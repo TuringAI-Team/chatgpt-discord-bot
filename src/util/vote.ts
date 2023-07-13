@@ -74,7 +74,7 @@ export class VoteManager {
         });
 
         /* If the request wasn't successful, throw an error. */
-        if (!response.status.toString().startsWith("2")) await this.error(response, path);
+        if (!response.ok) await this.error(response, path);
 
         /* Get the response body. */
         const body: T = await response.json() as T;

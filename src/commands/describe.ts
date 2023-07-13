@@ -1,7 +1,6 @@
 import { SlashCommandBuilder } from "discord.js";
 
 import { Command, CommandInteraction, CommandResponse } from "../command/command.js";
-import { Conversation } from "../conversation/conversation.js";
 import { DatabaseInfo } from "../db/managers/user.js";
 import { Bot } from "../bot/bot.js";
 
@@ -28,7 +27,6 @@ export default class DescribeCommand extends Command {
     }
 
     public async run(interaction: CommandInteraction, db: DatabaseInfo): CommandResponse {
-		const conversation: Conversation = await this.bot.conversation.create(interaction.user);
-		return this.bot.description.run(conversation, db, interaction);
+		return this.bot.description.run(db, interaction);
     }
 }

@@ -366,11 +366,6 @@ export default class ImagineCommand extends Command {
 				ratio: image.options.ratio!, model: this.bot.image.model.get(image.model)
 			});
 
-			const type = await this.bot.db.users.type(db);
-			
-			const duration: number | null = (ImageGenerationCooldown as any)[type.type] ?? null;
-			if (duration !== null) await handler.applyCooldown(interaction, db, duration);
-
 			return response;
 
 		/* The user wants to upscale an image */
@@ -393,12 +388,7 @@ export default class ImagineCommand extends Command {
 				sampler: image.options.sampler!, seed: image.options.seed ?? null,
 				steps: image.options.steps!, count: image.options.number!, moderation: null, db, 
 				ratio: image.options.ratio!, image: buffer, model: null
-			});
-
-			const type = await this.bot.db.users.type(db);
-			
-			const duration: number | null = (ImageGenerationCooldown as any)[type.type] ?? null;
-			if (duration !== null) await handler.applyCooldown(interaction, db, duration);
+			});			
 
 			return response;
 
@@ -523,7 +513,7 @@ export default class ImagineCommand extends Command {
 
 		} catch (error) {
 			return await this.bot.error.handle({
-				title: "Failed to generate image", notice: "It seems like we encountered an error while generating the images for you.", error
+				title: "Failed to generate images", notice: "It seems like we encountered an error while generating the images for you.", error
 			});
 		}
 	}

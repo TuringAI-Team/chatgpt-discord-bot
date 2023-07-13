@@ -201,7 +201,7 @@ const CampaignParameters: CampaignParameter[] = [
 ]
 
 /* Maximum amount of campaigns a user may be part of */
-const MaxCampaignsPerUser: number = 2
+const MaxCampaignsPerUser: number = 3
 
 export default class CampaignsCommand extends Command {
     constructor(bot: Bot) {
@@ -395,7 +395,7 @@ export default class CampaignsCommand extends Command {
         } else if (action === "create") {
             const campaigns: DatabaseCampaign[] = await this.campaigns({ db, interaction });
 
-            if (campaigns.length > MaxCampaignsPerUser) return new ErrorResponse({
+            if (campaigns.length >= MaxCampaignsPerUser) return new ErrorResponse({
                 message: `You cannot be part of more than **${MaxCampaignsPerUser}** campaigns`
             })
 

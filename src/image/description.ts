@@ -4,7 +4,6 @@ import crypto from "crypto";
 
 import { ALLOWED_FILE_EXTENSIONS, ChatImageAttachment, ChatImageType, ImageBuffer } from "../chat/types/image.js";
 import { LoadingResponse } from "../command/response/loading.js";
-import { Conversation } from "../conversation/conversation.js";
 import { NoticeResponse } from "../command/response/notice.js";
 import { ImageOCRResult, detectText } from "../util/ocr.js";
 import { ChatBaseImage } from "../chat/types/image.js";
@@ -86,7 +85,7 @@ export class ImageDescriptionManager {
     public async accessible(input: ImageDescriptionInput): Promise<boolean> {
         try {
             const response = await fetch(input.url, { method: "HEAD" });
-            return response.status === 200;
+            return response.ok;
 
         } catch (_) {
             return false;
@@ -154,7 +153,7 @@ export class ImageDescriptionManager {
         };
     }
 
-    public async run(conversation: Conversation, db: DatabaseInfo, interaction: ChatInputCommandInteraction | MessageContextMenuCommandInteraction): Promise<Response> {
+    public async run(db: DatabaseInfo, interaction: ChatInputCommandInteraction | MessageContextMenuCommandInteraction): Promise<Response> {
         /* The attachment to use for the describe action */
         let attachment: DescribeAttachment = null!;
 
@@ -166,7 +165,7 @@ export class ImageDescriptionManager {
             if (ALLOWED_FILE_EXTENSIONS.includes(extension)) attachment = { url: chosen.proxyURL, type: "image" };
 
         } else if (interaction instanceof MessageContextMenuCommandInteraction) {
-            const results = await conversation.manager.client.findMessageImageAttachments(interaction.targetMessage);
+            const results = await this.bot.conversation.client.findMessageImageAttachments(interaction.targetMessage);
             if (results.length > 0) attachment = results[0];
         }
 

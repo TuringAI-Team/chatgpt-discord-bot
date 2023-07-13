@@ -76,9 +76,16 @@ export default class VideoCommand extends Command {
         /* Draw the original image first. */
         context.drawImage(BackgroundImage, 0, 0);
 
-		context.font = "50px Calibri";
 		context.textAlign = "center";
-		context.lineWidth = 5;
+		context.lineWidth = 3;
+
+		/* Current font size */
+		let fontSize: number = 50;
+	
+		do {
+			/* Assign the font to the context and decrement it so it can be measured again. */
+			context.font = `${fontSize -= 1}px Calibri`;
+		} while (context.measureText(prompt).width > canvas.width - 20);
 
 		context.fillStyle = "#ffffff";
 		context.strokeStyle = "#000000";

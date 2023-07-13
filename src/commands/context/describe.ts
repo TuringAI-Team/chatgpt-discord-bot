@@ -1,7 +1,6 @@
 import { ContextMenuCommandBuilder, MessageContextMenuCommandInteraction } from "discord.js";
 
 import { ContextMenuCommand } from "../../command/types/context.js";
-import { Conversation } from "../../conversation/conversation.js";
 import { CommandResponse } from "../../command/command.js";
 import { DatabaseInfo } from "../../db/managers/user.js";
 import { Bot } from "../../bot/bot.js";
@@ -20,7 +19,6 @@ export default class DescribeImageContextMenuCommand extends ContextMenuCommand 
 	}
 
     public async run(interaction: MessageContextMenuCommandInteraction, db: DatabaseInfo): CommandResponse {
-        const conversation: Conversation = await this.bot.conversation.create(interaction.user);
-		return this.bot.description.run(conversation, db, interaction);
+		return this.bot.description.run(db, interaction);
     }
 }

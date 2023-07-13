@@ -918,6 +918,16 @@ export const SettingOptions: SettingsOption[] = [
         }
     }),
 
+    new BooleanSettingsOption({
+        key: "debug",
+        name: "Whether raw tool results should be shown in an embed",
+        category: "plugins",
+        emoji: { fallback: "🐛" },
+        description: "Which ChatGPT/GPT-4 plugins to enable",
+        location: SettingsLocation.User,
+        default: false
+    }),
+
     new MultipleChoiceSettingsOption({
         key: "list",
         name: "Which plugins to use",
@@ -933,16 +943,6 @@ export const SettingOptions: SettingsOption[] = [
             description: plugin.options.description,
             value: plugin.id,
         }))
-    }),
-
-    new BooleanSettingsOption({
-        key: "debug",
-        name: "Whether raw tool results should be shown in an embed",
-        category: "plugins",
-        emoji: { fallback: "🐛" },
-        description: "Which ChatGPT/GPT-4 plugins to enable",
-        location: SettingsLocation.User,
-        default: false
     }),
 
     new MultipleChoiceSettingsOption({

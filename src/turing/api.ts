@@ -660,14 +660,14 @@ export class TuringAPI {
         });
 
         /* If the request wasn't successful, throw an error. */
-        if (!response.status.toString().startsWith("2") && !raw) await this.error(response, path);
+        if (!response.ok && !raw) await this.error(response, path);
 
         /* Get the response body. */
         const data: T & { success?: boolean } = await response.clone().json().catch(() => null);
 
         if (raw) {
             const error: TuringErrorBody | null = await this.error(response, path, "data");
-            const success: boolean = response.status.toString().startsWith("2");
+            const success: boolean = response.ok;
 
             return {
                 code: response.status, data, success, error
@@ -695,7 +695,7 @@ export class TuringAPI {
         let body: TuringErrorBody | null = await response.clone().json().catch(() => null);
 
         if (body === null || body.success === true) {
-            if (!response.status.toString().startsWith("2")) {
+            if (!response.ok) {
                 const error = new TuringAPIError({
                     body: null, code: response.status, endpoint: path
                 });
