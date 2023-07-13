@@ -42,6 +42,7 @@ export default class UserCommand extends Command {
 				.setDescription(this.bot.error.formattedResponse(error))
 				.setTimestamp(when)
 				.setColor("Red")
-			);
+			)
+			.setEphemeral(true);
     }
 }

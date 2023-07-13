@@ -1,10 +1,8 @@
-import { User } from "discord.js";
-
 import { InteractionHandler } from "../../interaction/handler.js";
 import { SubClusterDatabaseManager } from "../sub.js";
 import { Command } from "../../command/command.js";
-import { BotStatus } from "../../bot/bot.js";
 import { DatabaseUser } from "../schemas/user.js";
+import { BotStatus } from "../../bot/bot.js";
 
 export type UserRole = "tester" | "investor" | "advertiser" | "moderator" | "owner"
 export type UserRoles = UserRole[]

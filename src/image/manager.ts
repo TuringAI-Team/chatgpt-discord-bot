@@ -64,7 +64,7 @@ export class ImageManager {
 
     public validRatio(ratio: string, max: number = 3): ImageGenerationRatio | null {
         const [ a, b ] = ratio.split(":").map(Number);
-        if (!b || isNaN(a) || isNaN(b)) return null;
+        if (!a || !b || isNaN(a) || isNaN(b)) return null;
 
         /* Make sure that the ratio is in the valid range. */
         if (a <= 0 || b <= 0 || a / b > max || b / a > max) return null;
@@ -72,7 +72,7 @@ export class ImageManager {
         return { a, b };
     }
 
-    public findBestSize({ a, b }: ImageGenerationRatio, maxWidth: number = 1024, maxHeight: number = 1024, step: number = 64): ImageGenerationSize {
+    public findBestSize({ a, b }: ImageGenerationRatio, maxWidth: number = 768, maxHeight: number = 768, step: number = 64): ImageGenerationSize {
         const pixelCount = Math.max(512 * 512, Math.ceil(a * b / step / step) * step * step);
 
         let width = Math.round(Math.sqrt(pixelCount * a / b));

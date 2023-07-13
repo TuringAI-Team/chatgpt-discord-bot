@@ -3,7 +3,7 @@ import { ComponentEmojiResolvable } from "discord.js";
 import { ChatSettingsPlugin, ChatSettingsPluginIdentifier, ChatSettingsPlugins } from "../../conversation/settings/plugin.js";
 import { ChatModel, ConstructorModelOptions, ModelCapability, ModelType } from "../types/model.js";
 import { TuringOpenAIPartialResult, TuringOpenAIResult } from "../../turing/types/openai/chat.js";
-import { GPTGenerationError, GPTGenerationErrorType } from "../../error/gpt/generation.js";
+import { GPTGenerationError, GPTGenerationErrorType } from "../../error/generation.js";
 import { TuringChatPluginsModel, TuringChatPluginsResult } from "../../turing/api.js";
 import { MultipleChoiceSettingsOption } from "../../db/managers/settings.js";
 import { getPromptLength } from "../../conversation/utils/length.js";
@@ -118,7 +118,7 @@ export class ChatGPTModel extends ChatModel {
             prompt.parts.Initial.content = `${prompt.parts.Initial.content}\nI do not have a knowledge cut-off, I have access to up-to-date news and information using plugins.`;
 
             /* Generate a response for the user's prompt using the Turing API. */
-            const result: TuringChatPluginsResult = await this.client.manager.bot.turing.chatPlugins({
+            const result: TuringChatPluginsResult = await this.client.manager.bot.turing.openAIPlugins({
                 messages: Object.values(prompt.parts),
                 tokens: prompt.max,
 

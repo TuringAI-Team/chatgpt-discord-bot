@@ -1,6 +1,6 @@
 import { APIUser, Collection, Message, Snowflake, User } from "discord.js";
 
-import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
+import { GPTGenerationError, GPTGenerationErrorType } from "../error/generation.js";
 import { ModerationResult } from "../moderation/moderation.js";
 import { ResponseMessage } from "../chat/types/message.js";
 import { ChatGuildData } from "../chat/types/options.js";

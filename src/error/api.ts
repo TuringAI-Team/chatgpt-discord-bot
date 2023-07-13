@@ -1,4 +1,4 @@
-import { OpenAIErrorType } from "../../turing/types/openai/error.js";
+import { OpenAIErrorType } from "../turing/types/openai/error.js";
 import { GPTError, GPTErrorType } from "./base.js";
 
 export interface GPTAPIErrorOptions {

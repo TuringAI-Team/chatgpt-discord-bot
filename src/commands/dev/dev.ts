@@ -7,7 +7,6 @@ import dayjs from "dayjs";
 import { Command, CommandInteraction, CommandResponse } from "../../command/command.js";
 import { Bot, BotDiscordClient } from "../../bot/bot.js";
 import { DatabaseUser } from "../../db/schemas/user.js";
-import { PREMIUM_ROLE_ID } from "../../util/roles.js";
 import { Response } from "../../command/response.js";
 
 export default class DeveloperCommand extends Command {
@@ -51,7 +50,7 @@ export default class DeveloperCommand extends Command {
 
     public async run(interaction: CommandInteraction): CommandResponse {
 		/* Which sub-command to execute */
-		const action: "debug" | "restart" | "flush" | "premium-roles" | "reload" | "crash" = interaction.options.getSubcommand(true) as any;
+		const action: "debug" | "restart" | "flush" | "reload" | "crash" = interaction.options.getSubcommand(true) as any;
 
 		/* View debug information */
 		if (action === "debug") {
@@ -168,78 +167,6 @@ export default class DeveloperCommand extends Command {
 			setTimeout(() => {
 				eval(".");
 			});
-
-		/* Give all Premium members the corresponding role on the support server */
-		} else if (action === "premium-roles") {
-			/* Fetch all Premium users from the database. */
-			const { data, error } = await this.bot.db.client
-				.from(this.bot.db.collectionName("users"))
-				.select("*").neq("subscription", null);
-
-			if (data === null || error !== null) return new Response()
-				.addEmbed(builder => builder
-					.setDescription("Something went while fetching all Premium users from the database 😕")
-					.setColor("Red")
-				)
-				.setEphemeral(true);
-
-			/* Raw database users */
-			const users: DatabaseUser[] = (data as DatabaseUser[])
-				.map(user => ({ ...user, subscription: this.bot.db.users.subscription(user) }));
-
-			const members: GuildMember[] = [];
-
-			/* Support server */
-			const guild: Guild = this.bot.client.guilds.cache.get(this.bot.app.config.channels.moderation.guild)!;
-			
-			/* Counters */
-			const total: number = users.length;
-			let current: number = 0;
-
-			const progress = (member: GuildMember, current: number, total: number) => {
-				interaction.editReply(new Response()
-					.addEmbed(builder => builder
-						.setDescription(`Working on member **<@${member.user.id}>**... [**${current + 1}**/**${total}**]`)
-						.setColor("Yellow")
-					)
-				.get());
-			}
-
-			/* Find all corresponding members on the support server. */
-			for (const db of users.filter(db => !db.id.includes("@"))) {
-				if (db.subscription === null) continue;
-				const member = await guild.members.fetch(db.id).catch(() => null) ?? null;
-
-				if (member !== null && !member.roles.cache.has(PREMIUM_ROLE_ID)) {
-					this.bot.logger.debug(`Premium member ${chalk.bold(member.user.username)} has been fetched. [${chalk.bold(current + 1)}/${chalk.bold(users.length)}]`);
-
-					if (current % 5 === 0) progress(member, current, total);
-					current++;
-
-					/* Give the user their Premium role. */
-					await member.roles.add(PREMIUM_ROLE_ID);
-
-					await delay(500);
-					members.push(member);
-				} else {
-					continue;
-				}
-			}
-
-			if (members.length === 0) {
-				return new Response()
-					.addEmbed(builder => builder
-						.setDescription("All Premium members already have the role 🎉")
-						.setColor("Green")
-					);
-
-			} else {
-				return new Response()
-					.addEmbed(builder => builder
-						.setDescription(`**${current}** Premium members have received the role 🎉`)
-						.setColor("Green")
-					);
-			}
 
 		/* Execute all the queued database requests in all clusters */
 		} else if (action === "flush") {

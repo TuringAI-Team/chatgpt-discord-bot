@@ -201,7 +201,7 @@ const CampaignParameters: CampaignParameter[] = [
 ]
 
 /* Maximum amount of campaigns a user may be part of */
-const MaxCampaignsPerUser: number = 3
+const MaxCampaignsPerUser: number = 5
 
 export default class CampaignsCommand extends Command {
     constructor(bot: Bot) {

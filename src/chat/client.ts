@@ -7,7 +7,7 @@ import { ChatAnalyzedImage, ChatImageAttachment, ChatImageAttachmentExtractors, 
 import { ChatSettingsModel, ChatSettingsModelPromptType } from "../conversation/settings/model.js";
 import { ChatDocument, ChatDocumentExtractors, ChatExtractedDocument } from "./types/document.js";
 import { MessageType, PartialResponseMessage, ResponseMessage } from "./types/message.js";
-import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
+import { GPTGenerationError, GPTGenerationErrorType } from "../error/generation.js";
 import { ChatGenerationOptions, ModelGenerationOptions } from "./types/options.js";
 import { ChatInput, ChatInteraction } from "../conversation/conversation.js";
 import { ChatModel, ModelCapability, ModelType } from "./types/model.js";

@@ -3,8 +3,8 @@ import { randomUUID } from "crypto";
 import { DatabaseCollectionType, DatabaseManager, DatabaseManagerBot } from "../manager.js";
 import { MentionType } from "../../conversation/generator.js";
 import { BotClusterManager } from "../../bot/manager.js";
-import { GPTDatabaseError } from "../../error/gpt/db.js";
 import { ClusterDatabaseManager } from "../cluster.js";
+import { GPTDatabaseError } from "../../error/db.js";
 import { AppDatabaseManager } from "../app.js";
 import { SubDatabaseManager } from "../sub.js";
 

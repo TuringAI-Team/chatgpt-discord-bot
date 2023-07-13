@@ -15,7 +15,7 @@ export interface UserLanguage {
     emoji: string;
 }
 
-export const Languages: UserLanguage[] = [
+export const UserLanguages: UserLanguage[] = [
     {
         name: "English", id: "en-US", emoji: "🇬🇧"
     },
@@ -85,14 +85,14 @@ export class LanguageManager {
         const value: string = typeof id === "object" ? bot.db.settings.get(id, "general:language") : id;
 
         /* Try to find the language based on one of the fields. */
-        return Languages.find(language => {
+        return UserLanguages.find(language => {
             for (const field of fields) {
                 if (language[field] === value) return true;
                 else continue;
             }
 
             return false;
-        }) ?? Languages.find(l => l.id === "en-US")!;
+        }) ?? UserLanguages.find(l => l.id === "en-US")!;
     }
 
     public static languageName(bot: Bot, id: LanguageIdentifier): string {

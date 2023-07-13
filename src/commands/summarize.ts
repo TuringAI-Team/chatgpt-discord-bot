@@ -2,7 +2,7 @@ import { APIEmbedField, ActionRowBuilder, EmbedBuilder, InteractionResponse, Sla
 import { YoutubeTranscriptError } from "youtube-transcript";
 
 import { countChatMessageTokens, getPromptLength } from "../conversation/utils/length.js";
-import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
+import { GPTGenerationError, GPTGenerationErrorType } from "../error/generation.js";
 import { Command, CommandInteraction, CommandResponse } from "../command/command.js";
 import { ErrorResponse, ErrorType } from "../command/response/error.js";
 import { YouTubeSubtitle, YouTubeVideo } from "../util/youtube.js";

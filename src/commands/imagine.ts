@@ -177,7 +177,7 @@ export default class ImagineCommand extends Command {
 		const response = new Response()
 			.addEmbed(builder => builder
 				.setTitle(this.displayPrompt(user, options.prompt, options.action))
-				.setDescription(`**${data.progress !== null ? `${Math.floor(data.progress * 100)}%` : Utils.titleCase(data.status)}** ... ${loadingIndicator}`)
+				.setDescription(`**${data.progress !== null && data.progress <= 1 ? `${Math.floor(data.progress * 100)}%` : Utils.titleCase(data.status)}** ... ${loadingIndicator}`)
 				.setColor("Orange")
 			);
 

@@ -1,8 +1,8 @@
 import { fetchEventSource } from "@waylaidwanderer/fetch-event-source";
 import { Awaitable } from "discord.js";
 
-import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
-import { GPTAPIError } from "../error/gpt/api.js";
+import { GPTGenerationError, GPTGenerationErrorType } from "../error/generation.js";
+import { GPTAPIError } from "../error/api.js";
 
 export interface StreamBuilderOptions<RequestBody, PartialResponseData, FinalResponseData = PartialResponseData, ProcessedFinalResponseData = FinalResponseData> {
     /* Which URL to request */

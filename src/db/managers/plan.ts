@@ -1,6 +1,5 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle, EmbedBuilder, GuildMember, InteractionReplyOptions } from "discord.js";
 
-import { TuringVideoModel, TuringVideoModelName, TuringVideoResult } from "../../turing/api.js";
 import { DatabaseUser, UserSubscriptionType } from "../schemas/user.js";
 import { RunPodMusicGenResult } from "../../runpod/models/musicgen.js";
 import { ChatInteraction } from "../../conversation/conversation.js";
@@ -22,7 +21,7 @@ import { DatabaseInfo } from "./user.js";
 
 type DatabaseEntry = DatabaseUser | DatabaseGuild
 
-type UserPlanExpenseType = "image" | "video" | "summary" | "chat" | "describe" | "translate" | "music"
+type UserPlanExpenseType = "image"  | "summary" | "chat" | "describe" | "translate" | "music"
 
 type UserPlanExpenseData = {
     [key: string]: string | number | boolean | UserPlanExpenseData;
@@ -60,11 +59,6 @@ export type UserPlanDallEExpense = UserPlanExpense<{
 }>
 
 export type UserPlanImageDescribeExpense = UserPlanExpense<{
-    duration: number;
-}>
-
-export type UserPlanVideoExpense = UserPlanExpense<{
-    model: TuringVideoModelName;
     duration: number;
 }>
 
@@ -144,7 +138,6 @@ export type PlanExpenseEntryViewer<T extends UserPlanExpense = any> = (
 
 export const PlanExpenseEntryViewers: {
     image: PlanExpenseEntryViewer<UserPlanImageExpense>,
-    video: PlanExpenseEntryViewer<UserPlanVideoExpense>,
     summary: PlanExpenseEntryViewer<UserPlanSummaryExpense>,
     chat: PlanExpenseEntryViewer<UserPlanChatExpense>,
     describe: PlanExpenseEntryViewer<UserPlanImageDescribeExpense>,
@@ -152,7 +145,6 @@ export const PlanExpenseEntryViewers: {
     music: PlanExpenseEntryViewer<UserPlanMusicExpense>
 } = {
     image: null,
-    video: e => `took **${e.data.duration} ms** using model \`${e.data.model}\``,
     summary: e => `used **${e.data.tokens}** tokens`,
     chat: e => `using \`${e.data.model}\`${e.data.tokens ? `, **${e.data.tokens.prompt}** prompt & **${e.data.tokens.completion}** completion tokens` : ""}`,
     describe: e => `took **${e.data.duration} ms**`,
@@ -266,14 +258,6 @@ export class ClusterPlanManager extends BasePlanManager<ClusterDatabaseManager> 
 
         return this.expense(entry, {
             type: "describe", used: cost, data: { duration: result.duration }, bonus: 0.10
-        });
-    }
-
-    public async expenseForVideo(
-        entry: DatabaseInfo, video: TuringVideoResult, model: TuringVideoModel
-    ): Promise<UserPlanVideoExpense | null> {
-        return this.expense(entry, {
-            type: "video", used: (Math.max(video.duration, 1000) / 1000) * 0.0004, data: { duration: video.duration, model: model.id }, bonus: 0.05
         });
     }
 

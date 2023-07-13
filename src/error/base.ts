@@ -9,6 +9,9 @@ export enum GPTErrorType {
      */
     Generation = "Generation",
 
+    /** A translation error occured */
+    Translation = "Translation",
+
     /** An error occurred with another API request, e.g. /moderation or /models */
     API = "API",
 

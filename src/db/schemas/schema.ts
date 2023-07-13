@@ -38,7 +38,7 @@ export abstract class DatabaseSchema<Data extends DatabaseLikeObject = DatabaseL
     /**
      * Generate a template for this schema.
      */
-    public template(id: Source["id"], source?: Source): Awaitable<Data | null> {
+    public template(id: Source["id"]): Awaitable<Data | null> {
         /* Stub */
         return null;
     }

@@ -8,7 +8,7 @@ import { InteractionHandlerResponse, InteractionHandlerRunOptions } from "../../
 import { CampaignInteractionHandlerData } from "../../interactions/campaign.js";
 import { DatabaseManager, DatabaseManagerBot } from "../manager.js";
 import CampaignsCommand from "../../commands/campaigns.js";
-import { GPTDatabaseError } from "../../error/gpt/db.js";
+import { GPTDatabaseError } from "../../error/db.js";
 import { ChatButton } from "../../chat/types/button.js";
 import { ClusterDatabaseManager } from "../cluster.js";
 import { Response } from "../../command/response.js";
@@ -184,13 +184,13 @@ export class ClusterCampaignManager extends BaseCampaignManager<ClusterDatabaseM
         const id: string = randomUUID();
 
         /* Final creation options */
-        const data: PartialDatabaseCampaign = {
+        const data: DatabaseCampaign = {
             filters: null, created: new Date().toISOString(), id,
-            ...options
+            ...options, active: false, stats: { clicks: { geo: {}, total: 0 } }
         };
 
-        const campaign: DatabaseCampaign = await this.db.createFromCacheOrDatabase<string, DatabaseCampaign, PartialDatabaseCampaign>(
-			"campaigns", id, data
+        const campaign: DatabaseCampaign = await this.db.createFromCacheOrDatabase(
+			"campaigns", data
 		);
 
         await this.db.eval(async (app, { campaign }) => {

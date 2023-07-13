@@ -24,8 +24,8 @@ export class UserManager extends SubClusterDatabaseManager {
     }
 
     public async fetchUser(user: User): Promise<DatabaseUser> {
-        return this.db.createFromCacheOrDatabase<string, DatabaseUser, User>(
-            "users", user.id, user
+        return this.db.createFromCacheOrDatabase<string, DatabaseUser>(
+            "users", user.id
         );
     }
 
@@ -36,8 +36,8 @@ export class UserManager extends SubClusterDatabaseManager {
     }
 
     public async fetchGuild(guild: Guild): Promise<DatabaseGuild> {
-        return this.db.createFromCacheOrDatabase<string, DatabaseGuild, Guild>(
-            "guilds", guild.id, guild
+        return this.db.createFromCacheOrDatabase<string, DatabaseGuild>(
+            "guilds", guild.id
         );
     }
 

@@ -5,7 +5,7 @@ import { AnthropicChatResult, AnthropicPartialChatResult, TuringAnthropicChatBod
 import { ChatSettingsPlugin, ChatSettingsPluginIdentifier } from "../conversation/settings/plugin.js";
 import { GoogleChatResult, TuringGoogleChatBody } from "./types/google.js";
 import { RunPodPath, RunPodRawStreamResponseData } from "../runpod/api.js";
-import { TuringAPIError, TuringErrorBody } from "../error/gpt/turing.js";
+import { TuringAPIError, TuringErrorBody } from "../error/turing.js";
 import { ChoiceSettingOptionChoice } from "../db/managers/settings.js";
 import { ChatOutputImage, ImageBuffer } from "../chat/types/image.js";
 import { Conversation } from "../conversation/conversation.js";
@@ -18,7 +18,6 @@ import { Bot } from "../bot/bot.js";
 
 export type TuringAPIPath = 
     | "text/filter" | `text/${string}` | `text/alan/${TuringAlanChatModel}` | `text/gpt/${TuringChatPluginsModel}`
-    | `video/${TuringVideoModelName}`
     | `chart/${MetricsType}`
     | `image/${ImageAPIPath}` | "image"
     | `runpod/${RunPodPath}`
@@ -32,44 +31,6 @@ interface TuringAPIFilterResult {
     youth: boolean;
     cp: boolean;
     toxic: boolean;
-}
-
-export type TuringVideoModelName = "damo" | "videocrafter"
-
-export interface TuringVideoModel {
-    /* Name of the model */
-    name: string;
-
-    /* Identifier of the model */
-    id: TuringVideoModelName;
-}
-
-export const TuringVideoModels: TuringVideoModel[] = [
-    {
-        name: "DAMO Text-to-video",
-        id: "damo"
-    },
-
-    {
-        name: "VideoCrafter",
-        id: "videocrafter"
-    }
-]
-
-export interface TuringVideoOptions {
-    /* Which prompt to generate a video for */
-    prompt: string;
-
-    /* Which video generation model to use */
-    model: TuringVideoModel | TuringVideoModelName;
-}
-
-export interface TuringVideoResult {
-    /* URL to the generated video */
-    url: string;
-
-    /* How long it took to generate the video, in milliseconds */
-    duration: number;
 }
 
 export interface TuringAlanOptions {
@@ -572,21 +533,6 @@ export class TuringAPI {
         }).run();
     }
 
-    public async video(body: TuringVideoOptions): Promise<TuringVideoResult> {
-        const name: TuringVideoModelName = typeof body.model === "object" ? body.model.id : body.model;
-        const before: number = Date.now();
-
-        const raw: { url: string } | string = await this.request({
-            path: `video/${name}`, method: "POST", body
-        });
-
-        const url: string = typeof raw === "object" ? raw.url : raw;
-
-        return {
-            url, duration: Date.now() - before
-        };
-    }
-
     public async filter(text: string, which: TuringAPIFilter[]): Promise<TuringAPIFilterResult> {
         return this.request({
             path: "text/filter", method: "POST", body: {
@@ -595,7 +541,7 @@ export class TuringAPI {
         });
     }
 
-    public async chatPlugins({ messages, model, plugins, tokens, progress }: TuringChatPluginsOptions): Promise<TuringChatPluginsResult> {
+    public async openAIPlugins({ messages, model, plugins, tokens, progress }: TuringChatPluginsOptions): Promise<TuringChatPluginsResult> {
         return await new StreamBuilder<
             TuringChatPluginsBody, TuringChatPluginsPartialResult, TuringChatPluginsResult
         >({

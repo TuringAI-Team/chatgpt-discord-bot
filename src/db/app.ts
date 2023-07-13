@@ -6,7 +6,7 @@ import { AppDatabaseMetricsManager } from "./managers/metrics.js";
 import { AppDatabaseQueueManager } from "./managers/queue.js";
 import { AppCampaignManager } from "./managers/campaign.js";
 import { AppSettingsManager } from "./managers/settings.js";
-import { GPTDatabaseError } from "../error/gpt/db.js";
+import { GPTDatabaseError } from "../error/db.js";
 import { DatabaseSchema } from "./schemas/schema.js";
 import { AppPlanManager } from "./managers/plan.js";
 import { App } from "../app.js";
@@ -82,8 +82,8 @@ export class AppDatabaseManager extends DatabaseManager<App> {
         return final;
     }
 
-    public async createFromCacheOrDatabase<T extends string | DatabaseLikeObject, U extends DatabaseLikeObject, V extends DatabaseLikeObject>(
-        type: DatabaseCollectionType, object: T, source?: V
+    public async createFromCacheOrDatabase<T extends string | DatabaseLikeObject, U extends DatabaseLikeObject>(
+        type: DatabaseCollectionType, object: T
     ): Promise<U> {
         const data: U | null = await this.fetchFromCacheOrDatabase(type, object);
         if (data !== null) return data;
@@ -92,7 +92,7 @@ export class AppDatabaseManager extends DatabaseManager<App> {
         const schema = this.schema(type);
 
         /* Otherwise, try to create a new entry using the template creator. */
-        const template: U | null = await schema.template(id, source as any) as U | null;
+        const template: U | null = typeof object === "object" ? object as any as U : await schema.template(id) as U | null;
         if (template === null) throw new Error(`Schema "${schema.settings.collection}" doesn't have a template`);
 
         /* Process the template database entry into a formatted format. */

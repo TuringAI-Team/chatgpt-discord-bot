@@ -24,8 +24,8 @@ import { Utils } from "../util/utils.js";
 import { Emoji } from "../util/emoji.js";
 
 import { ErrorResponse, ErrorResponseOptions, ErrorType } from "../command/response/error.js";
-import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
-import { GPTAPIError } from "../error/gpt/api.js";
+import { GPTGenerationError, GPTGenerationErrorType } from "../error/generation.js";
+import { GPTAPIError } from "../error/api.js";
 
 /* Permissions required by the bot to function correctly */
 const BOT_REQUIRED_PERMISSIONS: { [key: string]: PermissionsString } = {

@@ -1,4 +1,4 @@
-import { GPTAPIError } from "../error/gpt/api.js";
+import { GPTAPIError } from "../error/api.js";
 import { Bot } from "../bot/bot.js";
 
 type ImageOCREngine = 1 | 2 | 3

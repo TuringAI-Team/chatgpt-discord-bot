@@ -1,6 +1,6 @@
 import { inspect } from "util";
 
-import { GPTAPIError } from "../error/gpt/api.js";
+import { GPTAPIError } from "../error/api.js";
 import { Bot } from "../bot/bot.js";
 
 type TenorAPIPath = "search" | "posts"
@@ -60,8 +60,8 @@ export class TenorAPI {
     public async info(id: string[]): Promise<TenorGIF[]>;
 
     public async info(id: string | string[]): Promise<(TenorGIF | null) | TenorGIF[]> {
-        const arr: boolean = typeof id === "object";
         const ids: string[] = typeof id === "object" ? id : [ id ];
+        const arr: boolean = typeof id === "object";
 
         const response: { results: TenorRawGIF[] } = await this.request("posts", {
             ids: ids.join(",")

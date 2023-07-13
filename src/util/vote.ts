@@ -4,7 +4,7 @@ import chalk from "chalk";
 
 import { DatabaseInfo } from "../db/managers/user.js";
 import { DatabaseUser } from "../db/schemas/user.js";
-import { GPTAPIError } from "../error/gpt/api.js";
+import { GPTAPIError } from "../error/api.js";
 import { Bot } from "../bot/bot.js";
 
 type VoteAPIPath = string

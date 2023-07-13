@@ -75,13 +75,13 @@ export class ClusterDatabaseManager extends DatabaseManager<Bot> {
         });
     }
 
-    public async createFromCacheOrDatabase<T extends string | DatabaseLikeObject, U extends DatabaseLikeObject, V extends DatabaseLikeObject>(
-        type: DatabaseCollectionType, object: T, source?: V
+    public async createFromCacheOrDatabase<T extends string | DatabaseLikeObject, U extends DatabaseLikeObject>(
+        type: DatabaseCollectionType, object: T
     ): Promise<U> {
-        return this.eval((app, { type, object, source }) => {
-            return app.db.createFromCacheOrDatabase<T, U, V>(type, object, source);
+        return this.eval((app, { type, object }) => {
+            return app.db.createFromCacheOrDatabase<T, U>(type, object);
         }, {
-            type, object, source
+            type, object
         });
     }
 

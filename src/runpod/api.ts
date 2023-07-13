@@ -2,7 +2,7 @@ import { setTimeout as delay } from "timers/promises";
 import { Awaitable } from "discord.js";
 
 import { RunPodMusicGenInput, RunPodMusicGenOutput, RunPodMusicGenResult } from "./models/musicgen.js";
-import { GPTGenerationError, GPTGenerationErrorType } from "../error/gpt/generation.js";
+import { GPTGenerationError, GPTGenerationErrorType } from "../error/generation.js";
 import { RunPodBLIP2Input, RunPodBLIP2Output } from "./models/blip2.js";
 import { ImageBuffer } from "../chat/types/image.js";
 import { Bot } from "../bot/bot.js";

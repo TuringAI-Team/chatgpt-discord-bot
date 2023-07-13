@@ -25,6 +25,7 @@ import { TenorAPI } from "../util/tenor.js";
 import { GitCommit } from "../util/git.js";
 import { StrippedApp } from "../app.js";
 import { TaskManager } from "./task.js";
+import { TranslationManager } from "../util/translate.js";
 
 export type BotStatusType = StatusIncidentType | "maintenance"
 
@@ -117,8 +118,11 @@ export class Bot extends EventEmitter {
     /* RunPod AI manager; in charge of executing RunPod model requests */
     public readonly runpod: RunPodManager;
 
+    /* Translation manager */
+    public readonly translation: TranslationManager;
+
     /* Tenor API client */
-    public gif: TenorAPI;
+    public readonly gif: TenorAPI;
 
     /* top.gg API manager */
     public readonly vote: VoteManager;
@@ -158,13 +162,14 @@ export class Bot extends EventEmitter {
         this.description = new ImageDescriptionManager(this);
         this.conversation = new ConversationManager(this);
         this.interaction = new InteractionManager(this);
+        this.translation = new TranslationManager(this);
         this.moderation = new ModerationManager(this);
         this.db = new ClusterDatabaseManager(this);
         this.webhook = new WebhookManager(this);
         this.command = new CommandManager(this);
         this.runpod = new RunPodManager(this);
-        this.error = new ErrorManager(this);
         this.logger = new ClusterLogger(this);
+        this.error = new ErrorManager(this);
         this.image = new ImageManager(this);
         this.turing = new TuringAPI(this);
         this.vote = new VoteManager(this);

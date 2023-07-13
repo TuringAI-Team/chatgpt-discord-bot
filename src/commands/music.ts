@@ -11,7 +11,7 @@ import { ImageBuffer } from "../chat/types/image.js";
 import { Response } from "../command/response.js";
 import { Bot } from "../bot/bot.js";
 
-const MAX_MUSIC_PROMPT_LENGTH: number = 200
+const MaxMusicPromptLength: number = 200
 
 interface MusicDurationSetting {
 	/* Duration, in seconds */
@@ -36,7 +36,7 @@ const MusicDurationSettings: MusicDurationSetting[] = [
 const BackgroundImage: Image = new Image();
 BackgroundImage.src = await readFile("./assets/music/background.png");
 
-export default class VideoCommand extends Command {
+export default class MusicCommand extends Command {
 	constructor(bot: Bot) {
 		super(bot, new SlashCommandBuilder()
 			.setName("music")
@@ -45,7 +45,7 @@ export default class VideoCommand extends Command {
 			.addStringOption(builder => builder
 				.setName("prompt")
 				.setDescription("The possibilities are endless... 💫")
-				.setMaxLength(MAX_MUSIC_PROMPT_LENGTH)
+				.setMaxLength(MaxMusicPromptLength)
 				.setRequired(true)
 			)
 
@@ -110,9 +110,9 @@ export default class VideoCommand extends Command {
 		/* Which prompt to use for generation */
 		const prompt: string = interaction.options.getString("prompt", true);
 
-		if (prompt.length > MAX_MUSIC_PROMPT_LENGTH) return new ErrorResponse({
+		if (prompt.length > MaxMusicPromptLength) return new ErrorResponse({
 			interaction, command: this,
-			message: `Your specified prompt is **too long**, it can't be longer than **${MAX_MUSIC_PROMPT_LENGTH}** characters`
+			message: `Your specified prompt is **too long**, it can't be longer than **${MaxMusicPromptLength}** characters`
 		});
 
 		/* Raw duration, specified in the command options */

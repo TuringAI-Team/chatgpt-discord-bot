@@ -1,9 +1,8 @@
-import { APIApplicationCommandOptionChoice, ActionRow, ActionRowBuilder, Awaitable, ButtonBuilder, ButtonComponent, ButtonInteraction, ButtonStyle, ComponentEmojiResolvable, GuildMember, Interaction, InteractionReplyOptions, InteractionUpdateOptions, ModalBuilder, SelectMenuComponentOptionData, StringSelectMenuBuilder, StringSelectMenuInteraction, TextChannel, TextInputBuilder, TextInputStyle, managerToFetchingStrategyOptions } from "discord.js";
-import { ChatInputCommandInteraction, Guild, Role, Snowflake } from "discord.js";
+import { APIApplicationCommandOptionChoice, ActionRow, ActionRowBuilder, Awaitable, ButtonBuilder, ButtonComponent, ButtonInteraction, ButtonStyle, ComponentEmojiResolvable, GuildMember, Interaction, InteractionReplyOptions, InteractionUpdateOptions, ModalBuilder, SelectMenuComponentOptionData, StringSelectMenuBuilder, StringSelectMenuInteraction, TextChannel, TextInputBuilder, TextInputStyle, ChatInputCommandInteraction, Guild, Role, Snowflake } from "discord.js";
 import { randomUUID } from "crypto";
 import chalk from "chalk";
 
-import { TuringAlanImageGenerators, TuringAlanImageModifiers, TuringAlanSearchEngines, TuringVideoModels, alanOptions } from "../../turing/api.js";
+import { TuringAlanImageGenerators, TuringAlanImageModifiers, TuringAlanSearchEngines, alanOptions } from "../../turing/api.js";
 import { ConversationDefaultCooldown, Conversation } from "../../conversation/conversation.js";
 import { LoadingIndicatorManager, LoadingIndicators } from "../types/indicator.js";
 import { ChatSettingsPlugins } from "../../conversation/settings/plugin.js";
@@ -24,7 +23,7 @@ import { Response } from "../../command/response.js";
 import { DatabaseGuild } from "../schemas/guild.js";
 import { AppDatabaseManager } from "../app.js";
 import { SubDatabaseManager } from "../sub.js";
-import { Languages } from "../types/locale.js";
+import { UserLanguages } from "../types/locale.js";
 import { Utils } from "../../util/utils.js";
 import { DatabaseInfo } from "./user.js";
 import { Bot } from "../../bot/bot.js";
@@ -97,12 +96,6 @@ export const SettingCategories: SettingsCategory[] = [
         name: "Character",
         type: "character",
         emoji: { fallback: "🧙🏽" }
-    },
-
-    {
-        name: "Video",
-        type: "video",
-        emoji: { fallback: "📷" }
     },
 
     {
@@ -551,8 +544,7 @@ export const SettingOptions: SettingsOption[] = [
         emoji: { fallback: "🤖" },
         description: "Which style to use",
         location: SettingsLocation.User,
-        optional: true,
-        default: null,
+        optional: true, default: null,
         
         choices: ImageStyles.map(({ name, emoji, id }) => ({
             name, emoji, value: id
@@ -582,7 +574,7 @@ export const SettingOptions: SettingsOption[] = [
             description: "This setting will force ChatGPT to speak in a different language, and also change the output language of the `Translate` right-click action. In the future, the UI will also be fully localized."
         },
 
-        choices: Languages.map(locale => ({
+        choices: UserLanguages.map(locale => ({
             name: locale.name, emoji: { fallback: locale.emoji },
             value: locale.id
         }))
@@ -663,21 +655,6 @@ export const SettingOptions: SettingsOption[] = [
             emoji: LoadingIndicatorManager.toString(indicator),
             value: indicator.emoji.id,
             name: indicator.name,
-            premium: false
-        }))
-    }),
-
-    new ChoiceSettingsOption({
-        key: "model",
-        name: "Video model",
-        category: "video",
-        emoji: { fallback: "📸" },
-        description: "Which video generation model to use",
-        location: SettingsLocation.User,
-
-        choices: TuringVideoModels.map(model => ({
-            name: model.name,
-            value: model.id,
             premium: false
         }))
     }),
