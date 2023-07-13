@@ -46,6 +46,14 @@ interface DatabaseCampaignStatistics {
         /** Geo-specific clicks */
         geo: Record<string, number>;
     };
+
+    views: {
+        /** Total amount of views to this campaign */
+        total: number;
+
+        /** Geo-specific views */
+        geo: Record<string, number>;
+    };
 }
 
 type DatabaseCampaignFilterData = string | (string | number)[] | any
@@ -186,7 +194,7 @@ export class ClusterCampaignManager extends BaseCampaignManager<ClusterDatabaseM
         /* Final creation options */
         const data: DatabaseCampaign = {
             filters: null, created: new Date().toISOString(), id,
-            ...options, active: false, stats: { clicks: { geo: {}, total: 0 } }
+            ...options, active: false, stats: { clicks: { geo: {}, total: 0 }, views: { geo: {}, total: 0 } }
         };
 
         const campaign: DatabaseCampaign = await this.db.createFromCacheOrDatabase(
@@ -224,6 +232,34 @@ export class ClusterCampaignManager extends BaseCampaignManager<ClusterDatabaseM
         });
 
         await this.db.delete("campaigns", campaign);
+    }
+
+    public async updateStatistics(
+        campaign: DatabaseCampaign, type: keyof DatabaseCampaignStatistics, updates: Partial<DatabaseCampaignStatistics["clicks"]>
+    ): Promise<DatabaseCampaign> {
+        const updated: DatabaseCampaignStatistics = {
+            ...campaign.stats,
+
+            [type]: {
+                ...campaign.stats[type], ...updates,
+                geo: { ...campaign.stats?.[type]?.geo ?? {}, ...updates.geo ?? {} }
+            }
+        };
+
+        return this.update(campaign, {
+            stats: updated
+        });
+    }
+
+    public async incrementViews(campaign: DatabaseCampaign, db: DatabaseInfo): Promise<DatabaseCampaign> {
+        let updates: Partial<DatabaseCampaignStatistics["views"]> & { geo: Record<string, number> } = {
+            total: (campaign.stats.views?.total ?? 0) + 1, geo: {}
+        };
+
+        const country: string | null = db.user.metadata.country ?? null;
+        if (country !== null) updates.geo[country] = campaign.stats.views?.geo?.[country] ? campaign.stats.views.geo[country] + 1 : 1;
+
+        return this.updateStatistics(campaign, "views", updates);
     }
 
     public async pick({ db }: Omit<CampaignPickOptions, "count">): Promise<DatabaseCampaign | null> {
@@ -265,8 +301,11 @@ export class ClusterCampaignManager extends BaseCampaignManager<ClusterDatabaseM
 	 * Choose an ad from the available list, to display in the bot's response.
 	 */
 	public async ad(options: Pick<CampaignPickOptions, "db">): Promise<DisplayCampaign | null> {
-		const campaign: DatabaseCampaign | null = await this.pick(options);
+		let campaign: DatabaseCampaign | null = await this.pick(options);
 		if (campaign === null) return null;
+
+        /* Increment the views for this campaign. */
+        campaign = await this.incrementViews(campaign, options.db);
 
 		const ad: DisplayCampaign = await this.render({ campaign, db: options.db });
 		return ad;
@@ -349,17 +388,17 @@ export class ClusterCampaignManager extends BaseCampaignManager<ClusterDatabaseM
     public async charts(campaign: DatabaseCampaign): Promise<CampaignChart[]> {
         const designers: CampaignChartDesigner[] = [
             {
-                name: "Countries",
+                name: "Views from countries",
                 type: "pie",
 
                 run: campaign => {
                     return {
                         data: {
                             datasets: [ {
-                                data: Object.values(campaign.stats.clicks.geo)
+                                data: Object.values(campaign.stats.views.geo)
                             } ],
                         
-                            labels: Object.keys(campaign.stats.clicks.geo)
+                            labels: Object.keys(campaign.stats.views.geo)
                         }
                     };
                 }

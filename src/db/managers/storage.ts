@@ -2,11 +2,11 @@ import { Bucket, StorageClient, StorageError } from "@supabase/storage-js";
 
 import { DatabaseImage, ImageRawResult, ImageResult } from "../../image/types/image.js";
 import { DatabaseDescription } from "../../image/description.js";
-import { GPTDatabaseError } from "../../error/db.js";
 import { ImageBuffer } from "../../chat/types/image.js";
 import { ClusterDatabaseManager } from "../cluster.js";
 import { DatabaseCollectionType } from "../manager.js";
 import { SubClusterDatabaseManager } from "../sub.js";
+import { GPTDatabaseError } from "../../error/db.js";
 
 type StorageBucketName = "images" | "descriptions"
 
