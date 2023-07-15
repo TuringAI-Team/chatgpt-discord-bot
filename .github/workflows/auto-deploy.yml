@@ -22,8 +22,13 @@ jobs:
           username: ${{ secrets.USERNAME }}
           password: ${{ secrets.PASSWORD }}
           script: |
-            cd /home/loick/github/chatgpt-bot
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"            
+            cd /home/trident/github/chatgpt-bot
             nvm use 20
+            PATH="$HOME/.nvm/versions/node/v20.0.0/bin:$PATH"
             npm run git
             npm i
+            rm -r dist
             npm run build
