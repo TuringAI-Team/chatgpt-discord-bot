@@ -47,7 +47,7 @@ const StatusMessages: StatusMessage[] = [
         type: ActivityType.Listening,
 
         condition: bot => bot.statistics.conversations > 0,
-        template: async (bot: Bot) => `${bot.statistics.conversations} conversations`
+        template: async (bot: Bot) => `${new Intl.NumberFormat("en-US").format(bot.statistics.conversations)} conversations`
     },
 
     {
@@ -55,7 +55,7 @@ const StatusMessages: StatusMessage[] = [
         type: ActivityType.Watching,
 
         condition: bot => bot.statistics.databaseUsers > 0,
-        template: async (bot: Bot) => `${bot.statistics.databaseUsers} users`
+        template: async (bot: Bot) => `${new Intl.NumberFormat("en-US").format(bot.statistics.databaseUsers)} users`
     },
 
     {
@@ -63,7 +63,7 @@ const StatusMessages: StatusMessage[] = [
         type: ActivityType.Watching,
 
         condition: bot => bot.statistics.guildCount > 0,
-        template: async (bot: Bot) => `over ${bot.statistics.guildCount} servers`
+        template: async (bot: Bot) => `over ${new Intl.NumberFormat("en-US").format(bot.statistics.guildCount)} servers`
     }
 ]
 
