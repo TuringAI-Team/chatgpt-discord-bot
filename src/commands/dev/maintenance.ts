@@ -1,14 +1,13 @@
 import { SlashCommandBuilder } from "discord.js";
 
-import { StatusTypeColorMap, StatusTypeEmojiMap, StatusTypeTitleMap } from "../status.js";
+import { Bot, BotStatusType, BotStatusTypeColorMap, BotStatusTypeEmojiMap, BotStatusTypeTitleMap } from "../../bot/bot.js";
 import { Command, CommandInteraction, CommandResponse } from "../../command/command.js";
-import { Bot, BotStatusType } from "../../bot/bot.js";
 import { Response } from "../../command/response.js";
 
 export default class MaintenanceCommand extends Command {
     constructor(bot: Bot) {
 		/* Which statuses to show */
-		const show: BotStatusType[] = [ "maintenance", "operational", "partial_outage", "major_outage", "investigating", "monitoring" ];
+		const show: BotStatusType[] = [ "maintenance", "operational", "partialOutage", "investigating", "monitoring" ];
 
         super(bot,
             new SlashCommandBuilder()
@@ -19,7 +18,7 @@ export default class MaintenanceCommand extends Command {
 					.setDescription("Which status to switch to")
 					.setRequired(true)
 					.addChoices(...show.map(type => ({
-						name: `${StatusTypeTitleMap[type]} ${StatusTypeEmojiMap[type]}`,
+						name: `${BotStatusTypeTitleMap[type]} ${BotStatusTypeEmojiMap[type]}`,
 						value: type
 					}))))
 				.addStringOption(builder => builder
@@ -32,7 +31,7 @@ export default class MaintenanceCommand extends Command {
 
     public async run(interaction: CommandInteraction): CommandResponse {
 		/* New bot status to switch to */
-		const type: string = interaction.options.getString("which", true);
+		const type: BotStatusType = interaction.options.getString("which", true) as BotStatusType;
 
 		/* Notice message to display */
 		const notice: string | undefined = interaction.options.getString("notice") ?? undefined;
@@ -44,9 +43,9 @@ export default class MaintenanceCommand extends Command {
 
 		return new Response()
 			.addEmbed(builder => builder
-				.setTitle(`${StatusTypeTitleMap[type]} ${StatusTypeEmojiMap[type]}`)
+				.setTitle(`${BotStatusTypeTitleMap[type]} ${BotStatusTypeEmojiMap[type]}`)
 				.setDescription(notice !== undefined ? `*${notice}*` : null)
-				.setColor(StatusTypeColorMap[type])
+				.setColor(BotStatusTypeColorMap[type])
 			);
     }
 }

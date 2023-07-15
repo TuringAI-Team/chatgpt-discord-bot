@@ -428,7 +428,7 @@ export class Generator {
 		const banned: DatabaseInfraction | null = this.bot.moderation.banned(db.user);
 
 		/* If the user is banned from the bot, send a notice message. */
-		if (banned !== null) return void await this.bot.moderation.buildBanMessage(db.user, banned).send(message);
+		if (banned !== null) return void await this.bot.moderation.buildBanResponse(db.user, banned).send(message);
 
 		/* Show a warning modal to the user, if needed. */
 		db.user = await this.bot.moderation.warningModal({ interaction: message, db: db.user });

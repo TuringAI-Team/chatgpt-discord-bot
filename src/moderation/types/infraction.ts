@@ -4,11 +4,11 @@ import { ModerationResult, ModerationSource } from "../moderation.js";
 
 export type DatabaseUserInfractionType = "ban" | "unban" | "warn" | "moderation"
 
-export type DatabaseInfractionReferenceType = ModerationSource
+export type DatabaseInfractionReferenceType = "infraction" | ModerationSource
 
 export interface DatabaseInfractionReference {
     type: DatabaseInfractionReferenceType;
-    content: string;
+    data: string;
 }
 
 export interface DatabaseInfraction {
@@ -33,11 +33,11 @@ export interface DatabaseInfraction {
     /** How long this infraction lasts, e.g. for bans */
     until?: number;
 
-    /** References for this infraction */
-    references?: DatabaseInfractionReference[];
+    /** Reference for this infraction */
+    reference?: DatabaseInfractionReference;
 
     /** Used for `moderation` infractions */
     moderation?: ModerationResult;
 }
 
-export type DatabaseInfractionOptions = Pick<DatabaseInfraction, "by" | "reason" | "type" | "moderation" | "seen" | "references" | "until">
+export type DatabaseInfractionOptions = Pick<DatabaseInfraction, "by" | "reason" | "type" | "moderation" | "seen" | "reference" | "until">

@@ -73,6 +73,10 @@ export const UserLanguages: UserLanguage[] = [
     },
 
     {
+        name: "Persian", id: "ir", emoji: "🇮🇷",
+    },
+
+    {
         name: "Pirate", modelName: "English pirate speak, very heavy pirate accent", id: "pirate", emoji: "🏴‍☠️"
     }
 ]

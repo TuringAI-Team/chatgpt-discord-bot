@@ -92,14 +92,17 @@ export class FilterManager {
         };
     }
 
-    public async execute({ auto, db }: ModerationOptions & { auto: ModerationFilterActionData, result: ModerationResult }): Promise<DatabaseUser> {
+    public async execute({ auto, db }: ModerationOptions & { auto: ModerationFilterActionData, result: ModerationResult }): Promise<DatabaseInfraction | null> {
+        let updated: DatabaseUser = null!;
+
         if (auto.type === "ban") {
-            return await this.bot.moderation.ban(db.user, { status: true, reason: auto.reason });
+            updated = await this.bot.moderation.ban(db.user, { status: true, reason: auto.reason });
 
         } else if (auto.type === "warn") {
-            return await this.bot.moderation.warn(db.user, { reason: auto.reason });
+            updated = await this.bot.moderation.warn(db.user, { reason: auto.reason });
         }
 
-        return db.user;
+        if (updated === null || updated.infractions.length === db.user.infractions.length) return null;
+        return updated.infractions[updated.infractions.length - 1];
     }
 }

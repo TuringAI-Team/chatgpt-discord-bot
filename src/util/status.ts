@@ -1,8 +1,7 @@
 import { ActivityType, Awaitable } from "discord.js";
 import chalk from "chalk";
 
-import { StatusTypeEmojiMap, StatusTypeTitleMap } from "../commands/status.js";
-import { Bot, BotStatus } from "../bot/bot.js";
+import { Bot, BotStatus, BotStatusTypeEmojiMap, BotStatusTypeTitleMap } from "../bot/bot.js";
 import { Utils } from "./utils.js";
 
 interface StatusMessage {
@@ -92,7 +91,7 @@ export const chooseStatusMessage = async (bot: Bot): Promise<void> => {
 
             activities: [ {
                 type: ActivityType.Playing,
-                name: `${StatusTypeEmojiMap[status.type]} ${status.notice ?? StatusTypeTitleMap[status.type]}`
+                name: `${BotStatusTypeEmojiMap[status.type]} ${status.notice ?? BotStatusTypeTitleMap[status.type]}`
             } ]
         });
     }

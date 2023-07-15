@@ -1,5 +1,5 @@
+import { ActivityType, Client, ColorResolvable, GatewayIntentBits, Options, Partials } from "discord.js";
 import { ClusterClient, getInfo, IPCMessage, messageType } from "discord-hybrid-sharding";
-import { ActivityType, Client, GatewayIntentBits, Options, Partials } from "discord.js";
 import EventEmitter from "events";
 import chalk from "chalk";
 
@@ -9,7 +9,6 @@ import { ConversationManager } from "../conversation/manager.js";
 import { ModerationManager } from "../moderation/moderation.js";
 import { InteractionManager } from "../interaction/manager.js";
 import { WebhookManager } from "../conversation/webhook.js";
-import { StatusIncidentType } from "../util/statuspage.js";
 import { ClusterDatabaseManager } from "../db/cluster.js";
 import { chooseStatusMessage } from "../util/status.js";
 import { executeConfigurationSteps } from "./setup.js";
@@ -27,7 +26,31 @@ import { StrippedApp } from "../app.js";
 import { TaskManager } from "./task.js";
 import { TranslationManager } from "../util/translate.js";
 
-export type BotStatusType = StatusIncidentType | "maintenance"
+export type BotStatusType = "investigating" | "monitoring" | "partialOutage" | "operational" | "maintenance"
+
+export const BotStatusTypeEmojiMap: Record<BotStatusType, string> = {
+	investigating: "🔎",
+	monitoring: "👀",
+	partialOutage: "⚠️",
+	maintenance: "🛠️",
+	operational: "✅"
+}
+
+export const BotStatusTypeTitleMap: Record<BotStatusType, string> = {
+	investigating: "Investigating",
+	partialOutage: "Partial outage",
+	operational: "Operational",
+	maintenance: "Under maintenance",
+	monitoring: "Monitoring"
+}
+
+export const BotStatusTypeColorMap: Record<BotStatusType, ColorResolvable> = {
+	investigating: "Yellow",
+	partialOutage: "Orange",
+	operational: "Green",
+	maintenance: "Orange",
+	monitoring: "White"
+}
 
 export interface BotStatus {
     /* Current status of the bot */
@@ -323,6 +346,9 @@ export class Bot extends EventEmitter {
             ((manager: BotClusterManager, context: BotStatus) => manager.bot.status = context) as any,
             { context: { ...status, since: Date.now() } }
         );
+
+        /* Update the bot's status. */
+        await chooseStatusMessage(this);
     }
 
     public async sessionLimit(): Promise<BotDataSessionLimit> {

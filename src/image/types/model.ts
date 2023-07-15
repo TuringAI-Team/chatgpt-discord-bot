@@ -71,6 +71,17 @@ export const ImageConfigModels: ImageConfigModel[] = [
     },
 
     {
+        name: "Dreamshaper",
+        description: "A mix of several Stable Diffusion models",
+        id: "dreamshaper",
+        path: "sh",
+
+        body: {
+            model: "Dreamshaper"
+        }
+    },
+    
+    {
         name: "I Can't Believe It's Not Photography",
         description: "Highly photo-realistic Stable Diffusion model",
         id: "icbinp",

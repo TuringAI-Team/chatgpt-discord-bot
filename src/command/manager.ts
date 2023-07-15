@@ -363,7 +363,7 @@ export class CommandManager {
 
 		/* If the user is banned from the bot, send a notice message. */
 		if (banned !== null && !command.options.always) return void await 
-			this.bot.moderation.buildBanMessage(db.user, banned)
+			this.bot.moderation.buildBanResponse(db.user, banned)
 		.send(interaction);
 
 		/* Show a warning modal to the user, if needed. */
