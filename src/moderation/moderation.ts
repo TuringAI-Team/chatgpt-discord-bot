@@ -1,15 +1,14 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle, EmbedBuilder, Interaction, MessageEditOptions, ModalActionRowComponentBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, User, StringSelectMenuBuilder, StringSelectMenuInteraction, Collection, Snowflake, TextChannel, Guild, Channel, Message, InteractionResponse, MessageCreateOptions, ChatInputCommandInteraction, ComponentType } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle, EmbedBuilder, Interaction, MessageEditOptions, ModalActionRowComponentBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, User, StringSelectMenuBuilder, StringSelectMenuInteraction, Collection, Snowflake, TextChannel, Guild, Channel, Message, InteractionResponse, MessageCreateOptions, ChatInputCommandInteraction, ComponentType, APIEmbedField } from "discord.js";
 import translate from "@iamtraction/google-translate";
 import { randomUUID } from "crypto";
 
-import { AutoModerationActionData, AutoModerationActionType, AutoModerationManager } from "./automod/automod.js";
+import { ModerationFilterActionData, ModerationFilterActionType, FilterManager } from "./filter/manager.js";
 import { InteractionHandlerClassType, InteractionHandlerResponse } from "../interaction/handler.js";
+import { DatabaseInfraction, DatabaseInfractionOptions, DatabaseInfractionReference } from "./types/infraction.js";
 import { ModerationInteractionHandlerData } from "../interactions/moderation.js";
-import { DatabaseUser, DatabaseUserInfraction } from "../db/schemas/user.js";
+import { DatabaseEntry, DatabaseInfo } from "../db/managers/user.js";
 import { Response, ResponseSendClass } from "../command/response.js";
-import { AutoModerationFilter } from "./automod/filters.js";
-import { DatabaseGuild } from "../db/schemas/guild.js";
-import { DatabaseInfo } from "../db/managers/user.js";
+import { DatabaseUser } from "../db/schemas/user.js";
 import { FindResult, Utils } from "../util/utils.js";
 import { Config } from "../config.js";
 import { Bot } from "../bot/bot.js";
@@ -87,9 +86,9 @@ interface AdditionalModerationOptions {
 
 export interface ModerationOptions {
     user: User;
+    db: DatabaseInfo;
 
     source: ModerationSource;
-    db: DatabaseInfo;
     content: string;
 
     /* Other data */
@@ -103,9 +102,9 @@ export interface ModerationNoticeOptions {
     small?: boolean;
 }
 
-export interface ModerationWarningModalOptions {
+export interface ModerationWarningModalOptions<T extends DatabaseEntry> {
     interaction: Message | ChatInputCommandInteraction | InteractionHandlerClassType;
-    db: DatabaseInfo;
+    db: T;
 }
 
 type ImagePromptModerationOptions = Pick<ModerationOptions, "db" |  "user" | "content"> & AdditionalModerationOptions
@@ -129,29 +128,28 @@ export interface ModerationResult {
     blocked: boolean;
 
     /* Auto moderation filter result */
-    auto?: AutoModerationActionData;
+    auto?: ModerationFilterActionData;
 
     /* The received infraction, if applicable */
-    infraction?: DatabaseUserInfraction;
+    infraction?: DatabaseInfraction;
 
     /* Source of the moderation request */
     source: ModerationSource;
 }
 
-export type DatabaseModerationResult = ModerationResult & { reference: string }
 export type SerializedModerationResult = ModerationResult
 
 export class ModerationManager {
     private readonly bot: Bot;
 
-    /* AutoMod manager */
-    public readonly automod: AutoModerationManager;
+    /* Filter manager */
+    public readonly filter: FilterManager;
 
     constructor(bot: Bot) {
         this.bot = bot;
 
         /* Initialize all other sub-managers. */
-        this.automod = new AutoModerationManager(this.bot);
+        this.filter = new FilterManager(this.bot);
     }
 
     /**
@@ -200,15 +198,13 @@ export class ModerationManager {
                         const content: string | undefined = modalInteraction.fields.getTextInputValue("reason").length > 0 ? modalInteraction.fields.getTextInputValue("reason") : undefined;
 
                         if (action === "warn") {
-                            /* Send the warning to the user. */
-                            db = await this.bot.db.users.warn(db, {
+                            db = await this.warn(db, {
                                 by: original.user.id,
                                 reason: content
                             });
 
                         } else if (action === "ban") {
-                            /* Ban the user. */
-                            db = await this.bot.db.users.ban(db, {
+                            db = await this.ban(db, {
                                 by: original.user.id,
                                 reason: content,
                                 status: true
@@ -216,7 +212,7 @@ export class ModerationManager {
                         }
 
                         /* Fetch the user's infractions again. */
-                        const infractions: DatabaseUserInfraction[] = db.infractions;
+                        const infractions: DatabaseInfraction[] = db.infractions;
 
                         /* Edit the original flag message. */
                         await original.message.edit(new Response()
@@ -248,12 +244,12 @@ export class ModerationManager {
             const reason: string = original.values[0];
 
             if (action === "warn") {
-                await this.bot.db.users.warn(db, {
+                await this.warn(db, {
                     by: original.user.id, reason
                 });
 
             } else if (action === "ban") {
-                await this.bot.db.users.ban(db, {
+                await this.ban(db, {
                     by: original.user.id, reason, status: true
                 });
             }
@@ -273,7 +269,7 @@ export class ModerationManager {
 
         /* View information about a user */
         } else if (action === "view") {
-            const response: Response = (await this.buildUserOverview({
+            const response: Response = (await this.buildOverview({
                 id: author.id, name: author.username, created: author.createdTimestamp, icon: author.displayAvatarURL()
             }, db))
                 .setEphemeral(true);
@@ -289,9 +285,12 @@ export class ModerationManager {
             );
         }
     }
-    public async buildUserOverview(target: FindResult, db: DatabaseUser): Promise<Response> {
+    public async buildOverview(target: FindResult, db: DatabaseEntry): Promise<Response> {
+        /* Type of the entry */
+        const location = this.bot.db.users.location(db);
+
         /* Overview of the users' infractions in the description */
-        const infractions: DatabaseUserInfraction[] = db.infractions.filter(i => i.type !== "moderation");
+        const infractions: DatabaseInfraction[] = db.infractions.filter(i => i.type !== "moderation");
         let description: string | null = null;
     
         /* List of moderators for the infractions */
@@ -312,25 +311,19 @@ export class ModerationManager {
         if (infractions.length > 0) description = `__**${infractions.length}** infractions__\n\n${description}`;
     
         /* Previous automated moderation flags for the user */
-        const flags: DatabaseUserInfraction[] = db.infractions.filter(i => i.type === "moderation" && i.moderation);
-        const shown: DatabaseUserInfraction[] = flags.slice(-5);
+        const flags: DatabaseInfraction[] = db.infractions.filter(i => i.type === "moderation" && i.moderation && i.references && i.references.length > 0);
+        const shown: DatabaseInfraction[] = flags.slice(-5);
         
         /* Format the description for previous automated moderation flags. */
         let flagDescription: string | null = null;
+
         if (flags.length > 0) flagDescription = `${flags.length - shown.length !== 0 ? `(*${flags.length - shown.length} previous flags ...*)\n\n` : ""}${shown.map(f => {
-            const content: string = f.moderation!.translation ? f.moderation!.translation.content : f.moderation!.reference;
+            const content: string = f.moderation!.translation ? f.moderation!.translation.content : f.references![0].content;
             const translation: boolean = f.moderation!.translation != undefined;
 
             return `<t:${Math.round(f.when / 1000)}:f> » ${f.moderation!.auto ? `\`${f.moderation!.auto.action}\` ` : ""}${FlagToEmoji[f.moderation!.source]} » ${translation ? "*" : ""}\`${content.split("\n").length > 1 ? `${content.split("\n")[0]} ...` : content}\`${translation ? "*" : ""}`;
         }).join("\n")}`
-    
-        /* Formatted interactions count, for each category */
-        let interactionsDescription: string = "";
-    
-        for (const [ category, count ] of Object.entries(db.interactions)) {
-            interactionsDescription = `${interactionsDescription}\n${Utils.titleCase(category)} » **${count}** times`;
-        }
-    
+
         /* Formatted meta-data values, for each type */
         let metadataDescription: string = "";
     
@@ -346,63 +339,40 @@ export class ModerationManager {
         if (db.plan !== null) premiumDescription = `${premiumDescription}\n**Plan** » **$${db.plan.total.toFixed(2)}** total; **$${db.plan.used.toFixed(2)}** used; **${db.plan.expenses.length}** expenses; **${db.plan.history.length}** charges`;
     
         /* Whether the user is banned */
-        const banned = await this.bot.db.users.banned(db);
+        const banned = this.banned(db);
+
+        const fields: APIEmbedField[] = [
+            { name: "On Discord since <:discord:1097815072602067016>", value: `<t:${Math.floor(target.created / 1000)}:f>` },
+            { name: "First interaction 🙌", value: `<t:${Math.floor(Date.parse(db.created) / 1000)}:f>` },
+            { name: "Metadata ⌨️", value: metadataDescription.length > 0 ? metadataDescription : "*(none)*" },
+            { name: "Premium ✨", value: premiumDescription.length > 0 ? premiumDescription : "❌" },
+            { name: "Banned ⚠️", value: banned !== null ? "✅" : "❌" }
+        ];
+
+        if (location === "users") {
+            const user: DatabaseUser = db as DatabaseUser;
+
+            /* Formatted interactions count, for each category */
+            let interactionsDescription: string = "";
+        
+            for (const [ category, count ] of Object.entries(user.interactions)) {
+                interactionsDescription = `${interactionsDescription}\n${Utils.titleCase(category)} » **${count}** times`;
+            }
+
+            fields.push(
+                { name: "Roles ⚒️", value: [ ... this.bot.db.role.roles(user), "*User*" ].map(role => `**${Utils.titleCase(role)}**`).join(", ") },
+                { name: "Voted 📩", value: user.voted ? `<t:${Math.round(Date.parse(user.voted) / 1000)}:R>` : "❌" },
+                { name: "Interactions 🦾", value: interactionsDescription }
+            );
+        }
 
         const response = new Response()
             .addEmbed(builder => builder
-                .setTitle("User Overview 🔎")
+                .setTitle("Overview 🔎")
                 .setAuthor({ name: `${target.name} [${target.id}]`, iconURL: target.icon ?? undefined })
-                .setDescription(description)
-                .setFields(
-                    {
-                        name: "Discord member since <:discord:1097815072602067016>",
-                        value: `<t:${Math.floor(target.created / 1000)}:f>`,
-                        inline: true
-                    },
-    
-                    {
-                        name: "First interaction 🙌",
-                        value: `<t:${Math.floor(Date.parse(db.created) / 1000)}:f>`,
-                        inline: true
-                    },
-    
-                    {
-                        name: "Interactions 🦾",
-                        value: interactionsDescription,
-                        inline: true
-                    },
-    
-                    {
-                        name: "Metadata ⌨️",
-                        value: metadataDescription.length > 0 ? metadataDescription : "*(none)*",
-                        inline: true
-                    },
-    
-                    {
-                        name: "Premium ✨",
-                        value: premiumDescription.length > 0 ? premiumDescription : "❌",
-                        inline: true
-                    },
-    
-                    {
-                        name: "Roles ⚒️",
-                        value: [ ... this.bot.db.role.roles(db), "*User*" ].map(role => `**${Utils.titleCase(role)}**`).join(", "),
-                        inline: true
-                    },
-    
-                    {
-                        name: "Voted 📩",
-                        value: db.voted ? `<t:${Math.round(Date.parse(db.voted) / 1000)}:R>` : "❌",
-                        inline: true
-                    },
-    
-                    {
-                        name: "Banned ⚠️",
-                        value: banned !== null ? "✅" : "❌",
-                        inline: true
-                    }
-                )
+                .setFields(fields.map(f => ({ ...f, inline: true })))
                 .setColor(this.bot.branding.color)
+                .setDescription(description)
             );
     
         if (flagDescription !== null) response.addEmbed(builder => builder
@@ -411,56 +381,6 @@ export class ModerationManager {
         );
     
         return response;
-    }
-    
-    public async buildGuildOverview(target: FindResult, db: DatabaseGuild): Promise<Response> {
-        /* Formatted Premium information */
-        let premiumDescription: string = "";
-    
-        if (db.subscription !== null) premiumDescription = `${premiumDescription}\n**Subscription** » expires *<t:${Math.floor(db.subscription.expires / 1000)}:R>*`;
-        if (db.plan !== null) premiumDescription = `${premiumDescription}\n**Plan** » **$${db.plan.total.toFixed(2)}** total; **$${db.plan.used.toFixed(2)}** used; **${db.plan.expenses.length}** expenses; **${db.plan.history.length}** charges`;
-    
-        const response = new Response()
-            .addEmbed(builder => builder
-                .setTitle("Guild Overview 🔎")
-                .setAuthor({ name: `${target.name} [${target.id}]`, iconURL: target.icon ?? undefined })
-                .setFields(
-                    {
-                        name: "Created on <:discord:1097815072602067016>",
-                        value: `<t:${Math.floor(target.created / 1000)}:f>`,
-                        inline: true
-                    },
-    
-                    {
-                        name: "First interaction 🙌",
-                        value: `<t:${Math.floor(Date.parse(db.created) / 1000)}:f>`,
-                        inline: true
-                    },
-    
-                    {
-                        name: "Premium ✨",
-                        value: premiumDescription.length > 0 ? premiumDescription : "❌",
-                        inline: true
-                    }
-                )
-                .setColor(this.bot.branding.color)
-            );
-    
-        return response;
-    }
-
-    public buildBanMessage(infraction: DatabaseUserInfraction): Response {
-        return new Response()
-            .addEmbed(builder => builder
-                .setTitle(`You were banned **permanently** from the bot 😔`)
-                .setDescription("_If you want to appeal or have questions about your ban, join the **[support server](https://discord.gg/${this.bot.app.config.discord.inviteCode})**_.")
-                .addFields({
-                    name: "Reason", value: infraction.reason ?? "Inappropriate use of the bot"
-                })
-                .setTimestamp(infraction.when)
-                .setColor("Red")
-            )
-            .setEphemeral(true);
     }
 
     /**
@@ -473,7 +393,7 @@ export class ModerationManager {
 
         /* Whether any action can be taken */
         const punishable: boolean = result.auto ? result.auto.type !== "ban" && result.auto.type !== "warn" : true;
-        const action: AutoModerationActionType | "none" = result.auto?.type ?? "none";
+        const action: ModerationFilterActionType | "none" = result.auto?.type ?? "none";
 
         const initial: ButtonBuilder[] = [
             new ButtonBuilder()
@@ -546,13 +466,6 @@ export class ModerationManager {
         const reply = new Response()
             .addEmbed(builder => builder
                 .setTitle(`${FlagToName[source]} ${FlagToEmoji[source]}`)
-                .addFields(
-                    {
-                        name: "Infractions ⚠️",
-                        value: "`" + db.user.infractions.filter(i => i.type === "warn").length + "`",
-                        inline: true
-                    }
-                )
                 .setDescription(description)
                 .setAuthor({ name: `${user.username} [${user.id}]`, iconURL: user.displayAvatarURL() })
                 .setFooter({ text: `Cluster #${this.bot.data.id + 1}` })
@@ -618,8 +531,8 @@ export class ModerationManager {
      * @returns Moderation results
      */
     public async check({ db, content, source, additional, user }: ModerationOptions): Promise<ModerationResult> {
-        /* Run the AutoMod filter on the message. */
-        const auto: AutoModerationActionData | null = await this.automod.filter({
+        /* Run the moderation filters on the message. */
+        const auto: ModerationFilterActionData | null = await this.filter.filter({
             content, db, source, bot: this.bot
         });
 
@@ -656,12 +569,14 @@ export class ModerationManager {
         });
 
         /* Add a flag to the user too, for reference. */
-        if (flagged) await this.bot.db.users.flag(db.user, {
-            flagged: data.flagged, blocked: data.blocked, source: source, reference: content, translation: data.translation, auto: data.auto
-        });
+        if (flagged) await this.flag(db.user, {
+            flagged: data.flagged, blocked: data.blocked, source: source, translation: data.translation, auto: data.auto
+        }, [
+            { type: source, content }
+        ]);
 
-        /* Apply all AutoMod infractions, if applicable. */
-        if (auto !== null) await this.automod.execute({
+        /* Apply all moderation infractions, if applicable. */
+        if (auto !== null) await this.filter.execute({
             auto, content, db, source, result: data, user, additional
         });
 
@@ -694,9 +609,34 @@ export class ModerationManager {
         else return response;
     }
 
-    public async warningModal({ interaction, db }: ModerationWarningModalOptions): Promise<DatabaseUser> {
+    public buildBanMessage(entry: DatabaseEntry, infraction: DatabaseInfraction): Response {
+        const until: number | null = infraction.until ?? null;
+
+        const location = this.bot.db.users.location(entry);
+        const fields: APIEmbedField[] = [];
+
+        if (infraction.reason) fields.push({
+            name: "Reason", value: infraction.reason
+        });
+
+        if (until) fields.push({
+            name: "Until", value: `<t:${Math.floor(until / 1000)}:R>`
+        });
+
+        return new Response()
+            .addEmbed(builder => builder
+                .setTitle(`${location === "guilds" ? "This server is" : "You are"} banned **${until !== null ? "temporarily" : "permanently"}** from using the bot 😔`)
+                .setDescription(`_If you want to appeal or have questions about ${location === "guilds" ? "the server's" : "your"} ban, join the **[support server](https://discord.gg/${this.bot.app.config.discord.inviteCode})**_.`)
+                .setFields(fields.map(f => ({ ...f, inline: true })))
+                .setTimestamp(infraction.when)
+                .setColor("Red")
+            )
+            .setEphemeral(true);
+    }
+
+    public async warningModal<T extends DatabaseEntry = DatabaseEntry>({ interaction, db }: ModerationWarningModalOptions<T>): Promise<T> {
         /* The user's unread infractions, if any */
-        const unread: DatabaseUserInfraction[] = this.bot.db.users.unread(db.user);
+        const unread: DatabaseInfraction[] = this.unread(db);
 
         /* The original author of the interaction/message */
         const author: User = interaction instanceof Message ? interaction.author : interaction.user;
@@ -735,7 +675,7 @@ export class ModerationManager {
                 .setEphemeral(true)
             .send(interaction));
                 
-            if (reply === null) return db.user;
+            if (reply === null) return db;
 
 			/* Wait for the `Acknowledge` button to be pressed, or for the collector to expire. */
 			const collector = reply.createMessageComponentCollector<ComponentType.Button>({
@@ -754,30 +694,135 @@ export class ModerationManager {
             if (interaction instanceof Message) await reply.delete();
 
 			/* Mark the unread infractions as read. */
-			return await this.bot.db.users.read(db.user, unread);
+			return await this.read(db, unread);
 
 		} else {
-            return db.user;
+            return db;
         }
     }
 
     /**
-    * Get the specified logging channel.
-    * 
-    * @throws An error, if the channel could not be found
-    * @returns The logging channel
+     * Get the specified logging channel.
+     * 
+     * @throws An error, if the channel could not be found
+     * @returns The logging channel
     */
     public async channel(type: keyof Config["channels"]): Promise<TextChannel> {
-       const {
-           guild: guildID, channel: channelID
-       } = this.bot.app.config.channels[type];
-   
-       const guild: Guild = this.bot.client.guilds.cache.get(guildID) ?? await this.bot.client.guilds.fetch(guildID);
-       const channel: Channel | null = this.bot.client.channels.cache.get(channelID) ?? await guild.channels.fetch(channelID);
-   
-       if (channel === null) throw new Error("Invalid message channel has been given");
-       if (!channel.isTextBased()) throw new Error("Message channel is not a text channel");
-   
-       return channel as TextChannel;
-   }
+        const {
+            guild: guildID, channel: channelID
+        } = this.bot.app.config.channels[type];
+    
+        const guild: Guild = this.bot.client.guilds.cache.get(guildID) ?? await this.bot.client.guilds.fetch(guildID);
+        const channel: Channel | null = this.bot.client.channels.cache.get(channelID) ?? await guild.channels.fetch(channelID);
+    
+        if (channel === null) throw new Error("Invalid message channel has been given");
+        if (!channel.isTextBased()) throw new Error("Message channel is not a text channel");
+    
+        return channel as TextChannel;
+    }
+
+    /**
+     * Check whether the specified user or guild is banned.
+     * @param entry User or guild to check
+     * 
+     * @returns Whether they are banned
+     */
+    public banned<T extends DatabaseEntry = DatabaseEntry>(entry: T): DatabaseInfraction | null {
+        /* List of all ban-related infractions */
+        const infractions: DatabaseInfraction[] = entry.infractions.filter(
+            i => (i.type === "ban" || i.type === "unban") && i.until ? Date.now() < i.until : true
+        );
+
+        if (infractions.length === 0) return null;
+
+        /* Whether the entry is banned; really dumb way of checking it */
+        const odd: boolean = infractions.length % 2 > 0;
+        if (!odd) return null;
+
+        /* The entry's `ban` infraction */
+        const infraction: DatabaseInfraction = infractions[infractions.length - 1];
+        if (infraction.until && Date.now() >= infraction.until) return null;
+
+        return infraction;
+    }
+
+    public async flag<T extends DatabaseEntry = DatabaseEntry>(entry: T, data: ModerationResult, references: DatabaseInfractionReference[]): Promise<T> {
+        return this.infraction(entry, { type: "moderation", moderation: data, references });
+    }
+
+    public async warn<T extends DatabaseEntry = DatabaseEntry>(entry: T, { by, reason }: Pick<DatabaseInfractionOptions, "reason" | "by">): Promise<T> {
+        return this.infraction(entry, { by, reason: reason ?? "Inappropriate use of the bot", type: "warn", seen: false });
+    }
+
+    public async ban<T extends DatabaseEntry = DatabaseEntry>(entry: T, { by, reason, status, duration }: Pick<DatabaseInfractionOptions, "reason" | "by"> & { status: boolean, duration?: number }): Promise<T> {
+        const banned: boolean = this.banned(entry) !== null;
+        if (banned === status) return entry;
+
+        return this.infraction(entry, {
+            type: status ? "ban" : "unban", by,
+            reason: reason ?? "Inappropriate use of the bot",
+            until: duration ? Date.now() + duration : undefined
+        });
+    }
+
+    /**
+     * Mark the specified infractions as seen for the entry.
+     * 
+     * @param entry Entry to mark the infractions as seen for
+     * @param marked Infractions to mark as seen
+     */
+    public async read<T extends DatabaseEntry = DatabaseEntry>(entry: T, marked: DatabaseInfraction[]): Promise<T> {
+        let arr: DatabaseInfraction[] = entry.infractions;
+
+        /* Loop through the entry's infractions, and when the infractions that should be marked as read were found, change their `seen` status. */
+        arr = arr.map(
+            i => marked.find(m => m.id === i.id) !== undefined ? { ...i, seen: true } : i
+        );
+
+        return await this.bot.db.queue.update("users", entry, { infractions: arr });
+    }
+
+    /**
+     * Get a list of unread infractions for the entry.
+     * @param entry Entry to get unread infractions of
+     * @returns 
+     */
+    public unread<T extends DatabaseEntry = DatabaseEntry>(entry: T): DatabaseInfraction[] {
+        return entry.infractions.filter(i => i.type === "warn" && i.seen === false);
+    }
+
+    /**
+     * Give an infraction of the specified type to a entry.
+     * 
+     * @param entry Entry to give the infraction to
+     * @param options Infraction options
+     */
+    public async infraction<T extends DatabaseEntry = DatabaseEntry>(entry: T, { by, reason, type, seen, moderation, until }: DatabaseInfractionOptions): Promise<T> {
+        /* Raw infraction data */
+        const data: DatabaseInfraction = {
+            by, reason, type, moderation,
+            when: Date.now(), id: randomUUID().slice(undefined, 8)
+        };
+
+        if (type === "warn") data.seen = seen ?? false;
+        if (until) data.until = until;
+
+        return this.bot.db.queue.update(this.bot.db.users.location(entry), entry, {
+            infractions: [
+                ...entry.infractions, data
+            ]
+        });
+    }
+
+    public async removeInfraction<T extends DatabaseEntry = DatabaseEntry>(entry: T, which: DatabaseInfraction | string): Promise<T> {
+        /* ID of the infraction to remove */
+        const id: string = typeof which === "object" ? which.id : which;
+
+        /* Filter out the infraction to remove from the entry's list of infractions. */
+        const infractions: DatabaseInfraction[] = entry.infractions.filter(i => i.id !== id);
+
+        return this.bot.db.queue.update(this.bot.db.users.location(entry), entry, {
+            infractions
+        });
+    }
 }

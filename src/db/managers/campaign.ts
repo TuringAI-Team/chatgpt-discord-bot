@@ -251,15 +251,15 @@ export class ClusterCampaignManager extends BaseCampaignManager<ClusterDatabaseM
         });
     }
 
-    public async incrementViews(campaign: DatabaseCampaign, db: DatabaseInfo): Promise<DatabaseCampaign> {
-        let updates: Partial<DatabaseCampaignStatistics["views"]> & { geo: Record<string, number> } = {
-            total: (campaign.stats.views?.total ?? 0) + 1, geo: {}
+    public async increment(campaign: DatabaseCampaign, type: keyof DatabaseCampaignStatistics, db: DatabaseInfo): Promise<DatabaseCampaign> {
+        let updates: Partial<DatabaseCampaignStatistics["clicks"]> & { geo: Record<string, number> } = {
+            total: (campaign.stats[type]?.total ?? 0) + 1, geo: {}
         };
 
         const country: string | null = db.user.metadata.country ?? null;
-        if (country !== null) updates.geo[country] = campaign.stats.views?.geo?.[country] ? campaign.stats.views.geo[country] + 1 : 1;
+        if (country !== null) updates.geo[country] = campaign.stats[type]?.geo?.[country] ? campaign.stats[type].geo[country] + 1 : 1;
 
-        return this.updateStatistics(campaign, "views", updates);
+        return this.updateStatistics(campaign, type, updates);
     }
 
     public async pick({ db }: Omit<CampaignPickOptions, "count">): Promise<DatabaseCampaign | null> {
@@ -305,7 +305,7 @@ export class ClusterCampaignManager extends BaseCampaignManager<ClusterDatabaseM
 		if (campaign === null) return null;
 
         /* Increment the views for this campaign. */
-        campaign = await this.incrementViews(campaign, options.db);
+        campaign = await this.increment(campaign, "views", options.db);
 
 		const ad: DisplayCampaign = await this.render({ campaign, db: options.db });
 		return ad;
@@ -402,13 +402,31 @@ export class ClusterCampaignManager extends BaseCampaignManager<ClusterDatabaseM
                         }
                     };
                 }
+            },
+
+            {
+                name: "Clicks from countries",
+                type: "pie",
+
+                run: campaign => {
+                    return {
+                        data: {
+                            datasets: [ {
+                                data: Object.values(campaign.stats.clicks.geo)
+                            } ],
+                        
+                            labels: Object.keys(campaign.stats.clicks.geo)
+                        }
+                    };
+                }
             }
         ];
 
         const final: CampaignChart[] = [];
 
         for (const designer of designers) {
-            const chart = new ChartJsImage();
+            const chart = new ChartJsImage()
+                .setWidth(700).setHeight(500);
 
             /* Render the actual chart & get its configuration. */
             const config = await designer.run(campaign, chart);
@@ -442,6 +460,9 @@ export class ClusterCampaignManager extends BaseCampaignManager<ClusterDatabaseM
 
             const campaign: DatabaseCampaign | null = await this.get(raw[1]);
             if (campaign === null) return;
+
+            /* Increment the campaign's clicks. */
+            await this.increment(campaign, "clicks", db);
 
             const row: ActionRowBuilder<ButtonBuilder> = new ActionRowBuilder();
 

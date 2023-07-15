@@ -1,34 +1,32 @@
 import { Awaitable } from "discord.js";
 
-import { AutoModerationWord, AutoModerationWordFilterOptions, AutoModerationFilterData, AutoModerationAction, AutoModerationFilterOptions, AutoModerationActionData, AutoModerationActionType } from "./automod.js";
+import { ModerationFilterWord, ModerationFilterWordOptions, ModerationFilterData, ModerationFilterAction, ModerationFilterOptions, ModerationFilterActionData, ModerationFilterActionType } from "./manager.js";
 
-export class AutoModerationFilter { 
+export class ModerationFilter { 
     /* Description of the filter */
     public readonly description: string;
 
-    constructor({ description, filter }: AutoModerationFilterOptions) {
+    constructor({ description }: ModerationFilterOptions) {
         this.description = description;
-        if (filter) this.filter = filter;
     }
 
     /**
      * Execute this filter, and get a possible action to perform.
      * @returns A possible infraction, if content was filtered
      */
-    public async execute(options: AutoModerationFilterData): Promise<AutoModerationActionData | null> {
+    public async execute(options: ModerationFilterData): Promise<ModerationFilterActionData | null> {
         const result = await this.filter(options);
         if (result === null) return null;
         
         return {
-            ...result,
-            action: this.id
-        }
+            ...result, action: this.id
+        };
     }
 
     /**
      * Callback, that gets set by the specific filters to apply rules
      */
-    public filter({ content, db }: AutoModerationFilterData): Awaitable<AutoModerationAction | null>;
+    public filter({ content, db }: ModerationFilterData): Awaitable<ModerationFilterAction | null>;
 
     /* Stub filter */
     public async filter() { return null; }
@@ -38,17 +36,17 @@ export class AutoModerationFilter {
     }
 }
 
-export class AutoModerationWordFilter extends AutoModerationFilter {
+export class ModerationWordFilter extends ModerationFilter {
     /* Words / RegEx's to block */
-    private readonly blocked: (AutoModerationWord & Required<Pick<AutoModerationWord, "allowed">>)[];
+    private readonly blocked: (ModerationFilterWord & Required<Pick<ModerationFilterWord, "allowed">>)[];
 
     /* Default action to execute, if no other was specified */
-    private readonly action: AutoModerationAction;
+    private readonly action: ModerationFilterAction;
 
     /* Replacements using for the normalize() function */
     private readonly replacements: Map<RegExp, string>;
 
-    constructor({ description, blocked, action }: AutoModerationWordFilterOptions) {
+    constructor({ description, blocked, action }: ModerationFilterWordOptions) {
         super({ description });
 
         this.blocked = blocked.map(({ words, action, allowed }) => ({
@@ -75,16 +73,16 @@ export class AutoModerationWordFilter extends AutoModerationFilter {
 		]);
     }
 
-    private matches(filter: AutoModerationWord, input: string): boolean {
+    private matches(filter: ModerationFilterWord, input: string): boolean {
         return filter.words.some(w => {
             if (filter.allowed!.some(w => typeof w === "string" ? input.includes(w) : input.match(w) !== null)) return false;
             return typeof w === "string" ? input.includes(w) : input.match(w) !== null;
         });
     }
 
-    public async filter({ content }: AutoModerationFilterData): Promise<AutoModerationAction | null> {
+    public async filter({ content }: ModerationFilterData): Promise<ModerationFilterAction | null> {
         /* Which word was flagged by the filters, if any */
-        let flagged: AutoModerationWord | null = null;
+        let flagged: ModerationFilterWord | null = null;
         const cleaned: string = this.normalize(content);
 
         for (const wordFilter of this.blocked) {
@@ -122,40 +120,40 @@ export class AutoModerationWordFilter extends AutoModerationFilter {
 	}
 }
 
-class DeveloperModerationFilter extends AutoModerationFilter {
+class DeveloperModerationFilter extends ModerationFilter {
     constructor() {
         super({
             description: "Development filter"
         });
     }
 
-    public async filter({ bot, content }: AutoModerationFilterData): Promise<AutoModerationAction | null> {
+    public async filter({ bot, content }: ModerationFilterData): Promise<ModerationFilterAction | null> {
         if (!bot.dev) return null;
 
         /* Types of actions to take */
-        const types: AutoModerationActionType[] = [ "ban", "warn", "block", "flag" ];
+        const types: ModerationFilterActionType[] = [ "ban", "warn", "block", "flag" ];
 
         const parts: string[] = content.split(":");
         if (parts.length === 1 || parts[0] !== "testFlag") return null;
 
         const type: string = parts[parts.length - 1];
-        if (!types.includes(type as AutoModerationActionType)) return null;
+        if (!types.includes(type as ModerationFilterActionType)) return null;
 
         return {
-            type: type as AutoModerationActionType,
+            type: type as ModerationFilterActionType,
             reason: "Development test flag"
         };
     }
 }
 
-class TuringModerationFilter extends AutoModerationFilter {
+class TuringModerationFilter extends ModerationFilter {
     constructor() {
         super({
             description: "Turing API filter"
         });
     }
 
-    public async filter({ bot, content, source }: AutoModerationFilterData): Promise<AutoModerationAction | null> {
+    public async filter({ bot, content, source }: ModerationFilterData): Promise<ModerationFilterAction | null> {
         if (source !== "image" && source !== "video" && source !== "music") return null;
 
         const data = await bot.turing.filter(content, [ "nsfw", "cp", "toxicity" ]);
@@ -168,8 +166,8 @@ class TuringModerationFilter extends AutoModerationFilter {
     }
 }
 
-export const AutoModerationFilters: AutoModerationFilter[] = [
-    new AutoModerationWordFilter({
+export const ModerationFilters: ModerationFilter[] = [
+    new ModerationWordFilter({
         description: "Block pedophilia words",
         action: { type: "ban", reason: "Sexual content involving children" },
 
@@ -179,7 +177,7 @@ export const AutoModerationFilters: AutoModerationFilter[] = [
         ]
     }),
 
-    new AutoModerationWordFilter({
+    new ModerationWordFilter({
         description: "Block weird words",
         action: { type: "block" },
 
@@ -189,7 +187,7 @@ export const AutoModerationFilters: AutoModerationFilter[] = [
         ]
     }),
 
-    new AutoModerationWordFilter({
+    new ModerationWordFilter({
         description: "Block racist words",
         action: { reason: "Racist content", type: "block" },
 
@@ -198,7 +196,7 @@ export const AutoModerationFilters: AutoModerationFilter[] = [
         ]
     }),
 
-    new AutoModerationWordFilter({
+    new ModerationWordFilter({
         description: "Block homophobic words",
         action: { reason: "Homophobic content", type: "block" },
 

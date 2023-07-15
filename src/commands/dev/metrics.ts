@@ -14,7 +14,7 @@ interface ChartTimeFrame {
 	name: string;
 }
 
-export const TIME_FRAME_OPTIONS: ChartTimeFrame[] = [
+export const TimeFrameOptions: ChartTimeFrame[] = [
 	{ name: "1d" }, { name: "1w" }, { name: "2w" }
 ]
 
@@ -46,7 +46,7 @@ export default class MetricsCommand extends Command {
 				.addStringOption(builder => builder
 					.setName("time")
 					.setDescription("Which time frame to view the charts in")
-					.addChoices(...TIME_FRAME_OPTIONS.map(t => ({
+					.addChoices(...TimeFrameOptions.map(t => ({
 						name: t.name,
 						value: t.name
 					})))
@@ -96,7 +96,7 @@ export default class MetricsCommand extends Command {
         const row = new ActionRowBuilder<ButtonBuilder>();
 
         row.addComponents(
-			...TIME_FRAME_OPTIONS.map(t => new ButtonBuilder()
+			...TimeFrameOptions.map(t => new ButtonBuilder()
 				.setLabel(t.name)
 				.setCustomId(`metrics:time:${t.name}`)
 				.setStyle(time.name === t.name ? ButtonStyle.Success : ButtonStyle.Secondary)
@@ -171,7 +171,7 @@ export default class MetricsCommand extends Command {
         if (chart === null || timeFrame === null) return;
 
 		/* Selected time frame */
-		const time: ChartTimeFrame = TIME_FRAME_OPTIONS.find(t => t.name === timeFrame)!;
+		const time: ChartTimeFrame = TimeFrameOptions.find(t => t.name === timeFrame)!;
 
         /* Change the page */
         if (type === "page" || type === "time" || type === "refresh") {
@@ -188,7 +188,7 @@ export default class MetricsCommand extends Command {
 			} else if (type === "time") {
 				const newTimeFrame: string = interaction.customId.split(":").pop()!;
 
-				newTime = TIME_FRAME_OPTIONS.find(t => t.name === newTimeFrame) ?? null;
+				newTime = TimeFrameOptions.find(t => t.name === newTimeFrame) ?? null;
 				if (newTime === null) return;
 			}
 
@@ -231,7 +231,7 @@ export default class MetricsCommand extends Command {
 			/* Time period to display */
 			const time: ChartTimeFrame = interaction.options.getString("time", false) ?
 				{ name: interaction.options.getString("time", true) }
-				: TIME_FRAME_OPTIONS[0];
+				: TimeFrameOptions[0];
 
 			await this.buildLoadingIndicator(db).send(interaction);
 

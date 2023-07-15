@@ -2,15 +2,16 @@ import { ActionRowBuilder, AttachmentBuilder, BaseGuildTextChannel, ButtonBuilde
 import { randomUUID } from "crypto";
 
 import { ResponseChatNoticeMessage, MessageType, ResponseMessage } from "../chat/types/message.js";
-import { DatabaseUserInfraction, UserSubscriptionType } from "../db/schemas/user.js";
 import { LoadingIndicator, LoadingIndicatorManager } from "../db/types/indicator.js";
 import { PlanCreditViewers, PlanCreditVisibility } from "../db/managers/plan.js";
 import { ChatSettingsModel, ChatSettingsModels } from "./settings/model.js";
 import { ChatGeneratedInteraction, Conversation } from "./conversation.js";
 import { InteractionHandlerRunOptions } from "../interaction/handler.js";
+import { DatabaseInfraction } from "../moderation/types/infraction.js";
 import { ChatInteractionHandlerData } from "../interactions/chat.js";
 import { ChatModel, ModelCapability } from "../chat/types/model.js";
 import { ModerationResult } from "../moderation/moderation.js";
+import { UserSubscriptionType } from "../db/schemas/user.js";
 import { ChatGuildData } from "../chat/types/options.js";
 import { ChatSettingsTones } from "./settings/tone.js";
 import { Introduction } from "../util/introduction.js";
@@ -20,8 +21,8 @@ import { Response } from "../command/response.js";
 import { OtherPrompts } from "../chat/client.js";
 import { Reaction } from "./utils/reaction.js";
 import { Bot, BotStatus } from "../bot/bot.js";
-import { Utils } from "../util/utils.js";
 import { Emoji } from "../util/emoji.js";
+import { Utils } from "../util/utils.js";
 
 import { ErrorResponse, ErrorResponseOptions, ErrorType } from "../command/response/error.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/generation.js";
@@ -414,7 +415,7 @@ export class Generator {
 				.addEmbed(builder => builder
 					.setTitle("Hey there... 👋")
 					.setColor("Yellow")
-					.setDescription("To chat with me, you need to ping the **user** instead of the role. *Then, I'll be able to chat with you normally*.")
+					.setDescription("To chat with me, you need to ping the **user** instead of the role. *Then I'll be able to chat with you normally*.")
 				)
 			.send(options.message).catch(() => {});
 		}
@@ -424,13 +425,13 @@ export class Generator {
 
 		/* Get the user & guild data from the database, if available. */
 		const db = await this.bot.db.users.fetch(author, guild);
-		const banned: DatabaseUserInfraction | null = await this.bot.db.users.banned(db.user);
+		const banned: DatabaseInfraction | null = this.bot.moderation.banned(db.user);
 
 		/* If the user is banned from the bot, send a notice message. */
-		if (banned !== null) return void await this.bot.moderation.buildBanMessage(banned).send(message);
+		if (banned !== null) return void await this.bot.moderation.buildBanMessage(db.user, banned).send(message);
 
 		/* Show a warning modal to the user, if needed. */
-		db.user = await this.bot.moderation.warningModal({ interaction: message, db });
+		db.user = await this.bot.moderation.warningModal({ interaction: message, db: db.user });
 
 		/* Whether the user can access Premium features */
 		const premium: boolean = await this.bot.db.users.canUsePremiumFeatures(db);
@@ -473,7 +474,6 @@ export class Generator {
 
 		/* Remaining cool-down time */
 		const remaining: number = conversation.cooldown.remaining;
-		if (conversation.cooldown.active) await this.bot.db.users.incrementInteractions(db, "cooldownMessages");
 
 		/* If the command is on cool-down, don't run the request. */
 		if (conversation.cooldown.active && remaining > Math.min(conversation.cooldown.state.expiresIn! / 2, 10 * 1000)) {

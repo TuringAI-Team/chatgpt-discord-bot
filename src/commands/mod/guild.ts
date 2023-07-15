@@ -42,6 +42,6 @@ export default class GuildCommand extends Command {
 			)
 			.setEphemeral(true);
 
-		return await this.bot.moderation.buildGuildOverview(target, db);
+		return await this.bot.moderation.buildOverview(target, db);
     }
 }

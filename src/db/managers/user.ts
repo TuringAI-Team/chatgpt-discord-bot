@@ -1,15 +1,16 @@
 import { Guild, GuildMember, Role, Snowflake, User } from "discord.js";
 
-import { DatabaseInfractionOptions, DatabaseInteractionStatistics, DatabaseInteractionType, DatabaseSubscription, DatabaseSubscriptionType, DatabaseUser, DatabaseUserInfraction, UserSchema, UserSubscriptionLocation, UserSubscriptionType } from "../schemas/user.js";
+import { DatabaseInteractionStatistics, DatabaseInteractionType, DatabaseSubscription, DatabaseSubscriptionType, DatabaseUser, UserSchema, UserSubscriptionLocation, UserSubscriptionType } from "../schemas/user.js";
 import { DatabaseConversation, DatabaseMessage } from "../schemas/conversation.js";
 import { DatabaseGuild, DatabaseGuildSubscription } from "../schemas/guild.js";
-import { DatabaseModerationResult } from "../../moderation/moderation.js";
 import { Conversation } from "../../conversation/conversation.js";
 import { DatabaseDescription } from "../../image/description.js";
 import { DatabaseImage } from "../../image/types/image.js";
 import { DatabaseError } from "../../moderation/error.js";
 import { SubClusterDatabaseManager } from "../sub.js";
 import { VoteDuration } from "../../util/vote.js";
+
+export type DatabaseEntry = DatabaseUser | DatabaseGuild
 
 export interface DatabaseInfo {
     user: DatabaseUser;
@@ -56,6 +57,15 @@ export class UserManager extends SubClusterDatabaseManager {
         };
     }
 
+    public location(entry: DatabaseEntry): "guilds" | "users" {
+        if ((entry as any).roles != undefined) return "users";
+        return "guilds";
+    }
+    
+    public updateType(entry: DatabaseEntry): "updateGuild" | "updateUser" {
+        return this.location(entry) === "guilds" ? "updateGuild" : "updateUser";
+    }
+
     public async getImage(id: string): Promise<DatabaseImage | null> {
         return this.db.fetchFromCacheOrDatabase("images", id);
     }
@@ -64,65 +74,6 @@ export class UserManager extends SubClusterDatabaseManager {
         return await this.db.schema("users", user, async (_, schema: UserSchema, entry) => {
             return schema.voted(entry);
         });
-    }
-
-    public async infraction(user: DatabaseUser, options: DatabaseInfractionOptions): Promise<DatabaseUser> {
-        return await this.db.schema("users", user, async (_, schema: UserSchema, entry, context) => {
-            return schema.infraction(entry, context);
-        }, options);
-    }
-
-    public async removeInfraction(user: DatabaseUser, which: DatabaseUserInfraction | string): Promise<DatabaseUser> {
-        return await this.db.schema("users", user, async (_, schema: UserSchema, entry, context) => {
-            return schema.removeInfraction(entry, context);
-        }, which);
-    }
-
-    public async banned(user: DatabaseUser): Promise<DatabaseUserInfraction | null> {
-        return await this.db.schema("users", user, async (_, schema: UserSchema, entry) => {
-            return schema.banned(entry);
-        });
-    }
-
-    public async flag(user: DatabaseUser, data: DatabaseModerationResult): Promise<DatabaseUser> {
-        return this.infraction(user, { type: "moderation", moderation: data })
-    }
-
-    public async warn(user: DatabaseUser, { by, reason, automatic }: Pick<DatabaseInfractionOptions, "reason" | "by" | "automatic">): Promise<DatabaseUser> {
-        return this.infraction(user, { by, reason: reason ?? "Inappropriate use of the bot", type: "warn", seen: false, automatic: automatic });
-    }
-
-    public async ban(user: DatabaseUser, { by, reason, status, automatic  }: Pick<DatabaseInfractionOptions, "reason" | "by" | "automatic"> & { status: boolean }): Promise<DatabaseUser> {
-        const banned: boolean = await this.banned(user) !== null;
-        if (banned === status) return user;
-
-        return this.infraction(user, { by, reason: reason ?? "Inappropriate use of the bot", type: status ? "ban" : "unban", automatic });
-    }
-
-    /**
-     * Mark the specified infractions as seen for the user.
-     * 
-     * @param user User to mark the infractions as seen for
-     * @param marked Infractions to mark as seen
-     */
-    public async read(user: DatabaseUser, marked: DatabaseUserInfraction[]): Promise<DatabaseUser> {
-        let arr: DatabaseUserInfraction[] = user.infractions;
-
-        /* Loop through the user's infractions, and when the infractions that should be marked as read were found, change their `seen` status. */
-        arr = arr.map(
-            i => marked.find(m => m.id === i.id) !== undefined ? { ...i, seen: true } : i
-        );
-
-        return await this.db.queue.update("users", user, { infractions: arr });
-    }
-
-    /**
-     * Get a list of unread infractions for the user.
-     * @param user User to get unread infractions of
-     * @returns 
-     */
-    public unread(user: DatabaseUser): DatabaseUserInfraction[] {
-        return user.infractions.filter(i => i.type === "warn" && i.seen === false);
     }
 
     /**

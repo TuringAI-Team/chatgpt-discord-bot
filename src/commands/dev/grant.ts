@@ -14,7 +14,7 @@ import duration from "dayjs/plugin/duration.js";
 dayjs.extend(relativeTime);
 dayjs.extend(duration);
 
-export const SUBSCRIPTION_DURATION_OPTIONS = [
+export const SubscriptionDurationOptions = [
 	dayjs.duration({ minutes: 1 }),
 	dayjs.duration({ minutes: 5 }),
 	dayjs.duration({ days: 7 }),
@@ -50,7 +50,7 @@ export default class GrantCommand extends Command {
 					.addStringOption(builder => builder
 						.setName("duration")
 						.setDescription("How long the subscription should last")
-						.addChoices(...SUBSCRIPTION_DURATION_OPTIONS.map(duration => ({
+						.addChoices(...SubscriptionDurationOptions.map(duration => ({
 							name: `${duration.humanize()}`,
 							value: duration.asMilliseconds().toString()
 						})), {
@@ -122,7 +122,7 @@ export default class GrantCommand extends Command {
 			const duration: number = parseInt(rawDuration);
 			
 			/* Get the user's active subscription. */
-			const subscription: DatabaseSubscription | null  = db.subscription;
+			const subscription: DatabaseSubscription | null = db.subscription;
 
 			if (rawDuration === "revoke" || isNaN(duration)) {
 				if (subscription === null) return new Response()

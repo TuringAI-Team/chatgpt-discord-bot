@@ -9,17 +9,14 @@ import { ErrorResponse } from "../../command/response/error.js";
 import { CommandInteraction } from "../../command/command.js";
 import { SummaryPrompt } from "../../commands/summarize.js";
 import { DatabaseImage } from "../../image/types/image.js";
+import { DatabaseEntry, DatabaseInfo } from "./user.js";
 import { ProgressBar } from "../../util/progressBar.js";
 import { ClusterDatabaseManager } from "../cluster.js";
 import { YouTubeVideo } from "../../util/youtube.js";
 import { Response } from "../../command/response.js";
-import { DatabaseGuild } from "../schemas/guild.js";
 import { AppDatabaseManager } from "../app.js";
 import { SubDatabaseManager } from "../sub.js";
 import { Utils } from "../../util/utils.js";
-import { DatabaseInfo } from "./user.js";
-
-type DatabaseEntry = DatabaseUser | DatabaseGuild
 
 type UserPlanExpenseType = "image"  | "summary" | "chat" | "describe" | "translate" | "music"
 
@@ -116,7 +113,7 @@ export interface DatabasePlan {
     history: UserPlanCredit[];
 }
 
-enum PlanLocation {
+export enum PlanLocation {
     Guild = "guild",
     User = "user"
 }
@@ -153,11 +150,6 @@ export const PlanExpenseEntryViewers: {
 }
 
 export class BasePlanManager<T extends DatabaseManager<DatabaseManagerBot>> extends SubDatabaseManager<T> {
-    public location(entry: DatabaseEntry): PlanLocation {
-        if ((entry as any).roles != undefined) return PlanLocation.User;
-        return PlanLocation.Guild;
-    }
-
     /**
      * Check whether an entry's current plan is overdue and cannot be used anymore.
      * @param user Entry to check for
@@ -193,7 +185,7 @@ export class AppPlanManager extends BasePlanManager<AppDatabaseManager> {
 
 export class ClusterPlanManager extends BasePlanManager<ClusterDatabaseManager> {
     private functionName(entry: DatabaseEntry): "updateUser" | "updateGuild" {
-        return this.location(entry) === PlanLocation.Guild ? "updateGuild" : "updateUser";
+        return this.db.users.updateType(entry);
     }
 
     public async expense<T extends UserPlanExpense = UserPlanExpense>(

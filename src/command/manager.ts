@@ -3,8 +3,8 @@ import { RESTPostAPIApplicationCommandsJSONBody, Routes } from "discord-api-type
 import { DiscordAPIError } from "@discordjs/rest";
 
 import { InteractionHandler, InteractionHandlerClassType } from "../interaction/handler.js";
+import { DatabaseInfraction } from "../moderation/types/infraction.js";
 import { Command, CommandSpecificCooldown } from "./command.js";
-import { DatabaseUserInfraction } from "../db/schemas/user.js";
 import { DatabaseInfo } from "../db/managers/user.js";
 import { CooldownData } from "./types/cooldown.js";
 import { RunningData } from "./types/running.js";
@@ -359,15 +359,15 @@ export class CommandManager {
 			return;
 		}
 
-		const banned: DatabaseUserInfraction | null = await this.bot.db.users.banned(db.user);
+		const banned: DatabaseInfraction | null = this.bot.moderation.banned(db.user);
 
 		/* If the user is banned from the bot, send a notice message. */
 		if (banned !== null && !command.options.always) return void await 
-			this.bot.moderation.buildBanMessage(banned)
+			this.bot.moderation.buildBanMessage(db.user, banned)
 		.send(interaction);
 
 		/* Show a warning modal to the user, if needed. */
-		db.user = await this.bot.moderation.warningModal({ interaction, db });
+		db.user = await this.bot.moderation.warningModal({ interaction, db: db.user });
 
 		/* If the user doesn't have a cool-down set for the command yet, ... */
 		if (command.options.cooldown !== null && cooldown === null) {

@@ -107,7 +107,7 @@ export class TranslationManager {
         /* Generate the translation result using ChatGPT. */
         const raw = await this.bot.turing.openAI({
             messages, model: "gpt-3.5-turbo",
-            max_tokens: 500, temperature: 0.1
+            max_tokens: maxTokens, temperature: 0.1
         });
 
         tokens.completion = getPromptLength(raw.result);

@@ -42,6 +42,6 @@ export default class UserCommand extends Command {
 			)
 			.setEphemeral(true);
 
-		return await this.bot.moderation.buildUserOverview(target, db);
+		return await this.bot.moderation.buildOverview(target, db);
     }
 }

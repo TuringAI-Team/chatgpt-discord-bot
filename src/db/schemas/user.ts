@@ -1,7 +1,7 @@
 import { Awaitable, Snowflake, User } from "discord.js";
 import { randomUUID } from "crypto";
 
-import { DatabaseModerationResult } from "../../moderation/moderation.js";
+import { DatabaseInfraction, DatabaseInfractionOptions } from "../../moderation/types/infraction.js";
 import { DatabaseGuild, DatabaseGuildSubscription } from "./guild.js";
 import { SettingsLocation } from "../managers/settings.js";
 import { type AppDatabaseManager } from "../app.js";
@@ -42,7 +42,7 @@ export interface DatabaseUser {
     interactions: DatabaseInteractionStatistics;
 
     /* Moderation history of the user */
-    infractions: DatabaseUserInfraction[];
+    infractions: DatabaseInfraction[];
 
     /* Information about the user's subscription */
     subscription: DatabaseSubscription | null;
@@ -70,35 +70,6 @@ export type DatabaseUserMetadata = Record<DatabaseUserMetadataKey, string | unde
 export type DatabaseInteractionType = "commands" | "interactions" | "images" | "messages" | "resets" | "translations" | "imageDescriptions" | "cooldownMessages" | "videos" | "songs"
 export const DatabaseInteractionTypes: DatabaseInteractionType[] = [ "commands", "interactions", "images", "messages", "resets", "translations", "imageDescriptions", "cooldownMessages", "videos" ]
 export type DatabaseInteractionStatistics = Record<DatabaseInteractionType, number>
-
-/* Type of moderation action */
-export type DatabaseUserInfractionType = "ban" | "unban" | "warn" | "moderation"
-
-export interface DatabaseUserInfraction {
-    /* Type of moderation action */
-    type: DatabaseUserInfractionType;
-
-    /* ID of the infraction */
-    id: string;
-
-    /* When this action was taken */
-    when: number;
-
-    /* Which bot moderator took this action, Discord identifier */
-    by?: Snowflake;
-
-    /* Why this action was taken */
-    reason?: string;
-
-    /* Whether the user has been notified of this infraction */
-    seen?: boolean;
-
-    /* Used for `moderation` infractions */
-    moderation?: DatabaseModerationResult;
-    automatic?: boolean;
-}
-
-export type DatabaseInfractionOptions = Pick<DatabaseUserInfraction, "by" | "reason" | "type" | "moderation" | "automatic" | "seen">
 
 export class UserSchema extends DatabaseSchema<DatabaseUser, User> {
     constructor(db: AppDatabaseManager) {
@@ -192,58 +163,6 @@ export class UserSchema extends DatabaseSchema<DatabaseUser, User> {
             since: typeof db.subscription.since === "string" ? Date.parse(db.subscription.since) : db.subscription.since,
             expires: typeof db.subscription.expires === "string" ? Date.parse(db.subscription.expires) : db.subscription.expires
         };
-    }
-
-    /**
-     * Check whether the specified user is banned.
-     * @param user User to check
-     * 
-     * @returns Whether they are banned
-     */
-    public banned(user: DatabaseUser): DatabaseUserInfraction | null {
-        /* List of all ban-related infractions */
-        const infractions: DatabaseUserInfraction[] = user.infractions.filter(i => i.type === "ban" || i.type === "unban");
-        if (infractions.length === 0) return null;
-
-        /* Whether the user is banned; really dumb way of checking it */
-        const banned: boolean = infractions.length % 2 > 0;
-        return banned ? infractions[infractions.length - 1] : null;
-    }
-
-    /**
-     * Give an infraction of the specified type to a user.
-     * 
-     * @param user User to give the infraction to
-     * @param options Infraction options
-     */
-    public async infraction(user: DatabaseUser, { by, reason, type, seen, moderation, automatic }: DatabaseInfractionOptions & { seen?: boolean }): Promise<DatabaseUser> {
-        /* Raw infraction data */
-        const data: DatabaseUserInfraction = {
-            by, reason, type, moderation, automatic,
-            when: Date.now(), id: randomUUID().slice(undefined, 8)
-        };
-
-        if (type !== "moderation" && type !== "ban" && type !== "unban") data.seen = seen ?? false;
-
-        /* Update the user cache too. */
-        return this.update(user, {
-            infractions: [
-                ...(await this.get(user))?.infractions ?? [],
-                data
-            ]
-        });
-    }
-
-    public async removeInfraction(user: DatabaseUser, which: DatabaseUserInfraction | string): Promise<DatabaseUser> {
-        /* ID of the infraction to remove */
-        const id: string = typeof which === "object" ? which.id : which;
-
-        /* Filter out the infraction to remove from the user's list of infractions. */
-        const infractions: DatabaseUserInfraction[] = user.infractions.filter(i => i.id !== id);
-
-        return this.update(user, {
-            infractions
-        });
     }
 
     public voted(user: DatabaseUser): number | null {

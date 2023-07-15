@@ -408,12 +408,13 @@ export default class ImagineCommand extends Command {
 		const handler = async (data: ImagePartialGenerationResult) => {
 			if (data.progress === null) return;
 
-			const partial: Response = await this.buildPartialResponse(user, db, data, options, moderation);
+			const partial: Response = await this.buildPartialResponse(user, db, data, { ...options, prompt }, moderation);
 			await partial.send(interaction);
 		};
 
 		/* Parse & validate the given aspect ratio. */
-		const ratio: ImageGenerationRatio | null = typeof rawRatio === "object" ? rawRatio : this.bot.image.validRatio(rawRatio);
+		const ratio: ImageGenerationRatio | null = typeof rawRatio === "object"
+			? rawRatio : this.bot.image.validRatio(rawRatio);
 
 		if (ratio === null) return new ErrorResponse({
 			interaction, command: this, message: "You specified an **invalid** aspect ratio"
@@ -569,7 +570,7 @@ export default class ImagineCommand extends Command {
 		await interaction.deferReply().catch(() => {});
 
 		const moderation: ModerationResult = await this.bot.moderation.checkImagePrompt({
-			db, user: interaction.user, content: prompt
+			db, user: interaction.user, content: prompt, model: model.id
 		});
 
 		/* If the message was flagged, send a warning message. */

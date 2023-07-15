@@ -1,18 +1,18 @@
 import { Awaitable } from "discord.js";
 import chalk from "chalk";
 
-import { DatabaseUser, DatabaseUserInfraction, DatabaseUserInfractionType } from "../../db/schemas/user.js";
-import { AutoModerationFilter, AutoModerationFilters } from "./filters.js";
 import { ModerationOptions, ModerationResult, ModerationSource } from "../moderation.js";
+import { ModerationFilter, ModerationFilters } from "./filters.js";
+import { DatabaseInfraction } from "../types/infraction.js";
 import { DatabaseInfo } from "../../db/managers/user.js";
+import { DatabaseUser } from "../../db/schemas/user.js";
 import { Bot } from "../../bot/bot.js";
 
-export interface AutoModerationFilterOptions {
+export interface ModerationFilterOptions {
     description: string;
-    filter?: (options: AutoModerationFilterData) => Awaitable<AutoModerationAction | null>;
 }
 
-export interface AutoModerationFilterData {
+export interface ModerationFilterData {
     bot: Bot;
     content: string;
     db: DatabaseInfo;
@@ -20,19 +20,19 @@ export interface AutoModerationFilterData {
 }
 
 /* Which action to perform regarding the flagged content */
-export type AutoModerationActionType = "ban" | "warn" | "block" | "flag"
+export type ModerationFilterActionType = "ban" | "warn" | "block" | "flag"
 
-export type AutoModerationAction = Pick<DatabaseUserInfraction, "reason"> & {
+export type ModerationFilterAction = Pick<DatabaseInfraction, "reason"> & {
     /* Which action to perform */
-    type: AutoModerationActionType;
+    type: ModerationFilterActionType;
 }
 
-export type AutoModerationActionData = AutoModerationAction & {
-    /* Which AutoMod action was performed */
+export type ModerationFilterActionData = ModerationFilterAction & {
+    /* Which moderation action was performed */
     action: string;
 }
 
-export interface AutoModerationWord {
+export interface ModerationFilterWord {
     /* Words to block */
     words: (string | RegExp)[]; 
 
@@ -40,34 +40,34 @@ export interface AutoModerationWord {
     allowed?: (string | RegExp)[];
 
     /* Which infraction to execute for this flagged word */
-    action?: Partial<AutoModerationAction>;
+    action?: Partial<ModerationFilterAction>;
 }
 
-export type AutoModerationWordFilterOptions = Omit<AutoModerationFilterOptions, "filter"> & {
+export type ModerationFilterWordOptions = Omit<ModerationFilterOptions, "filter"> & {
     /* Words to block */
-    blocked: AutoModerationWord[];
+    blocked: ModerationFilterWord[];
 
     /* Generic action to run, if no other was specified */
-    action: AutoModerationAction;
+    action: ModerationFilterAction;
 }
 
-export type AutoModerationFilterCallback = (data: AutoModerationAction, action: AutoModerationFilter) => boolean;
+export type ModerationFilterCallback = (data: ModerationFilterAction, action: ModerationFilter) => boolean;
 
-export class AutoModerationManager {
+export class FilterManager {
     private readonly bot: Bot;
 
     constructor(bot: Bot) {
         this.bot = bot;
     }
 
-    public async filter(options: AutoModerationFilterData): Promise<AutoModerationActionData | null> {
+    public async filter(options: ModerationFilterData): Promise<ModerationFilterActionData | null> {
         /* Exempt all owners from the moderation filters. */
         if (this.bot.db.role.owner(options.db.user)) return null;
 
         /* Which action was performedm, if any */
-        let flagged: { data: AutoModerationAction, action: AutoModerationFilter } | null = null;
+        let flagged: { data: ModerationFilterAction, action: ModerationFilter } | null = null;
 
-        for (const filter of AutoModerationFilters) {
+        for (const filter of ModerationFilters) {
             /* Execute the filter. */
             try {
                 const result = await filter.execute(options);
@@ -92,12 +92,12 @@ export class AutoModerationManager {
         };
     }
 
-    public async execute({ auto, db }: ModerationOptions & { auto: AutoModerationActionData, result: ModerationResult }): Promise<DatabaseUser> {
+    public async execute({ auto, db }: ModerationOptions & { auto: ModerationFilterActionData, result: ModerationResult }): Promise<DatabaseUser> {
         if (auto.type === "ban") {
-            return await this.bot.db.users.ban(db.user, { status: true, automatic: true, reason: auto.reason });
+            return await this.bot.moderation.ban(db.user, { status: true, reason: auto.reason });
 
         } else if (auto.type === "warn") {
-            return await this.bot.db.users.warn(db.user, { automatic: true, reason: auto.reason });
+            return await this.bot.moderation.warn(db.user, { reason: auto.reason });
         }
 
         return db.user;

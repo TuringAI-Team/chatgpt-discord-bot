@@ -273,7 +273,9 @@ export default class CampaignsCommand extends Command {
             { name: "Active", value: campaign.active ? "✅" : "❌" },
             { name: "Link", value: `<${campaign.link}>` },
             { name: "Members", value: `${members.map(member => `<@${member.id}>`).join(", ")}` },
-            { name: "Budget", value: campaign.budget !== null ? `${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(campaign.budget)}` : "∞" }
+            { name: "Budget", value: new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(campaign.budget) },
+            { name: "Views", value: new Intl.NumberFormat("en-US").format(campaign.stats.views.total) },
+            { name: "Clicks", value: new Intl.NumberFormat("en-US").format(campaign.stats.clicks.total) }
         ];
 
         const response = new Response()
@@ -363,10 +365,7 @@ export default class CampaignsCommand extends Command {
         const chunks: ButtonBuilder[][] = Utils.chunk(buttons, 5);
 
         chunks.forEach(chunk => {
-            const builder: ActionRowBuilder<ButtonBuilder> = new ActionRowBuilder();
-            builder.addComponents(chunk);
-
-            builders.push(builder);
+            builders.push(new ActionRowBuilder<ButtonBuilder>().addComponents(chunk));
         });
 
         return builders;

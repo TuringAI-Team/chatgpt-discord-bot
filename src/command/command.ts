@@ -1,5 +1,5 @@
 import { ContextMenuCommandBuilder, SlashCommandBuilder, SlashCommandSubcommandsOnlyBuilder } from "@discordjs/builders";
-import { AutocompleteInteraction, ButtonInteraction, ChatInputCommandInteraction, ContextMenuCommandInteraction } from "discord.js";
+import { ButtonInteraction, ChatInputCommandInteraction, ContextMenuCommandInteraction } from "discord.js";
 import { APIApplicationCommandOptionChoice } from "discord-api-types/v10";
 
 import { UserSubscriptionPlanType } from "../db/schemas/user.js";
