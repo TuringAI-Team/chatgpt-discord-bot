@@ -1,4 +1,4 @@
-import { APIEmbedField, Attachment, AttachmentBuilder, ChatInputCommandInteraction, MessageContextMenuCommandInteraction } from "discord.js";
+import { APIEmbedField, ActionRowBuilder, Attachment, AttachmentBuilder, ButtonBuilder, ChatInputCommandInteraction, MessageContextMenuCommandInteraction } from "discord.js";
 import { Image, createCanvas } from "@napi-rs/canvas";
 import crypto from "crypto";
 
@@ -212,7 +212,6 @@ export class ImageDescriptionManager {
 
             /* Draw the additional detected OCR text overlay. */
             const final: ImageBuffer = await this.drawTextOverlay(buffer, description.result.ocr);
-
             const fields: APIEmbedField[] = [];
 
             fields.push({
@@ -239,7 +238,10 @@ export class ImageDescriptionManager {
                 )
                 .addAttachment(
                     new AttachmentBuilder(final.buffer).setName("image.png")
-                );
+                )
+                .addComponent(ActionRowBuilder<ButtonBuilder>, this.bot.turing.dataset.buildRateToolbar({
+                    dataset: "describe", id: description.id
+                }));
 
         } catch (error) {
             return await this.bot.error.handle({

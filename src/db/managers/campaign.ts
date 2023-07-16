@@ -234,6 +234,15 @@ export class ClusterCampaignManager extends BaseCampaignManager<ClusterDatabaseM
         await this.db.delete("campaigns", campaign);
     }
 
+    public async clearStatistics(campaign: DatabaseCampaign): Promise<DatabaseCampaign> {
+        return this.update(campaign, {
+            stats: {
+                clicks: { geo: {}, total: 0 },
+                views: { geo: {}, total: 0 }
+            }
+        })
+    }
+
     public async updateStatistics(
         campaign: DatabaseCampaign, type: keyof DatabaseCampaignStatistics, updates: Partial<DatabaseCampaignStatistics["clicks"]>
     ): Promise<DatabaseCampaign> {

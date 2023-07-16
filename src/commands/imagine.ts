@@ -311,6 +311,10 @@ export default class ImagineCommand extends Command {
 		
 		if (action !== "upscale") {
 			rows.push(...this.buildRow(user, db, "upscale"));
+		} else {
+			rows.push(this.bot.turing.dataset.buildRateToolbar({
+				dataset: "image", id: db.id
+			}));
 		}
 
 		if (rows[0] && action === "generate") {
@@ -504,6 +508,9 @@ export default class ImagineCommand extends Command {
 			
 			await this.bot.db.metrics.changeImageMetric({
 				models: { [(model ?? this.bot.image.model.default()).id]: "+1" },
+				styles: { [style !== null ? style.id : "none"]: "+1" },
+				ratios: { [`${ratio.a}:${ratio.b}`]: "+1" },
+				samplers: { [sampler]: "+1" },
 				counts: { [count]: "+1" },
 				steps: { [steps]: "+1" }
 			});

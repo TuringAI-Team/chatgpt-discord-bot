@@ -5,13 +5,14 @@ import { AnthropicChatResult, AnthropicPartialChatResult, TuringAnthropicChatBod
 import { ChatSettingsPlugin, ChatSettingsPluginIdentifier } from "../conversation/settings/plugin.js";
 import { GoogleChatResult, TuringGoogleChatBody } from "./types/google.js";
 import { RunPodPath, RunPodRawStreamResponseData } from "../runpod/api.js";
-import { TuringAPIError, TuringErrorBody } from "../error/turing.js";
 import { ChoiceSettingOptionChoice } from "../db/managers/settings.js";
 import { ChatOutputImage, ImageBuffer } from "../chat/types/image.js";
+import { TuringAPIError, TuringErrorBody } from "../error/turing.js";
 import { Conversation } from "../conversation/conversation.js";
 import { ChatInputImage } from "../chat/types/image.js";
 import { MetricsType } from "../db/managers/metrics.js";
 import { DatabaseUser } from "../db/schemas/user.js";
+import { TuringDatasetManager } from "./dataset.js";
 import { ImageAPIPath } from "../image/manager.js";
 import { StreamBuilder } from "../util/stream.js";
 import { Bot } from "../bot/bot.js";
@@ -23,6 +24,7 @@ export type TuringAPIPath =
     | `runpod/${RunPodPath}`
     | "audio/transcript"
     | `other/${"mp3-to-mp4"}`
+    | `dataset/${"rate"}`
 
 type TuringAPIFilter = "nsfw" | "cp" | "toxicity"
 
@@ -440,8 +442,13 @@ export interface TuringAPIRawResponse<T = any> {
 export class TuringAPI {
     public readonly bot: Bot;
 
+    /* Dataset manager; responsible for rating datasets & UI stuff */
+    public readonly dataset: TuringDatasetManager;
+
     constructor(bot: Bot) {
         this.bot = bot;
+
+        this.dataset = new TuringDatasetManager(this);
     }
 
     public async transcribe(body: TuringTranscribeBody): Promise<TuringTranscribeResult> {

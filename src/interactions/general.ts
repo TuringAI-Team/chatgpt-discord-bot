@@ -6,7 +6,7 @@ import { Introduction } from "../util/introduction.js";
 import { Response } from "../command/response.js";
 import { Bot } from "../bot/bot.js";
 
-type GeneralInteractionAction = "delete" | "vote" | "docs"  
+type GeneralInteractionAction = "delete" | "vote" | "docs"
 
 export interface GeneralInteractionHandlerData {
     /* Which action to perform */
@@ -64,7 +64,7 @@ export class GeneralInteractionHandler extends InteractionHandler<ButtonInteract
 
 				return new Response()
 					.addEmbed(builder => builder
-						.setDescription(`Thank you for voting for the bot! 🎉`)
+						.setDescription(`Thank you for voting for the bot 🎉`)
 						.setColor(this.bot.branding.color)
 					)
 					.setEphemeral(true);

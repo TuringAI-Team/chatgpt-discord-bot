@@ -1,4 +1,4 @@
-import { AttachmentBuilder, SlashCommandBuilder } from "discord.js";
+import { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, SlashCommandBuilder } from "discord.js";
 import { Image, createCanvas } from "@napi-rs/canvas";
 import { readFile } from "fs/promises";
 
@@ -197,6 +197,8 @@ export default class MusicCommand extends Command {
 					new AttachmentBuilder(video.buffer).setName(`${prompt}.mp4`)
 				)
 			}
+
+			
 
 			return response;
 			

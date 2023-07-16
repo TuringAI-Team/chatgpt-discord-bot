@@ -103,9 +103,21 @@ type ImageMetricsEntry = MetricsEntry<"image", {
         [key: number]: number;
     };
 
-    models: {
+    styles: {
+        [key: string]: number;
+    };
+
+    ratios: {
         [key: string]: number;
     }
+
+    samplers: {
+        [key: string]: number;
+    }
+
+    models: {
+        [key: string]: number;
+    };
 }>
 
 type CommandsMetricsEntry = MetricsEntry<"commands", {

@@ -217,10 +217,10 @@ export default class CampaignsCommand extends Command {
 
         const buttons: ButtonBuilder[] = [
             new ButtonBuilder()
-            .setLabel("Back")
-            .setEmoji("◀️")
-            .setStyle(ButtonStyle.Secondary)
-            .setCustomId(buildID("selector")),
+                .setLabel("Back")
+                .setEmoji("◀️")
+                .setStyle(ButtonStyle.Secondary)
+                .setCustomId(buildID("selector")),
 
             new ButtonBuilder()
                 .setLabel(campaign.active ? "Disable" : "Enable")
@@ -228,6 +228,12 @@ export default class CampaignsCommand extends Command {
                 .setStyle(ButtonStyle.Secondary)
                 .setCustomId(buildID("toggle")),
 
+            new ButtonBuilder()
+                .setLabel("Refresh")
+                .setEmoji("🔄")
+                .setStyle(ButtonStyle.Secondary)
+                .setCustomId(buildID("reload")),
+                
             new ButtonBuilder()
                 .setLabel("Preview")
                 .setEmoji("📜")
@@ -239,6 +245,12 @@ export default class CampaignsCommand extends Command {
                 .setEmoji("📊")
                 .setStyle(ButtonStyle.Secondary)
                 .setCustomId(buildID("stats")),
+
+            new ButtonBuilder()
+                .setLabel("Clear statistics")
+                .setEmoji("🧹")
+                .setStyle(ButtonStyle.Danger)
+                .setCustomId(buildID("clearStats")),
 
             new ButtonBuilder()
                 .setLabel("Delete").setEmoji("🗑️")
@@ -275,7 +287,13 @@ export default class CampaignsCommand extends Command {
             { name: "Members", value: `${members.map(member => `<@${member.id}>`).join(", ")}` },
             { name: "Budget", value: new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(campaign.budget) },
             { name: "Views", value: new Intl.NumberFormat("en-US").format(campaign.stats.views.total) },
-            { name: "Clicks", value: new Intl.NumberFormat("en-US").format(campaign.stats.clicks.total) }
+            { name: "Clicks", value: new Intl.NumberFormat("en-US").format(campaign.stats.clicks.total) },
+            {
+                name: "Conversion rate",
+                value: campaign.stats.clicks.total !== 0
+                    ? new Intl.NumberFormat("en-US", { style: "percent", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(campaign.stats.clicks.total / campaign.stats.views.total)
+                    : "-"
+            }
         ];
 
         const response = new Response()
@@ -534,6 +552,9 @@ export default class CampaignsCommand extends Command {
                 campaign = await this.bot.db.campaign.update(campaign, {
                     active: !campaign.active
                 });
+
+            } else if (action === "clearStats") {
+                campaign = await this.bot.db.campaign.clearStatistics(campaign);
 
             } else if (action === "delete") {
                 await this.bot.db.campaign.delete(campaign);
