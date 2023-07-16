@@ -21,9 +21,9 @@ import { ImageStyles } from "../../image/types/style.js";
 import { ClusterDatabaseManager } from "../cluster.js";
 import { Response } from "../../command/response.js";
 import { DatabaseGuild } from "../schemas/guild.js";
+import { UserLanguages } from "../types/locale.js";
 import { AppDatabaseManager } from "../app.js";
 import { SubDatabaseManager } from "../sub.js";
-import { UserLanguages } from "../types/locale.js";
 import { Utils } from "../../util/utils.js";
 import { DatabaseInfo } from "./user.js";
 import { Bot } from "../../bot/bot.js";
@@ -510,6 +510,7 @@ export const SettingOptions: SettingsOption[] = [
         emoji: { fallback: "🤖" },
         description: "Which image AI model to use",
         location: SettingsLocation.User,
+        default: null, optional: true,
 
         explanation: {
             description: "This setting changes which AI image generation model will be used for `/imagine` by default, unless modified by the `model` parameter. Some models are only available to **Premium** ✨ users."

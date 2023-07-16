@@ -14,7 +14,8 @@ const CacheDuration: Partial<Record<CacheType, number>> = {
     interactions: 5 * 60,
     guilds: 60 * 60,
     users: 60 * 60,
-    campaigns: 30 * 24 * 60 * 60
+    campaigns: 30 * 24 * 60 * 60,
+    webhooks: 24 * 60 * 60
 }
 
 export class CacheManager {

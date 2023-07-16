@@ -63,7 +63,7 @@ const DefaultPrompt: Partial<ImagePrompt> = {
 
 const MaxStepGenerationCount = {
 	free: 50,
-	voter: 60,
+	voter: 50,
 	subscription: 100,
 	plan: 100
 }
@@ -541,8 +541,8 @@ export default class ImagineCommand extends Command {
 		const sampler: ImageSampler = interaction.options.getString("sampler") ?? ImageSamplers[0];
 
 		/* If the user is trying to generate an image with more steps than possible for a normal user, send them a notice. */
-		if (steps > MaxStepGenerationCount[subscriptionType.type] && !canUsePremiumFeatures) return new PremiumUpsellResponse({
-			type: PremiumUpsellType.SDSteps
+		if (steps > MaxStepGenerationCount[subscriptionType.type]) return new PremiumUpsellResponse({
+			type: PremiumUpsellType.ImagineSteps
 		});
 
 		/* Which prompt to use for generation */
@@ -553,8 +553,8 @@ export default class ImagineCommand extends Command {
 		const seed: number | null = interaction.options.getInteger("seed") ?? null;
 
 		/* Which model to use */
-		const modelID: string = interaction.options.getString("model", false) ?? this.bot.db.settings.get(db.user, "image:model");
-		const model: ImageModel = this.bot.image.model.get(modelID);
+		const modelID: string | null = interaction.options.getString("model", false) ?? this.bot.db.settings.get(db.user, "image:model");
+		const model: ImageModel = modelID !== null ? this.bot.image.model.get(modelID) : this.bot.image.model.random();
 
 		/* Ratio that the images should be */
 		const ratio: string = interaction.options.getString("ratio") && model.settings.modifyResolution

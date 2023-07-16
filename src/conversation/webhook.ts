@@ -22,6 +22,10 @@ export class WebhookManager {
         return this.bot.db.settings.get(db, "character:mode");
     }
 
+    public enabled(db?: DatabaseGuild | null): boolean {
+        return this.mode(db) !== "off";
+    }
+
     public base(db: DatabaseGuild): Pick<WebhookMessageCreateOptions, "avatarURL" | "username"> {
         const name: string = this.bot.db.settings.get(db, "character:name");
         const avatarURL: string = this.bot.db.settings.get(db, "character:avatar");
@@ -67,6 +71,15 @@ export class WebhookManager {
             /* If the webhook doesn't exist anymore, delete it from the cache too. */
             if (error.status === 404) await this.bot.db.cache.delete("webhooks", webhook.id);
             throw error;
+        }
+    }
+
+    public async accessible(channel: WebhookChannel): Promise<boolean> {
+        try {
+            await this.fetch(channel);
+            return true;
+        } catch (_) {
+            return false;
         }
     }
     

@@ -541,6 +541,20 @@ export class Generator {
 				.setColor("Red")
 			).send(message);
 
+		/* Check if the custom character is enabled. */
+		if (message.channel && message.channel.type === ChannelType.GuildText && this.bot.webhook.enabled(db.guild)) {
+			/* Check whether the bot can create webhooks in this channel. */
+			if (!(await this.bot.webhook.accessible(message.channel))) {
+				return void await new Response()
+					.addEmbed(builder => builder
+						.setTitle("Uh-oh... 😬")
+						.setDescription("It seems like the bot doesn't have the **`Manage webhooks`** permission in this channel, required for the **Custom character 🧙‍♂️** feature.")
+						.setImage("https://cdn.discordapp.com/attachments/964997165825024080/1130088118083657880/cqCbfSt.png")
+						.setColor("Red")
+					).send(message);
+			}
+		}
+
 		conversation.generating = true;
 
 		/* If the message content was not provided by another source, check it for profanity & ask the user if they want to execute the request anyways. */
@@ -598,11 +612,17 @@ export class Generator {
 					typingTimer = null;
 				}
 
-				reply = await this.send({
-					message, reply, response, db, type: GeneratorSendType.Partial
-				});
+				try {
+					reply = await this.send({
+						message, reply, response, db, type: GeneratorSendType.Partial
+					});
+					
+				} catch (error) {
+					reply = null!;
+				} finally {
+					queued = false;
+				}
 
-				queued = false;
 
 			} else if (reply !== null && !queued && (partial || (!partial && (data.type !== "Chat" && data.type !== "ChatNotice")))) {	
 				try {

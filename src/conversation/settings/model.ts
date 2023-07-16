@@ -317,7 +317,7 @@ Current date & time: ${context.time}, ${context.date}
         }
     }),
 
-    new ChatSettingsModel({
+    /*new ChatSettingsModel({
         name: "Alan",
         description: "A combination of various AIs, creating the ultimate chatbot",
         emoji: { display: "<:turing_logo:1114952278483411095>", fallback: "🧑‍💻" },
@@ -333,7 +333,7 @@ Current date & time: ${context.time}, ${context.date}
             type: ChatSettingsModelPromptType.Raw,
             builder: ({ options }) => options.prompt
         }
-    }),
+    }),*/
 
     new ChatSettingsModel({
         name: "Clyde",

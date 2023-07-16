@@ -1,14 +1,13 @@
 import { Response } from "../response.js";
 
 export enum PremiumUpsellType {
-    /** Stable Diffusion */
-    SDSize, SDSteps, SDChatGPT
+    /** /imagine */
+    ImagineSize, ImagineSteps
 }
 
 const PremiumUpsells: Record<PremiumUpsellType, string> = {
-    [PremiumUpsellType.SDSteps]: "**Premium** increases the maximum amount of steps you can use for image generation",
-    [PremiumUpsellType.SDSize]: "**Premium** allows you to generate way bigger images",
-    [PremiumUpsellType.SDChatGPT]: "This feature is only available to **Premium** users for now"
+    [PremiumUpsellType.ImagineSteps]: "**Premium** increases the maximum amount of steps you can use for image generation",
+    [PremiumUpsellType.ImagineSize]: "**Premium** allows you to generate way bigger images",
 }
 
 interface PremiumUpsellResponseOptions {

@@ -16,13 +16,13 @@ export type ImageAPIPath = "sdxl" | "kandinsky" | "runpod" | "sh"
 export class ImageModelManager {
     private models: ImageModel[];
 
-    constructor(manager: ImageManager) {
+    constructor() {
         this.models = ImageConfigModels.map(m => ({
             ...m,
             
             settings: {
-                ...m.settings,
-                modifyResolution: true
+                random: false, modifyResolution: true,
+                ...m.settings
             },
 
             body: {}, tags: []
@@ -35,6 +35,12 @@ export class ImageModelManager {
 
     public default(): ImageModel {
         return this.models[0];
+    }
+
+    public random(): ImageModel {
+        /* List of models, which can be chosen randomly */
+        const models = this.models.filter(m => m.settings.random);
+        return Utils.random(models);
     }
 
     public get(id: string): ImageModel {
@@ -51,7 +57,7 @@ export class ImageManager {
 
     constructor(bot: Bot) {
         this.bot = bot;
-        this.model = new ImageModelManager(this);
+        this.model = new ImageModelManager();
     }
 
     public prompt(prompt: ImagePrompt, length: number = 250): string {

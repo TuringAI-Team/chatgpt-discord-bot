@@ -4,6 +4,9 @@ import { ImageAPIPath } from "../manager.js";
 export interface ImageConfigModelSettings {
     /** Whether the resolution can be changed */
     modifyResolution?: boolean;
+
+    /** Whether this model can be chosen randomly */
+    random?: boolean;
 }
 
 export type ImageModelSettings = Required<ImageConfigModelSettings>
@@ -19,7 +22,7 @@ export interface ImageConfigModel {
     description: string;
 
     /** Various settings for the model */
-    settings?: ImageModelSettings;
+    settings?: ImageConfigModelSettings;
 
     /** Additional tags for the prompt, e.g. trigger words */
     tags?: string[];
@@ -40,7 +43,11 @@ export const ImageConfigModels: ImageConfigModel[] = [
         name: "Kandinsky",
         description: "Multi-lingual latent diffusion model",
         id: "kandinsky",
-        path: "kandinsky"
+        path: "kandinsky",
+
+        settings: {
+            random: true
+        }
     },
 
     {
@@ -50,7 +57,8 @@ export const ImageConfigModels: ImageConfigModel[] = [
         path: "sh",
 
         settings: {
-            modifyResolution: false
+            modifyResolution: false,
+            random: true
         },
 
         body: {
