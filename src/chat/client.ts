@@ -76,7 +76,7 @@ You must pretend to "view" these text attachments, do not talk about the format 
 }
 
 /* Hard limit for the prompt generation loop */
-const PROMPT_GEN_LOOP_LIMIT: number = 50
+const PromptLoopLimit: number = 50
 
 export class ChatClient {
     /* Conversation manager - in charge of this instance */
@@ -317,9 +317,9 @@ export class ChatClient {
             if (maxContextLength - tokens <= 0) options.conversation.history.shift();
             else break;
             
-        } while (maxContextLength - tokens <= 0 && i < PROMPT_GEN_LOOP_LIMIT);
+        } while (maxContextLength - tokens <= 0 && i < PromptLoopLimit);
 
-        if(i >= PROMPT_GEN_LOOP_LIMIT) throw new Error("Reached the prompt iteration limit");
+        if(i >= PromptLoopLimit) throw new Error("Reached the prompt iteration limit");
 
         /* Update the maximum generation tokens, to avoid possible conflicts with the model's limits. */
         maxGenerationTokens = Math.min(

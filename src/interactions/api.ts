@@ -4,7 +4,7 @@ import { InteractionHandler, InteractionHandlerBuilder, InteractionHandlerRespon
 import APICommand from "../commands/api.js";
 import { Bot } from "../bot/bot.js";
 
-type APIInteractionAction = "continue"
+type APIInteractionAction = "refresh" | "info" | "create" | "delete"
 
 export interface APIInteractionHandlerData {
     /* Which action to perform */

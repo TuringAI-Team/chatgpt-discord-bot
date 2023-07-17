@@ -35,7 +35,7 @@ interface UserPlanExpense<T extends UserPlanExpenseData = UserPlanExpenseData> {
     used: number;
 
     /* Other information about this expense, e.g. for Chat expenses it contains `model`, `completionTokens` and `promptTokens` */
-    data: T | null;
+    data: T;
 }
 
 export type UserPlanChatExpense = UserPlanExpense<{
@@ -49,7 +49,9 @@ export type UserPlanChatExpense = UserPlanExpense<{
     duration?: number;
 }>
 
-export type UserPlanImageExpense = UserPlanExpense
+export type UserPlanImageExpense = UserPlanExpense<{
+    model: string;
+}>
 
 export type UserPlanDallEExpense = UserPlanExpense<{
     count: number;
@@ -246,7 +248,9 @@ export class ClusterPlanManager extends BasePlanManager<ClusterDatabaseManager> 
         entry: DatabaseInfo, result: DatabaseImage
     ): Promise<UserPlanImageExpense | null> {
         return this.expense(entry, {
-            type: "image", used: result.cost, data: null, bonus: 0.10
+            type: "image", used: result.cost, data: {
+                model: result.model
+            }, bonus: 0.10
         });
     }
 
@@ -429,8 +433,8 @@ export class ClusterPlanManager extends BasePlanManager<ClusterDatabaseManager> 
                         const formatted: string | null = viewer !== null ? viewer(expense, plan) : null;
 
                         return {
-                            name: `${Utils.titleCase(expense.type)}${formatted !== null ? ` — *${formatted}*` : ""}`,
-                            value: `**$${Math.round(expense.used * Math.pow(10, 5)) / Math.pow(10, 5)}** — *<t:${Math.floor(expense.time / 1000)}:F>*`
+                            name: `${Utils.titleCase(expense.type)}${formatted !== null ? ` — *${formatted}*` : ""} — **$${Math.round(expense.used * Math.pow(10, 5)) / Math.pow(10, 5)}**`,
+                            value: `*<t:${Math.floor(expense.time / 1000)}:F>*`
                         };
                     }))
 				);

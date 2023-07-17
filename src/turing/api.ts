@@ -16,6 +16,7 @@ import { TuringDatasetManager } from "./dataset.js";
 import { ImageAPIPath } from "../image/manager.js";
 import { StreamBuilder } from "../util/stream.js";
 import { Bot } from "../bot/bot.js";
+import { TuringKeyManager } from "./keys.js";
 
 export type TuringAPIPath = 
     | "text/filter" | `text/${string}` | `text/alan/${TuringAlanChatModel}` | `text/gpt/${TuringChatPluginsModel}`
@@ -25,6 +26,7 @@ export type TuringAPIPath =
     | "audio/transcript"
     | `other/${"mp3-to-mp4"}`
     | `dataset/${"rate"}`
+    | "key" | `key/u/${string}` | `key/k/${string}/${string}`
 
 type TuringAPIFilter = "nsfw" | "cp" | "toxicity"
 
@@ -425,11 +427,12 @@ export interface TuringMP3toMP4Result {
 
 type TuringAPIMethod = "GET" | "POST" | "DELETE"
 
-interface TuringAPIRequest {
+export interface TuringAPIRequest {
     method?: TuringAPIMethod;
     body?: any;
     path: TuringAPIPath;
     raw?: boolean;
+    headers?: Record<string, string>;
 }
 
 export interface TuringAPIRawResponse<T = any> {
@@ -445,10 +448,14 @@ export class TuringAPI {
     /* Dataset manager; responsible for rating datasets & UI stuff */
     public readonly dataset: TuringDatasetManager;
 
+    /* Keys manager; responsible for creating & managing keys using the API */
+    public readonly keys: TuringKeyManager;
+
     constructor(bot: Bot) {
         this.bot = bot;
 
         this.dataset = new TuringDatasetManager(this);
+        this.keys = new TuringKeyManager(this);
     }
 
     public async transcribe(body: TuringTranscribeBody): Promise<TuringTranscribeResult> {
@@ -603,13 +610,16 @@ export class TuringAPI {
 
     public async request<T>(options: TuringAPIRequest): Promise<T | TuringAPIRawResponse<T>> {
         const { path, body, method, raw } = options;
-
+        
         /* Make the actual request. */
         const response = await fetch(this.url(path), {
             method,
             
             body: body !== undefined ? JSON.stringify(body) : undefined,
-            headers: this.headers()
+            headers: {
+                ...this.headers(),
+                ...options.headers ?? {}
+            }
         });
 
         /* If the request wasn't successful, throw an error. */

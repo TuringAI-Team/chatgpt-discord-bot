@@ -1,9 +1,14 @@
 import { ImageGenerationBody } from "./image.js";
 import { ImageAPIPath } from "../manager.js";
 
+interface ImageConfigModelSize {
+    width: number;
+    height: number;
+}
+
 export interface ImageConfigModelSettings {
-    /** Whether the resolution can be changed */
-    modifyResolution?: boolean;
+    /* Fixed resolution */
+    size?: ImageConfigModelSize | null;
 
     /** Whether this model can be chosen randomly */
     random?: boolean;
@@ -57,13 +62,12 @@ export const ImageConfigModels: ImageConfigModel[] = [
         path: "sh",
 
         settings: {
-            modifyResolution: false,
+            size: { width: 1024, height: 1024 },
             random: true
         },
 
         body: {
-            model: "SDXL_beta::stability.ai#6901",
-            width: 1024, height: 1024
+            model: "SDXL_beta::stability.ai#6901"
         }
     },
 

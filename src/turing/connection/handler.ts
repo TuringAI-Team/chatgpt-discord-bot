@@ -62,7 +62,6 @@ export class TuringConnectionHandler {
         try {
             /* Convert the message buffer into a string. */
             const data: string = message.body.toString();
-            console.log(data)
 
             /* Try to parse the message data. */
             try {

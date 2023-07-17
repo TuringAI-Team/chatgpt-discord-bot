@@ -22,7 +22,7 @@ export class ImageModelManager {
             ...m,
             
             settings: {
-                random: false, modifyResolution: true,
+                random: false, size: null,
                 ...m.settings
             }
         }));
@@ -121,10 +121,6 @@ export class ImageManager {
 
     public async generate({ body, model, progress }: ImageGenerationOptions): Promise<ImageGenerationResult> {
         const path: TuringAPIPath = `image/${model.path}`;
-
-        console.log({
-            ...body, ...model.body, stream: true
-        },)
 
         return await new StreamBuilder<
             any, ImagePartialGenerationResult, ImageGenerationResult

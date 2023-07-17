@@ -95,6 +95,7 @@ export interface Config {
 	turing: {
 		/* API key */
 		key: string;
+		super: string;
 
 		urls: {
 			prod: string;

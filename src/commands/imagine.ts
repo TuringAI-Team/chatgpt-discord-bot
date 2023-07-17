@@ -252,7 +252,7 @@ export default class ImagineCommand extends Command {
 
 		if (db.options.ratio.a !== 1 || db.options.ratio.b !== 1) {
 			const { width, height } = this.bot.image.findBestSize(db.options.ratio);
-			fields.push({ name: "Ratio", value: `\`${db.options.ratio.a}:${db.options.ratio.b}\` (**${width}**x**${height}**)` });
+			fields.push({ name: "Ratio", value: `\`${db.options.ratio.a}:${db.options.ratio.b}\` (**${width}**×**${height}**)` });
 		}
 
 		if (db.options.steps !== DefaultGenerationOptions.steps) fields.push({
@@ -432,7 +432,9 @@ export default class ImagineCommand extends Command {
 		});
 
 		/* Find the best size for the specified aspect ratio. */
-		const { width, height } = this.bot.image.findBestSize(ratio);
+		const { width, height } = model === null || model.settings.size === null
+			? this.bot.image.findBestSize(ratio)
+			: model.settings.size;
 
 		if (enhancer !== null && enhancer.id !== "none") {
 			await new LoadingResponse({
@@ -534,7 +536,6 @@ export default class ImagineCommand extends Command {
 	}
 
     public async run(interaction: ChatInputCommandInteraction, db: DatabaseInfo): CommandResponse {
-		const canUsePremiumFeatures: boolean = await this.bot.db.users.canUsePremiumFeatures(db);
 		const subscriptionType = await this.bot.db.users.type(db);
 		
 		/* How many images to generate */
@@ -571,8 +572,12 @@ export default class ImagineCommand extends Command {
 		const model: ImageModel = modelID !== null ? this.bot.image.model.get(modelID) : this.bot.image.model.random();
 
 		/* Ratio that the images should be */
-		const ratio: string = interaction.options.getString("ratio") && model.settings.modifyResolution
+		const ratio: string = interaction.options.getString("ratio")
 			? interaction.options.getString("ratio", true) : "1:1";
+
+		if (model.settings.size !== null && ratio !== "1:1") return new ErrorResponse({
+			interaction, command: this, message: `**${model.name}** has a fixed resolution of \`${model.settings.size.width}×${model.settings.size.height}\`; *you cannot modify the aspect ratio*`
+		});
 
 		/* Which style to apply additionally */
 		const styleID: string | null = interaction.options.getString("style", false) ?? this.bot.db.settings.get(db.user, "image:style");
