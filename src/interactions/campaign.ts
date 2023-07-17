@@ -27,6 +27,6 @@ export class ChatInteractionHandler extends InteractionHandler<ButtonInteraction
     }
 
     public async run(data: InteractionHandlerRunOptions<ButtonInteraction, CampaignInteractionHandlerData>): InteractionHandlerResponse {
-        return await this.bot.db.campaign.handleInteraction(data);
+        return this.bot.db.campaign.handleInteraction(data);
     }
 }

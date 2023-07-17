@@ -1,16 +1,16 @@
 import { APIUser, Collection, Message, Snowflake, User } from "discord.js";
+import chalk from "chalk";
 
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/generation.js";
+import { ChatClient, ChatClientResult } from "../chat/client.js";
 import { ModerationResult } from "../moderation/moderation.js";
 import { ResponseMessage } from "../chat/types/message.js";
 import { ChatGuildData } from "../chat/types/options.js";
 import { ProgressManager } from "./utils/progress.js";
 import { DatabaseInfo } from "../db/managers/user.js";
 import { Conversation } from "./conversation.js";
-import { ChatClient, ChatClientResult } from "../chat/client.js";
 import { Generator } from "./generator.js";
 import { Bot } from "../bot/bot.js";
-import chalk from "chalk";
 
 /* Message generation options */
 export interface GenerationOptions {

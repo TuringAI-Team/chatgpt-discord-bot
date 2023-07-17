@@ -1,6 +1,5 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle, EmbedBuilder, GuildMember, InteractionReplyOptions } from "discord.js";
 
-import { DatabaseUser, UserSubscriptionType } from "../schemas/user.js";
 import { RunPodMusicGenResult } from "../../runpod/models/musicgen.js";
 import { ChatInteraction } from "../../conversation/conversation.js";
 import { DatabaseManager, DatabaseManagerBot } from "../manager.js";
@@ -9,6 +8,7 @@ import { ErrorResponse } from "../../command/response/error.js";
 import { CommandInteraction } from "../../command/command.js";
 import { SummaryPrompt } from "../../commands/summarize.js";
 import { DatabaseImage } from "../../image/types/image.js";
+import { UserSubscriptionType } from "../schemas/user.js";
 import { DatabaseEntry, DatabaseInfo } from "./user.js";
 import { ProgressBar } from "../../util/progressBar.js";
 import { ClusterDatabaseManager } from "../cluster.js";
@@ -18,7 +18,7 @@ import { AppDatabaseManager } from "../app.js";
 import { SubDatabaseManager } from "../sub.js";
 import { Utils } from "../../util/utils.js";
 
-type UserPlanExpenseType = "image"  | "summary" | "chat" | "describe" | "translate" | "music"
+type UserPlanExpenseType = "image" | "api" | "summary" | "chat" | "describe" | "translate" | "music"
 
 type UserPlanExpenseData = {
     [key: string]: string | number | boolean | UserPlanExpenseData;
@@ -75,6 +75,11 @@ export type UserPlanTranslateExpense = UserPlanExpense<{
     };
 
     source: string;
+}>
+
+export type UserPlanAPIExpense = UserPlanExpense<{
+    model: string;
+    type: string;
 }>
 
 type UserPlanCreditType = "web" | "grant"
@@ -140,6 +145,7 @@ export const PlanExpenseEntryViewers: {
     describe: PlanExpenseEntryViewer<UserPlanImageDescribeExpense>,
     translate: PlanExpenseEntryViewer<UserPlanTranslateExpense>,
     music: PlanExpenseEntryViewer<UserPlanMusicExpense>
+    api: PlanExpenseEntryViewer<UserPlanAPIExpense>
 } = {
     image: null,
     summary: e => `used **${e.data.tokens}** tokens`,
@@ -147,6 +153,7 @@ export const PlanExpenseEntryViewers: {
     describe: e => `took **${e.data.duration} ms**`,
     translate: e => `translated from **\`${e.data.source}\`**, used **${e.data.tokens.prompt}** prompt & **${e.data.tokens.completion}** completion tokens`,
     music: e => `took **${e.data.duration} ms**`,
+    api: null
 }
 
 export class BasePlanManager<T extends DatabaseManager<DatabaseManagerBot>> extends SubDatabaseManager<T> {
@@ -412,16 +419,14 @@ export class ClusterPlanManager extends BasePlanManager<ClusterDatabaseManager> 
 				const plan = plans[type.location]!;
 
 				/* Previous plan expenses */
-				const expenses = plan.expenses.slice(-10);
+				const expenses = plan.expenses.filter(e => e.type !== "api").slice(-10);
 
 				if (expenses.length > 0) response.addEmbed(builder => builder
 					.setTitle("Previous expenses")
 					.addFields(expenses.map(expense => {
                         /* Formatter for this expense type */
-                        const viewer: PlanExpenseEntryViewer | null = PlanExpenseEntryViewers[expense.type];
-
-                        const formatted: string | null = viewer !== null
-                            ? viewer(expense, plan) : null;
+                        const viewer: PlanExpenseEntryViewer | null = PlanExpenseEntryViewers[expense.type] ?? null;
+                        const formatted: string | null = viewer !== null ? viewer(expense, plan) : null;
 
                         return {
                             name: `${Utils.titleCase(expense.type)}${formatted !== null ? ` — *${formatted}*` : ""}`,

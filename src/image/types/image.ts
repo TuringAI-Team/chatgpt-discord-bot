@@ -3,7 +3,7 @@ import { Awaitable } from "discord.js";
 import { ImageGenerationRatio } from "../../commands/imagine.js";
 import { ImageSampler } from "./sampler.js";
 import { ImagePrompt } from "./prompt.js";
-import { ImageConfigModel } from "./model.js";
+import { ImageModel } from "./model.js";
 
 export interface ImageResult {
     id: string;
@@ -62,7 +62,7 @@ export interface ImageGenerationBody {
 
 export interface ImageGenerationOptions {
     body: Partial<ImageGenerationBody>;
-    model: ImageConfigModel;
+    model: ImageModel;
     progress: (data: ImagePartialGenerationResult) => Awaitable<void>;
 }
 

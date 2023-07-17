@@ -4,11 +4,11 @@ import { Command } from "../../command/command.js";
 import { DatabaseUser } from "../schemas/user.js";
 import { BotStatus } from "../../bot/bot.js";
 
-export type UserRole = "tester" | "investor" | "advertiser" | "moderator" | "owner"
+export type UserRole = "tester" | "api" | "investor" | "advertiser" | "moderator" | "owner"
 export type UserRoles = UserRole[]
 
 export const UserRoleHierarchy: UserRoles = [
-    "owner", "moderator", "investor", "advertiser", "tester"
+    "owner", "moderator", "investor", "advertiser", "api", "tester"
 ]
 
 interface UserRoleChanges {
@@ -73,6 +73,7 @@ export class UserRoleManager extends SubClusterDatabaseManager {
     public owner(user: DatabaseUser): boolean { return this.has(user, "owner"); }
     public investor(user: DatabaseUser): boolean { return this.has(user, "investor"); }
     public advertiser(user: DatabaseUser): boolean { return this.has(user, "advertiser"); }
+    public api(user: DatabaseUser): boolean { return this.has(user, "api"); }
 
     public async toggle(user: DatabaseUser, role: UserRole, status?: boolean): Promise<DatabaseUser> {
         return await this.change(user, {

@@ -129,6 +129,10 @@ export class TranslationManager {
             type: GPTTranslationErrorType.Failed
         });
 
+        if (data.content === options.content) throw new GPTTranslationError({
+            type: GPTTranslationErrorType.SameContent
+        });
+
         return {
             ...data, target, tokens
         };

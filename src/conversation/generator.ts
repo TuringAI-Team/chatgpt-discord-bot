@@ -279,7 +279,7 @@ export class Generator {
 			});
 		
 			response.addAttachment(new AttachmentBuilder(Buffer.from(content))
-				.setName(`${model.id}${tone.id !== "normal" ? `-${tone.id}` : ""}-${date}.txt`)
+				.setName(`${model.id}${tone.id !== "neutral" ? `-${tone.id}` : ""}-${date}.txt`)
 			);
 
 			response.setContent(pending ? loadingEmoji : "_ _");
@@ -489,6 +489,8 @@ export class Generator {
 			}, remaining);
 
 			await Reaction.add(this.bot, message, "🐢");
+			if (Math.random() > 0.75) await Reaction.add(this.bot, message, "💨");
+
 			return;
 
 		/* If the remaining time is negligible, wait for the cool-down to expire. */

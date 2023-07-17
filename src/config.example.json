@@ -60,6 +60,7 @@
 
     "turing": {
         "key": "Turing API key @ https://github.com/TuringAI-Team/turing-ai-api",
+        "super": "Turing API super key @ https://github.com/TuringAI-Team/turing-ai-api",
         "captchas": {
             "turnstile": "Turing Turnstile verification key"
         },

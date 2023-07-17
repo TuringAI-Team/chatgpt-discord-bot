@@ -32,6 +32,6 @@ export class ChatInteractionHandler extends InteractionHandler<ButtonInteraction
 
     public async run(data: InteractionHandlerRunOptions<ButtonInteraction, ChatInteractionHandlerData>): InteractionHandlerResponse {
         if (data.data.id !== null && data.db.user.id !== data.data.id) return void await data.interaction.deferUpdate();
-        return await this.bot.conversation.generator.handleInteraction(data);
+        return this.bot.conversation.generator.handleInteraction(data);
     }
 }

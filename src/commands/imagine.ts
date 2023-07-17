@@ -104,9 +104,16 @@ export default class ImagineCommand extends Command {
 			.addStringOption(builder => builder
 				.setName("style")
 				.setDescription("Which style to use")
-				.addChoices(...ImageStyles.map(style => ({
-					name: `${style.emoji} ${style.name}`, value: style.id
-				})))
+				.addChoices(
+					...ImageStyles.map(style => ({
+						name: `${style.emoji} ${style.name}`, value: style.id
+					})),
+
+					{
+						name: "❌ None",
+						value: "none"
+					}
+				)
 				.setRequired(false)
 			)
 			.addStringOption(builder => builder
@@ -569,7 +576,7 @@ export default class ImagineCommand extends Command {
 
 		/* Which style to apply additionally */
 		const styleID: string | null = interaction.options.getString("style", false) ?? this.bot.db.settings.get(db.user, "image:style");
-		const style: ImageStyle | null = styleID !== null ? ImageStyles.find(f => f.id === styleID)! : null;
+		const style: ImageStyle | null = styleID !== null && styleID !== "none" ? ImageStyles.find(f => f.id === styleID)! : null;
 
 		const enhancerID: string = interaction.options.getString("enhance", false) ?? this.bot.db.settings.get(db.user, "image:enhancer");
 		const enhancer: ImagePromptEnhancer = ImagePromptEnhancers.find(e => e.id === enhancerID)!;
