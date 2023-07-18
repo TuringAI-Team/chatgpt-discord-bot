@@ -373,12 +373,11 @@ export class Generator {
 	public async handleDeletion(message: Message): Promise<void> {
 		if (message.author.id === this.bot.client.user.id) return;
 
-		const db = await this.bot.db.users.getUser(message.author);
-		if (db === null) return;
-
-		/* Get the author's active conversation. */
-		const conversation: Conversation | null = this.bot.conversation.get(message.author);
+		const conversation: Conversation | null = this.bot.conversation.get(message.author.id);
 		if (conversation === null || !conversation.active) return;
+
+		const db = await this.bot.db.users.getUser(message.author.id);
+		if (db === null) return;
 
 		/* Find the corresponding message in the conversation that got deleted. */
 		const entry = conversation.history.find(message);
