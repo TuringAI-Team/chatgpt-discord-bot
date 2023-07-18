@@ -36,7 +36,7 @@ export class LLaMAModel extends ChatModel {
                 cost: data.cost > 0 ? data.cost : undefined
             },
 
-            text: data.result.trim()
+            text: content
         };
     }
 
