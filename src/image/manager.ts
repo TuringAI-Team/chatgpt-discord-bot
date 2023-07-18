@@ -11,7 +11,7 @@ import { TuringAPIPath } from "../turing/api.js";
 import { Utils } from "../util/utils.js";
 import { Bot } from "../bot/bot.js";
 
-export type ImageAPIPath = "sdxl" | "kandinsky" | "runpod" | "sh"
+export type ImageAPIPath = "sdxl" | "kandinsky" | "sh" | "anything"
 
 export class ImageModelManager {
     private models: ImageModel[];
@@ -22,7 +22,7 @@ export class ImageModelManager {
             ...m,
             
             settings: {
-                random: false, size: null,
+                random: false, forcedSize: null, baseSize: null,
                 ...m.settings
             }
         }));
@@ -77,8 +77,9 @@ export class ImageManager {
         return { a, b };
     }
 
-    public findBestSize({ a, b }: ImageGenerationRatio, maxWidth: number = 768, maxHeight: number = 768, step: number = 64): ImageGenerationSize {
-        const pixelCount = Math.max(512 * 512, Math.ceil(a * b / step / step) * step * step);
+    public findBestSize({ a, b }: ImageGenerationRatio, model: ImageModel | null, step: number = 64): ImageGenerationSize {
+        const max = model?.settings.baseSize ?? { width: 512, height: 512 };
+        const pixelCount = Math.max(max.width * max.height, Math.ceil(a * b / step / step) * step * step);
 
         let width = Math.round(Math.sqrt(pixelCount * a / b));
         let height = Math.round(Math.sqrt(pixelCount * b / a));
@@ -86,10 +87,10 @@ export class ImageManager {
         width += width % step > 0 ? step - width % step : 0;
         height += height % step > 0 ? step - height % step : 0;
 
-        return width > maxWidth ? {
-            width: maxWidth, height: Math.round(maxWidth * b / a / step) * step
-        } : height > maxHeight ? {
-            width: Math.round(maxHeight * a / b / step) * step, height: maxHeight
+        return width > max.width ? {
+            width: max.width, height: Math.round(max.width * b / a / step) * step
+        } : height > max.height ? {
+            width: Math.round(max.height * a / b / step) * step, height: max.height
         } : {
             width, height
         };

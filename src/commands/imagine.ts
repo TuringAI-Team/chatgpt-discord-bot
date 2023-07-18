@@ -190,7 +190,7 @@ export default class ImagineCommand extends Command {
 
 		if (moderation !== null && moderation.flagged) {
 			const { embeds } = await this.bot.moderation.message({
-				name: "Your prompt", result: moderation
+				name: "Your prompt", result: moderation, small: true
 			});
 
 			response.addEmbed(embeds[0]);
@@ -221,7 +221,7 @@ export default class ImagineCommand extends Command {
 
 		if (moderation !== null && moderation.flagged) {
 			const { embeds } = await this.bot.moderation.message({
-				name: "Your prompt", result: moderation
+				name: "Your prompt", result: moderation, small: true
 			});
 
 			response.addEmbed(embeds[0]);
@@ -251,7 +251,7 @@ export default class ImagineCommand extends Command {
 		fields.push({ name: "Model", value: model.name });
 
 		if (db.options.ratio.a !== 1 || db.options.ratio.b !== 1) {
-			const { width, height } = this.bot.image.findBestSize(db.options.ratio);
+			const { width, height } = this.bot.image.findBestSize(db.options.ratio, model);
 			fields.push({ name: "Ratio", value: `\`${db.options.ratio.a}:${db.options.ratio.b}\` (**${width}**×**${height}**)` });
 		}
 
@@ -432,9 +432,8 @@ export default class ImagineCommand extends Command {
 		});
 
 		/* Find the best size for the specified aspect ratio. */
-		const { width, height } = model === null || model.settings.size === null
-			? this.bot.image.findBestSize(ratio)
-			: model.settings.size;
+		const { width, height } = model === null || model.settings.forcedSize === null
+			? this.bot.image.findBestSize(ratio, model) : model.settings.forcedSize;
 
 		if (enhancer !== null && enhancer.id !== "none") {
 			await new LoadingResponse({
@@ -575,8 +574,8 @@ export default class ImagineCommand extends Command {
 		const ratio: string = interaction.options.getString("ratio")
 			? interaction.options.getString("ratio", true) : "1:1";
 
-		if (model.settings.size !== null && ratio !== "1:1") return new ErrorResponse({
-			interaction, command: this, message: `**${model.name}** has a fixed resolution of \`${model.settings.size.width}×${model.settings.size.height}\`; *you cannot modify the aspect ratio*`
+		if (model.settings.forcedSize !== null && ratio !== "1:1") return new ErrorResponse({
+			interaction, command: this, message: `**${model.name}** has a fixed resolution of \`${model.settings.forcedSize.width}×${model.settings.forcedSize.height}\`; *you cannot modify the aspect ratio*`
 		});
 
 		/* Which style to apply additionally */

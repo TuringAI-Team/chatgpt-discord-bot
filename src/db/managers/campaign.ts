@@ -268,6 +268,13 @@ export class ClusterCampaignManager extends BaseCampaignManager<ClusterDatabaseM
         const country: string | null = db.user.metadata.country ?? null;
         if (country !== null) updates.geo[country] = campaign.stats[type]?.geo?.[country] ? campaign.stats[type].geo[country] + 1 : 1;
 
+        await this.db.metrics.changeCampaignsMetric({
+            [type]: {
+                total: { [campaign.name]: updates.total },
+                now: { [campaign.name]: "+1" }
+            }
+        });
+
         return this.updateStatistics(campaign, type, updates);
     }
 

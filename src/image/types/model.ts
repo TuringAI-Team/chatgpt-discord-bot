@@ -8,7 +8,10 @@ interface ImageConfigModelSize {
 
 export interface ImageConfigModelSettings {
     /* Fixed resolution */
-    size?: ImageConfigModelSize | null;
+    forcedSize?: ImageConfigModelSize | null;
+
+    /* The base resolution when specifying a ratio */
+    baseSize?: ImageConfigModelSize | null;
 
     /** Whether this model can be chosen randomly */
     random?: boolean;
@@ -51,6 +54,7 @@ export const ImageConfigModels: ImageConfigModel[] = [
         path: "kandinsky",
 
         settings: {
+            baseSize: { width: 768, height: 768 },
             random: true
         }
     },
@@ -62,7 +66,7 @@ export const ImageConfigModels: ImageConfigModel[] = [
         path: "sh",
 
         settings: {
-            size: { width: 1024, height: 1024 },
+            forcedSize: { width: 1024, height: 1024 },
             random: true
         },
 
@@ -108,12 +112,6 @@ export const ImageConfigModels: ImageConfigModel[] = [
         name: "Anything Diffusion",
         description: "Stable Diffusion-based model for generating anime",
         id: "anything-diffusion",
-        path: "sh",
-
-        tags: [ "anime", "booru" ],
-        
-        body: {
-            model: "Anything Diffusion"
-        }
+        path: "anything"
     }
 ]

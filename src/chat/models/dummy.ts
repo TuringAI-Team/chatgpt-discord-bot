@@ -7,9 +7,7 @@ import { ChatClient } from "../client.js";
 export class DummyModel extends ChatModel {
     constructor(client: ChatClient) {
         super(client, {
-            name: "Dummy",
-            type: ModelType.Dummy,
-
+            name: "Dummy", type: ModelType.Dummy,
             capabilities: [ ModelCapability.GuildOnly, ModelCapability.ImageViewing ]
         });
     }

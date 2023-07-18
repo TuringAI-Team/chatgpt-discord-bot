@@ -16,7 +16,7 @@ export enum ModelCapability {
 
 export enum ModelType {
     /* OpenAI ChatGPT API */
-    OpenAIChat,
+    OpenAI,
 
     /** Replication of Discord's Clyde AI */
     Clyde,
@@ -26,6 +26,9 @@ export enum ModelType {
 
     /** Anthropic's API, using the Turing API */
     Anthropic,
+
+    /** Meta's LLaMA model, using the Turing API */
+    LLaMA,
 
     /** Turing Alan model, utilizing various AI technologies */
     Alan,

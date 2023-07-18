@@ -159,7 +159,7 @@ export const ChatSettingsModels: ChatSettingsModel[] = [
         emoji: { display: "<:chatgpt:1097849346164281475>", fallback: "🤖" },
         settings: { temperature: 0.4 },
         history: { maxTokens: 4096 },
-        type: ModelType.OpenAIChat,
+        type: ModelType.OpenAI,
 
         billing: {
             type: ChatSettingsModelBillingType.Per1000Tokens,
@@ -185,7 +185,7 @@ Knowledge cut-off: September 2021
         description: "OpenAI's new GPT-4 model",
         emoji: { fallback: "✨" },
         settings: { model: "gpt-4" },
-        type: ModelType.OpenAIChat,
+        type: ModelType.OpenAI,
         restricted: "premium",
         history: { context: 425, generation: 270, maxTokens: 8192 },
         cooldown: { time: 30 * 1000 },
@@ -215,7 +215,7 @@ Knowledge cut-off: September 2021
         emoji: { display: "<:chatgpt_16k:1118928845244989500>", fallback: "🔥" },
         settings: { model: "gpt-3.5-turbo-16k", temperature: 0.4 },
         history: { maxTokens: 16384 },
-        type: ModelType.OpenAIChat,
+        type: ModelType.OpenAI,
         restricted: "plan",
 
         billing: {
@@ -334,6 +334,29 @@ Current date & time: ${context.time}, ${context.date}
             builder: ({ options }) => options.prompt
         }
     }),*/
+
+    new ChatSettingsModel({
+        name: "LLaMA",
+        emoji: { display: "<:meta:1130906183381811341>", fallback: "🦙" },
+        description: "A foundational large language model, by Meta",
+        history: { maxTokens: 4096 },
+        cooldown: { multiplier: 1.25 },
+        type: ModelType.LLaMA,
+        restricted: "tester",
+
+        billing: {
+            type: ChatSettingsModelBillingType.Custom, amount: 0
+        },
+
+        prompt: {
+            builder: ({ context }) => `
+You are LLaMA, an open-source language model created by Meta.
+You must provide engaging & entertaining responses.
+
+Current date & time: ${context.time}, ${context.date}
+`
+        }
+    }),
 
     new ChatSettingsModel({
         name: "Clyde",

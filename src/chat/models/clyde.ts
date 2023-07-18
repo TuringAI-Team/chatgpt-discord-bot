@@ -1,8 +1,8 @@
 import { Awaitable, ChannelType, GuildBasedChannel, GuildEmoji, GuildMember, Invite, MessageMentions, TextChannel } from "discord.js";
 
 import { DatabaseSubscription, DatabaseUser } from "../../db/schemas/user.js";
-import { ChatGuildData, ModelGenerationOptions } from "../types/options.js";
 import { TuringOpenAIPartialResult } from "../../turing/types/openai/chat.js";
+import { ChatGuildData, ModelGenerationOptions } from "../types/options.js";
 import { getPromptLength } from "../../conversation/utils/length.js";
 import { Conversation } from "../../conversation/conversation.js";
 import { ChatOutputImage, ImageBuffer } from "../types/image.js";
@@ -213,9 +213,7 @@ const ClydeFormatters: ClydeFormatterPair[] = [
 export class ClydeModel extends ChatGPTModel {
     constructor(client: ChatClient) {
         super(client, {
-            name: "Clyde",
-            type: ModelType.Clyde,
-
+            name: "Clyde", type: ModelType.Clyde,
             capabilities: [ ModelCapability.GuildOnly, ModelCapability.ImageViewing, ModelCapability.UserLanguage ]
         });
     }

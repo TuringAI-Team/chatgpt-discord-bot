@@ -17,9 +17,10 @@ import { ImageAPIPath } from "../image/manager.js";
 import { StreamBuilder } from "../util/stream.js";
 import { Bot } from "../bot/bot.js";
 import { TuringKeyManager } from "./keys.js";
+import { LLaMAPartialChatResult, LLaMAChatResult, TuringLLaMABody } from "./types/llama.js";
 
 export type TuringAPIPath = 
-    | "text/filter" | `text/${string}` | `text/alan/${TuringAlanChatModel}` | `text/gpt/${TuringChatPluginsModel}`
+    | "text/filter" | `text/${string}`
     | `chart/${MetricsType}`
     | `image/${ImageAPIPath}` | "image"
     | `runpod/${RunPodPath}`
@@ -569,6 +570,24 @@ export class TuringAPI {
 
             progress: data => {
                 if (progress) progress(data);
+            }
+        }).run();
+    }
+
+    public async llama(body: TuringLLaMABody, progress: (result: LLaMAPartialChatResult) => void): Promise<LLaMAChatResult> {
+        return await new StreamBuilder<
+            any, LLaMAPartialChatResult, LLaMAChatResult
+        >({
+            body: {
+                ...body, model: "llama2", stream: true
+            },
+
+            error: response => this.error(response, "text/other", "error"),
+            url: this.url("text/other"),
+            headers: this.headers(),
+
+            progress: data => {
+                progress(data);
             }
         }).run();
     }

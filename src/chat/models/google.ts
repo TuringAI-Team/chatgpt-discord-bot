@@ -7,10 +7,7 @@ import { ChatClient } from "../client.js";
 export class GoogleModel extends ChatModel {
     constructor(client: ChatClient) {
         super(client, {
-            name: "Google",
-            type: ModelType.Google,
-
-            capabilities: [ ModelCapability.ImageViewing ]
+            name: "Google", type: ModelType.Google
         });
     }
 

@@ -22,7 +22,7 @@ export interface ModerationFilterData {
 /* Which action to perform regarding the flagged content */
 export type ModerationFilterActionType = "ban" | "warn" | "block" | "flag"
 
-export type ModerationFilterAction = Pick<DatabaseInfraction, "reason"> & {
+export type ModerationFilterAction = Pick<DatabaseInfraction, "reason" | "until"> & {
     /* Which action to perform */
     type: ModerationFilterActionType;
 }
@@ -62,7 +62,7 @@ export class FilterManager {
 
     public async filter(options: ModerationFilterData): Promise<ModerationFilterActionData | null> {
         /* Exempt all owners from the moderation filters. */
-        if (this.bot.db.role.owner(options.db.user)) return null;
+        //if (this.bot.db.role.owner(options.db.user)) return null;
 
         /* Which action was performedm, if any */
         let flagged: { data: ModerationFilterAction, action: ModerationFilter } | null = null;

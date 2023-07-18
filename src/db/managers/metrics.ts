@@ -12,7 +12,7 @@ type MetricsUpdateValue = `+${string | number}` | `-${string | number}` | string
 type MetricsUpdateObject<T extends MetricsEntry> = Record<keyof T["data"], MetricsUpdateValue>
 
 type MetricsData = { [key: string]: any }
-export type MetricsType = "cooldown" | "guilds" | "users" | "chat" | "premium" | "vote" | "image" | "commands"
+export type MetricsType = "cooldown" | "guilds" | "users" | "chat" | "premium" | "vote" | "image" | "commands" | "campaigns"
 
 interface MetricsEntry<T extends MetricsType = MetricsType, U extends MetricsData = MetricsData> {
     /* Type of metric */
@@ -124,6 +124,18 @@ type CommandsMetricsEntry = MetricsEntry<"commands", {
     [key: string]: number;
 }>
 
+type CampaignsMetricsEntry = MetricsEntry<"campaigns", {
+    views: {
+        total: Record<string, number>;
+        now: Record<string, number>;
+    };
+
+    clicks: {
+        total: Record<string, number>;
+        now: Record<string, number>;
+    };
+}>
+
 export class DatabaseMetricsManager<T extends DatabaseManager<DatabaseManagerBot>> extends SubDatabaseManager<T> {}
 
 export class ClusterDatabaseMetricsManager extends DatabaseMetricsManager<ClusterDatabaseManager> {
@@ -157,6 +169,10 @@ export class ClusterDatabaseMetricsManager extends DatabaseMetricsManager<Cluste
 
     public changeCommandsMetric(updates: Partial<MetricsUpdateObject<CommandsMetricsEntry>>): Promise<CommandsMetricsEntry["data"]> {
         return this.change("commands", updates);
+    }
+
+    public changeCampaignsMetric(updates: Partial<MetricsUpdateObject<CampaignsMetricsEntry>>): Promise<CampaignsMetricsEntry["data"]> {
+        return this.change("campaigns", updates);
     }
 
     private async change<T extends MetricsEntry>(

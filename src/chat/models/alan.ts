@@ -9,9 +9,7 @@ import { Utils } from "../../util/utils.js";
 export class TuringAlanModel extends ChatModel {
     constructor(client: ChatClient) {
         super(client, {
-            name: "Alan",
-            type: ModelType.Alan,
-
+            name: "Alan", type: ModelType.Alan,
             capabilities: [ ModelCapability.ImageViewing ]
         });
     }

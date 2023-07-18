@@ -155,12 +155,11 @@ class TuringModerationFilter extends ModerationFilter {
 
     public async filter({ bot, content, source }: ModerationFilterData): Promise<ModerationFilterAction | null> {
         if (source !== "image" && source !== "video" && source !== "music") return null;
-
         const data = await bot.turing.filter(content, [ "nsfw", "cp", "toxicity" ]);
-        if (data === null) return null;
 
-        if (data.nsfw || data.toxic) return { type: "flag", reason: "Automatic filter" };
-        if (data.cp || data.youth) return { type: "block", reason: "Automatic filter" };
+        if (data.nsfw || data.toxic) return { type: "block", reason: "Not safe for work" };
+        if (data.youth) return { type: "block", reason: "Content possibly involving children" };
+        if (data.cp) return { type: "ban", reason: "Sexual content involving children" };
 
         return null;
     }

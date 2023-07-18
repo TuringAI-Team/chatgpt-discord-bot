@@ -16,9 +16,7 @@ import { Utils } from "../../util/utils.js";
 export class ChatGPTModel extends ChatModel {
     constructor(client: ChatClient, options?: ConstructorModelOptions) {
         super(client, options ?? {
-            name: "ChatGPT",
-            type: ModelType.OpenAIChat,
-
+            name: "ChatGPT", type: ModelType.OpenAI,
             capabilities: [ ModelCapability.ImageViewing, ModelCapability.UserLanguage ]
         });
     }
