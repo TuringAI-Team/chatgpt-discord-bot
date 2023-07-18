@@ -119,7 +119,7 @@ export class ConversationManager {
         this.conversations.set(user.id, conversation);
 
         /* If the conversation hasn't been loaded yet, try to load it from the database. */
-        await conversation.loadIfNotActive();
+        await conversation.load();
 
         return this.get(user)!;
     }
@@ -132,7 +132,7 @@ export class ConversationManager {
         if (this.bot.dev) this.bot.logger.debug("Conversation", chalk.bold(`@${conversation.user.username}`), "was reset due to inactivity.");
 
         if (conversation.timer !== null) clearTimeout(conversation.timer);
-        conversation.history = [];
+        conversation.history.reset();
 
         /* Remove the conversation from the collection, let Node do the rest. */
         this.conversations.delete(conversation.id);

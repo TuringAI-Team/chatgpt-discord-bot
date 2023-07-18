@@ -37,7 +37,7 @@ export class GoogleModel extends ChatModel {
             role: "system", content: [ prompt.parts.Initial, prompt.parts.Personality ].filter(Boolean).map(m => m!.content).join("\n\n")
         });
 
-        for (const entry of options.conversation.history.slice(-5)) {
+        for (const entry of options.conversation.history.get(5)) {
             messages.push(
                 { role: "user", content: entry.input.content },
                 { role: "bot", content: entry.output.text }

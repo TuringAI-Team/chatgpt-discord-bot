@@ -195,7 +195,8 @@ Knowledge cut-off: September 2021
             amount: {
                 prompt: 0.03,
                 completion: 0.06
-            }
+            },
+            extra: 0.05
         },
         
         prompt: {
@@ -340,9 +341,7 @@ Current date & time: ${context.time}, ${context.date}
         emoji: { display: "<:meta:1130906183381811341>", fallback: "🦙" },
         description: "A foundational large language model, by Meta",
         history: { maxTokens: 4096 },
-        cooldown: { multiplier: 1.25 },
         type: ModelType.LLaMA,
-        restricted: "tester",
 
         billing: {
             type: ChatSettingsModelBillingType.Custom, amount: 0
@@ -350,9 +349,7 @@ Current date & time: ${context.time}, ${context.date}
 
         prompt: {
             builder: ({ context }) => `
-You are LLaMA, an open-source language model created by Meta.
-You must provide engaging & entertaining responses.
-
+I am LLaMA, an open-source language model created by Meta.
 Current date & time: ${context.time}, ${context.date}
 `
         }

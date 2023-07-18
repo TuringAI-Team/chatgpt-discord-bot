@@ -9,6 +9,7 @@ import { ConversationManager } from "../conversation/manager.js";
 import { ModerationManager } from "../moderation/moderation.js";
 import { InteractionManager } from "../interaction/manager.js";
 import { WebhookManager } from "../conversation/webhook.js";
+import { TranslationManager } from "../util/translate.js";
 import { ClusterDatabaseManager } from "../db/cluster.js";
 import { chooseStatusMessage } from "../util/status.js";
 import { executeConfigurationSteps } from "./setup.js";
@@ -24,7 +25,6 @@ import { TenorAPI } from "../util/tenor.js";
 import { GitCommit } from "../util/git.js";
 import { StrippedApp } from "../app.js";
 import { TaskManager } from "./task.js";
-import { TranslationManager } from "../util/translate.js";
 
 export type BotStatusType = "investigating" | "monitoring" | "partialOutage" | "operational" | "maintenance"
 
@@ -219,7 +219,9 @@ export class Bot extends EventEmitter {
                 ...Options.DefaultMakeCacheSettings,
 
                 ReactionManager: 0,
-                MessageManager: 0,
+                MessageManager: {
+                    maxSize: 200
+                },
                 
                 GuildMemberManager: {
                     keepOverLimit: member => member.id === this.client.user.id,

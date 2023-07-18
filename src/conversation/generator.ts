@@ -370,13 +370,24 @@ export class Generator {
 		return null;
 	}
 
-    /**
-     * Process the specified Discord message, and if it is valid, send a request to
-     * the chat handler to generate a response for the message content.
-     * 
-     * @param message Message to process
-     * @param existing Message to edit, instead of sending a new reply
-     */
+	public async handleDeletion(message: Message): Promise<void> {
+		if (message.author.id === this.bot.client.user.id) return;
+
+		const db = await this.bot.db.users.getUser(message.author);
+		if (db === null) return;
+
+		/* Get the author's active conversation. */
+		const conversation: Conversation | null = this.bot.conversation.get(message.author);
+		if (conversation === null || !conversation.active) return;
+
+		/* Find the corresponding message in the conversation that got deleted. */
+		const entry = conversation.history.find(message);
+		if (entry === null) return;
+
+		conversation.history.remove(entry);
+		if (entry.reply !== null) await entry.reply.delete();
+	}
+
     public async handle(options: GeneratorOptions): Promise<void> {
 		const messageContent: string = options.content;
 		const { message, author } = options;
@@ -786,7 +797,7 @@ export class Generator {
 			});
 
 			/* Update the reply message in the history entry, if the conversation wasn't reset. */
-			if (conversation.history.length > 0) conversation.history[conversation.history.length - 1].reply = reply;
+			if (conversation.history.length > 0) conversation.history.entries[conversation.history.length - 1].reply = reply;
 
 			if (mentions !== null) await this.bot.db.metrics.changeChatMetric({
 				sources: {

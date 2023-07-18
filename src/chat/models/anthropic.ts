@@ -27,7 +27,7 @@ export class AnthropicModel extends ChatModel {
             { role: "assistant", content: prompt.parts.Personality.content }
         );
 
-        for (const entry of options.conversation.history.slice(-5)) {
+        for (const entry of options.conversation.history.get(5)) {
             messages.push(
                 { role: "user", content: entry.input.content },
                 { role: "assistant", content: entry.output.text }

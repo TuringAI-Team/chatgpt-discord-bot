@@ -1,15 +1,43 @@
+import { LLaMAChatMessage, LLaMAChatResult, LLaMAPartialChatResult } from "../../turing/types/llama.js";
+import { MessageType, PartialResponseMessage } from "../types/message.js";
 import { getPromptLength } from "../../conversation/utils/length.js";
-import { LLaMAChatMessage } from "../../turing/types/llama.js";
 import { ModelGenerationOptions } from "../types/options.js";
-import { PartialResponseMessage } from "../types/message.js";
 import { ChatModel, ModelType } from "../types/model.js";
-import { ChatClient } from "../client.js";
+import { ChatClient, PromptData } from "../client.js";
 
 export class LLaMAModel extends ChatModel {
     constructor(client: ChatClient) {
         super(client, {
             name: "LLaMA", type: ModelType.LLaMA
         });
+    }
+
+    private process(data: LLaMAPartialChatResult | LLaMAChatResult, prompt: PromptData): PartialResponseMessage {
+        if (data.status === "queued") return {
+            type: MessageType.Notice,
+            text: "Waiting in queue"
+        };
+
+        let content: string = data.result.trim();
+        if (content.includes("User:")) content = content.split("User:")[0];
+
+        if (content.length === 0) return {
+            type: MessageType.Notice,
+            text: "Generating"
+        };
+
+        return {
+            raw: {
+                usage: {
+                    completion: getPromptLength(data.result),
+                    prompt: prompt.length
+                },
+
+                cost: data.cost > 0 ? data.cost : undefined
+            },
+
+            text: data.result.trim()
+        };
     }
 
     public async complete(options: ModelGenerationOptions): Promise<PartialResponseMessage> {
@@ -26,7 +54,7 @@ export class LLaMAModel extends ChatModel {
             { role: "assistant", content: prompt.parts.Personality.content }
         );
 
-        for (const entry of options.conversation.history.slice(-5)) {
+        for (const entry of options.conversation.history.get(5)) {
             messages.push(
                 { role: "user", content: entry.input.content },
                 { role: "assistant", content: entry.output.text }
@@ -38,18 +66,9 @@ export class LLaMAModel extends ChatModel {
         });
 
         const result = await this.client.manager.bot.turing.llama({
-            messages, max_tokens: prompt.max, temperature: 0.3
-        }, data => options.progress({ text: data.result }));
+            messages, max_tokens: prompt.max, temperature: 0.4
+        }, data => options.progress(this.process(data, prompt)));
 
-        return {
-            raw: {
-                usage: {
-                    completion: getPromptLength(result.result),
-                    prompt: prompt.length
-                }
-            },
-
-            text: result.result
-        };
+        return this.process(result, prompt);
     }
 }

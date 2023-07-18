@@ -257,7 +257,7 @@ export class ChatClient {
             i++;
 
             /* Which messages to use */
-            let history: ChatInteraction[] = options.conversation.history;
+            let history: ChatInteraction[] = options.conversation.history.entries;
             if (options.settings.options.history.messages) history = history.slice(-options.settings.options.history.messages);
 
             /* Try to construct a prompt below the maximum token count & add the initial prompt. */
