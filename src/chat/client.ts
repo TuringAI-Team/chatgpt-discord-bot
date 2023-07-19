@@ -222,10 +222,8 @@ export class ChatClient {
         /* Current iteration count, as a safety measure */
         let i: number = 0;
 
-        /* Which messages to use */
-        let history: ChatInteraction[] = options.conversation.history.entries;
-
         do {
+            messages = [];
             i++;
 
             /* Try to construct a prompt below the maximum token count & add the initial prompt. */
@@ -250,7 +248,7 @@ export class ChatClient {
                 content: additional.join("\n\n"), role: "system"
             };
 
-            for (const entry of history) {
+            for (const entry of options.conversation.history.entries) {
                 messages.push(
                     ...buildMessage({ prompt: entry.input.content, output: entry.output.text, media: entry.input.media })
                 );
@@ -269,12 +267,12 @@ export class ChatClient {
             if (maxContextLength < currentContextLength) maxContextLength += currentContextLength;
 
             /* If a too long user prompt is causing the prompt to be too long, throw an error. */
-            if (history.length === 0 && maxContextLength - tokens <= 0) throw new GPTGenerationError({
+            if (options.conversation.history.length === 0 && maxContextLength - tokens <= 0) throw new GPTGenerationError({
                 type: GPTGenerationErrorType.Length
             });
             
             /* If the prompt is too long, remove the oldest history entry & try again. */
-            if (maxContextLength - tokens <= 0) history.shift();
+            if (maxContextLength - tokens <= 0) options.conversation.history.shift();
             else break;
             
         } while (maxContextLength - tokens <= 0 && i < PromptLoopLimit);

@@ -90,7 +90,7 @@ export const ConversationCooldownModifier: Record<UserSubscriptionPlanType, Cool
 }
 
 export const ConversationDefaultCooldown: Required<Pick<CooldownModifier, "time">> = {
-	time: 160 * 1000
+	time: 140 * 1000
 }
 
 export const ConversationTTL: number = 30 * 60 * 1000
@@ -118,15 +118,9 @@ export class ConversationHistory {
 		/* If the saved conversation has any message history, try to load it. */
 		if (db.history && db.history !== null && Array.isArray(db.history)) {
 			await this.push(db.history.map(entry => ({
-				input: entry.input, id: entry.id,
-
-				/* This is awful, but it works... */
+				id: entry.id, input: entry.input, 
 				output: this.databaseToResponseMessage(entry.output),
-
-				reply: null,
-				time: Date.now(),
-				trigger: null!,
-				moderation: null
+				reply: null, time: Date.now(), trigger: null!, moderation: null
 			})));
 		}
 	}
@@ -139,7 +133,7 @@ export class ConversationHistory {
 	}
 
 	public find(message: Message): ChatInteraction | null {
-		return this.entries.find(e => e.trigger && e.trigger.id === message.id) ?? null
+		return this.entries.find(e => e.trigger && e.trigger.id === message.id) ?? null;
 	}
 
 	public get(amount: number): ChatInteraction[] {
@@ -177,9 +171,8 @@ export class ConversationHistory {
 			}
 		}) as any, {
 			context: {
-				id: this.conversation.id,
-				history: this.entries.map(e => ({ ...e, trigger: null, reply: null })),
-				cluster: this.conversation.manager.bot.data.id
+				id: this.conversation.id, cluster: this.conversation.manager.bot.data.id,
+				history: this.entries.map(e => ({ ...e, trigger: null, reply: null }))
 			},
 
 			timeout: 5 * 1000
