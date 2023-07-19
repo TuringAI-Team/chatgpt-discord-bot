@@ -46,7 +46,7 @@ export class GuildSchema extends DatabaseSchema<DatabaseGuild, Guild> {
         });
     }
 
-    public async process(guild: DatabaseGuild): Promise<DatabaseGuild | null> {
+    public async process(guild: DatabaseGuild): Promise<DatabaseGuild> {
         guild.plan = this.db.plan.active(guild) ? this.db.plan.get(guild) : null;
         guild.subscription = this.db.schema("users").subscription(guild);
 

@@ -78,7 +78,7 @@ export class UserSchema extends DatabaseSchema<DatabaseUser, User> {
         });
     }
 
-    public async process(user: DatabaseUser): Promise<DatabaseUser | null> {
+    public async process(user: DatabaseUser): Promise<DatabaseUser> {
         user.plan = this.db.plan.active(user) ? this.db.plan.get(user) : null;
         user.subscription = this.subscription(user);
 

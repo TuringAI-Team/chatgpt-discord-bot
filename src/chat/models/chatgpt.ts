@@ -97,7 +97,6 @@ export class ChatGPTModel extends ChatModel {
 
     public async complete(options: ModelGenerationOptions): Promise<PartialResponseMessage> {
         const prompt = await this.client.buildPrompt(options);
-        console.log(prompt.all);
 
         const identifiers: ChatSettingsPluginIdentifier[] = MultipleChoiceSettingsOption
             .which(this.client.manager.bot.db.settings.get(options.db.user, "plugins:list"));

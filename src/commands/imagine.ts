@@ -41,7 +41,7 @@ interface ImageGenerationProcessOptions {
 }
 
 /* How long an image prompt can be, maximum */
-export const MaxImagePromptLength: number = 200
+export const MaxImagePromptLength: number = 500
 
 export interface ImageGenerationRatio {
 	a: number;
@@ -154,7 +154,7 @@ export default class ImagineCommand extends Command {
 				.setName("seed")
 				.setDescription("Unique image generation seed, in order to reproduce image generation results")
 				.setMinValue(1)
-				.setMaxValue(99999999)
+				.setMaxValue(9999999999999)
 				.setRequired(false)
 			)
 			.addStringOption(builder => builder
@@ -358,54 +358,66 @@ export default class ImagineCommand extends Command {
 				})
 			);
 
-			await interaction.message.edit({
-				embeds: [ EmbedBuilder.from(interaction.message.embeds[0]).setImage(`attachment://${image.id}.png`), ...interaction.message.embeds.slice(1) ], components
+			await interaction.message.edit({ components });
+		}
+
+		try {
+			await interaction.deferReply().catch(() => {});
+
+			/* The user wants to re-generate an image */
+			if (data.action === "redo") {
+				return await this.start({
+					interaction, image: null, enhancer: null,
+					prompt: image.prompt, user: interaction.user, action: "generate",
+
+					guidance: image.options.cfg_scale!,
+					sampler: image.options.sampler!, seed: image.options.seed ?? null,
+					steps: image.options.steps!, count: image.options.number!, moderation: null, db,
+					ratio: image.options.ratio!, model: this.bot.image.model.get(image.model)
+				});
+
+			/* The user wants to upscale an image */
+			} else if (data.action === "upscale" && image !== null && data.resultIndex !== null) {
+				/* ID of generation result of the given image, associated with this action */
+				const result: ImageResult = image.results.find((_, index) => index === data.resultIndex)!;
+				const { url } = this.bot.image.url(image, result);
+
+				/* Fetch the selected image, to upscale it. */
+				const buffer = await Utils.fetchBuffer(url);
+				if (buffer === null) return;
+
+				return await this.start({
+					interaction, user: interaction.user, enhancer: null,
+					prompt: image.prompt, action: "upscale",
+
+					guidance: image.options.cfg_scale!,
+					sampler: image.options.sampler!, seed: image.options.seed ?? null,
+					steps: image.options.steps!, count: image.options.number!, moderation: null, db, 
+					ratio: image.options.ratio!, image: buffer, model: null
+				});
+			}
+
+		} catch (error) {
+			/* All components on the original message */
+			const components: ActionRow<ButtonComponent>[] = interaction.message.components as ActionRow<ButtonComponent>[];
+
+			components.forEach(
+				row => row.components.forEach(button => {
+					if (button.customId === interaction.customId) {
+						(button.data as any).style = ButtonStyle.Danger;
+						(button.data as any).disabled = false;
+					}
+				})
+			);
+
+			await interaction.message.edit({ components });
+
+			return await this.bot.error.handle({
+				title: "Failed to generate <images>", notice: "It seems like we encountered an error while generating the images for you.", error
 			});
 		}
 
-		/* The user wants to re-generate an image */
-		if (data.action === "redo") {
-			await interaction.deferReply().catch(() => {});
-
-			const response = this.start({
-				interaction, image: null, enhancer: null,
-				prompt: image.prompt, user: interaction.user, action: "generate",
-
-				guidance: image.options.cfg_scale!,
-				sampler: image.options.sampler!, seed: image.options.seed ?? null,
-				steps: image.options.steps!, count: image.options.number!, moderation: null, db,
-				ratio: image.options.ratio!, model: this.bot.image.model.get(image.model)
-			});
-
-			return response;
-
-		/* The user wants to upscale an image */
-		} else if (data.action === "upscale" && image !== null && data.resultIndex !== null) {
-			/* ID of generation result of the given image, associated with this action */
-			const result: ImageResult = image.results.find((_, index) => index === data.resultIndex)!;
-
-			await interaction.deferReply().catch(() => {});
-			const { url } = this.bot.image.url(image, result);
-
-			/* Fetch the selected image, to upscale it. */
-			const buffer = await Utils.fetchBuffer(url);
-			if (buffer === null) return;
-
-			const response = this.start({
-				interaction, user: interaction.user, enhancer: null,
-				prompt: image.prompt, action: "upscale",
-
-				guidance: image.options.cfg_scale!,
-				sampler: image.options.sampler!, seed: image.options.seed ?? null,
-				steps: image.options.steps!, count: image.options.number!, moderation: null, db, 
-				ratio: image.options.ratio!, image: buffer, model: null
-			});			
-
-			return response;
-
-		} else {
-			await interaction.deferUpdate();
-		}
+		await interaction.deferUpdate();
 	}
 
 	public async start(options: ImageGenerationProcessOptions): CommandResponse {
@@ -484,54 +496,47 @@ export default class ImagineCommand extends Command {
 			progress: handler
 		};
 
-		try {
-			/* Generate the image. */
-			const result = action == "upscale" && source
-				? await this.bot.image.upscale({ image: source, prompt: prompt.prompt })
-				: await this.bot.image.generate(body);
-			
-			/* Whether the generated images are still usable */
-			const usable: boolean = result.results.filter(i => i.status === "success").length > 0;
-			const failed: boolean = result.status === "failed";
+		/* Generate the image. */
+		const result = action == "upscale" && source
+			? await this.bot.image.upscale({ image: source, prompt: prompt.prompt })
+			: await this.bot.image.generate(body);
+		
+		/* Whether the generated images are still usable */
+		const usable: boolean = result.results.filter(i => i.status === "success").length > 0;
+		const failed: boolean = result.status === "failed";
 
-			if (failed) return new ErrorResponse({
-				interaction, command: this, message: `**${result.error ?? "The images failed to generate"}**; *please try your request again later*.`
-			});
+		if (failed) return new ErrorResponse({
+			interaction, command: this, message: `**${result.error ?? "The images failed to generate"}**; *please try your request again later*.`
+		});
 
-			if (!usable) return new ErrorResponse({
-				interaction, command: this, message: "All of the generated images were deemed as **not safe for work**"
-			});
+		if (!usable) return new ErrorResponse({
+			interaction, command: this, message: "All of the generated images were deemed as **not safe for work**"
+		});
 
-			/* Add the generated results to the database. */
-			const image: DatabaseImage = await this.bot.db.users.updateImage(
-				this.bot.image.toDatabase(prompt, body, result, new Date().toISOString(), action)
-			);
+		/* Add the generated results to the database. */
+		const image: DatabaseImage = await this.bot.db.users.updateImage(
+			this.bot.image.toDatabase(prompt, body, result, new Date().toISOString(), action)
+		);
 
-			/* Upload the generated images to the storage bucket. */
-			await this.bot.db.storage.uploadImageResults(image, result.results);
+		/* Upload the generated images to the storage bucket. */
+		await this.bot.db.storage.uploadImageResults(image, result.results);
 
-			/* Increment the user's usage. */
-			await this.bot.db.users.incrementInteractions(db, "images");
-			await this.bot.db.plan.expenseForImage(db, image);
-			
-			await this.bot.db.metrics.changeImageMetric({
-				models: { [(model ?? this.bot.image.model.default()).id]: "+1" },
-				styles: { [style !== null ? style.id : "none"]: "+1" },
-				ratios: { [`${ratio.a}:${ratio.b}`]: "+1" },
-				samplers: { [sampler]: "+1" },
-				counts: { [count]: "+1" },
-				steps: { [steps]: "+1" }
-			});
+		/* Increment the user's usage. */
+		await this.bot.db.users.incrementInteractions(db, "images");
+		await this.bot.db.plan.expenseForImage(db, image);
+		
+		await this.bot.db.metrics.changeImageMetric({
+			models: { [(model ?? this.bot.image.model.default()).id]: "+1" },
+			styles: { [style !== null ? style.id : "none"]: "+1" },
+			ratios: { [`${ratio.a}:${ratio.b}`]: "+1" },
+			samplers: { [sampler]: "+1" },
+			counts: { [count]: "+1" },
+			steps: { [steps]: "+1" }
+		});
 
-			/* Generate the final message, showing the generated results. */
-			const final: Response = await this.buildResultResponse(user, image, action, moderation);
-			await final.send(interaction);
-
-		} catch (error) {
-			return await this.bot.error.handle({
-				title: "Failed to generate images", notice: "It seems like we encountered an error while generating the images for you.", error
-			});
-		}
+		/* Generate the final message, showing the generated results. */
+		const final: Response = await this.buildResultResponse(user, image, action, moderation);
+		await final.send(interaction);
 	}
 
     public async run(interaction: ChatInputCommandInteraction, db: DatabaseInfo): CommandResponse {
@@ -596,16 +601,23 @@ export default class ImagineCommand extends Command {
             result: moderation, name: "Your image prompt"
         });
 
-		return this.start({
-			interaction, guidance, count, moderation, sampler, seed, ratio, steps, db, model, enhancer,
-			user: interaction.user,
-			
-			prompt: {
-				prompt: prompt, negative: negativePrompt ?? undefined,
-				style: style ? style.id : undefined
-			},
-			
-			action: "generate", image: null
-		});
+		try {
+			return await this.start({
+				interaction, guidance, count, moderation, sampler, seed, ratio, steps, db, model, enhancer,
+				user: interaction.user,
+				
+				prompt: {
+					prompt: prompt, negative: negativePrompt ?? undefined,
+					style: style ? style.id : undefined
+				},
+				
+				action: "generate", image: null
+			});
+
+		} catch (error) {
+			return await this.bot.error.handle({
+				title: "Failed to generate images", notice: "It seems like we encountered an error while generating the images for you.", error
+			});
+		}
     }
 }

@@ -1,11 +1,11 @@
-import { ActionRowBuilder, AttachmentBuilder, Awaitable, ButtonBuilder, ButtonInteraction, ButtonStyle, ChatInputCommandInteraction, ColorResolvable, Colors, Interaction, InteractionReplyOptions, MessageEditOptions, ModalBuilder, ModalSubmitInteraction, SlashCommandBuilder, Snowflake, StringSelectMenuBuilder, StringSelectMenuInteraction, TextInputBuilder, TextInputStyle, User, resolveColor } from "discord.js";
+import { ActionRowBuilder, AttachmentBuilder, Awaitable, ButtonBuilder, ButtonInteraction, ButtonStyle, ChatInputCommandInteraction, ColorResolvable, Colors, Interaction, InteractionEditReplyOptions, InteractionReplyOptions, InteractionUpdateOptions, MessageEditOptions, ModalBuilder, ModalSubmitInteraction, SlashCommandBuilder, Snowflake, StringSelectMenuBuilder, StringSelectMenuInteraction, TextInputBuilder, TextInputStyle, User, resolveColor } from "discord.js";
 import { randomUUID } from "crypto";
 import words from "random-words";
 
 import { InteractionHandlerResponse, InteractionHandlerRunOptions } from "../interaction/handler.js";
 import { Command, CommandInteraction, CommandResponse } from "../command/command.js";
 import { CampaignInteractionHandlerData } from "../interactions/campaign.js";
-import { DatabaseCampaign } from "../db/managers/campaign.js";
+import { DatabaseCampaign, DatabaseCampaignBudgetType, DatabaseCampaignLog } from "../db/managers/campaign.js";
 import { ErrorResponse } from "../command/response/error.js";
 import { DatabaseInfo } from "../db/managers/user.js";
 import { Response } from "../command/response.js";
@@ -33,15 +33,22 @@ interface CampaignParameterValidation {
     message: string;
 }
 
+enum CampaignParameterLocation {
+    Overview = "o", Budget = "b"
+}
+
 interface CampaignParameter {
     /** Name of the parameter */
     name: string;
 
-    /* Tooltip for the modal */
+    /** Tooltip for the modal */
     tooltip?: string;
 
-    /* Whether this parameter is optional */
+    /** Whether this parameter is optional */
     optional?: boolean;
+
+    /** Where to display this parameter */
+    location: CampaignParameterLocation;
 
     /** Which input type this parameter is */
     type: TextInputStyle;
@@ -49,21 +56,20 @@ interface CampaignParameter {
     /** Minimum & maximum length restrictions of the parameter */
     length?: CampaignParameterLength;
 
-    /* Function to call, to validate the user's input */
+    /** Function to call, to validate the user's input */
     validate?: (value: string, db: DatabaseInfo, bot: Bot) => Awaitable<CampaignParameterValidation | boolean>;
 
-    /* Function to call, to update the campaign in the database */
-    update: (value: string, old: DatabaseCampaign, bot: Bot) => Awaitable<Partial<DatabaseCampaign>>;
+    /** Function to call, to update the campaign in the database */
+    update: (value: string, old: DatabaseCampaign, bot: Bot) => Awaitable<Partial<DatabaseCampaign> | void>;
 
-    /* Function to call, to get the previous value of this variable */
+    /** Function to call, to get the previous value of this variable */
     previous: (campaign: DatabaseCampaign) => Awaitable<string | null>;
 }
 
 const CampaignParameters: CampaignParameter[] = [
     {
-        name: "Name",
-        type: TextInputStyle.Short,
-        length: { min: 3, max: 64 },
+        name: "Name", location: CampaignParameterLocation.Overview,
+        type: TextInputStyle.Short, length: { min: 3, max: 64 },
         validate: async (value, _, bot) => {
             const all: DatabaseCampaign[] = await bot.db.campaign.all();
             if (all.find(c => c.name === value) != undefined) return { message: "a campaign with this name already exists" };
@@ -75,9 +81,8 @@ const CampaignParameters: CampaignParameter[] = [
     },
 
     {
-        name: "Link",
-        type: TextInputStyle.Short,
-        length: { min: 1, max: 128 },
+        name: "Link", location: CampaignParameterLocation.Overview,
+        type: TextInputStyle.Short, length: { min: 1, max: 128 },
         validate: value => {
             try {
                 new URL(value);
@@ -91,27 +96,7 @@ const CampaignParameters: CampaignParameter[] = [
     },
 
     {
-        name: "Budget",
-        type: TextInputStyle.Short,
-        length: { min: 1, max: 10 },
-        validate: value => {
-            const num: number = parseFloat(value);
-            if (isNaN(num)) return { message: "not a valid number" };
-
-            if (num === 0) return { message: "has to be bigger than zero" };
-            if (num > 1000) return { message: "may not be bigger than $1000" };
-
-            const decimalPlaces: number = (num.toString().split(".")[1] || '').length;
-            if (decimalPlaces > 2) return { message: "may not have more than 2 decimal places" };
-
-            return true;
-        },
-        update: value => ({ budget: parseFloat(value) }),
-        previous: c => c.budget.toString()
-    },
-
-    {
-        name: "Members",
+        name: "Members", location: CampaignParameterLocation.Overview,
         tooltip: "Member IDs, on each line",
         type: TextInputStyle.Paragraph,
         length: { max: 200 },
@@ -134,25 +119,22 @@ const CampaignParameters: CampaignParameter[] = [
     },
 
     {
-        name: "Embed title",
-        type: TextInputStyle.Short,
-        length: { min: 1, max: 256 },
+        name: "Embed title", location: CampaignParameterLocation.Overview,
+        type: TextInputStyle.Short, length: { min: 1, max: 256 },
         update: (value, old) => ({ settings: { ...old.settings, title: value } }),
         previous: c => c.settings.title
     },
 
     {
-        name: "Embed description",
-        type: TextInputStyle.Paragraph,
-        length: { min: 1, max: 512 },
+        name: "Embed description", location: CampaignParameterLocation.Overview,
+        type: TextInputStyle.Paragraph, length: { min: 1, max: 512 },
         update: (value, old) => ({ settings: { ...old.settings, description: value } }),
         previous: c => c.settings.description
     },
 
     {
-        name: "Embed color",
-        type: TextInputStyle.Short,
-        length: { min: 1, max: 16 },
+        name: "Embed color", location: CampaignParameterLocation.Overview,
+        type: TextInputStyle.Short, length: { min: 1, max: 16 },
         validate: value => {
             try {
                 resolveColor(value as ColorResolvable);
@@ -166,9 +148,8 @@ const CampaignParameters: CampaignParameter[] = [
     },
 
     {
-        name: "Embed image",
-        optional: true,
-        type: TextInputStyle.Short,
+        name: "Embed image", location: CampaignParameterLocation.Overview,
+        optional: true, type: TextInputStyle.Short,
         length: { min: 1, max: 128 },
         validate: value => {
             try {
@@ -184,8 +165,8 @@ const CampaignParameters: CampaignParameter[] = [
 
     {
         name: "Embed thumbnail",
-        optional: true,
-        type: TextInputStyle.Short,
+        location: CampaignParameterLocation.Overview,
+        optional: true, type: TextInputStyle.Short,
         length: { min: 1, max: 128 },
         validate: value => {
             try {
@@ -198,6 +179,46 @@ const CampaignParameters: CampaignParameter[] = [
         update: (value, old) => ({ settings: { ...old.settings, thumbnail: value } }),
         previous: c => c.settings.thumbnail ?? null
     },
+
+    {
+        name: "Total budget",
+        location: CampaignParameterLocation.Budget,
+        optional: true, type: TextInputStyle.Short,
+        length: { min: 1, max: 10 },
+        validate: value => !isNaN(parseFloat(value)),
+        update: (value, old) => ({ budget: { ...old.budget, total: parseFloat(value) } }),
+        previous: c => c.budget.total.toString() ?? null
+    },
+
+    {
+        name: "CPM",
+        location: CampaignParameterLocation.Budget,
+        optional: true, type: TextInputStyle.Short,
+        length: { min: 1, max: 10 },
+        validate: value => !isNaN(parseFloat(value)),
+        update: (value, old) => ({ budget: { ...old.budget, cost: parseFloat(value) } }),
+        previous: c => c.budget.cost.toString() ?? null
+    },
+
+
+    {
+        name: "Budget type",
+        tooltip: "Budget type (per-view or per-click)",
+        location: CampaignParameterLocation.Budget,
+        optional: true, type: TextInputStyle.Short,
+        length: { min: 1, max: 10 },
+        validate: value => {
+            const allowed = [ "click", "view" ];
+
+            if (!allowed.includes(value)) return {
+                message: `must be one of: ${allowed.map(a => `\`${a}\``).join(", ")}`
+            };
+
+            return true;
+        },
+        update: (value, old) => ({ budget: { ...old.budget, type: value as DatabaseCampaignBudgetType } }),
+        previous: c => c.budget.type
+    }
 ]
 
 /* Maximum amount of campaigns a user may be part of */
@@ -217,8 +238,7 @@ export default class CampaignsCommand extends Command {
 
         const buttons: ButtonBuilder[] = [
             new ButtonBuilder()
-                .setLabel("Back")
-                .setEmoji("◀️")
+                .setLabel("Back").setEmoji("◀️")
                 .setStyle(ButtonStyle.Secondary)
                 .setCustomId(buildID("selector")),
 
@@ -229,32 +249,32 @@ export default class CampaignsCommand extends Command {
                 .setCustomId(buildID("toggle")),
 
             new ButtonBuilder()
-                .setLabel("Refresh")
-                .setEmoji("🔄")
+                .setLabel("Refresh").setEmoji("🔄")
                 .setStyle(ButtonStyle.Secondary)
-                .setCustomId(buildID("reload")),
+                .setCustomId(`campaign:ui:reload:${campaign.id}:${CampaignParameterLocation.Overview}`),
                 
             new ButtonBuilder()
-                .setLabel("Preview")
-                .setEmoji("📜")
+                .setLabel("Preview").setEmoji("📜")
                 .setStyle(ButtonStyle.Secondary)
                 .setCustomId(buildID("preview")),
 
             new ButtonBuilder()
-                .setLabel("Logs")
-                .setEmoji("👀")
+                .setLabel("Budget").setEmoji("💸")
+                .setStyle(ButtonStyle.Secondary)
+                .setCustomId(buildID("budget")),
+
+            new ButtonBuilder()
+                .setLabel("Logs").setEmoji("👀")
                 .setStyle(ButtonStyle.Secondary)
                 .setCustomId(buildID("logs")),
 
             new ButtonBuilder()
-                .setLabel("Statistics")
-                .setEmoji("📊")
+                .setLabel("Statistics").setEmoji("📊")
                 .setStyle(ButtonStyle.Secondary)
                 .setCustomId(buildID("stats")),
 
             new ButtonBuilder()
-                .setLabel("Clear statistics")
-                .setEmoji("🧹")
+                .setLabel("Clear statistics").setEmoji("🧹")
                 .setStyle(ButtonStyle.Danger)
                 .setCustomId(buildID("clearStats")),
 
@@ -280,7 +300,7 @@ export default class CampaignsCommand extends Command {
     public async buildOverview(options: BuildOverviewOptions): Promise<Response> {
         const { campaign, db, interaction } = options;
 
-        const modifiers = await this.buildModifierRows({ db, interaction, campaign });
+        const modifiers = await this.buildModifierRows({ db, interaction, campaign, location: CampaignParameterLocation.Overview });
         const toolbar = await this.buildOverviewToolbar(options);
 
         const members: User[] = await Promise.all(
@@ -291,12 +311,12 @@ export default class CampaignsCommand extends Command {
             { name: "Active", value: campaign.active ? "✅" : "❌" },
             { name: "Link", value: `<${campaign.link}>` },
             { name: "Members", value: `${members.map(member => `<@${member.id}>`).join(", ")}` },
-            { name: "Budget", value: new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(campaign.budget) },
+            { name: "Budget", value: `${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(campaign.budget.used)} / ${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(campaign.budget.total)}` },
             { name: "Views", value: new Intl.NumberFormat("en-US").format(campaign.stats.views.total) },
             { name: "Clicks", value: new Intl.NumberFormat("en-US").format(campaign.stats.clicks.total) },
             {
                 name: "Conversion rate",
-                value: campaign.stats.clicks.total !== 0
+                value: campaign.stats.clicks.total !== 0 && campaign.stats.views.total !== 0
                     ? new Intl.NumberFormat("en-US", { style: "percent", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(campaign.stats.clicks.total / campaign.stats.views.total)
                     : "-"
             }
@@ -321,6 +341,58 @@ export default class CampaignsCommand extends Command {
         return response;
     }
 
+    public async buildLogOverview({ campaign }: BuildOverviewOptions): Promise<Response> {
+        const logs: DatabaseCampaignLog[] = campaign.logs.slice(undefined, 10);
+
+        const response = new Response()
+            .addEmbed(builder => builder
+                .setTitle(`Audit log of campaign \`${campaign.name}\``)
+                .setColor(this.bot.branding.color)
+                .setDescription(logs.length === 0 ? `*There are no logs to show here yet*` : null)
+                .setFields(logs.map(e => ({
+                    name: `**${Utils.titleCase(e.action)}** — *<t:${Math.floor(e.when / 1000)}:F>*`,
+                    value: `${e.data !== null ? `\`${JSON.stringify(e.data)}\` — ` : ""}by <@${e.who}>`
+                })))
+            )
+            .setEphemeral(true);
+
+        return response;
+    }
+
+    public async buildBudgetOverview({ db, interaction, campaign }: BuildOverviewOptions): Promise<Response> {
+        const modifiers = await this.buildModifierRows({
+            db, interaction, campaign, location: CampaignParameterLocation.Budget
+        });
+
+        const fields: { name: string, value: string }[] = [
+            { name: "Can run", value: this.bot.db.campaign.available(campaign) ? "✅" : "❌" },
+            { name: "Total", value: new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(campaign.budget.total) },
+            { name: "Used", value: new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 5 }).format(campaign.budget.used) },
+            { name: "CPM", value: `${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(campaign.budget.cost)} / 1000 ${campaign.budget.type}s` },
+            { name: "Type", value: `cost-per-${campaign.budget.type}` }
+        ];
+
+        const response = new Response()
+            .addEmbed(builder => builder
+                .setTitle(`Budget of \`${campaign.name}\``)
+                .setColor(this.bot.branding.color)
+                .setDescription(`${fields.map(f => `**${f.name}** • ${f.value}`).join("\n")}`)
+            )
+            .setEphemeral(true);
+
+        modifiers.forEach(row => {
+            row.components.push(new ButtonBuilder()
+                .setLabel("Refresh").setEmoji("🔄")
+                .setStyle(ButtonStyle.Secondary)
+                .setCustomId(`campaign:ui:reload:${campaign.id}:${CampaignParameterLocation.Budget}`)
+            );
+
+            response.addComponent(ActionRowBuilder<ButtonBuilder>, row);
+        });
+
+        return response;
+    }
+
     public async buildSelector({ campaigns }: BuildSelectorOptions): Promise<StringSelectMenuBuilder> {
         const builder: StringSelectMenuBuilder = new StringSelectMenuBuilder()
             .setCustomId("campaign:ui:selector")
@@ -328,7 +400,7 @@ export default class CampaignsCommand extends Command {
             .addOptions(campaigns.map(c => ({
 				label: c.name,
                 emoji: c.active ? "✅" : "❌",
-				description: `${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(c.budget)} • ${c.members.length} member${c.members.length > 1 ? "s" : ""}${c.filters && c.filters.length > 0 ? ` • ${c.filters.length} filter${c.filters.length > 1 ? "s" : ""}` : ""}`,
+				description: `${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(c.budget.used)}/${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(c.budget.total)} • ${c.members.length} member${c.members.length > 1 ? "s" : ""}${c.filters && c.filters.length > 0 ? ` • ${c.filters.length} filter${c.filters.length > 1 ? "s" : ""}` : ""}`,
 				value: c.id
             })));
 
@@ -338,14 +410,12 @@ export default class CampaignsCommand extends Command {
     public async buildFinderToolbar(_: BuildSelectorOptions): Promise<ActionRowBuilder<ButtonBuilder>> {
         const buttons: ButtonBuilder[] = [
             new ButtonBuilder()
-                .setLabel("Create a campaign")
-                .setEmoji("🔧")
+                .setLabel("Create a campaign").setEmoji("🔧")
                 .setCustomId("campaign:ui:create")
                 .setStyle(ButtonStyle.Secondary),
 
-                new ButtonBuilder()
-                .setLabel("Refresh campaigns")
-                .setEmoji("🔄")
+            new ButtonBuilder()
+                .setLabel("Refresh campaigns").setEmoji("🔄")
                 .setCustomId("campaign:ui:refresh")
                 .setStyle(ButtonStyle.Secondary)
         ];
@@ -378,10 +448,10 @@ export default class CampaignsCommand extends Command {
         return response.setEphemeral(true);
     }
 
-    public async buildModifierRows({ campaign }: BuildOverviewOptions): Promise<ActionRowBuilder<ButtonBuilder>[]> {
-        const buttons: ButtonBuilder[] = CampaignParameters.map(p => new ButtonBuilder()
+    public async buildModifierRows({ campaign, location }: BuildOverviewOptions & { location: CampaignParameterLocation }): Promise<ActionRowBuilder<ButtonBuilder>[]> {
+        const buttons: ButtonBuilder[] = CampaignParameters.filter(p => p.location === location).map(p => new ButtonBuilder()
             .setLabel(p.name).setEmoji("📝")
-            .setCustomId(`campaign:ui:modify:${campaign.id}:${p.name}`)
+            .setCustomId(`campaign:ui:modify:${campaign.id}:${p.name}:${location}`)
             .setStyle(ButtonStyle.Primary)
         );
 
@@ -396,7 +466,6 @@ export default class CampaignsCommand extends Command {
     }
 
     public async handleInteraction({ db, interaction, raw }: InteractionHandlerRunOptions<ButtonInteraction | StringSelectMenuInteraction, CampaignInteractionHandlerData>): InteractionHandlerResponse {
-        /* Remove the `ui` identifier from the ID. */
         raw.shift();
 
         /* Which action to perform */
@@ -427,9 +496,8 @@ export default class CampaignsCommand extends Command {
             });
 
             const campaign: DatabaseCampaign = await this.bot.db.campaign.create({
-                name: name,
-                budget: 1, members: [ db.user.id ],
-                link: "https://turing.sh",
+                name: name, budget: { cost: 5, total: 0, used: 0, type: "view" }, logs: [],
+                members: [ db.user.id ], link: "https://turing.sh",
 
                 settings: {
                     title: "This is your advertisement 👋",
@@ -462,6 +530,9 @@ export default class CampaignsCommand extends Command {
             /* Name of the property to modify */
             const name = raw.shift()!;
 
+            /* Which location the edit menu is shown in */
+            const location: CampaignParameterLocation = raw.shift()! as CampaignParameterLocation;
+
             /* Which parameter this modifies */
             const param: CampaignParameter = CampaignParameters.find(p => p.name === name)!;
             const previous: string | null = await param.previous(campaign);
@@ -491,8 +562,7 @@ export default class CampaignsCommand extends Command {
             if (previous !== null) input.setValue(previous);
 
             const builder: ModalBuilder = new ModalBuilder()
-                .setCustomId(customID)
-                .setTitle(`Change the value 📝`)
+                .setCustomId(customID).setTitle(`Change the value 📝`)
                 .addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(input));
 
             /* Show the model to the user, then waiting for their input. */
@@ -539,34 +609,64 @@ export default class CampaignsCommand extends Command {
             }).get() as InteractionReplyOptions);
 
             /* Apply all database changes. */
-            const changes: Partial<DatabaseCampaign> = await param.update(updated, campaign, this.bot);
-            campaign = await this.bot.db.campaign.update(campaign, changes);
+            const changes: Partial<DatabaseCampaign> | void = await param.update(updated, campaign, this.bot);
+            if (changes) campaign = await this.bot.db.campaign.update(campaign, changes);
 
             await modal.deferUpdate().catch(() => {});
 
-            const overview: Response = await this.buildOverview({ db, interaction, campaign });
+            campaign = await this.bot.db.campaign.log({
+                campaign, user: interaction.user, action: "updateValue", data: { name: param.name, oldValue: previous, newValue: updated }
+            });
+
+            const overview: Response = location === CampaignParameterLocation.Overview
+                ? await this.buildOverview({ db, interaction, campaign })
+                : await this.buildBudgetOverview({ db, interaction, campaign });
+
             await interaction[interaction.replied ? "editReply" : "update"](overview.get() as MessageEditOptions);
 
         } else {
             /* ID of the campaign */
-            const id = raw[0];
+            const id = raw.shift()!;
 
             let campaign: DatabaseCampaign | null = await this.bot.db.campaign.get(id);
             if (campaign === null) return;
 
             if (action === "toggle") {
+                campaign = await this.bot.db.campaign.log({
+                    campaign, user: interaction.user, action: "toggle", data: { active: !campaign.active }
+                });
+
                 campaign = await this.bot.db.campaign.update(campaign, {
                     active: !campaign.active
                 });
 
             } else if (action === "clearStats") {
+                campaign = await this.bot.db.campaign.log({
+                    campaign, user: interaction.user, action: "clearStatistics"
+                });
+
                 campaign = await this.bot.db.campaign.clearStatistics(campaign);
+
+            } else if (action === "logs") {
+                return this.buildLogOverview({ campaign, db, interaction });
+
+            } else if (action === "budget") {
+                return this.buildBudgetOverview({ campaign, db, interaction });
+
+            } else if (action === "reload") {
+                const location: CampaignParameterLocation = raw.shift()! as CampaignParameterLocation;
+
+                await interaction.update((
+                    location === CampaignParameterLocation.Overview
+                        ? await this.buildOverview({ db, interaction, campaign })
+                        : await this.buildBudgetOverview({ db, interaction, campaign })
+                ) as InteractionUpdateOptions);
 
             } else if (action === "delete") {
                 await this.bot.db.campaign.delete(campaign);
 
                 const response: Response = await this.buildFinder({ db, interaction });
-                return void await interaction.update(response.get() as MessageEditOptions);
+                return void await interaction.update(response.get() as InteractionUpdateOptions);
 
             } else if (action === "preview") {
                 const { response: { embed, row } } = await this.bot.db.campaign.render({
@@ -597,9 +697,6 @@ export default class CampaignsCommand extends Command {
 
                 return response;
             }
-
-            const overview: Response = await this.buildOverview({ db, interaction, campaign });
-            await interaction.update(overview.get() as MessageEditOptions);
         }
     }
 

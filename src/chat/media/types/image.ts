@@ -53,8 +53,6 @@ export const ChatImageAttachmentExtractors: ChatImageAttachmentExtractor[] = [
                 a => ALLOWED_FILE_EXTENSIONS.includes(Utils.fileExtension(a.name).toLowerCase())
             ).values());
 
-            console.log(attachments)
-
             return attachments.map(a => ({
                 name: a.name,
                 url: a.url

@@ -1,4 +1,4 @@
-import { ActionRowBuilder, Awaitable, ButtonBuilder, ButtonInteraction, ButtonStyle, ColorResolvable, EmbedBuilder, Snowflake } from "discord.js";
+import { ActionRowBuilder, Awaitable, ButtonBuilder, ButtonInteraction, ButtonStyle, ColorResolvable, EmbedBuilder, Snowflake, User } from "discord.js";
 import ChartJsImage from "chartjs-to-image";
 import { randomUUID } from "crypto";
 import { URL } from "url";
@@ -89,15 +89,23 @@ export const DatabaseCampaignFilters: DatabaseCampaignFilter[] = [
     } as DatabaseCampaignFilter<string[]>
 ]
 
+export type DatabaseCampaignBudgetType = "click" | "view"
+
 export interface DatabaseCampaignBudget {
     /** The total budget of the campaign */
     total: number;
 
     /** How much has already been used */
     used: number;
+
+    /** Whether cost should be per-view or per-click */
+    type: DatabaseCampaignBudgetType;
+
+    /** CPM - Cost per thousand clicks or views, depending on the type */
+    cost: number;
 }
 
-type DatabaseCampaignLogAction = "updateValue" | "addBudget" | "toggle" | "clearStatistics"
+export type DatabaseCampaignLogAction = "updateValue" | "addBudget" | "toggle" | "clearStatistics"
 
 export interface DatabaseCampaignLog<T = any> {
     /** Which action was performed */
@@ -110,7 +118,7 @@ export interface DatabaseCampaignLog<T = any> {
     who: Snowflake;
 
     /** Additional data */
-    data: T;
+    data: T | null;
 }
 
 export interface DatabaseCampaign {
@@ -126,8 +134,11 @@ export interface DatabaseCampaign {
     /** Whether the campaign is active */
     active: boolean;
 
-    /* What the budget of this campaign is */
-    budget: number;
+    /** What the budget of this campaign is */
+    budget: DatabaseCampaignBudget;
+
+    /** Audit log of this campaign */
+    logs: DatabaseCampaignLog[];
 
     /** Discord IDs of the members of this campaign */
     members: Snowflake[];
@@ -147,10 +158,6 @@ export interface DatabaseCampaign {
 
 export type CreateCampaignOptions = Omit<DatabaseCampaign, "stats" | "active" | "id" | "filters" | "created">
 
-export type PartialDatabaseCampaign = Omit<DatabaseCampaign, "stats" | "active" | "id"> & {
-    id: string;
-}
-
 export interface DisplayCampaignResponse {
     embed: EmbedBuilder;
     row: ActionRowBuilder<ButtonBuilder> | null;
@@ -167,6 +174,13 @@ export interface CampaignPickOptions {
 
     /* Which user to display this campaign to */
     db: DatabaseInfo;
+}
+
+export interface CampaignLogOptions {
+    campaign: DatabaseCampaign;
+    user: User;
+    action: DatabaseCampaignLogAction;
+    data?: any;
 }
 
 interface CampaignChart {
@@ -212,7 +226,6 @@ export class ClusterCampaignManager extends BaseCampaignManager<ClusterDatabaseM
     }
 
     public async create(options: CreateCampaignOptions): Promise<DatabaseCampaign> {
-        /* Generate a random UUID for the campaign. */
         const id: string = randomUUID();
 
         /* Final creation options */
@@ -284,7 +297,7 @@ export class ClusterCampaignManager extends BaseCampaignManager<ClusterDatabaseM
         });
     }
 
-    public async increment(campaign: DatabaseCampaign, type: keyof DatabaseCampaignStatistics, db: DatabaseInfo): Promise<DatabaseCampaign> {
+    public async incrementStatistic(campaign: DatabaseCampaign, type: keyof DatabaseCampaignStatistics, db: DatabaseInfo): Promise<DatabaseCampaign> {
         let updates: Partial<DatabaseCampaignStatistics["clicks"]> & { geo: Record<string, number> } = {
             total: (campaign.stats[type]?.total ?? 0) + 1, geo: {}
         };
@@ -302,24 +315,43 @@ export class ClusterCampaignManager extends BaseCampaignManager<ClusterDatabaseM
         return this.updateStatistics(campaign, type, updates);
     }
 
+    public async incrementUsage(campaign: DatabaseCampaign, type: DatabaseCampaignBudgetType): Promise<DatabaseCampaign> {
+        if (campaign.budget.type !== type) return campaign;
+        const updated: number = campaign.budget.used + (campaign.budget.cost / 1000);
+
+        return await this.update(campaign, {
+            budget: { ...campaign.budget, used: updated }
+        });
+    }
+
+    public async log({ campaign, action, user, data }: CampaignLogOptions): Promise<DatabaseCampaign> {
+        const updated: DatabaseCampaignLog[] = [
+            ...campaign.logs, {
+                action, who: user.id, when: Date.now(), data: data ?? null
+            }
+        ];
+
+        return await this.update(campaign, {
+            logs: updated
+        });
+    }
+
     public async pick({ db }: Omit<CampaignPickOptions, "count">): Promise<DatabaseCampaign | null> {
         const sorted: DatabaseCampaign[] = (await this.all())
-            .filter(c => c.active && this.executeFilters({ campaign: c, db }));
+            .filter(c => c.active && this.available(c) && this.executeFilters({ campaign: c, db }));
 
         /* Final chosen campaign */
         let final: DatabaseCampaign = null!;
 
         const totalBudget: number = sorted.reduce(
-            (previous, campaign) => previous + campaign.budget, 0
+            (previous, campaign) => previous + campaign.budget.total, 0
         );
 
         const random: number = Math.floor(Math.random() * 100) + 1;
-
-        let start: number = 0;
-        let end: number = 0;
+        let start: number = 0; let end: number = 0;
 
         for (const campaign of sorted) {
-            let percent: number = Math.round((campaign.budget / totalBudget) * 100);
+            let percent: number = Math.round((campaign.budget.total / totalBudget) * 100);
             end += percent;
 
             if (percent > 20) percent = 20 - (percent - 20);
@@ -345,11 +377,18 @@ export class ClusterCampaignManager extends BaseCampaignManager<ClusterDatabaseM
 		if (campaign === null) return null;
 
         /* Increment the views for this campaign. */
-        campaign = await this.increment(campaign, "views", options.db);
+        campaign = await this.incrementStatistic(campaign, "views", options.db);
+        campaign = await this.incrementUsage(campaign, "view");
 
-		const ad: DisplayCampaign = await this.render({ campaign, db: options.db });
-		return ad;
+		return await this.render({ campaign, db: options.db });
 	}
+
+    /**
+     * Whether a campaign can run, making sure that its budget is still under the limit
+     */
+    public available(campaign: DatabaseCampaign): boolean {
+        return campaign.budget.total >= campaign.budget.used;
+    }
 
     /**
      * Execute the filters of a campaign, on a user.
@@ -498,11 +537,11 @@ export class ClusterCampaignManager extends BaseCampaignManager<ClusterDatabaseM
         if (action === "link") {
             const { db, raw } = options;
 
-            const campaign: DatabaseCampaign | null = await this.get(raw[1]);
+            let campaign: DatabaseCampaign | null = await this.get(raw[1]);
             if (campaign === null) return;
 
-            /* Increment the campaign's clicks. */
-            await this.increment(campaign, "clicks", db);
+            campaign = await this.incrementStatistic(campaign, "clicks", db);
+            campaign = await this.incrementUsage(campaign, "click");
 
             const row: ActionRowBuilder<ButtonBuilder> = new ActionRowBuilder();
 
