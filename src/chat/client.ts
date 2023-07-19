@@ -222,12 +222,11 @@ export class ChatClient {
         /* Current iteration count, as a safety measure */
         let i: number = 0;
 
+        /* Which messages to use */
+        let history: ChatInteraction[] = options.conversation.history.entries;
+
         do {
             i++;
-
-            /* Which messages to use */
-            let history: ChatInteraction[] = options.conversation.history.entries;
-            if (options.settings.options.history.messages) history = history.slice(-options.settings.options.history.messages);
 
             /* Try to construct a prompt below the maximum token count & add the initial prompt. */
             parts.Initial = {
@@ -275,7 +274,7 @@ export class ChatClient {
             });
             
             /* If the prompt is too long, remove the oldest history entry & try again. */
-            if (maxContextLength - tokens <= 0) options.conversation.history.shift();
+            if (maxContextLength - tokens <= 0) history.shift();
             else break;
             
         } while (maxContextLength - tokens <= 0 && i < PromptLoopLimit);

@@ -39,9 +39,6 @@ export interface ChatSettingsModelHistorySettings {
 
     /* Maximum amount of tokens this model supports */
     maxTokens: number;
-
-    /* Maximum messages to keep in chat history */
-    messages?: number;
 }
 
 export enum ChatSettingsModelBillingType {

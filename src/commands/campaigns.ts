@@ -662,6 +662,8 @@ export default class CampaignsCommand extends Command {
                         : await this.buildBudgetOverview({ db, interaction, campaign })
                 ) as InteractionUpdateOptions);
 
+                return;
+
             } else if (action === "delete") {
                 await this.bot.db.campaign.delete(campaign);
 
@@ -697,6 +699,10 @@ export default class CampaignsCommand extends Command {
 
                 return response;
             }
+
+            await interaction.update((
+                await this.buildOverview({ db, interaction, campaign })
+            ) as InteractionUpdateOptions);
         }
     }
 
