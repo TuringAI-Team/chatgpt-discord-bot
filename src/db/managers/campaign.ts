@@ -89,6 +89,30 @@ export const DatabaseCampaignFilters: DatabaseCampaignFilter[] = [
     } as DatabaseCampaignFilter<string[]>
 ]
 
+export interface DatabaseCampaignBudget {
+    /** The total budget of the campaign */
+    total: number;
+
+    /** How much has already been used */
+    used: number;
+}
+
+type DatabaseCampaignLogAction = "updateValue" | "addBudget" | "toggle" | "clearStatistics"
+
+export interface DatabaseCampaignLog<T = any> {
+    /** Which action was performed */
+    action: DatabaseCampaignLogAction;
+
+    /** When this action was performed */
+    when: number;
+
+    /** Who performed this action */
+    who: Snowflake;
+
+    /** Additional data */
+    data: T;
+}
+
 export interface DatabaseCampaign {
     /** Unique identifier of the campaign */
     id: string;

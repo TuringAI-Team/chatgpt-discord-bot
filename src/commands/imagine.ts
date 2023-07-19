@@ -17,8 +17,8 @@ import { renderIntoSingleImage } from "../image/utils/merge.js";
 import { ModerationResult } from "../moderation/moderation.js";
 import { ErrorResponse } from "../command/response/error.js";
 import { DatabaseInfo } from "../db/managers/user.js";
-import { ImageBuffer } from "../chat/types/image.js";
 import { ImageModel } from "../image/types/model.js";
+import { ImageBuffer } from "../util/image.js";
 import { Utils } from "../util/utils.js";
 import { Bot } from "../bot/bot.js";
 

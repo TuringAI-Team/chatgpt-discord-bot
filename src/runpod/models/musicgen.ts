@@ -1,4 +1,4 @@
-import { type ImageBuffer } from "../../chat/types/image.js";
+import { type ImageBuffer } from "../../util/image.js";
 import { type RunPodResult } from "../api.js";
 
 export type RunPodMusicGenModelName = "large" | "medium"

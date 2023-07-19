@@ -5,9 +5,9 @@ import { TuringOpenAIPartialResult } from "../../turing/types/openai/chat.js";
 import { ChatGuildData, ModelGenerationOptions } from "../types/options.js";
 import { getPromptLength } from "../../conversation/utils/length.js";
 import { Conversation } from "../../conversation/conversation.js";
-import { ChatOutputImage, ImageBuffer } from "../types/image.js";
 import { ModelCapability, ModelType } from "../types/model.js";
 import { PartialResponseMessage } from "../types/message.js";
+import { ChatOutputImage } from "../media/types/image.js";
 import { DatabasePlan } from "../../db/managers/plan.js";
 import { ChatClient, PromptData } from "../client.js";
 import { ChatGPTModel } from "./chatgpt.js";
@@ -45,7 +45,6 @@ interface ClydeFormatter {
 
 interface ClydeFormatterResult {
     text: string;
-    images: ChatOutputImage[];
 }
 
 type ClydeFormatterPair = Partial<Record<ClydeFormatterType, ClydeFormatter>> & {
@@ -181,32 +180,6 @@ const ClydeFormatters: ClydeFormatterPair[] = [
                 } catch (_) { return "*no invites* :pensive:"; }
             }
         },
-    },
-    
-    {
-        name: "Avatars",
-
-        output: {
-            match: /<a:(.*?)>/gm,
-
-            replacer: async (_, { guild }, input) => {
-                const username: string = input.replace("<a:", "").replace(">", "");
-    
-                const user: GuildMember | null = guild.members.cache.find(m => m.user.username === username) ?? null;
-                if (user === null) return "*no avatar*";
-
-                const buffer: ImageBuffer | null = await Utils.fetchBuffer(user.displayAvatarURL());
-                if (buffer === null) return "*failed to load avatar*";
-
-                return {
-                    text: `<@${user.id}>`,
-                    images: [ {
-                        prompt: `${user.nickname ?? user.user.username}'s avatar`,
-                        data: buffer
-                    } ]
-                };
-            }
-        }
     }
 ]
 
@@ -256,7 +229,7 @@ export class ClydeModel extends ChatGPTModel {
     public async format(conversation: Conversation, guild: ChatGuildData, content: string, type: ClydeFormatterType = "output", partial: boolean = false): Promise<ClydeFormatterResult> {
         /* Final, formatted output string */
         let final: ClydeFormatterResult = {
-            text: content, images: []
+            text: content
         };
 
         /* Apply all formatters. */
@@ -279,11 +252,7 @@ export class ClydeModel extends ChatGPTModel {
                 } else {
                      /* Formatter results */
                     const result: ClydeFormatterResult | string | null = await formatter.replacer(conversation, guild, matched);
-
-                    if (result !== null) {
-                        final.text = final.text.replace(matched, typeof result === "string" ? result : result.text);
-                        if (typeof result === "object") final.images.push(...result.images);
-                    }
+                    if (result !== null) final.text = final.text.replace(matched, typeof result === "string" ? result : result.text);
                 }
             }
         }
@@ -343,9 +312,7 @@ export class ClydeModel extends ChatGPTModel {
                 }
             },
 
-            text: data.result,
-            display: final.text,
-            images: final.images.length > 0 ? final.images : undefined
+            text: data.result, display: final.text
         };
     }
 }

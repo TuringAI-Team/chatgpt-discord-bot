@@ -241,6 +241,12 @@ export default class CampaignsCommand extends Command {
                 .setCustomId(buildID("preview")),
 
             new ButtonBuilder()
+                .setLabel("Logs")
+                .setEmoji("👀")
+                .setStyle(ButtonStyle.Secondary)
+                .setCustomId(buildID("logs")),
+
+            new ButtonBuilder()
                 .setLabel("Statistics")
                 .setEmoji("📊")
                 .setStyle(ButtonStyle.Secondary)

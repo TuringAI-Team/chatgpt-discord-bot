@@ -1,7 +1,8 @@
 import { Attachment, Embed, Message, Sticker, StickerFormatType } from "discord.js";
 
-import { Utils } from "../../util/utils.js";
-import { Bot } from "../../bot/bot.js";
+import { ImageBuffer } from "../../../util/image.js";
+import { Utils } from "../../../util/utils.js";
+import { Bot } from "../../../bot/bot.js";
 
 export type ChatImageType = "image" | "sticker" | "emoji" | "Discord attachment link" | "Discord embed image" | "Tenor GIF"
 
@@ -9,39 +10,6 @@ export const ALLOWED_FILE_EXTENSIONS: string[] = [ "webp", "png", "jpeg", "jpg" 
 
 const DISCORD_CDN_REGEX = /https:\/\/(media|cdn)\.discordapp\.(com|net)\/attachments\/\d+\/\d+\/\S+\.(png|jpe?g|webp)/ig
 const EMOJI_REGEX = /<(a?)?:[\w-]+:(\d{18,19})?>/gu
-
-export class ImageBuffer {
-    private data: Buffer;
-
-    constructor(data: Buffer) {
-        this.data = data;
-    }
-
-    public static from(buffer: ArrayBuffer): ImageBuffer {
-        return new ImageBuffer(Buffer.from(buffer));
-    }
-
-    /**
-     * Create a new image buffer from the specified Base64 string.
-     * @param data Base64 string to convert into a buffer
-     * @returns 
-     */
-    public static load(data: string): ImageBuffer {
-        return new ImageBuffer( Buffer.from(data, "base64"));
-    }
-
-    /**
-     * Convert the image buffer into a Base64 string.
-     * @returns Base64-encoded image data
-     */
-    public toString(): string {
-        return this.data.toString("base64");
-    }
-
-    public get buffer(): Buffer {
-        return this.data;
-    }
-}
 
 export interface ChatImageAttachment {
     /* Name of the attachment */
@@ -84,6 +52,8 @@ export const ChatImageAttachmentExtractors: ChatImageAttachmentExtractor[] = [
             const attachments: Attachment[] = Array.from(message.attachments.filter(
                 a => ALLOWED_FILE_EXTENSIONS.includes(Utils.fileExtension(a.name).toLowerCase())
             ).values());
+
+            console.log(attachments)
 
             return attachments.map(a => ({
                 name: a.name,
@@ -180,13 +150,13 @@ export type ChatInputImage = Pick<ChatBaseImage, "name" | "type" | "url"> & {
     text: string | null;
 
     /* How long it took to analyze the image */
-    duration: number;
+    duration: number | null;
 
     /* How much it cost to analyze this image */
-    cost?: number;
+    cost: number | null;
 }
 
-export type ChatAnalyzedImage = Pick<ChatInputImage, "description" | "text" | "cost">
+export type ChatAnalyzedImage = Pick<ChatInputImage, "description" | "text" | "cost" | "duration">
 
 export interface ChatOutputImage {
     /* Final rendered image */

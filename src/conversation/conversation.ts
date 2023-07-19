@@ -7,32 +7,28 @@ import { ChatSettingsModel, ChatSettingsModelBillingType, ChatSettingsModels } f
 import { DatabaseUser, UserSubscriptionPlanType, UserSubscriptionType } from "../db/schemas/user.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/generation.js";
 import { ChatSettingsTone, ChatSettingsTones } from "./settings/tone.js";
-import { ChatInputImage, ImageBuffer } from "../chat/types/image.js";
 import { Cooldown, CooldownModifier } from "./utils/cooldown.js";
 import { ModerationResult } from "../moderation/moderation.js";
 import { UserPlanChatExpense } from "../db/managers/plan.js";
 import { ResponseMessage } from "../chat/types/message.js";
-import { ChatDocument } from "../chat/types/document.js";
+import { ChatMedia } from "../chat/media/types/media.js";
 import { DatabaseInfo } from "../db/managers/user.js";
 import { ChatClientResult } from "../chat/client.js";
 import { ConversationManager } from "./manager.js";
 import { ChatModel } from "../chat/types/model.js";
-import { GPTAPIError } from "../error/api.js";
 import { GeneratorOptions } from "./generator.js";
 import { Response } from "../command/response.js";
 import { GenerationOptions } from "./manager.js";
 import { BotDiscordClient } from "../bot/bot.js";
+import { GPTAPIError } from "../error/api.js";
 import { Utils } from "../util/utils.js";
 
 export interface ChatInput {
 	/* The input message itself; always given */
 	content: string;
 
-	/* Additional text documents attached to the message */
-	documents?: ChatDocument[];
-
-	/* Additional input images */
-	images?: ChatInputImage[];
+	/* Additional media attachments */
+	media?: ChatMedia[];
 }
 
 export interface ChatInteraction {
@@ -207,23 +203,11 @@ export class ConversationHistory {
 	}
 
     public responseMessageToDatabase({ output: message }: ChatInteraction): DatabaseResponseMessage {
-        return {
-            ...message,
-
-            images: message.images ? message.images.map(i => ({
-				...i, data: i.data.toString()
-			})) : undefined
-        };
+        return message;
     }
 
     public databaseToResponseMessage(message: DatabaseResponseMessage): ResponseMessage {
-        return {
-            ...message,
-			
-            images: message.images ? message.images.map(i => ({
-				...i, data: ImageBuffer.load(i.data)
-			})) : undefined
-        };
+        return message;
     }
 }
 
@@ -679,10 +663,10 @@ export class Conversation {
 			cost += interaction.output.raw?.cost;
 		}
 
-		/* Count all analyzed images too. */
-		if (model.options.billing.type !== ChatSettingsModelBillingType.Custom && options.interaction.input.images && options.interaction.input.images.length > 0) {
-			options.interaction.input.images.forEach(image => {
-				cost += (image.duration / 1000) * 0.0004;
+		/* Count all analyzed media attachments too. */
+		if (model.options.billing.type !== ChatSettingsModelBillingType.Custom && options.interaction.input.media && options.interaction.input.media.length > 0) {
+			options.interaction.input.media.forEach(m => {
+				if (m.cost) cost += m.cost;
 			});
 		}
 

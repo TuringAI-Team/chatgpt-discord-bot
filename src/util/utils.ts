@@ -3,7 +3,7 @@ import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
 
-import { ImageBuffer } from "../chat/types/image.js";
+import { ImageBuffer } from "./image.js";
 import { Bot } from "../bot/bot.js";
 
 type FindType = "guild" | "user"
@@ -24,14 +24,14 @@ interface FindAction<T extends Guild | User> {
 
 export abstract class Utils {
 	/* Search for files with the specified extensions. */
-	public static async search(path: string, extension: string, files: string[] = []): Promise<string[]> {
+	public static async search(path: string, files: string[] = []): Promise<string[]> {
 		const directory: string[] = await fs.promises.readdir(path);
 
 		for(const i in directory) {
 			const file: string = directory[i];
 
 			if ((await fs.promises.stat(`${path}/${file}`)).isDirectory()) {
-				files = await this.search(`${path}/${file}`, extension, files);
+				files = await this.search(`${path}/${file}`, files);
 
 			} else {
 				const __filename = fileURLToPath(import.meta.url);

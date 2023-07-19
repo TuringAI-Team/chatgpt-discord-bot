@@ -32,7 +32,7 @@ export class CommandManager {
 	/* Load all the commands. */
 	public async loadAll(): Promise<void> {
 		return new Promise((resolve, reject) => {
-			Utils.search("./build/commands", "js")
+			Utils.search("./build/commands")
 				.then(async (files: string[]) => {
 					await Promise.all(files.map(async path => {
 						await import(path)
@@ -68,13 +68,18 @@ export class CommandManager {
 			(cmd.builder as SlashCommandBuilder).setDefaultPermission(true).toJSON()
 		);
 
+		/* Information about each private application command, as JSON */
+		const privateCommandList: RESTPostAPIApplicationCommandsJSONBody[] = this.commands.filter(cmd => commandList.find(c => c.name === cmd.builder.name) === undefined).map(cmd =>
+			(cmd.builder as SlashCommandBuilder).setDefaultPermission(true).toJSON()
+		);
+
 		return new Promise(async (resolve, reject) => {
 			/* Register the serialized list of private commands to Discord. */
-			await this.bot.client.rest.put(Routes.applicationGuildCommands(this.bot.app.config.discord.id, this.bot.app.config.channels.moderation.guild), {
-				body: this.commands.filter(cmd => commandList.find(c => c.name === cmd.builder.name) === undefined).map(cmd =>
-					(cmd.builder as SlashCommandBuilder).setDefaultPermission(true).toJSON()
-				)
-			});
+			for (const guildID of this.bot.app.config.discord.guilds) {
+				await this.bot.client.rest.put(Routes.applicationGuildCommands(this.bot.app.config.discord.id, guildID), {
+					body: privateCommandList
+				});
+			}
 
 			/* Register the serialized list of application commands to Discord. */
 			await this.bot.client.rest.put(Routes.applicationCommands(this.bot.app.config.discord.id), {

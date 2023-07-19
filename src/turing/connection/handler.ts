@@ -20,7 +20,7 @@ export class TuringConnectionHandler {
 
     public async setup(): Promise<void> {
         return new Promise((resolve, reject) => {
-			Utils.search("./build/turing/connection/packets", "js")
+			Utils.search("./build/turing/connection/packets")
 				.then(async (files: string[]) => {
 					await Promise.all(files.map(async path => {
 						await import(path)

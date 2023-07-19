@@ -23,7 +23,7 @@ export class InteractionManager {
 	/* Load all the commands. */
 	public async loadAll(): Promise<void> {
 		return new Promise((resolve, reject) => {
-			Utils.search("./build/interactions", "js")
+			Utils.search("./build/interactions")
 				.then(async (files: string[]) => {
 					await Promise.all(files.map(async path => {
 						await import(path)

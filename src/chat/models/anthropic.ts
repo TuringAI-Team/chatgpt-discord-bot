@@ -9,7 +9,7 @@ export class AnthropicModel extends ChatModel {
     constructor(client: ChatClient) {
         super(client, {
             name: "Anthropic", type: ModelType.Anthropic,
-            capabilities: [ ModelCapability.UserLanguage ]
+            capabilities: [ ModelCapability.UserLanguage, ModelCapability.ImageViewing ]
         });
     }
 
@@ -27,16 +27,13 @@ export class AnthropicModel extends ChatModel {
             { role: "assistant", content: prompt.parts.Personality.content }
         );
 
-        for (const entry of options.conversation.history.get(5)) {
-            messages.push(
-                { role: "user", content: entry.input.content },
-                { role: "assistant", content: entry.output.text }
-            );
-        }
+        if (prompt.parts.Other) messages.push(
+            { role: "user", content: "What will you also acknowlewdge?" },
+            { role: "assistant", content: prompt.parts.Other.content }
+        );
 
-        messages.push({
-            role: "user", content: options.prompt
-        });
+        /* Add all of the user & assistant interactions to the prompt. */
+        messages.push(...prompt.messages);
 
         /* Which model to use, depending on the context & generation limits */
         const model: AnthropicChatModel = options.settings.options.settings.model ?? "claude-instant-1";

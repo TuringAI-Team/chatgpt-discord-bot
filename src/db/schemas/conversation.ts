@@ -1,6 +1,6 @@
 import { ChatInput } from "../../conversation/conversation.js";
 import { ResponseMessage } from "../../chat/types/message.js";
-import { ChatOutputImage } from "../../chat/types/image.js";
+import { ChatOutputImage } from "../../chat/media/types/image.js";
 import { type AppDatabaseManager } from "../app.js";
 import { DatabaseSchema } from "./schema.js";
 

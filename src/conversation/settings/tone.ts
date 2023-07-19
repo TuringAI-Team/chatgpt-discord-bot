@@ -123,7 +123,7 @@ export const ChatSettingsTones: ChatSettingsTone[] = [
         name: "Precise",
         emoji: { fallback: "📜" },
         description: "Straight to the point; only get the information you requested",
-        prompt: "I must provide only the requested information, directly and precisely, without adding any extra information. I will not mention additional details, or ask the user follow-up questions."
+        prompt: "I must provide only the requested information, directly and precisely, without adding any extra information. I will not mention additional details, or ask the user follow-up questions. I will provide concise responses."
     }),
 
     new ChatSettingsTone({

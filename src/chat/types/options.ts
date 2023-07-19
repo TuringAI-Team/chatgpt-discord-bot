@@ -4,9 +4,10 @@ import { ResponseChatNoticeMessage, PartialResponseMessage, ResponseMessage } fr
 import { ChatSettingsModel } from "../../conversation/settings/model.js";
 import { ChatSettingsTone } from "../../conversation/settings/tone.js";
 import { Conversation } from "../../conversation/conversation.js";
-import { ChatBaseImage, ChatInputImage } from "./image.js";
+import { ChatMediaHandlerRunOptions } from "../media/handler.js";
 import { DatabaseInfo } from "../../db/managers/user.js";
-import { ChatDocument } from "./document.js";
+import { ChatBaseImage } from "../media/types/image.js";
+import { ChatMedia } from "../media/types/media.js";
 import { ChatModel } from "./model.js";
 
 export type ModelGenerationOptions = Pick<ChatGenerationOptions, "conversation" | "trigger" | "db" | "prompt" | "guild" | "partial"> & {
@@ -20,10 +21,7 @@ export type ModelGenerationOptions = Pick<ChatGenerationOptions, "conversation" 
     progress: (message: PartialResponseMessage | ResponseChatNoticeMessage) => Promise<void> | void;
 
     /* List of attached images */
-    images: ChatInputImage[];
-
-    /* List of attached text documents */
-    documents: ChatDocument[];
+    media: ChatMedia[];
 }
 
 export interface ChatGuildData {
@@ -74,7 +72,7 @@ export interface ChatResetOptions {
     tone: ChatSettingsTone;
 }
 
-export type GPTImageAnalyzeOptions = ChatGenerationOptions & {
+export type GPTImageAnalyzeOptions = ChatMediaHandlerRunOptions & {
     /* Message attachment to analyze */
     attachment: ChatBaseImage;
 }

@@ -219,9 +219,7 @@ export class Bot extends EventEmitter {
                 ...Options.DefaultMakeCacheSettings,
 
                 ReactionManager: 0,
-                MessageManager: {
-                    maxSize: 200
-                },
+                MessageManager: 0,
                 
                 GuildMemberManager: {
                     keepOverLimit: member => member.id === this.client.user.id,

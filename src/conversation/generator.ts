@@ -12,6 +12,7 @@ import { ChatInteractionHandlerData } from "../interactions/chat.js";
 import { ChatModel, ModelCapability } from "../chat/types/model.js";
 import { ModerationResult } from "../moderation/moderation.js";
 import { UserSubscriptionType } from "../db/schemas/user.js";
+import { ChatMediaType } from "../chat/media/types/media.js";
 import { ChatGuildData } from "../chat/types/options.js";
 import { ChatSettingsTones } from "./settings/tone.js";
 import { Introduction } from "../util/introduction.js";
@@ -109,25 +110,6 @@ export class Generator {
 		const creditVisibility: PlanCreditVisibility = type.type === "plan"
 			? this.bot.db.settings.get<PlanCreditVisibility>(type.location === "user" ? db.user : db.guild!, "premium:toolbar")
 			: "hide";
-
-		/* If the received data includes generated images, display them. */
-		if (data.images && data.images.length > 0) {
-			for (const [ index, image ] of data.images.entries()) {
-				response.addAttachment(new AttachmentBuilder(image.data.buffer)
-					.setName(`image-${index}.png`)
-				);
-
-				const builder = new EmbedBuilder()
-					.setImage(`attachment://image-${index}.png`)
-					.setColor(this.bot.branding.color);
-
-				if (image.prompt) builder.setTitle(Utils.truncate(image.prompt, 100));
-				if (image.duration) builder.setFooter({ text: `${(image.duration / 1000).toFixed(1)}s${image.notice ? ` • ${image.notice}` : ""}` });
-				if (!image.duration && image.notice) builder.setFooter({ text: image.notice });
-
-				embeds.push(builder);
-			}
-		}
 
 		/* If the received message type is a notice message, display it accordingly. */
 		if (data.type === MessageType.Notice) {
@@ -383,8 +365,8 @@ export class Generator {
 		const entry = conversation.history.find(message);
 		if (entry === null) return;
 
+		if (entry.reply !== null && entry.reply.deletable) await entry.reply.delete().catch(() => {});
 		conversation.history.remove(entry);
-		if (entry.reply !== null) await entry.reply.delete();
 	}
 
     public async handle(options: GeneratorOptions): Promise<void> {
@@ -467,11 +449,12 @@ export class Generator {
 			return void response.send(message);
 		}
 
-		const attachedImages: boolean = (await conversation.manager.client.findMessageImageAttachments(message)).length > 0;
-		const attachedDocuments: boolean = conversation.manager.client.hasMessageDocuments(message);
+		const attachedMedia = await conversation.manager.client.media.has({
+			message, conversation
+		});
 
 		/* If the user sen't an empty message, respond with the introduction message. */
-		if (content.length === 0 && !attachedImages && !attachedDocuments) {
+		if (content.length === 0 && attachedMedia.length === 0) {
 			const page: Response = await Introduction.buildPage(this.bot, author);
 			return void await page.send(options.message);
 		}
@@ -534,14 +517,14 @@ export class Generator {
 		}
 
 		/* If the user attached images to their messages, but doesn't have Premium access, ignore their request. */
-		if (attachedImages && !premium) return void await new Response()
+		if (attachedMedia.includes(ChatMediaType.Images) && !premium) return void await new Response()
 			.addEmbed(builder => builder
 				.setDescription(`🖼️ **${this.bot.client.user.username}** will be able to view your images with **Premium**.\n**Premium** *also includes further benefits, view \`/premium\` for more*. ✨`)
 				.setColor("Orange")
 			).send(message);
 
 		/* If the user attached images to their message, and is currently on a model that doesn't support image attachments, show them a notice. */
-		if (!model.hasCapability(ModelCapability.ImageViewing) && attachedImages) return void await new Response()
+		if (!model.hasCapability(ModelCapability.ImageViewing) && attachedMedia.includes(ChatMediaType.Images)) return void await new Response()
 			.addEmbed(builder => builder
 				.setDescription(`The selected model **${settingsModel.options.name}** ${Emoji.display(settingsModel.options.emoji, true)} cannot view images 😔`)
 				.setColor("Red")

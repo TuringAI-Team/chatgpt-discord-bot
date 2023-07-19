@@ -46,8 +46,7 @@ export class ChatGPTModel extends ChatModel {
 
             buttons: data.tool !== null ? [
                 {
-                    label: "Used plugin", emoji: "🛠️",
-                    disabled: true
+                    label: "Used plugin", emoji: "🛠️", disabled: true
                 },
 
                 {
@@ -86,8 +85,7 @@ export class ChatGPTModel extends ChatModel {
         const data = await this.client.manager.bot.turing.openAI({
             model: options.settings.options.settings.model ?? "gpt-3.5-turbo",
             temperature: options.settings.options.settings.temperature ?? 0.5,
-            messages: Object.values(prompt.parts),
-            max_tokens: prompt.max
+            messages: prompt.all, max_tokens: prompt.max
         }, progress);
 
         if (data === null || data.result.trim().length === 0) throw new GPTGenerationError({
@@ -99,6 +97,7 @@ export class ChatGPTModel extends ChatModel {
 
     public async complete(options: ModelGenerationOptions): Promise<PartialResponseMessage> {
         const prompt = await this.client.buildPrompt(options);
+        console.log(prompt.all);
 
         const identifiers: ChatSettingsPluginIdentifier[] = MultipleChoiceSettingsOption
             .which(this.client.manager.bot.db.settings.get(options.db.user, "plugins:list"));
@@ -113,21 +112,17 @@ export class ChatGPTModel extends ChatModel {
             const model: TuringChatPluginsModel = options.model.settings.name.includes("ChatGPT") ? "gpt-3.5-turbo" : "gpt-4";
 
             /* Fix various plugins that provide up-to-date information past the knowledge cut-off date. */
-            prompt.parts.Initial.content = `${prompt.parts.Initial.content}\nI do not have a knowledge cut-off, I have access to up-to-date news and information using plugins.`;
+            prompt.parts.Initial.content += "\nI do not have a knowledge cut-off, I have access to up-to-date news and information using plugins.";
 
             /* Generate a response for the user's prompt using the Turing API. */
             const result: TuringChatPluginsResult = await this.client.manager.bot.turing.openAIPlugins({
-                messages: Object.values(prompt.parts),
-                tokens: prompt.max,
-
-                user: options.db.user,
+                messages: prompt.all, tokens: prompt.max,
+                user: options.db.user, model, plugins,
 
                 progress: result => {
                     const formatted = this.processPlugins(options, prompt, result);
                     if (formatted !== null) options.progress(formatted);
-                },
-
-                model, plugins
+                }
             });
 
             const final = this.processPlugins(options, prompt, result);

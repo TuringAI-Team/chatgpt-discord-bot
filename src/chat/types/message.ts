@@ -1,4 +1,5 @@
-import { ChatOutputImage } from "./image.js";
+import { ChatOutputImage } from "../media/types/image.js";
+import { ChatMedia } from "../media/types/media.js";
 import { ChatButton } from "./button.js";
 import { ChatEmbed } from "./embed.js";
 
@@ -44,8 +45,8 @@ export type ResponseMessage<Type extends MessageType = MessageType> = BaseMessag
 	/* Information about token usage & why the message stopped generating, etc. */
 	raw?: MessageData;
 
-	/* Generated images, if applicable */
-	images?: ChatOutputImage[];
+	/* Additional media attachments */
+	media?: ChatMedia[];
 
 	/* Additional buttons, if applicable */
 	buttons?: ChatButton[];
@@ -62,4 +63,4 @@ export type PartialChatNoticeMessage = PartialResponseMessage<ResponseChatNotice
 
 export type ResponseNoticeMessage = ResponseMessage<MessageType.Notice>
 
-export type PartialResponseMessage<T extends ResponseMessage = ResponseMessage> = Partial<Pick<T, "raw" | "type" | "images" | "buttons" | "embeds">> & Pick<T, "text" | "display">
+export type PartialResponseMessage<T extends ResponseMessage = ResponseMessage> = Partial<Pick<T, "raw" | "type" | "buttons" | "embeds">> & Pick<T, "text" | "display">

@@ -1,4 +1,4 @@
-import { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, SlashCommandBuilder } from "discord.js";
+import { AttachmentBuilder, SlashCommandBuilder } from "discord.js";
 import { Image, createCanvas } from "@napi-rs/canvas";
 import { readFile } from "fs/promises";
 
@@ -7,8 +7,8 @@ import { LoadingIndicatorManager } from "../db/types/indicator.js";
 import { RunPodMusicGenInput } from "../runpod/models/musicgen.js";
 import { ErrorResponse } from "../command/response/error.js";
 import { DatabaseInfo } from "../db/managers/user.js";
-import { ImageBuffer } from "../chat/types/image.js";
 import { Response } from "../command/response.js";
+import { ImageBuffer } from "../util/image.js";
 import { Bot } from "../bot/bot.js";
 
 const MaxMusicPromptLength: number = 200

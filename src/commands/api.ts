@@ -86,7 +86,6 @@ export default class APICommand extends Command {
 
 		return new Response()
 			.addEmbed(builder => builder
-				.setTitle(``)
 				.setDescription(full ? "**Make sure to never share these keys with someone else!**\n*Find out how & where to use these keys for the API **[here](https://docs.turing.sh)***." : null)
 				.addFields(fields.map(f => ({
 					name: f.name, value: `\`${full ? f.value : `${f.value.slice(undefined, length)}${"*".repeat(15)}${f.value.slice(-length)}`}\``

@@ -1,6 +1,6 @@
 import { ChatResetOptions, GPTImageAnalyzeOptions, ModelGenerationOptions } from "./options.js";
 import { PartialResponseMessage } from "./message.js";
-import { ChatAnalyzedImage } from "./image.js";
+import { ChatAnalyzedImage } from "../media/types/image.js";
 import { ChatClient } from "../client.js";
 
 export enum ModelCapability {
@@ -31,10 +31,7 @@ export enum ModelType {
     LLaMA,
 
     /** Turing Alan model, utilizing various AI technologies */
-    Alan,
-
-    /** Debug model provider */
-    Dummy
+    Alan
 }
 
 export interface ModelOptions {
@@ -88,9 +85,9 @@ export abstract class ChatModel {
         });
 
         return {
-            description: result.result.description,
             text: result.result.ocr ? result.result.ocr.content : null,
-            cost: result.cost ?? undefined
+            description: result.result.description,
+            cost: result.cost, duration: result.duration
         };
     }
 

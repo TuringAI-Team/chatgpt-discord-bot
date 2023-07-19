@@ -2,7 +2,7 @@ import { Image, createCanvas } from "@napi-rs/canvas";
 import { readFile } from "fs/promises";
 
 import { StorageImage } from "../../db/managers/storage.js";
-import { ImageBuffer } from "../../chat/types/image.js";
+import { ImageBuffer } from "../../util/image.js";
 import { DatabaseImage } from "../types/image.js";
 import { Utils } from "../../util/utils.js";
 import { Bot } from "../../bot/bot.js";
@@ -15,7 +15,7 @@ const Assets: Record<AssetName, Buffer> = {
 } as any
 
 const loadAssets = async (): Promise<void> => {
-    const paths: string[] = await Utils.search("./assets/imagine", "png");
+    const paths: string[] = await Utils.search("./assets/imagine");
 
     for (const path of paths) {
         const name: AssetName = Utils.baseName(Utils.fileName(path)) as AssetName;

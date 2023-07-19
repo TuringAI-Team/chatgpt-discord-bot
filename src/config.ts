@@ -41,6 +41,9 @@ export interface Config {
 
 		/* Invite code for the support server */
 		inviteCode: string;
+
+		/* Guilds, which should have access to restricted commands */
+		guilds: Snowflake[];
 	};
 
 	/* Whether metrics about usage, cool-down, guilds, users, etc. should be collected in the database */

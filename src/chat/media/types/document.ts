@@ -1,5 +1,5 @@
 import { Attachment, Message } from "discord.js";
-import { Utils } from "../../util/utils.js";
+import { Utils } from "../../../util/utils.js";
 
 /* Allowed extensions for text documents */
 const ALLOWED_DOCUMENT_EXTENSIONS: string[] = [ "txt", "rtf", "c", "js", "py", "md", "html", "css" ]
@@ -7,35 +7,24 @@ const ALLOWED_DOCUMENT_EXTENSIONS: string[] = [ "txt", "rtf", "c", "js", "py", "
 /* HasteBin link RegExp */
 export const HASTEBIN_LINK_REGEXP = /https:\/\/hastebin\.de\/([a-z0-9]+)/ig
 
-export type ChatDocumentType = "text" | "hastebin"
-
 export type ChatDocument = {
     /* Name of attached document */
     name: string;
-
-    /* Type of the attached document */
-    type: ChatDocumentType;
 
     /* Actual content of the attached document */
     content: string;
 }
 
-export type ChatExtractedDocument = Pick<ChatDocument, "name" | "content">
-
 export interface ChatDocumentExtractor {
-    /* Type of document to extract */
-    type: ChatDocumentType;
-
     /* Whether the message contains this type of document */
     condition: (message: Message) => boolean;
 
     /* Callback, to extract & fetch this type of document */
-    extract: (message: Message) => Promise<ChatExtractedDocument[] | null> | null;
+    extract: (message: Message) => Promise<ChatDocument[] | null> | null;
 }
 
 export const ChatDocumentExtractors: ChatDocumentExtractor[] = [
     {
-        type: "text",
         condition: message => message.attachments.some(a => ALLOWED_DOCUMENT_EXTENSIONS.includes(Utils.fileExtension(a.name))),
 
         extract: async message => {
@@ -51,7 +40,6 @@ export const ChatDocumentExtractors: ChatDocumentExtractor[] = [
     },
 
     {
-        type: "hastebin",
         condition: message => message.content.match(HASTEBIN_LINK_REGEXP) !== null,
 
         extract: async message => {

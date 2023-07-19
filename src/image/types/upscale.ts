@@ -1,5 +1,5 @@
 import { ImageGenerationStatus, ImageRawResult } from "./image.js";
-import { ImageBuffer } from "../../chat/types/image.js";
+import { ImageBuffer } from "../../util/image.js";
 
 export interface ImageUpscaleOptions {
     prompt: string;

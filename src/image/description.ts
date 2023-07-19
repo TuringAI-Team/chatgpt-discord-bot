@@ -2,15 +2,18 @@ import { APIEmbedField, ActionRowBuilder, Attachment, AttachmentBuilder, ButtonB
 import { Image, createCanvas } from "@napi-rs/canvas";
 import crypto from "crypto";
 
-import { ALLOWED_FILE_EXTENSIONS, ChatImageAttachment, ChatImageType, ImageBuffer } from "../chat/types/image.js";
+import { ALLOWED_FILE_EXTENSIONS, ChatImageAttachment, ChatImageType } from "../chat/media/types/image.js";
 import { LoadingResponse } from "../command/response/loading.js";
 import { NoticeResponse } from "../command/response/notice.js";
 import { ImageOCRResult, detectText } from "../util/ocr.js";
-import { ChatBaseImage } from "../chat/types/image.js";
+import { ChatBaseImage } from "../chat/media/types/image.js";
 import { DatabaseInfo } from "../db/managers/user.js";
 import { Response } from "../command/response.js";
+import { ImageBuffer } from "../util/image.js";
 import { Utils } from "../util/utils.js";
 import { Bot } from "../bot/bot.js";
+import { ImageChatHandler } from "../chat/media/handlers/image.js";
+import { ChatMediaType } from "../chat/media/types/media.js";
 
 export interface ImageDescriptionResult {
     /* BLIP description of the image */
@@ -165,7 +168,7 @@ export class ImageDescriptionManager {
             if (ALLOWED_FILE_EXTENSIONS.includes(extension)) attachment = { url: chosen.proxyURL, type: "image" };
 
         } else if (interaction instanceof MessageContextMenuCommandInteraction) {
-            const results = await this.bot.conversation.client.findMessageImageAttachments(interaction.targetMessage);
+            const results = await this.bot.conversation.client.media.image.findImageAttachments(interaction.targetMessage);
             if (results.length > 0) attachment = results[0];
         }
 

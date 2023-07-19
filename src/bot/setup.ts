@@ -91,7 +91,7 @@ const BotSetupSteps: {
 
             {
                 name: "Load Discord events",
-                execute: bot => Utils.search("./build/events", "js")
+                execute: bot => Utils.search("./build/events")
                     .then(files => files.forEach(path => {
                         /* Name of the event */
                         const name: string = basename(path).split(".")[0];

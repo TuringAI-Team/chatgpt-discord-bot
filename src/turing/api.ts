@@ -3,21 +3,22 @@ import { Awaitable } from "discord.js";
 import { OpenAIChatMessage, TuringOpenAIChatBody, TuringOpenAIPartialResult, TuringOpenAIResult } from "./types/openai/chat.js";
 import { AnthropicChatResult, AnthropicPartialChatResult, TuringAnthropicChatBody } from "./types/anthropic.js";
 import { ChatSettingsPlugin, ChatSettingsPluginIdentifier } from "../conversation/settings/plugin.js";
+import { LLaMAPartialChatResult, LLaMAChatResult, TuringLLaMABody } from "./types/llama.js";
 import { GoogleChatResult, TuringGoogleChatBody } from "./types/google.js";
 import { RunPodPath, RunPodRawStreamResponseData } from "../runpod/api.js";
 import { ChoiceSettingOptionChoice } from "../db/managers/settings.js";
-import { ChatOutputImage, ImageBuffer } from "../chat/types/image.js";
 import { TuringAPIError, TuringErrorBody } from "../error/turing.js";
+import { ChatOutputImage } from "../chat/media/types/image.js";
 import { Conversation } from "../conversation/conversation.js";
-import { ChatInputImage } from "../chat/types/image.js";
+import { ChatInputImage } from "../chat/media/types/image.js";
 import { MetricsType } from "../db/managers/metrics.js";
 import { DatabaseUser } from "../db/schemas/user.js";
 import { TuringDatasetManager } from "./dataset.js";
 import { ImageAPIPath } from "../image/manager.js";
 import { StreamBuilder } from "../util/stream.js";
-import { Bot } from "../bot/bot.js";
+import { ImageBuffer } from "../util/image.js";
 import { TuringKeyManager } from "./keys.js";
-import { LLaMAPartialChatResult, LLaMAChatResult, TuringLLaMABody } from "./types/llama.js";
+import { Bot } from "../bot/bot.js";
 
 export type TuringAPIPath = 
     | "text/filter" | `text/${string}`

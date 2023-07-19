@@ -1,6 +1,6 @@
 import { TuringAlanImageGenerator, TuringAlanImageGenerators, TuringAlanResult } from "../../turing/api.js";
 import { ChatResetOptions, GPTImageAnalyzeOptions, ModelGenerationOptions } from "../types/options.js";
-import { ChatAnalyzedImage, ChatInputImage, ChatOutputImage } from "../types/image.js";
+import { ChatAnalyzedImage, ChatInputImage, ChatOutputImage } from "../media/types/image.js";
 import { ChatModel, ModelCapability, ModelType } from "../types/model.js";
 import { MessageType, PartialResponseMessage } from "../types/message.js";
 import { ChatClient, PromptData } from "../client.js";
@@ -17,7 +17,7 @@ export class TuringAlanModel extends ChatModel {
     public async analyze(options: GPTImageAnalyzeOptions): Promise<ChatAnalyzedImage> {
         /* The images will be analyzed server-side using the Turing API. */
         return {
-            description: "", text: ""
+            description: "", text: "", cost: null, duration: null
         };
     }
 
@@ -52,7 +52,6 @@ export class TuringAlanModel extends ChatModel {
 
         return {
             text: result.result,
-            images,
 
             raw: {
                 cost: result.credits
@@ -69,26 +68,20 @@ export class TuringAlanModel extends ChatModel {
         const prompt: PromptData = await this.client.buildPrompt(options);
 
         /* Image to send to Alan */
-        const inputImage: ChatInputImage | null = options.images[0] ?? null;
-
-        /* Previously generated output, for editing */
-        const outputImage: ChatOutputImage | null = options.conversation.previous ?
-            options.conversation.previous.output.images ? options.conversation.previous.output.images[0] : null
-        : null;
+        const inputImage: ChatInputImage | null = null;
 
         /* Generate a response for the user's prompt using the Turing API. */
         const result: TuringAlanResult = await this.client.manager.bot.turing.alan({
             conversation: options.conversation,
-            prompt: prompt.prompt,
             user: options.db.user,
+            prompt: "hello",
 
             progress: result => {
                 this.process(options, result).then(data => options.progress(data));
             },
 
             image: {
-                input: inputImage,
-                output: outputImage
+                input: inputImage, output: null
             }
         });
 

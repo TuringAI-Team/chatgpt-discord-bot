@@ -4,7 +4,7 @@ import { Awaitable } from "discord.js";
 import { RunPodMusicGenInput, RunPodMusicGenOutput, RunPodMusicGenResult } from "./models/musicgen.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/generation.js";
 import { RunPodBLIP2Input, RunPodBLIP2Output } from "./models/blip2.js";
-import { ImageBuffer } from "../chat/types/image.js";
+import { ImageBuffer } from "../util/image.js";
 import { Bot } from "../bot/bot.js";
 
 export type RunPodPath = "runsync" | "run" | `status/${string}`

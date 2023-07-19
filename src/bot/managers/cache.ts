@@ -33,7 +33,8 @@ export class CacheManager {
                 host: this.app.config.db.redis.url,
                 port: this.app.config.db.redis.port
             },
-            password: this.app.config.db.redis.password
+            password: this.app.config.db.redis.password,
+            
         });
 
         await this.client.connect();
