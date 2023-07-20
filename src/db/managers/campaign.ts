@@ -409,9 +409,13 @@ export class ClusterCampaignManager extends BaseCampaignManager<ClusterDatabaseM
         return true;
     }
 
-    public async render({ campaign, preview }: CampaignRenderOptions): Promise<DisplayCampaign> {
+    public async render({ campaign, preview, db }: CampaignRenderOptions): Promise<DisplayCampaign> {
         const row: ActionRowBuilder<ButtonBuilder> = new ActionRowBuilder();
         const embed: EmbedBuilder = new EmbedBuilder();
+
+        const linkButton: ButtonBuilder = new ButtonBuilder()
+            .setLabel("Visit").setCustomId(`campaign:link:${campaign.id}`)
+            .setEmoji("<:share:1122241895133884456>").setStyle(ButtonStyle.Primary);
 
         embed.setTitle(campaign.settings.title);
         embed.setDescription(campaign.settings.description);
@@ -425,38 +429,30 @@ export class ClusterCampaignManager extends BaseCampaignManager<ClusterDatabaseM
 			const buttons: ButtonBuilder[] = [];
 
 			campaign.settings.buttons.forEach(button => {
+                if (button.id === "campaign") buttons.push(linkButton);
+
 				const builder = new ButtonBuilder()
-
                 if (button.emoji) builder.setEmoji(button.emoji);
-                builder.setLabel(button.label);
 
-                if (button.id === "campaign") {
-                    builder.setCustomId(`campaign:link:${campaign.id}`);
-                    builder.setEmoji("<:share:1122241895133884456>");
-                    builder.setStyle(ButtonStyle.Primary);
-                } else {
-                    if (!button.url) builder.setCustomId(button.id ?? randomUUID());
-                    else builder.setURL(button.url);
+                if (!button.url) builder.setCustomId(button.id ?? randomUUID());
+                else builder.setURL(button.url);
 
-                    builder
-                        .setLabel(button.label)
-                        .setDisabled(button.disabled ?? false)
-                        .setStyle(button.url ? ButtonStyle.Link : button.style ?? ButtonStyle.Secondary);
-                }
+                builder
+                    .setLabel(button.label).setDisabled(button.disabled ?? false)
+                    .setStyle(button.url ? ButtonStyle.Link : button.style ?? ButtonStyle.Secondary);
 
 				buttons.push(builder);
 			});
 
 		    row.addComponents(buttons);
 		} else {
-            row.addComponents(
-                new ButtonBuilder()
-                    .setLabel("Visit")
-                    .setCustomId(`campaign:link:${campaign.id}`)
-                    .setEmoji("<:share:1122241895133884456>")
-                    .setStyle(ButtonStyle.Primary)
-            );
+            row.addComponents(linkButton);
         }
+
+        row.addComponents(new ButtonBuilder()
+            .setEmoji("✨").setLabel("Remove ads")
+            .setStyle(ButtonStyle.Secondary).setCustomId("premium:ads")
+        );
 
         return {
             db: campaign, response: {

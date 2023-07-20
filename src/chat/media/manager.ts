@@ -1,10 +1,10 @@
 import { Collection } from "discord.js";
 
+import { ChatMediaHandler, ChatMediaHandlerHasOptions, ChatMediaHandlerRunOptions } from "./handler.js";
 import { ChatMedia, ChatMediaType } from "./types/media.js";
-import { ChatMediaHandler, ChatMediaHandlerHasOptions, ChatMediaHandlerPromptsOptions, ChatMediaHandlerRunOptions } from "./handler.js";
+import { ImageChatHandler } from "./handlers/image.js";
 import { Utils } from "../../util/utils.js";
 import { ChatClient } from "../client.js";
-import { ImageChatHandler } from "./handlers/image.js";
 
 export class ChatMediaManager {
     private readonly client: ChatClient;

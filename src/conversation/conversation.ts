@@ -21,7 +21,6 @@ import { Response } from "../command/response.js";
 import { GenerationOptions } from "./manager.js";
 import { BotDiscordClient } from "../bot/bot.js";
 import { GPTAPIError } from "../error/api.js";
-import { Utils } from "../util/utils.js";
 
 export interface ChatInput {
 	/* The input message itself; always given */
@@ -77,7 +76,7 @@ export const ConversationCooldownModifier: Record<UserSubscriptionPlanType, Cool
 	},
 
 	voter: {
-		time: 120 * 1000
+		time: 90 * 1000
 	},
 
 	subscription: {
@@ -90,7 +89,7 @@ export const ConversationCooldownModifier: Record<UserSubscriptionPlanType, Cool
 }
 
 export const ConversationDefaultCooldown: Required<Pick<CooldownModifier, "time">> = {
-	time: 140 * 1000
+	time: 100 * 1000
 }
 
 export const ConversationTTL: number = 30 * 60 * 1000
@@ -541,12 +540,6 @@ export class Conversation {
 		const additional: EmbedBuilder[] = [];
 		
 		if (!subscriptionType.premium) {
-			additional.push(
-				new EmbedBuilder()
-					.setDescription(`✨ **[Premium](${Utils.shopURL()})** greatly **decreases** the cool-down & includes further benefits, view \`/premium\` for more.`)
-					.setColor("Orange")
-			);
-
 			/* Choose an ad to display, if applicable. */
 			const ad = await this.manager.bot.db.campaign.ad({ db });
 
@@ -555,24 +548,14 @@ export class Conversation {
 				additional.push(ad.response.embed);
 			}
 			
-		} else if (subscriptionType.premium && subscriptionType.location === "guild") {
-			if (subscriptionType.type === "subscription") {
-				additional.push(
-					new EmbedBuilder()
-						.setDescription(`✨ Buying **[Premium](${Utils.shopURL()})** for **yourself** greatly *decreases* the cool-down & also includes further benefits, view \`/premium\` for more.`)
-						.setColor("Orange")
-				);
+		} else if (subscriptionType.location === "guild" && subscriptionType.type === "plan") {
+			/* Cool-down, set by the server */
+			const guildCooldown: number = this.manager.bot.db.settings.get<number>(db.guild!, "limits:cooldown");
 
-			} else if (subscriptionType.type === "plan") {
-				/* Cool-down, set by the server */
-				const guildCooldown: number = this.manager.bot.db.settings.get<number>(db.guild!, "limits:cooldown");
-
-				additional.push(
-					new EmbedBuilder()
-						.setDescription(`📊 The server owners have configured a cool-down of **${guildCooldown} seconds** using the **Pay-as-you-go** plan.\n${db.user.subscription !== null || db.user.plan !== null ? `*You can configure the **priority** of Premium in \`/settings\`*.` : ""}`)
-						.setColor("Orange")
-				);
-			}
+			additional.push(new EmbedBuilder()
+				.setDescription(`📊 The server owners have configured a cool-down of **${guildCooldown} seconds** using the **Pay-as-you-go** plan.\n${db.user.subscription !== null || db.user.plan !== null ? `*You can configure the **priority** of Premium in \`/settings\`*.` : ""}`)
+				.setColor("Orange")
+			);
 		}
 
 		this.manager.bot.db.metrics.changeCooldownMetric({
@@ -581,9 +564,8 @@ export class Conversation {
 
 		response.addEmbeds([
 			new EmbedBuilder()
-				.setTitle("Whoa-whoa... slow down ⌛")
-				.setDescription(`I can't keep up with your requests; you can talk to me again <t:${Math.floor((this.cooldown.state.startedAt! + this.cooldown.state.expiresIn! + 1000) / 1000)}:R>.`)
-				.setColor("Yellow"),
+				.setTitle("Whoa-whoa... slow down ⌛").setColor("Yellow")
+				.setDescription(`I can't keep up with your requests; you can talk to me again <t:${Math.floor((this.cooldown.state.startedAt! + this.cooldown.state.expiresIn! + 1000) / 1000)}:R>.`),
 
 			...additional
 		]);
