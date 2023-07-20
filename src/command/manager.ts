@@ -237,12 +237,14 @@ export class CommandManager {
 			);
 		}
 
-		/* Choose an ad to display, if applicable. */
-		const ad = await this.bot.db.campaign.ad({ db });
+		if (!subscription.premium) {
+			/* Choose an ad to display, if applicable. */
+			const ad = await this.bot.db.campaign.ad({ db });
 
-		if (ad !== null) {
-			response.addComponent(ActionRowBuilder<ButtonBuilder>, ad.response.row);
-			response.addEmbed(ad.response.embed);
+			if (ad !== null) {
+				response.addComponent(ActionRowBuilder<ButtonBuilder>, ad.response.row);
+				response.addEmbed(ad.response.embed);
+			}
 		}
 
 		return response;

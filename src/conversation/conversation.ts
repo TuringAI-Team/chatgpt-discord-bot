@@ -546,6 +546,14 @@ export class Conversation {
 					.setDescription(`✨ **[Premium](${Utils.shopURL()})** greatly **decreases** the cool-down & includes further benefits, view \`/premium\` for more.`)
 					.setColor("Orange")
 			);
+
+			/* Choose an ad to display, if applicable. */
+			const ad = await this.manager.bot.db.campaign.ad({ db });
+
+			if (ad !== null) {
+				response.addComponent(ActionRowBuilder<ButtonBuilder>, ad.response.row);
+				additional.push(ad.response.embed);
+			}
 			
 		} else if (subscriptionType.premium && subscriptionType.location === "guild") {
 			if (subscriptionType.type === "subscription") {
@@ -565,14 +573,6 @@ export class Conversation {
 						.setColor("Orange")
 				);
 			}
-		}
-
-		/* Choose an ad to display, if applicable. */
-		const ad = await this.manager.bot.db.campaign.ad({ db });
-
-		if (ad !== null) {
-			response.addComponent(ActionRowBuilder<ButtonBuilder>, ad.response.row);
-			additional.push(ad.response.embed);
 		}
 
 		this.manager.bot.db.metrics.changeCooldownMetric({

@@ -8,9 +8,10 @@ import { InteractionHandlerResponse, InteractionHandlerRunOptions } from "../../
 import { CampaignInteractionHandlerData } from "../../interactions/campaign.js";
 import { DatabaseManager, DatabaseManagerBot } from "../manager.js";
 import CampaignsCommand from "../../commands/campaigns.js";
-import { GPTDatabaseError } from "../../error/db.js";
+import { TuringChartResult } from "../../turing/api.js";
 import { ChatButton } from "../../chat/types/button.js";
 import { ClusterDatabaseManager } from "../cluster.js";
+import { GPTDatabaseError } from "../../error/db.js";
 import { Response } from "../../command/response.js";
 import { AppDatabaseManager } from "../app.js";
 import { SubDatabaseManager } from "../sub.js";
@@ -192,7 +193,7 @@ interface CampaignChartDesigner {
     name: string;
     type: "chart" | "pie";
 
-    run: (campaign: DatabaseCampaign, chart: ChartJsImage) => Awaitable<any>;
+    run: (campaign: DatabaseCampaign, chart: ChartJsImage) => Awaitable<any | TuringChartResult>;
 }
 
 type CampaignRenderOptions = Pick<CampaignPickOptions, "db"> & { campaign: DatabaseCampaign, preview?: boolean }
@@ -471,15 +472,10 @@ export class ClusterCampaignManager extends BaseCampaignManager<ClusterDatabaseM
                 type: "pie",
 
                 run: campaign => {
-                    return {
-                        data: {
-                            datasets: [ {
-                                data: Object.values(campaign.stats.views.geo)
-                            } ],
-                        
-                            labels: Object.keys(campaign.stats.views.geo)
-                        }
-                    };
+                    return { data: {
+                        datasets: [ { data: Object.values(campaign.stats.views.geo) } ],
+                        labels: Object.keys(campaign.stats.views.geo)
+                    } };
                 }
             },
 
@@ -488,15 +484,10 @@ export class ClusterCampaignManager extends BaseCampaignManager<ClusterDatabaseM
                 type: "pie",
 
                 run: campaign => {
-                    return {
-                        data: {
-                            datasets: [ {
-                                data: Object.values(campaign.stats.clicks.geo)
-                            } ],
-                        
-                            labels: Object.keys(campaign.stats.clicks.geo)
-                        }
-                    };
+                    return { data: {
+                        datasets: [ { data: Object.values(campaign.stats.clicks.geo) } ],
+                        labels: Object.keys(campaign.stats.clicks.geo)
+                    } };
                 }
             }
         ];
@@ -510,22 +501,30 @@ export class ClusterCampaignManager extends BaseCampaignManager<ClusterDatabaseM
             /* Render the actual chart & get its configuration. */
             const config = await designer.run(campaign, chart);
 
-            chart.setConfig({
-                ...config,
-                
-                options: {
-                    plugins: {
-                        legend: { position: "top" }
-                    }
-                },
-                
-                type: designer.type
-            });
+            /* If the result is a Turing chart result, display it accordingly. */
+            if (config.image) {
+                final.push({
+                    name: designer.name, data: (config as TuringChartResult).image.buffer
+                });
 
-            final.push({
-                name: designer.name,
-                data: await chart.toBinary()
-            });
+            } else {
+                chart.setConfig({
+                    ...config,
+                    
+                    options: {
+                        plugins: {
+                            legend: { position: "top" }
+                        }
+                    },
+                    
+                    type: designer.type
+                });
+    
+                final.push({
+                    name: designer.name,
+                    data: await chart.toBinary()
+                });
+            }
         }
 
         return final;
@@ -540,7 +539,6 @@ export class ClusterCampaignManager extends BaseCampaignManager<ClusterDatabaseM
             let campaign: DatabaseCampaign | null = await this.get(raw[1]);
             if (campaign === null) return;
 
-            campaign = await this.incrementStatistic(campaign, "clicks", db);
             campaign = await this.incrementUsage(campaign, "click");
 
             const row: ActionRowBuilder<ButtonBuilder> = new ActionRowBuilder();

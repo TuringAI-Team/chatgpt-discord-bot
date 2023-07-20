@@ -680,6 +680,10 @@ export default class CampaignsCommand extends Command {
                     .addEmbed(embed).setEphemeral(true);
                     
             } else if (action === "stats") {
+                await interaction.deferReply({
+                    ephemeral: true
+                });
+
                 const charts = await this.bot.db.campaign.charts(campaign);
                 const response = new Response().setEphemeral(true);
 
