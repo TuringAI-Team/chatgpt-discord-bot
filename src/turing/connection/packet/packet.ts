@@ -1,7 +1,7 @@
 import { TuringConnectionManager } from "../connection.js";
 
 /* All packet names */
-export type PacketName = "cache" | "update" | "vote"
+export type PacketName = "update" | "vote" | "campaigns"
 
 /* Which types can be used for incoming packet data */
 export type PacketData = any
