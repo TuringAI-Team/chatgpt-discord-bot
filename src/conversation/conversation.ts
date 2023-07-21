@@ -76,7 +76,7 @@ export const ConversationCooldownModifier: Record<UserSubscriptionPlanType, Cool
 	},
 
 	voter: {
-		time: 90 * 1000
+		time: 45 * 1000
 	},
 
 	subscription: {
@@ -89,7 +89,7 @@ export const ConversationCooldownModifier: Record<UserSubscriptionPlanType, Cool
 }
 
 export const ConversationDefaultCooldown: Required<Pick<CooldownModifier, "time">> = {
-	time: 100 * 1000
+	time: 50 * 1000
 }
 
 export const ConversationTTL: number = 30 * 60 * 1000

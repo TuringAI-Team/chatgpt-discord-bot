@@ -2,10 +2,10 @@ import { ActionRowBuilder, AttachmentBuilder, Awaitable, ButtonBuilder, ButtonIn
 import { randomUUID } from "crypto";
 import words from "random-words";
 
+import { DatabaseCampaign, DatabaseCampaignBudgetType, DatabaseCampaignLog } from "../db/managers/campaign.js";
 import { InteractionHandlerResponse, InteractionHandlerRunOptions } from "../interaction/handler.js";
 import { Command, CommandInteraction, CommandResponse } from "../command/command.js";
 import { CampaignInteractionHandlerData } from "../interactions/campaign.js";
-import { DatabaseCampaign, DatabaseCampaignBudgetType, DatabaseCampaignLog } from "../db/managers/campaign.js";
 import { ErrorResponse } from "../command/response/error.js";
 import { DatabaseInfo } from "../db/managers/user.js";
 import { Response } from "../command/response.js";
@@ -222,7 +222,7 @@ const CampaignParameters: CampaignParameter[] = [
 ]
 
 /* Maximum amount of campaigns a user may be part of */
-const MaxCampaignsPerUser: number = 5
+const MaxCampaignsPerUser: number = 25
 
 export default class CampaignsCommand extends Command {
     constructor(bot: Bot) {
