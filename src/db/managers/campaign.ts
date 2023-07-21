@@ -16,6 +16,7 @@ import { Response } from "../../command/response.js";
 import { AppDatabaseManager } from "../app.js";
 import { SubDatabaseManager } from "../sub.js";
 import { DatabaseInfo } from "./user.js";
+import { Bot } from "../../bot/bot.js";
 
 type DatabaseCampaignButton = ChatButton
 
@@ -70,14 +71,22 @@ interface DatabaseCampaignFilterCall<T extends DatabaseCampaignFilterData = any>
 interface DatabaseCampaignFilterContext<T extends DatabaseCampaignFilterData = any> {
     data: T;
     db: DatabaseInfo;
+    bot: Bot;
 }
 
 interface DatabaseCampaignFilter<T extends DatabaseCampaignFilterData = any> {
     /** Name of the filter */
     name: string;
 
-    /** Executor of the filter */
+    /** Callback to validate a new value for this filter */
+    validate: (context: DatabaseCampaignFilterContext<T>) => DatabaseCampaignFilterValidation | boolean;
+
+    /** Callback to actually execute this filter */
     execute: (context: DatabaseCampaignFilterContext<T>) => boolean;
+}
+
+interface DatabaseCampaignFilterValidation {
+    message: string;
 }
 
 export const DatabaseCampaignFilters: DatabaseCampaignFilter[] = [
@@ -87,10 +96,26 @@ export const DatabaseCampaignFilters: DatabaseCampaignFilter[] = [
             if (!db.user.metadata.country) return false;
             return data.includes(db.user.metadata.country);
         }
+    } as DatabaseCampaignFilter<string[]>,
+
+    {
+        name: "tags",
+        execute: ({ data, db }) => {
+            if (!db.guild || !db.guild.metadata.tags) return false;
+            if (db.guild.metadata.tags.some(t => data.includes(t))) return true;
+        }
+    } as DatabaseCampaignFilter<string[]>,
+
+    {
+        name: "languages",
+        execute: ({ data, db, bot }) => {
+            const language: string = bot.db.settings.get(db.user, "general:language");
+            return data.includes(language);
+        }
     } as DatabaseCampaignFilter<string[]>
 ]
 
-export type DatabaseCampaignBudgetType = "click" | "view"
+export type DatabaseCampaignBudgetType = "click" | "view" | "none"
 
 export interface DatabaseCampaignBudget {
     /** The total budget of the campaign */
@@ -241,9 +266,7 @@ export class ClusterCampaignManager extends BaseCampaignManager<ClusterDatabaseM
 
         await this.db.eval(async (app, { campaign }) => {
             app.db.campaign.campaigns.push(campaign);
-        }, {
-            campaign
-        });
+        }, { campaign });
 
         return campaign;
     }
@@ -251,9 +274,7 @@ export class ClusterCampaignManager extends BaseCampaignManager<ClusterDatabaseM
     public async update(campaign: DatabaseCampaign, changes: Partial<DatabaseCampaign>): Promise<DatabaseCampaign> {
         const updated: DatabaseCampaign = await this.db.eval(async (app, { campaign, changes }) => {
             return await app.db.campaign.update(campaign, changes);
-        }, {
-            campaign, changes
-        });
+        }, { campaign, changes });
 
         return updated;
     }
@@ -262,9 +283,7 @@ export class ClusterCampaignManager extends BaseCampaignManager<ClusterDatabaseM
         await this.db.eval(async (app, { campaign }) => {
             const index: number = app.db.campaign.campaigns.findIndex(c => c.id === campaign.id);
             app.db.campaign.campaigns.splice(index, 1);
-        }, {
-            campaign
-        });
+        }, { campaign });
 
         await this.db.delete("campaigns", campaign);
     }
@@ -399,7 +418,7 @@ export class ClusterCampaignManager extends BaseCampaignManager<ClusterDatabaseM
             const filter: DatabaseCampaignFilter | null = DatabaseCampaignFilters.find(f => f.name === call.name) ?? null;
             if (filter === null) continue;
 
-            const result: boolean = filter.execute({ db, data: call.data });
+            const result: boolean = filter.execute({ db, data: call.data, bot: this.db.bot });
             if (!result) return false;
         }
 
@@ -461,26 +480,62 @@ export class ClusterCampaignManager extends BaseCampaignManager<ClusterDatabaseM
     public async charts(campaign: DatabaseCampaign): Promise<CampaignChart[]> {
         const designers: CampaignChartDesigner[] = [
             {
-                name: "Views from countries",
+                name: "Views over time",
                 type: "pie",
 
-                run: campaign => {
-                    return { data: {
-                        datasets: [ { data: Object.values(campaign.stats.views.geo) } ],
-                        labels: Object.keys(campaign.stats.views.geo)
-                    } };
+                run: async campaign => {
+                    return await this.db.bot.turing.chart({
+                        chart: "campaigns", settings: {
+                            period: "1w", filter: {
+                                include: [ `views.total.${campaign.name}` ]
+                            }
+                        }
+                    });
                 }
             },
 
             {
-                name: "Clicks from countries",
+                name: "Views per hour",
                 type: "pie",
 
-                run: campaign => {
-                    return { data: {
-                        datasets: [ { data: Object.values(campaign.stats.clicks.geo) } ],
-                        labels: Object.keys(campaign.stats.clicks.geo)
-                    } };
+                run: async campaign => {
+                    return await this.db.bot.turing.chart({
+                        chart: "campaigns", settings: {
+                            period: "1w", filter: {
+                                include: [ `views.now.${campaign.name}` ]
+                            }
+                        }
+                    });
+                }
+            },
+
+            {
+                name: "Clicks over time",
+                type: "pie",
+
+                run: async campaign => {
+                    return await this.db.bot.turing.chart({
+                        chart: "campaigns", settings: {
+                            period: "1w", filter: {
+                                include: [ `clicks.total.${campaign.name}` ]
+                            }
+                        }
+                    });
+                }
+            },
+
+            {
+                name: "Clicks per hour",
+                type: "pie",
+
+                run: async campaign => {
+                    return await this.db.bot.turing.chart({
+                        chart: "campaigns", settings: {
+                            period: "1w", filter: {
+                                include: [ `clicks.now.${campaign.name}` ]
+                            }
+                        }
+                    });
                 }
             }
         ];

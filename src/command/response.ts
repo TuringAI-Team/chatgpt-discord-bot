@@ -97,9 +97,6 @@ export class Response {
 	public async send(interaction: ResponseSendClass): Promise<InteractionResponse | Message | null> {
 		try {
 			if (interaction instanceof MessageComponentInteraction || interaction instanceof CommandInteraction || interaction instanceof ButtonInteraction || interaction instanceof ModalSubmitInteraction) {
-				/* If the interaction token has expired, don't try to edit the message. */
-				if (Date.now() - interaction.createdTimestamp > 10 * 60 * 1000) return null;
-
 				/* Whether the interaction has already been replied to */
 				const replied: boolean = interaction.replied || interaction.deferred;
 

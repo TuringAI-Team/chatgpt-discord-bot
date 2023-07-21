@@ -7,9 +7,13 @@ import { type AppDatabaseManager } from "../app.js";
 import { DatabasePlan } from "../managers/plan.js";
 import { DatabaseSchema } from "./schema.js";
 
-export type DatabaseGuildMetadataKey = "category"
-export const DatabaseGuildMetadataKeys: DatabaseGuildMetadataKey[] = [ "category" ]
-export type DatabaseGuildMetadata = Record<DatabaseGuildMetadataKey, string | undefined>
+export type DatabaseGuildMetadataKey = "tags" | "language"
+export const DatabaseGuildMetadataKeys: DatabaseGuildMetadataKey[] = [ "tags", "language" ]
+
+export type DatabaseGuildMetadata = {
+    tags: string[];
+    language: string;
+}
 
 export type DatabaseGuildSubscription = DatabaseSubscription & {
     /* Who redeemed the subscription key for the server */
@@ -60,7 +64,7 @@ export class GuildSchema extends DatabaseSchema<DatabaseGuild, Guild> {
         const final: Partial<DatabaseGuildMetadata> = {};
 
         for (const key of DatabaseGuildMetadataKeys) {
-            final[key] = entry.metadata !== null ? entry.metadata[key] : undefined;
+            final[key] = entry.metadata ? entry.metadata[key] as any : undefined;
         }
 
         return final as DatabaseGuildMetadata;

@@ -3,12 +3,13 @@ import translate from "@iamtraction/google-translate";
 import { randomUUID } from "crypto";
 import dayjs from "dayjs";
 
+import { DatabaseInfraction, DatabaseInfractionOptions, DatabaseInfractionReference } from "./types/infraction.js";
 import { ModerationFilterActionData, ModerationFilterActionType, FilterManager } from "./filter/manager.js";
 import { InteractionHandlerClassType, InteractionHandlerResponse } from "../interaction/handler.js";
-import { DatabaseInfraction, DatabaseInfractionOptions, DatabaseInfractionReference } from "./types/infraction.js";
 import { ModerationInteractionHandlerData } from "../interactions/moderation.js";
 import { DatabaseEntry, DatabaseInfo } from "../db/managers/user.js";
 import { Response, ResponseSendClass } from "../command/response.js";
+import { ImageModel } from "../image/types/model.js";
 import { DatabaseUser } from "../db/schemas/user.js";
 import { FindResult, Utils } from "../util/utils.js";
 import { Duration } from "dayjs/plugin/duration.js";
@@ -96,7 +97,7 @@ export type ModerationSource = "chatUser" | "chatBot" | "image" | "translationPr
 
 interface AdditionalModerationOptions {
     /* Which image generation model was used */
-    model?: string;
+    model?: ImageModel;
 }
 
 export interface ModerationOptions {
@@ -519,7 +520,7 @@ export class ModerationManager {
         if (result.source === "image" && additional && additional.model) reply.embeds[0].addFields(
             {
                 name: "Model 😊",
-                value: `\`${additional.model}\``,
+                value: `\`${additional.model.name}\``,
                 inline: true
             }
         );

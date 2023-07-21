@@ -593,7 +593,7 @@ export default class ImagineCommand extends Command {
 		await interaction.deferReply().catch(() => {});
 
 		const moderation: ModerationResult = await this.bot.moderation.checkImagePrompt({
-			db, user: interaction.user, content: prompt, model: model.id
+			db, user: interaction.user, content: prompt, model
 		});
 
 		/* If the message was flagged, send a warning message. */

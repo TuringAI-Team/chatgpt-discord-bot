@@ -511,6 +511,12 @@ export class TuringAPI {
             }
         });
 
+        console.log(JSON.stringify({
+            path: `chart/${type}`, method: "POST", body: {
+                period, filter
+            }
+        }))
+
         return {
             image: ImageBuffer.load(result.image.replace("data:image/png;base64,", ""))
         };

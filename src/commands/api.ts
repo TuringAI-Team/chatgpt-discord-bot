@@ -86,10 +86,12 @@ export default class APICommand extends Command {
 
 		return new Response()
 			.addEmbed(builder => builder
+				.setTitle(!full ? `${data.name} 🔐` : null)
 				.setDescription(full ? "**Make sure to never share these keys with someone else!**\n*Find out how & where to use these keys for the API **[here](https://docs.turing.sh)***." : null)
 				.addFields(fields.map(f => ({
 					name: f.name, value: `\`${full ? f.value : `${f.value.slice(undefined, length)}${"*".repeat(15)}${f.value.slice(-length)}`}\``
 				})))
+				.setFooter(!full ? { text: "For security reasons, you can only view your API keys when creating them." } : null)
 				.setColor(this.bot.branding.color)
 			)
 			.setEphemeral(true);

@@ -102,7 +102,7 @@ const CampaignParameters: CampaignParameter[] = [
         length: { max: 200 },
         validate: async (value, db, bot) => {
             const ids: string[] = value.split(/[ ,\n]+/);
-            if (!ids.includes(db.user.id)) return { message: "you can't remove yourself" };
+            if (!ids.some(id => id === db.user.id)) return { message: "you can't remove yourself" };
 
             for (const id of ids) {
                 try {
@@ -264,6 +264,11 @@ export default class CampaignsCommand extends Command {
                 .setCustomId(buildID("budget")),
 
             new ButtonBuilder()
+                .setLabel("Filters").setEmoji("🧵")
+                .setStyle(ButtonStyle.Secondary)
+                .setCustomId(buildID("filters")),
+
+            new ButtonBuilder()
                 .setLabel("Logs").setEmoji("👀")
                 .setStyle(ButtonStyle.Secondary)
                 .setCustomId(buildID("logs")),
@@ -272,11 +277,6 @@ export default class CampaignsCommand extends Command {
                 .setLabel("Statistics").setEmoji("📊")
                 .setStyle(ButtonStyle.Secondary)
                 .setCustomId(buildID("stats")),
-
-            new ButtonBuilder()
-                .setLabel("Clear statistics").setEmoji("🧹")
-                .setStyle(ButtonStyle.Danger)
-                .setCustomId(buildID("clearStats")),
 
             new ButtonBuilder()
                 .setLabel("Delete").setEmoji("🗑️")
@@ -685,7 +685,15 @@ export default class CampaignsCommand extends Command {
                 });
 
                 const charts = await this.bot.db.campaign.charts(campaign);
-                const response = new Response().setEphemeral(true);
+
+                const response = new Response()
+                    .addComponent(ActionRowBuilder<ButtonBuilder>, new ActionRowBuilder()
+                        .addComponents(new ButtonBuilder()
+                            .setLabel("Clear statistics").setEmoji("🧹")
+                            .setStyle(ButtonStyle.Danger)
+                            .setCustomId(`campaign:ui:clearStats:${campaign.id}`)
+                        )
+                    ).setEphemeral(true);
 
                 for (const chart of charts) {
                     const id: string = randomUUID();
