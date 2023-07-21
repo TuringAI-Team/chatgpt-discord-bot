@@ -599,7 +599,7 @@ export class AppCampaignManager extends BaseCampaignManager<AppDatabaseManager> 
         const updated: DatabaseCampaign = await this.db.queue.update("campaigns", campaign, changes);
 
         const index: number = this.campaigns.findIndex(c => c.id === campaign.id);
-        this.campaigns[index] = campaign;
+        this.campaigns[index] = updated;
 
         return updated;
     }
