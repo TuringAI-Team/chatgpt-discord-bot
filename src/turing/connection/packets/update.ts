@@ -1,4 +1,5 @@
 import { Packet, PacketDirection, PacketSendOptions } from "../packet/packet.js";
+import { DatabaseCampaign } from "../../../db/managers/campaign.js";
 import { DatabaseCollectionType } from "../../../db/manager.js";
 import { TuringConnectionManager } from "../connection.js";
 
@@ -25,7 +26,8 @@ export class UpdatePacket extends Packet<UpdatePacketIncomingData> {
         /* Make sure that the entry exists, before updating it. */
         const existing = await this.manager.app.db.fetchFromCacheOrDatabase(collection, id);
         if (existing === null) return;
-
-        await this.manager.app.db.queue.update(collection, existing, updates);
+        
+        if (collection === "campaigns") await this.manager.app.db.campaign.update(existing as DatabaseCampaign, updates);
+        else await this.manager.app.db.queue.update(collection, existing, updates);
     }
 }

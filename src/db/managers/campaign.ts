@@ -249,13 +249,10 @@ export class ClusterCampaignManager extends BaseCampaignManager<ClusterDatabaseM
     }
 
     public async update(campaign: DatabaseCampaign, changes: Partial<DatabaseCampaign>): Promise<DatabaseCampaign> {
-        const updated: DatabaseCampaign = await this.db.queue.update("campaigns", campaign, changes);
-
-        await this.db.eval(async (app, { campaign }) => {
-            const index: number = app.db.campaign.campaigns.findIndex(c => c.id === campaign.id);
-            app.db.campaign.campaigns[index] = campaign;
+        const updated: DatabaseCampaign = await this.db.eval(async (app, { campaign, changes }) => {
+            return await app.db.campaign.update(campaign, changes);
         }, {
-            campaign: updated
+            campaign, changes
         });
 
         return updated;
@@ -596,6 +593,15 @@ export class AppCampaignManager extends BaseCampaignManager<AppDatabaseManager> 
 
         this.campaigns.forEach(c => this.db.setCache("campaigns", c.id, c));
         return campaigns;
+    }
+
+    public async update(campaign: DatabaseCampaign, changes: Partial<DatabaseCampaign>): Promise<DatabaseCampaign> {
+        const updated: DatabaseCampaign = await this.db.queue.update("campaigns", campaign, changes);
+
+        const index: number = this.campaigns.findIndex(c => c.id === campaign.id);
+        this.campaigns[index] = campaign;
+
+        return updated;
     }
 
     public async setup(): Promise<void> {
