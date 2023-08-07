@@ -92,6 +92,7 @@ export abstract class InteractionHandler<T extends InteractionHandlerClassType =
 
 
 	public restricted(check: CommandRestrictionType): boolean {
+		if (this.options.restriction.length === 0) return false;
 		return check.some(c => this.options.restriction.includes(c));
 	}
 
@@ -109,6 +110,10 @@ export abstract class InteractionHandler<T extends InteractionHandlerClassType =
 
 	public subscriptionOnly(): boolean {
 		return this.restricted([ "subscription" ]);
+	}
+
+	public private(): boolean {
+		return this.restricted([ "moderator", "owner", "advertiser", "investor" ]);
 	}
 
 

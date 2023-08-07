@@ -67,6 +67,6 @@ export class CacheManager {
     }
 
     private keyName(collection: CacheType, key: string): string {
-        return `${this.app.dev ? `dev5:` : ""}${collection}:${key}`;
+        return `${this.app.dev ? `dev:` : ""}${collection}:${key}`;
     }
 }

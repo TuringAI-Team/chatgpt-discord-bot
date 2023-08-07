@@ -67,9 +67,7 @@ export class StorageManager extends SubClusterDatabaseManager {
                 contentType: "image/png"
             });
 
-        /* Check for any errors. */
         this.error(error, "images");
-
         return this.imageURL(db, image, "images");
     }
 
@@ -83,7 +81,6 @@ export class StorageManager extends SubClusterDatabaseManager {
                 contentType: "image/png"
             });
 
-        /* Check for any errors. */
         this.error(error, "descriptions");
     }
 

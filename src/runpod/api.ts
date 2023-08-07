@@ -3,7 +3,6 @@ import { Awaitable } from "discord.js";
 
 import { RunPodMusicGenInput, RunPodMusicGenOutput, RunPodMusicGenResult } from "./models/musicgen.js";
 import { GPTGenerationError, GPTGenerationErrorType } from "../error/generation.js";
-import { RunPodBLIP2Input, RunPodBLIP2Output } from "./models/blip2.js";
 import { ImageBuffer } from "../util/image.js";
 import { Bot } from "../bot/bot.js";
 
@@ -105,10 +104,6 @@ export class RunPodManager {
             duration: latest.executionTime,
             output: latest.output
         };
-    }
-
-    public async blip2(input: RunPodBLIP2Input): Promise<RunPodResult<RunPodBLIP2Output>> {
-        return this.execute({ model: "blip2", input });
     }
 
     public async musicGen(input: RunPodMusicGenInput, progress?: (data: RunPodRawStreamResponseData<RunPodMusicGenOutput>) => Awaitable<void>): Promise<RunPodMusicGenResult> {

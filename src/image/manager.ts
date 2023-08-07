@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 
 import { DatabaseImage, ImageGenerationBody, ImageGenerationOptions, ImageGenerationResult, ImageGenerationType, ImagePartialGenerationResult, ImageResult } from "./types/image.js";
+import { TuringUpscaleBody, TuringUpscaleResult } from "../turing/types/upscale.js";
 import { ImageGenerationRatio, ImageGenerationSize } from "../commands/imagine.js";
 import { ImageUpscaleOptions, ImageUpscaleResult } from "./types/upscale.js";
 import { ImagePrompt, ImagePromptEnhancer } from "./types/prompt.js";
@@ -11,7 +12,7 @@ import { TuringAPIPath } from "../turing/api.js";
 import { Utils } from "../util/utils.js";
 import { Bot } from "../bot/bot.js";
 
-export type ImageAPIPath = "sdxl" | "kandinsky" | "sh" | "anything"
+export type ImageAPIPath = "sdxl" | "kandinsky" | "sh" | "anything" | "upscale" | "vision"
 
 export class ImageModelManager {
     private models: ImageModel[];
@@ -105,18 +106,18 @@ export class ImageManager {
         };
     }
 
-    public async upscale({ image, prompt }: ImageUpscaleOptions): Promise<ImageUpscaleResult> {
-        const response: any = await this.bot.turing.request({
-            path: "image/sdxl", method: "POST", body: {
-                action: "upscale", prompt, image: image.toString(), stream: false
+    public async upscale({ url }: ImageUpscaleOptions): Promise<ImageUpscaleResult> {
+        const response: TuringUpscaleResult = await this.bot.turing.request<TuringUpscaleResult, TuringUpscaleBody>({
+            path: "image/upscale", method: "POST", body: {
+                upscaler: "RealESRGAN_x2plus", image: url, stream: false
             }
         });
 
         return {
-            results: response.images.map((data: any) => ({
-                id: randomUUID(), base64: data.base64, seed: data.seed,
-                status: data.finishReason === "SUCCESS" ? "success" : "filtered"
-            })), cost: response.cost, id: randomUUID(), status: "done", error: null
+            results: [ {
+                id: randomUUID(), seed: -1, status: "success",
+                base64: response.result.base64
+            } ], cost: response.cost, id: randomUUID(), status: "done", error: null
         };
     }
 

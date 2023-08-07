@@ -11,6 +11,8 @@ import { RunningData } from "./types/running.js";
 import { Bot, BotStatus } from "../bot/bot.js";
 import { Response } from "./response.js";
 import { Utils } from "../util/utils.js";
+import { DatabaseUser } from "../db/schemas/user.js";
+import { UserHasRoleCheck, UserRole } from "../db/managers/role.js";
 
 export interface CommandPrepareData {
 	db: DatabaseInfo;
@@ -63,13 +65,13 @@ export class CommandManager {
 
 		/* Information about each application command, as JSON */
 		const commandList: RESTPostAPIApplicationCommandsJSONBody[] = this.commands.filter(
-			cmd => cmd.premiumOnly() || cmd.planOnly() || cmd.subscriptionOnly() || cmd.voterOnly() || cmd.options.restriction.length === 0
+			cmd => !cmd.private()
 		).map(cmd =>
 			(cmd.builder as SlashCommandBuilder).setDefaultPermission(true).toJSON()
 		);
 
 		/* Information about each private application command, as JSON */
-		const privateCommandList: RESTPostAPIApplicationCommandsJSONBody[] = this.commands.filter(cmd => commandList.find(c => c.name === cmd.builder.name) === undefined).map(cmd =>
+		const privateCommandList: RESTPostAPIApplicationCommandsJSONBody[] = this.commands.filter(cmd => commandList.some(c => c.name !== cmd.builder.name)).map(cmd =>
 			(cmd.builder as SlashCommandBuilder).setDefaultPermission(true).toJSON()
 		);
 
@@ -163,16 +165,12 @@ export class CommandManager {
 	}
 
 	public async cooldownDuration(command: Command | InteractionHandler, db: DatabaseInfo): Promise<number | null> {
-		/* If the specific command doesn't have a cool-down set, return a default one. */
-		if (!command.options.cooldown) return 3000;
-
-		/* Subscription type of the user */
+		if (!command.options.cooldown) return null;
 		const type = await this.bot.db.users.type(db);
 
 		return typeof command.options.cooldown === "object"
 			? type.type !== "plan"
-				? command.options.cooldown[type.type]
-				: null
+				? command.options.cooldown[type.type] : null
 			: command.options.cooldown;
 	}
 
@@ -242,13 +240,31 @@ export class CommandManager {
 			const ad = await this.bot.db.campaign.ad({ db });
 
 			if (ad !== null) {
-				response.addComponent(ActionRowBuilder<ButtonBuilder>, ad.response.row);
+				if (ad.response.row !== null) response.addComponent(ActionRowBuilder<ButtonBuilder>, ad.response.row);
 				response.addEmbed(ad.response.embed);
 			}
 		}
 
 		return response;
 	}
+
+    private async canExecute(user: DatabaseUser, command: Command | InteractionHandler): Promise<boolean> {
+        if (command.options.restriction.length === 0) return true;
+        if (this.bot.db.role.owner(user)) return true;
+
+        const type = await this.bot.db.users.type({ user });
+
+        if (command.voterOnly() && !type.premium) return await this.bot.db.users.voted(user) !== null;
+        else if (command.voterOnly() && type.premium) return true;
+
+        if (command.premiumOnly()) {
+            if (command.premiumOnly()) return type.premium;
+            else if (command.subscriptionOnly()) return type.type === "subscription";
+            else if (command.planOnly()) return type.type === "plan";
+        }
+
+        return this.bot.db.role.has(user, command.options.restriction as UserRole[], UserHasRoleCheck.Some);
+    }
 
 	public async prepare(interaction: ChatInputCommandInteraction | InteractionHandlerClassType, command: Command | InteractionHandler): Promise<CommandPrepareData | void> {
 		if (command.options.waitForStart && this.bot.reloading) return void await new Response()
@@ -271,7 +287,7 @@ export class CommandManager {
 		/* Current status of the bot */
 		const status: BotStatus = await this.bot.status();
 
-		if (status.type === "maintenance" && !this.bot.db.role.canExecuteCommand(db.user, command, status)) return void await new Response()
+		if (status.type === "maintenance" && !command.private()) return void await new Response()
 			.addEmbed(builder => builder
 				.setTitle("The bot is currently under maintenance 🛠️")
 				.setDescription(status.notice !== undefined ? `*${status.notice}*` : null)
@@ -347,9 +363,9 @@ export class CommandManager {
 		}
 
 		/* If the command is marked as private, do some checks to make sure only privileged users are able to execute this command. */
-		if (!(command.planOnly() || command.subscriptionOnly())) {
+		if (!command.premiumOnly()) {
 			/* Whether the user can execute this command */
-			const canExecute: boolean = await this.bot.db.role.canExecuteCommand(db.user, command);
+			const canExecute: boolean = await this.canExecute(db.user, command);
 
 			if (!canExecute) return void await new Response()
 				.addEmbed(builder => builder

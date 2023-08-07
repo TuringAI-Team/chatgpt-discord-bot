@@ -108,7 +108,7 @@ export class StreamBuilder<RequestBody, PartialResponseData, FinalResponseData =
 
                             const result: PartialResponseData | void = await this.options.progress(data, old);
 
-                            if (result === null || result instanceof Promise) {}
+                            if (result === null) {}
                             else if (result !== null && result !== void 0) latest = result;
                             else if (result === void 0) latest = data;
                             else {}

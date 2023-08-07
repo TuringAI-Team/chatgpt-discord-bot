@@ -159,11 +159,7 @@ export const ChatSettingsModels: ChatSettingsModel[] = [
         type: ModelType.OpenAI,
 
         billing: {
-            type: ChatSettingsModelBillingType.Per1000Tokens,
-            amount: {
-                prompt: 0.0015,
-                completion: 0.002
-            }
+            type: ChatSettingsModelBillingType.Custom, amount: 0
         },
 
         prompt: {
@@ -188,12 +184,7 @@ Knowledge cut-off: September 2021
         cooldown: { time: 30 * 1000 },
 
         billing: {
-            type: ChatSettingsModelBillingType.Per1000Tokens,
-            amount: {
-                prompt: 0.03,
-                completion: 0.06
-            },
-            extra: 0.05
+            type: ChatSettingsModelBillingType.Custom, amount: 0, extra: 0.05
         },
         
         prompt: {
@@ -217,10 +208,7 @@ Knowledge cut-off: September 2021
         restricted: "plan",
 
         billing: {
-            type: ChatSettingsModelBillingType.Per1000Tokens,
-            amount: {
-                prompt: 0.003, completion: 0.004
-            }
+            type: ChatSettingsModelBillingType.Custom, amount: 0
         },
 
         prompt: {
@@ -308,6 +296,28 @@ Current date & time: ${context.time}, ${context.date}
         prompt: {
             builder: ({ context }) => `
 You are PaLM 2, an AI chatbot created by Google.
+You must provide engaging & concise responses.
+
+Current date & time: ${context.time}, ${context.date}
+`
+        }
+    }),
+
+    new ChatSettingsModel({
+        name: "OpenChat",
+        emoji: { display: "<:openchat:1130816635402473563>", fallback: "🐳" },
+        description: "Advancing open-source LLMs with imperfect data",
+        history: { maxTokens: 4096 },
+        cooldown: { multiplier: 0.5 },
+        type: ModelType.OpenChat,
+
+        billing: {
+            type: ChatSettingsModelBillingType.Custom, amount: 0
+        },
+
+        prompt: {
+            builder: ({ context }) => `
+You are OpenChat, an open-source language model based on supervised fine-tuning (SFT), trained on ChatGPT and GPT-4 conversations.
 You must provide engaging & concise responses.
 
 Current date & time: ${context.time}, ${context.date}

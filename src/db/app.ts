@@ -1,4 +1,4 @@
-import { Awaitable, Collection } from "discord.js";
+import { Collection } from "discord.js";
 
 import { DatabaseCollectionType, DatabaseLikeObject, DatabaseManager } from "./manager.js";
 import { DatabaseSchemaMap, DatabaseSchemas } from "./schemas/index.js";
@@ -6,9 +6,9 @@ import { AppDatabaseMetricsManager } from "./managers/metrics.js";
 import { AppDatabaseQueueManager } from "./managers/queue.js";
 import { AppCampaignManager } from "./managers/campaign.js";
 import { AppSettingsManager } from "./managers/settings.js";
-import { GPTDatabaseError } from "../error/db.js";
 import { DatabaseSchema } from "./schemas/schema.js";
 import { AppPlanManager } from "./managers/plan.js";
+import { GPTDatabaseError } from "../error/db.js";
 import { App } from "../app.js";
 
 export class AppDatabaseManager extends DatabaseManager<App> {

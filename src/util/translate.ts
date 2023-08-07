@@ -11,6 +11,7 @@ import { DatabaseInfo } from "../db/managers/user.js";
 import { Response } from "../command/response.js";
 import { Bot } from "../bot/bot.js";
 import { Utils } from "./utils.js";
+import { ErrorResponse } from "../command/response/error.js";
 
 export interface TranslationOptions {
     target?: UserLanguage;
@@ -55,7 +56,7 @@ export class TranslationManager {
     }
 
     /* ChatGPT prompt used to translate the given input text */
-    private generatePrompt({ content }: TranslationOptions, language: UserLanguage): OpenAIChatMessage[] {
+    private generatePrompt({ content, language }: TranslationOptions & { language: UserLanguage }): OpenAIChatMessage[] {
         return [
             {
                 role: "system",
@@ -93,21 +94,23 @@ export class TranslationManager {
         const target: UserLanguage = options.target ?? UserLanguages[0];
 
         /* Messages to pass to ChatGPT */
-        const messages: OpenAIChatMessage[] = this.generatePrompt(options, target);
+        const messages: OpenAIChatMessage[] = this.generatePrompt({
+            ...options, language: target
+        });
 
         const tokens = {
             prompt: countChatMessageTokens(messages),
             completion: 0
         };
 
-        if (tokens.prompt + maxTokens > 4097) throw new GPTTranslationError({
+        if (tokens.prompt + maxTokens > 1000) throw new GPTTranslationError({
             type: GPTTranslationErrorType.TooLong
         });
 
         /* Generate the translation result using ChatGPT. */
         const raw = await this.bot.turing.openAI({
             messages, model: "gpt-3.5-turbo",
-            max_tokens: maxTokens, temperature: 0.1
+            tokens: maxTokens, temperature: 0.3
         });
 
         tokens.completion = getPromptLength(raw.result);
@@ -139,14 +142,16 @@ export class TranslationManager {
     }
 
     public async run({ content, interaction, db, original, language }: TranslationCommandOptions): Promise<Response> {
+        const prefix: string = original ? `**[This message](${original.url})**` : "The message";
+
         /* Target language to translate to */
         const target: UserLanguage = language ?? LanguageManager.get(this.bot, db.user);
 
         /* Cleaned content to translate */
         content = Utils.cleanContent(this.bot, content);
 
-        if (content.length === 0) return new NoticeResponse({
-			message: "The selected message doesn't contain any content ❌",
+        if (content.length === 0) return new ErrorResponse({
+			message: `${prefix} doesn't contain any content`,
 			color: "Red"
 		});
 
@@ -220,25 +225,18 @@ export class TranslationManager {
             return response;
 
         } catch (err) {
-            const prefix: string = original ? `**[This message](${original.url})**` : "The message";
-
             if (err instanceof GPTTranslationError) {
-                if (err.options.data.type === GPTTranslationErrorType.TooLong) return new NoticeResponse({
-                    message: `${prefix} is **too long** to be translated 😔`,
-                    color: "Red"
+                if (err.options.data.type === GPTTranslationErrorType.TooLong) return new ErrorResponse({
+                    message: `${prefix} is **too long** to be translated`, emoji: "😔"
                 });
 
-                if (err.options.data.type === GPTTranslationErrorType.SameContent) return new NoticeResponse({
-                    message: `${prefix} does not need to be translated 😔`,
-                    color: "Red"
+                if (err.options.data.type === GPTTranslationErrorType.SameContent) return new ErrorResponse({
+                    message: `${prefix} does not need to be translated`, emoji: "😔"
                 });
 
-                if (err.options.data.type === GPTTranslationErrorType.Failed) {
-                    return new NoticeResponse({
-                        message: `${prefix} could not be translated${err.error ? `: **${err.error}**` : ""} 😔`,
-                        color: "Red"
-                    });
-                }
+                if (err.options.data.type === GPTTranslationErrorType.Failed) return new ErrorResponse({
+                     message: `${prefix} could not be translated${err.error ? `: **${err.error}**` : ""}`, emoji: "😔"
+                });
             }
 
 			return await this.bot.error.handle({

@@ -32,7 +32,7 @@ export class Logger {
 		const line: string = `${status} ${chalk.italic(chalk.gray(time))} ${chalk.gray("»")}`;
 
 		/* Log the message to the console. */
-		this.printToConsole(line, ...message);
+		this.print(line, ...message);
 	}
 
 	public debug(...message: LogType) { this.log(LogLevels.DEBUG, message); }
@@ -40,7 +40,7 @@ export class Logger {
 	public warn(...message: LogType)  { this.log(LogLevels.WARN, message);  }
 	public error(...message: LogType) { this.log(LogLevels.ERROR, message); }
 
-	protected printToConsole(...message: LogType): void {
+	protected print(...message: LogType): void {
 		console.log(...message);
 	}
 }
@@ -68,6 +68,6 @@ export class ClusterLogger extends Logger {
 		const line: string = `${chalk.green(chalk.bold(`#${this.bot.data.id + 1}`))} ${chalk.gray("»")} ${status} ${chalk.italic(chalk.gray(time))} ${chalk.gray("»")}`.trim();
 
 		/* Log the message to the console. */
-		this.printToConsole(line, ...message);
+		this.print(line, ...message);
 	}
 }

@@ -22,8 +22,8 @@ export class GoogleModel extends ChatModel {
 
             embeds: attribute && attribute.blocked ? [
                 {
-                    description: "Your prompt was **blocked** by Google's filters.",
-                    color: "Orange"
+                    description: "Your prompt was **blocked** by Google's filters ❌",
+                    color: "Red"
                 }
             ] : []
         }

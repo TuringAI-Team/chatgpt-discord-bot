@@ -13,7 +13,6 @@ import { UserManager } from "./managers/user.js";
 import { type Bot } from "../bot/bot.js";
 import { App } from "../app.js";
 
-
 type Runner<T, U = any> = (app: App, context: U) => Promise<T>
 type SchemaRunner<ReturnValue, Schema extends DatabaseSchema, Entry extends DatabaseLikeObject, Context> = (app: App, schema: Schema, entry: Entry, context: Context) => Promise<ReturnValue>
 

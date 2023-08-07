@@ -1,8 +1,5 @@
-import { InteractionHandler } from "../../interaction/handler.js";
 import { SubClusterDatabaseManager } from "../sub.js";
-import { Command } from "../../command/command.js";
 import { DatabaseUser } from "../schemas/user.js";
-import { BotStatus } from "../../bot/bot.js";
 
 export type UserRole = "tester" | "api" | "investor" | "advertiser" | "moderator" | "owner"
 export type UserRoles = UserRole[]
@@ -19,7 +16,7 @@ interface UserRoleChanges {
     remove?: UserRoles;
 }
 
-enum UserHasRoleCheck {
+export enum UserHasRoleCheck {
     /* The user must have all specified roles */
     All,
 
@@ -47,24 +44,6 @@ export class UserRoleManager extends SubClusterDatabaseManager {
 
             return false;
         } else return user.roles.includes(role);
-    }
-
-    public async canExecuteCommand(user: DatabaseUser, command: Command | InteractionHandler, status?: BotStatus): Promise<boolean> {
-        if (command.options.restriction.length === 0) return status ? status.type !== "maintenance" : true;
-        if (this.owner(user)) return true;
-
-        const type = await this.db.users.type({ user });
-
-        if (command.voterOnly() && !type.premium) return await this.db.users.voted(user) !== null;
-        else if (command.voterOnly() && type.premium) return true;
-
-        if (command.premiumOnly()) {
-            if (command.premiumOnly()) return type.premium;
-            else if (command.subscriptionOnly()) return type.type === "subscription";
-            else if (command.planOnly()) return type.type === "plan";
-        }
-
-        return this.has(user, command.options.restriction as UserRole[], UserHasRoleCheck.Some);
     }
 
     /* Shortcuts */

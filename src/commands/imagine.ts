@@ -37,7 +37,7 @@ interface ImageGenerationProcessOptions {
 	db: DatabaseInfo;
 	prompt: ImagePrompt;
 	action: ImageGenerationType;
-	image: ImageBuffer | null;
+	image: string | null;
 }
 
 /* How long an image prompt can be, maximum */
@@ -77,14 +77,7 @@ export const ImageGenerationCooldown: CommandSpecificCooldown = {
 export default class ImagineCommand extends Command {
     constructor(bot: Bot) {
         super(bot,
-            new SlashCommandBuilder()
-		, {
-			cooldown: ImageGenerationCooldown,
-			synchronous: true
-		});
-
-		this.builder = new SlashCommandBuilder()
-			.setName("imagine")
+            new SlashCommandBuilder().setName("imagine")
 			.setDescription("Generate beautiful images using AI")
 
 			.addStringOption(builder => builder
@@ -96,7 +89,7 @@ export default class ImagineCommand extends Command {
 			.addStringOption(builder => builder
 				.setName("model")
 				.setDescription("Which model to use")
-				.addChoices(...this.bot.image.model.all().map(model => ({
+				.addChoices(...bot.image.model.all().map(model => ({
 					name: `${model.name} • ${model.description}`, value: model.id
 				})))
 				.setRequired(false)
@@ -169,7 +162,11 @@ export default class ImagineCommand extends Command {
 				.addChoices(...ImagePromptEnhancers.map(({ name, emoji, id }) => ({
 					name: `${emoji} ${name}`, value: id
 				})))	
-			);
+			)
+		, {
+			cooldown: ImageGenerationCooldown,
+			synchronous: true
+		});
     }
 
 	private displayPrompt(user: User, prompt: ImagePrompt, action: ImageGenerationType | null): string {
@@ -382,10 +379,6 @@ export default class ImagineCommand extends Command {
 				const result: ImageResult = image.results.find((_, index) => index === data.resultIndex)!;
 				const { url } = this.bot.image.url(image, result);
 
-				/* Fetch the selected image, to upscale it. */
-				const buffer = await Utils.fetchBuffer(url);
-				if (buffer === null) return;
-
 				return await this.start({
 					interaction, user: interaction.user, enhancer: null,
 					prompt: image.prompt, action: "upscale",
@@ -393,7 +386,7 @@ export default class ImagineCommand extends Command {
 					guidance: image.options.cfg_scale!,
 					sampler: image.options.sampler!, seed: image.options.seed ?? null,
 					steps: image.options.steps!, count: image.options.number!, moderation: null, db, 
-					ratio: image.options.ratio!, image: buffer, model: null
+					ratio: image.options.ratio!, image: url, model: null
 				});
 			}
 
@@ -413,7 +406,7 @@ export default class ImagineCommand extends Command {
 			await interaction.message.edit({ components });
 
 			return await this.bot.error.handle({
-				title: "Failed to generate <images>", notice: "It seems like we encountered an error while generating the images for you.", error
+				title: "Failed to generate images", notice: "It seems like we encountered an error while generating the images for you.", error
 			});
 		}
 
@@ -498,7 +491,7 @@ export default class ImagineCommand extends Command {
 
 		/* Generate the image. */
 		const result = action == "upscale" && source
-			? await this.bot.image.upscale({ image: source, prompt: prompt.prompt })
+			? await this.bot.image.upscale({ url: source })
 			: await this.bot.image.generate(body);
 		
 		/* Whether the generated images are still usable */

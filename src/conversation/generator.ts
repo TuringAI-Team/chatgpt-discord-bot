@@ -143,6 +143,28 @@ export class Generator {
 			embeds.push(response.embeds[0]);
 		}
 
+		/* If the message has any additional buttons attached, add them to the resulting message. */
+		if (data.buttons && data.buttons.length > 0) {
+			const buttons: ButtonBuilder[] = [];
+
+			data.buttons.forEach(button => {
+				const builder = new ButtonBuilder()
+					.setLabel(button.label)
+					.setDisabled(button.disabled ?? false)
+					.setStyle(button.url ? ButtonStyle.Link : button.style ?? ButtonStyle.Secondary);
+
+				if (!button.url) builder.setCustomId(button.id ?? randomUUID())
+				if (button.emoji) builder.setEmoji(button.emoji);
+
+				buttons.push(builder);
+			});
+
+			const row = new ActionRowBuilder<ButtonBuilder>()
+				.addComponents(buttons);
+
+			response.addComponent(ActionRowBuilder<ButtonBuilder>, row);
+		}
+
 		/* Only show the buttons, once the generation request has finished. */
 		if (!pending) {
 			const buttons: ButtonBuilder[] = [];
@@ -172,7 +194,7 @@ export class Generator {
 				new ButtonBuilder()
 					.setCustomId("settings:menu:user:chat:model")
 					.setLabel(model.options.name)
-					.setEmoji(Emoji.display(model.options.emoji, true) as ComponentEmojiResolvable)
+					.setEmoji(Emoji.display(model.options.emoji, true))
 					.setStyle(ButtonStyle.Secondary)
 			);
 
@@ -180,7 +202,7 @@ export class Generator {
 				new ButtonBuilder()
 					.setCustomId("settings:menu:user:chat:tone")
 					.setLabel(tone.options.name)
-					.setEmoji(Emoji.display(tone.options.emoji, true) as ComponentEmojiResolvable)
+					.setEmoji(Emoji.display(tone.options.emoji, true))
 					.setStyle(ButtonStyle.Secondary)
 			);
 
@@ -192,28 +214,6 @@ export class Generator {
 					.setLabel(`@${conversation.user.username}`)
 					.setStyle(ButtonStyle.Secondary)
 			);
-
-			const row = new ActionRowBuilder<ButtonBuilder>()
-				.addComponents(buttons);
-
-			response.addComponent(ActionRowBuilder<ButtonBuilder>, row);
-		}
-
-		/* If the message has any additional buttons attached, add them to the resulting message. */
-		if (data.buttons && data.buttons.length > 0) {
-			const buttons: ButtonBuilder[] = [];
-
-			data.buttons.forEach(button => {
-				const builder = new ButtonBuilder()
-					.setLabel(button.label)
-					.setDisabled(button.disabled ?? false)
-					.setStyle(button.url ? ButtonStyle.Link : button.style ?? ButtonStyle.Secondary);
-
-				if (!button.url) builder.setCustomId(button.id ?? randomUUID())
-				if (button.emoji) builder.setEmoji(button.emoji);
-
-				buttons.push(builder);
-			});
 
 			const row = new ActionRowBuilder<ButtonBuilder>()
 				.addComponents(buttons);

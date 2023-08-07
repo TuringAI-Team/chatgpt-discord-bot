@@ -71,7 +71,7 @@ export const ImageConfigModels: ImageConfigModel[] = [
         },
 
         body: {
-            model: "SDXL_beta::stability.ai#6901"
+            model: "SDXL_beta::stability.ai#6901", number: 2
         }
     },
 

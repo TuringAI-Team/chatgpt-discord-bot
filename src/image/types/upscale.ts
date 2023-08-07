@@ -2,8 +2,7 @@ import { ImageGenerationStatus, ImageRawResult } from "./image.js";
 import { ImageBuffer } from "../../util/image.js";
 
 export interface ImageUpscaleOptions {
-    prompt: string;
-    image: ImageBuffer;
+    url: string;
 }
 
 export interface ImageUpscaleResult {

@@ -2,7 +2,6 @@ import { APIApplicationCommandOptionChoice, ActionRow, ActionRowBuilder, Awaitab
 import { randomUUID } from "crypto";
 import chalk from "chalk";
 
-import { TuringAlanImageGenerators, TuringAlanImageModifiers, TuringAlanSearchEngines, alanOptions } from "../../turing/api.js";
 import { ConversationDefaultCooldown, Conversation } from "../../conversation/conversation.js";
 import { LoadingIndicatorManager, LoadingIndicators } from "../types/indicator.js";
 import { ChatSettingsPlugins } from "../../conversation/settings/plugin.js";
@@ -96,12 +95,6 @@ export const SettingCategories: SettingsCategory[] = [
         name: "Character",
         type: "character",
         emoji: { fallback: "🧙🏽" }
-    },
-
-    {
-        name: "Alan",
-        type: "alan",
-        emoji: { display: "<:turing_neon:1100498729414434878>", fallback: "🧑‍💻" }
     }
 ]
 
@@ -188,9 +181,9 @@ export abstract class SettingsOption<T extends SettingsOptionValueType = any, U 
         builder.addComponents(
             new ButtonBuilder()
                 .setLabel(this.data.name)
-                .setEmoji(Emoji.display(this.data.emoji, true) as ComponentEmojiResolvable)
+                .setEmoji(Emoji.display(this.data.emoji, true))
                 .setStyle(ButtonStyle.Secondary)
-                .setCustomId(this.customID(undefined ,"tag"))
+                .setCustomId(this.customID(undefined, "tag"))
                 .setDisabled(true)
         );
 
@@ -361,7 +354,7 @@ export class ChoiceSettingsOption extends SettingsOption<string | null, BaseSett
                         } ] : [],
 
                         ...this.data.choices.map(({ name, value, description, emoji, restricted }) => ({
-                            emoji: emoji ? typeof emoji === "string" ? emoji : Emoji.display(emoji, true) as ComponentEmojiResolvable : undefined,
+                            emoji: emoji ? typeof emoji === "string" ? emoji : Emoji.display<ComponentEmojiResolvable>(emoji, true) : undefined,
                             description: restricted ? `${description ?? ""} (${restricted}-only)` : description,
                             default: value === current,
                             label: restricted ? `${name} ${restricted === "tester" ? "⚒️" : restricted === "plan" ? "📊" : restricted === "subscription" ? "💸" : "✨"}` : name,
@@ -660,36 +653,6 @@ export const SettingOptions: SettingsOption[] = [
         }))
     }),
 
-    new ChoiceSettingsOption({
-        key: "searchEngine",
-        name: "Search engine",
-        category: "alan",
-        emoji: { fallback: "🔎" },
-        description: "Which search engine to use",
-        choices: alanOptions(TuringAlanSearchEngines),
-        location: SettingsLocation.User
-    }),
-
-    new ChoiceSettingsOption({
-        key: "imageGenerator",
-        name: "Image generator",
-        category: "alan",
-        emoji: { fallback: "🖨️" },
-        description: "Which image generator to use",
-        choices: alanOptions(TuringAlanImageGenerators),
-        location: SettingsLocation.User
-    }),
-
-    new ChoiceSettingsOption({
-        key: "imageModifier",
-        name: "Image modifier",
-        category: "alan",
-        emoji: { fallback: "🖌️" },
-        description: "Which image modifier to use",
-        choices: alanOptions(TuringAlanImageModifiers),
-        location: SettingsLocation.User
-    }),
-
     new RoleSettingsOption({
         key: "role",
         name: "Premium-restricted role",
@@ -917,7 +880,7 @@ export const SettingOptions: SettingsOption[] = [
 
         choices: ChatSettingsPlugins.map(plugin => ({
             name: plugin.options.name,
-            emoji: plugin.options.emoji !== null ? plugin.options.emoji as DisplayEmoji : undefined,
+            emoji: plugin.options.emoji !== null ? plugin.options.emoji : undefined,
             description: plugin.options.description,
             value: plugin.id,
         }))
@@ -1097,7 +1060,7 @@ export class ClusterSettingsManager extends BaseSettingsManager<ClusterDatabaseM
 
             new ButtonBuilder()
                 .setLabel(current.name)
-                .setEmoji(Emoji.display(current.emoji, true) as ComponentEmojiResolvable)
+                .setEmoji(Emoji.display(current.emoji, true))
                 .setCustomId(`settings:current:${this.location(db)}:${current.type}`)
                 .setStyle(ButtonStyle.Success)
                 .setDisabled(true),

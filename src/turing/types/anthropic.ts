@@ -14,14 +14,14 @@ export interface TuringAnthropicChatBody {
 export type AnthropicChatMessage = OpenAIChatMessage
 
 export interface AnthropicPartialChatResult {
-    completion: string;
+    result: string;
     stop_reason: null;
     stop: null;
     done: false;
 }
 
 export interface AnthropicChatResult {
-    completion: string;
+    result: string;
     stop_reason: AnthropicStopReason;
     stop: string | null;
     done: true;

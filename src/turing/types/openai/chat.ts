@@ -1,6 +1,34 @@
+import { Awaitable } from "discord.js";
+
+import { ChatSettingsPlugin, ChatSettingsPluginIdentifier } from "../../../conversation/settings/plugin.js";
+import { DatabaseUser } from "../../../db/schemas/user.js";
+import { TuringChatPluginsTool } from "./plugins.js";
+
+type TuringOpenAIChatModel = "gpt-3.5-turbo" | "gpt-4" | string
+
+export interface TuringOpenAIChatOptions {
+    /* Which model to use */
+    model: TuringOpenAIChatModel;
+
+    /* Maximum amount of generation tokens */
+    tokens: number;
+
+    /** What sampling temperature to use. Higher values means the model will take more risks. Try 0.9 for more creative applications, and 0 (argmax sampling) for ones with a well-defined answer. */
+    temperature?: number;
+
+    /* OpenAI chat messages to send to the model */
+    messages: OpenAIChatMessage[];
+
+    /* Plugins to use for this request */
+    plugins?: ChatSettingsPlugin[];
+
+    /* Progress callback to call when a new token is generated */
+    progress?: (data: TuringOpenAIPartialResult) => Awaitable<void>;
+}
+
 export interface TuringOpenAIChatBody {
     /** ID of the model to use */
-    model: "gpt-3.5-turbo" | "gpt-4" | string;
+    model: TuringOpenAIChatModel;
 
     /* Previous chat history & instructions */
     messages: OpenAIChatMessage[];
@@ -14,11 +42,11 @@ export interface TuringOpenAIChatBody {
     /** Maximum number of tokens to generate in the completion */
     max_tokens?: number;
 
-    /* Whether the response should be streamed */
-    stream?: boolean;
+    /* Which plugins to use */
+    plugins?: ChatSettingsPluginIdentifier[];
 
-    /* Unique user identifier, used by OpenAI to track down violating requests */
-    user?: string;
+    /* Whether streaming mode should be used */
+    stream?: boolean;
 }
 
 export interface OpenAIChatMessage {
@@ -33,4 +61,5 @@ export interface TuringOpenAIResult {
     done: boolean;
     cost: number;
     finishReason: "length" | "stop" | null;
+    tool?: TuringChatPluginsTool;
 }

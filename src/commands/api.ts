@@ -1,16 +1,16 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle, EmbedBuilder, Interaction, InteractionUpdateOptions, ModalBuilder, ModalSubmitInteraction, SlashCommandBuilder, TextInputBuilder, TextInputStyle } from "discord.js";
+import { randomUUID } from "crypto";
 
 import { InteractionHandlerResponse, InteractionHandlerRunOptions } from "../interaction/handler.js";
 import { Command, CommandInteraction, CommandResponse } from "../command/command.js";
+import { TuringAPIKey, TuringAPIKeyData } from "../turing/types/key.js";
 import { APIInteractionHandlerData } from "../interactions/api.js";
 import { ErrorResponse } from "../command/response/error.js";
 import { UserPlanAPIExpense } from "../db/managers/plan.js";
 import { DatabaseInfo } from "../db/managers/user.js";
-import { TuringAPIKey, TuringAPIKeyData } from "../turing/types/key.js";
 import { Response } from "../command/response.js";
 import { Utils } from "../util/utils.js";
 import { Bot } from "../bot/bot.js";
-import { randomUUID } from "crypto";
 
 export default class APICommand extends Command {
     constructor(bot: Bot) {

@@ -30,8 +30,8 @@ export enum ModelType {
     /** Meta's LLaMA model, using the Turing API */
     LLaMA,
 
-    /** Turing Alan model, utilizing various AI technologies */
-    Alan
+    /** OpenChat model, using the Turing API */
+    OpenChat
 }
 
 export interface ModelOptions {

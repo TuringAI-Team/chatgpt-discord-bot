@@ -149,7 +149,7 @@ class DeveloperModerationFilter extends ModerationFilter {
 class TuringModerationFilter extends ModerationFilter {
     constructor() {
         super({
-            description: "Turing API filter"
+            description: "Turing filter"
         });
     }
 
@@ -191,7 +191,8 @@ export const ModerationFilters: ModerationFilter[] = [
         action: { reason: "Racist content", type: "block" },
 
         blocked: [
-            { words: [ "nigger", "n i g g e r", "black african monkey", "african monkey", "kike", "raghead", "wetback", "zipperhead", "slant eye", "porch monkey", "camel jockey", "sand nigger", "pickaninny", "jungle bunny", "tar baby" ] }
+            { words: [ "black african monkey", "african monkey", "kike", "raghead", "wetback", "zipperhead", "slant eye", "porch monkey", "camel jockey", "pickaninny", "jungle bunny", "tar baby" ] },
+            { words: [ "nigger", "n i g g e r", "niggr", "testlol" ], action: { type: "ban", duration: 7 * 24 * 60 * 60 * 1000 } }
         ]
     }),
 

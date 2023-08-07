@@ -1,13 +1,14 @@
 import { Awaitable, ChannelType, GuildBasedChannel, GuildEmoji, GuildMember, Invite, MessageMentions, TextChannel } from "discord.js";
 
+import { ChatSettingsPlugin, ChatSettingsPluginIdentifier, ChatSettingsPlugins } from "../../conversation/settings/plugin.js";
+import { GPTGenerationError, GPTGenerationErrorType } from "../../error/generation.js";
 import { DatabaseSubscription, DatabaseUser } from "../../db/schemas/user.js";
 import { TuringOpenAIPartialResult } from "../../turing/types/openai/chat.js";
+import { MultipleChoiceSettingsOption } from "../../db/managers/settings.js";
 import { ChatGuildData, ModelGenerationOptions } from "../types/options.js";
-import { getPromptLength } from "../../conversation/utils/length.js";
+import { MessageType, PartialResponseMessage } from "../types/message.js";
 import { Conversation } from "../../conversation/conversation.js";
 import { ModelCapability, ModelType } from "../types/model.js";
-import { PartialResponseMessage } from "../types/message.js";
-import { ChatOutputImage } from "../media/types/image.js";
 import { DatabasePlan } from "../../db/managers/plan.js";
 import { ChatClient, PromptData } from "../client.js";
 import { ChatGPTModel } from "./chatgpt.js";
@@ -264,11 +265,6 @@ export class ClydeModel extends ChatGPTModel {
         /* Clean up the user's prompt; format all channel names, mentions and emoji names. */
         const cleanedPrompt: ClydeFormatterResult = await this.format(options.conversation, options.guild!, options.prompt, "input");
 
-        const progress = async (response: TuringOpenAIPartialResult) => {
-            const final: ClydeFormatterResult = await this.format(options.conversation, options.guild!, response.result, "output", true);
-            options.progress(final);
-        };
-
         /* All users to include in the prompt */
         const users: ClydeUser[] = [
             await this.toClydeUser(options.conversation, options.guild!.member, options.db.user)
@@ -295,24 +291,39 @@ export class ClydeModel extends ChatGPTModel {
         }
 
         options.prompt = cleanedPrompt.text;
-
         const prompt: PromptData = await this.client.buildPrompt<ClydePromptData>(options, { users });
-        const data = await this.chat(options, prompt, progress);
 
-        /* Apply the final replacements to the message, e.g. for embedding GIFs and mentiong users correctly. */
+        const identifiers: ChatSettingsPluginIdentifier[] = MultipleChoiceSettingsOption
+            .which(this.client.manager.bot.db.settings.get(options.db.user, "plugins:list"));
+
+        /* All of the user's plugins */
+        const plugins: ChatSettingsPlugin[] = identifiers.map(id => 
+            ChatSettingsPlugins.find(p => p.id === id)!
+        );
+
+        if (identifiers.length > 0) {
+            /* Fix various plugins that provide up-to-date information past the knowledge cut-off date. */
+            prompt.parts.Initial.content += "\nI do not have a knowledge cut-off, I have access to up-to-date news and information using plugins.";
+        }
+
+        const progress = async (data: TuringOpenAIPartialResult) => {
+            const final: ClydeFormatterResult = await this.format(options.conversation, options.guild!, data.result, "output", true);
+            const result: PartialResponseMessage | null = this.process(options, prompt, data);
+
+            if (result !== null && result.type === MessageType.Notice) options.progress(result);
+            else if (result !== null) options.progress({ ...result, ...final });
+        };
+
+        const data = await this.chat(options, progress, prompt, plugins);
+
+        /* Apply the final replacements to the message */
         const final: ClydeFormatterResult = await this.format(options.conversation, options.guild!, data.result, "output");
 
-        return {
-            raw: {
-                finishReason: data.finishReason ? data.finishReason === "length" ? "length" : "stop" : undefined,
-                
-                usage: {
-                    completion: getPromptLength(data.result),
-                    prompt: prompt.length
-                }
-            },
+        const result: PartialResponseMessage | null = this.process(options, prompt, data);
+        if (result === null) throw new GPTGenerationError({ type: GPTGenerationErrorType.Empty });
 
-            text: data.result, display: final.text
+        return {
+            ...result, text: data.result, display: final.text
         };
     }
 }

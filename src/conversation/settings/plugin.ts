@@ -10,7 +10,7 @@ export declare interface ChatSettingsPluginOptions {
     id: ChatSettingsPluginIdentifier;
 
     /* Emoji for the plugin */
-    emoji?: DisplayEmoji | null;
+    emoji: DisplayEmoji;
 
     /* Description of the plugin */
     description: string;
@@ -21,9 +21,7 @@ export class ChatSettingsPlugin {
     public readonly options: Required<ChatSettingsPluginOptions>;
 
     constructor(options: ChatSettingsPluginOptions) {
-        this.options = {
-            emoji: null, ...options
-        };
+        this.options = options;
     }
 
     public get id(): string {
@@ -95,6 +93,6 @@ export const ChatSettingsPlugins: ChatSettingsPlugin[] = [
     new ChatSettingsPlugin({
         name: "Diagrams", emoji: { fallback: "📊" },
         description: "Display beautiful charts, diagrams & mindmaps.",
-        id: "mermaid"
+        id: "render-diagrams"
     })
 ]

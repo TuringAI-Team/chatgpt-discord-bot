@@ -8,7 +8,7 @@ import { GPTDatabaseError } from "../../error/db.js";
 import { AppDatabaseManager } from "../app.js";
 import { SubDatabaseManager } from "../sub.js";
 
-type MetricsUpdateValue = `+${string | number}` | `-${string | number}` | string | number | Object
+type MetricsUpdateValue = `${"+" | "-"}${string | number}` | string | number | Object
 type MetricsUpdateObject<T extends MetricsEntry> = Record<keyof T["data"], MetricsUpdateValue>
 
 type MetricsData = { [key: string]: any }

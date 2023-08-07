@@ -7,8 +7,8 @@ import chalk from "chalk";
 import { InteractionHandlerResponse, InteractionHandlerRunOptions } from "../../interaction/handler.js";
 import { CampaignInteractionHandlerData } from "../../interactions/campaign.js";
 import { DatabaseManager, DatabaseManagerBot } from "../manager.js";
+import { TuringChartResult } from "../../turing/types/chart.js";
 import CampaignsCommand from "../../commands/campaigns.js";
-import { TuringChartResult } from "../../turing/api.js";
 import { ChatButton } from "../../chat/types/button.js";
 import { ClusterDatabaseManager } from "../cluster.js";
 import { GPTDatabaseError } from "../../error/db.js";
@@ -445,7 +445,9 @@ export class ClusterCampaignManager extends BaseCampaignManager<ClusterDatabaseM
 			const buttons: ButtonBuilder[] = [];
 
 			campaign.settings.buttons.forEach(button => {
-                if (button.id === "campaign") buttons.push(linkButton);
+                if (button.id === "campaign") return buttons.push(
+                    linkButton.setLabel(button.label)
+                );
 
 				const builder = new ButtonBuilder()
                 if (button.emoji) builder.setEmoji(button.emoji);

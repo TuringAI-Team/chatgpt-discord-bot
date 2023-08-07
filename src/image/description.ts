@@ -5,15 +5,13 @@ import crypto from "crypto";
 import { ALLOWED_FILE_EXTENSIONS, ChatImageAttachment, ChatImageType } from "../chat/media/types/image.js";
 import { LoadingResponse } from "../command/response/loading.js";
 import { NoticeResponse } from "../command/response/notice.js";
-import { ImageOCRResult, detectText } from "../util/ocr.js";
 import { ChatBaseImage } from "../chat/media/types/image.js";
+import { ImageOCRResult, TuringVisionBody, TuringVisionResult } from "../turing/types/vision.js";
 import { DatabaseInfo } from "../db/managers/user.js";
 import { Response } from "../command/response.js";
 import { ImageBuffer } from "../util/image.js";
 import { Utils } from "../util/utils.js";
 import { Bot } from "../bot/bot.js";
-import { ImageChatHandler } from "../chat/media/handlers/image.js";
-import { ChatMediaType } from "../chat/media/types/media.js";
 
 export interface ImageDescriptionResult {
     /* BLIP description of the image */
@@ -126,25 +124,23 @@ export class ImageDescriptionManager {
             if (entry !== null) return { ...entry, cached: true, cost: null };
         }
 
-        /* Additionally, run OCR text recognition, to further improve results. */
-        const ocr: ImageOCRResult | null = await detectText(this.bot, {
-            url: input.url, engine: 2
-        }).catch(() => null);
-
         /* The image's URL */
         const url: string = input.url;
 
-        /* Run the interrogation request, R.I.P money. */
-        const { duration, output } = await this.bot.runpod.blip2({
-            data_url: url
+        /* Run the interrogation request. */
+        const data = await this.bot.turing.request<TuringVisionResult, TuringVisionBody>({
+            path: "image/vision", method: "POST", body: {
+                image: url, model: [ "blip2", "ocr" ], stream: false
+            }
         });
 
         /* Final image description result */
         const result: DatabaseDescription = {
-            id: hash, duration, when: new Date().toISOString(),
+            id: hash, duration: 1000, when: new Date().toISOString(),
 
             result: {
-                ocr, description: output.captions[0].caption
+                ocr: data.text && data.lines ? { content: data.text, lines: data.lines } : null,
+                description: data.description
             }
         };
 
@@ -152,7 +148,7 @@ export class ImageDescriptionManager {
         await this.save(result, buffer);
 
         return {
-            ...result, cached: false, cost: duration * 0.0004
+            ...result, cached: false, cost: data.cost
         };
     }
 

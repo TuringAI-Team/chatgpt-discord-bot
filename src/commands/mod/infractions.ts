@@ -11,8 +11,11 @@ import { Bot } from "../../bot/bot.js";
 
 export const BanDurationOptions = [
 	dayjs.duration({ minutes: 1 }),
-	dayjs.duration({ minutes: 5 }),
+	dayjs.duration({ hours: 1 }),
+	dayjs.duration({ days: 1 }),
+	dayjs.duration({ days: 3 }),
 	dayjs.duration({ days: 7 }),
+	dayjs.duration({ days: 14 }),
 	dayjs.duration({ months: 1 }),
 	dayjs.duration({ months: 3 }),
 	dayjs.duration({ years: 1 }),
@@ -21,10 +24,6 @@ export const BanDurationOptions = [
 
 export default class InfractionsCommand extends Command {
     constructor(bot: Bot) {
-        super(
-			bot, new SlashCommandBuilder().setName("infractions").setDescription("..."), { restriction: [ "moderator" ] }
-		);
-
 		const builder = new SlashCommandBuilder()
 			.setName("infractions").setDescription("...");
 
@@ -47,15 +46,15 @@ export default class InfractionsCommand extends Command {
 				)
 				.addSubcommand(builder => builder
 					.setName("ban")
-					.setDescription(`(Un-)ban a ${type}`)
+					.setDescription(`Ban a ${type}`)
 					.addStringOption(builder => builder
 						.setName("id")
-						.setDescription(`ID or name of the ${type} to (un-)ban`)
+						.setDescription(`ID or name of the ${type} to ban`)
 						.setRequired(true)
 					)
 					.addStringOption(builder => builder
 						.setName("reason")
-						.setDescription("Reason for the (un-)ban")
+						.setDescription("Reason for the ban")
 						.setRequired(false)
 					)
 					.addStringOption(builder => builder
@@ -66,6 +65,20 @@ export default class InfractionsCommand extends Command {
 							name: `${duration.humanize()}`,
 							value: duration.asMilliseconds().toString()
 						})))
+					)
+				)
+				.addSubcommand(builder => builder
+					.setName("unban")
+					.setDescription(`Un-ban a ${type}`)
+					.addStringOption(builder => builder
+						.setName("id")
+						.setDescription(`ID or name of the ${type} to un-ban`)
+						.setRequired(true)
+					)
+					.addStringOption(builder => builder
+						.setName("reason")
+						.setDescription("Reason for the ban")
+						.setRequired(false)
 					)
 				)
 				.addSubcommand(builder => builder
@@ -86,7 +99,9 @@ export default class InfractionsCommand extends Command {
 			builder.addSubcommandGroup(group);
 		}
 
-		this.builder = builder;
+        super(
+			bot, builder, { restriction: [ "moderator" ] }
+		);
     }
 
     public async run(interaction: CommandInteraction): CommandResponse {
@@ -94,7 +109,7 @@ export default class InfractionsCommand extends Command {
 		const location: "guild" | "user" = interaction.options.getSubcommandGroup(true) as any;
 
 		/* Which action to perform */
-		const action: "warn" | "ban" | "remove" = interaction.options.getSubcommand(true) as any;
+		const action: "warn" | "ban" | "unban" | "remove" = interaction.options.getSubcommand(true) as any;
 
 		/* ID of the user */
 		const id: string = interaction.options.getString("id", true);
@@ -131,11 +146,23 @@ export default class InfractionsCommand extends Command {
 					.setTimestamp()
 				);
 
-		} else if (action === "ban") {
-			/* Whether the entry should be banned / unbanned */
-			const status: boolean = this.bot.moderation.banned(db) === null;
+		} else if (action === "ban" || action === "unban") {
+			if (location === "user" && target.id === interaction.user.id) return new ErrorResponse({
+				message: `You can't perform this action on yourself`, emoji: "🙄"
+			});
 
-			/* Reason for the warning */
+			else if (location === "guild" && target.id === interaction.guildId) return new ErrorResponse({
+				message: `You can't perform this action on this guild`, emoji: "🙄"
+			});
+
+			else if (!this.bot.moderation.banned(db) && action === "unban") return new ErrorResponse({
+				message: `The specified ${location} is not banned`, emoji: "🙄"
+			});
+
+			/* Whether the entry should be banned / unbanned */
+			const status: boolean = action === "ban";
+
+			/* Reason for the ban */
 			const reason: string | undefined = interaction.options.getString("reason") !== null
 				? interaction.options.getString("reason", true)
 				: status ? "Inappropriate use of the bot" : "Appealed";
@@ -143,19 +170,23 @@ export default class InfractionsCommand extends Command {
 			/* For how long to ban the entry for */
 			const rawDuration: string | undefined = interaction.options.getString("duration") ?? undefined;
 			const duration: number | undefined = rawDuration && status ? parseInt(rawDuration) : undefined;
+			const until: number | undefined = duration ? Math.floor((Date.now() + duration) / 1000) : undefined;
 
-			await this.bot.moderation.ban(db, {
-				by: interaction.user.id, duration,
-				status: status, reason
+			/* The existing ban infraction, if applicable */
+			const overwrite: DatabaseInfraction | null = action === "ban" ? this.bot.moderation.banned(db) : null;
+			if (overwrite) db = await this.bot.moderation.removeInfraction(db, overwrite);
+
+			db = await this.bot.moderation.ban(db, {
+				by: interaction.user.id, duration, status: status, reason
 			});
 
+			const infraction: DatabaseInfraction = db.infractions[db.infractions.length - 1];
+
 			return new Response()
-				.addEmbed(builder => builder
+				.addEmbed(this.bot.moderation.buildInfractionEmbed(db, infraction)
 					.setAuthor({ name: target.name, iconURL: target.icon ?? undefined })
-					.setTitle(status ? "Banned 🔨" : "Un-banned 🙌")
-					.setDescription(`\`\`\`\n${reason}\n\`\`\``)
-					.setColor(status ? "Red" : "Yellow")
-					.setTimestamp()
+					.setTitle(status ? overwrite ? "Ban updated 🔨" : "Banned 🔨" : "Un-banned 🙌")
+					.setColor(status && !overwrite ? "Red" : "Yellow")
 				);
 
 		} else if (action === "remove") {
@@ -176,7 +207,7 @@ export default class InfractionsCommand extends Command {
 			return new Response()
 				.addEmbed(builder => builder
 					.setAuthor({ name: target.name, iconURL: target.icon ?? undefined })
-					.setTitle("Warning removed ✉️")
+					.setTitle("Infraction removed ✉️")
 					.setDescription(`\`\`\`\n${infraction.reason}\n\`\`\``)
 					.setColor("Green")
 					.setTimestamp()

@@ -544,7 +544,7 @@ export class Conversation {
 			const ad = await this.manager.bot.db.campaign.ad({ db });
 
 			if (ad !== null) {
-				response.addComponent(ActionRowBuilder<ButtonBuilder>, ad.response.row);
+				if (ad.response.row !== null) response.addComponent(ActionRowBuilder<ButtonBuilder>, ad.response.row);
 				additional.push(ad.response.embed);
 			}
 			

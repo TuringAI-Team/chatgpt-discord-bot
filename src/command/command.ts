@@ -19,15 +19,9 @@ export type CommandInteraction = ChatInputCommandInteraction
 export type CommandOptionChoice<T = string | number> = APIApplicationCommandOptionChoice<T>
 
 export type CommandResponse = Promise<Response | undefined | void>
-
 export type CommandRestrictionType = (UserRole | UserSubscriptionPlanType)[]
 
-export interface CommandSpecificCooldown {
-	free: number;
-	voter: number;
-	subscription: number;
-}
-
+export type CommandSpecificCooldown = Record<"free" | "voter" | "subscription", number>
 export type CommandCooldown = number | CommandSpecificCooldown
 
 export interface CommandOptions {
@@ -50,7 +44,7 @@ export interface CommandOptions {
 	synchronous?: boolean;
 }
 
-export class Command<U extends ContextMenuCommandInteraction | ChatInputCommandInteraction = ChatInputCommandInteraction> {
+export abstract class Command<U extends ContextMenuCommandInteraction | ChatInputCommandInteraction = ChatInputCommandInteraction> {
     protected readonly bot: Bot;
 
 	/* Data of the command */
@@ -59,12 +53,12 @@ export class Command<U extends ContextMenuCommandInteraction | ChatInputCommandI
     /* Other command options */
     public readonly options: Required<CommandOptions>;
 
-	constructor(bot: Bot, builder: CommandBuilder, options?: CommandOptions, defaultOptions: CommandOptions = { long: false, cooldown: null, restriction: [], waitForStart: false, synchronous: false }) {
+	constructor(bot: Bot, builder: CommandBuilder, options?: CommandOptions) {
 		this.bot = bot;
 		this.builder = builder;
 
         this.options = {
-			...defaultOptions,
+			long: false, cooldown: null, restriction: [], waitForStart: false, synchronous: false,
 			...options ?? {}
 		} as Required<CommandOptions>;
 	}
@@ -94,7 +88,6 @@ export class Command<U extends ContextMenuCommandInteraction | ChatInputCommandI
 		return this.restricted([ "moderator", "owner", "advertiser", "investor" ]);
 	}
 
-
 	public async removeCooldown(interaction: ChatInputCommandInteraction | ButtonInteraction): Promise<void> {
 		return this.bot.command.removeCooldown(interaction, this as any);
 	}
@@ -110,9 +103,7 @@ export class Command<U extends ContextMenuCommandInteraction | ChatInputCommandI
 	/**
 	 * Execute the command.
 	 */
-	public async run(interaction: U, db: DatabaseInfo): CommandResponse {
-		return;
-	}
+	public abstract run(interaction: U, db: DatabaseInfo): CommandResponse;
 
 	public get name(): string {
 		return this.builder.name;

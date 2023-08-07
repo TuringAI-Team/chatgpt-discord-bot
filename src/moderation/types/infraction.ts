@@ -4,6 +4,13 @@ import { ModerationResult, ModerationSource } from "../moderation.js";
 
 export type DatabaseUserInfractionType = "ban" | "unban" | "warn" | "moderation"
 
+export const DatabaseUserInfractionTypeMap: Record<DatabaseUserInfractionType, string> = {
+    ban: "Ban",
+    moderation: "Moderation",
+    unban: "Un-ban",
+    warn: "Warning"
+}
+
 export type DatabaseInfractionReferenceType = "infraction" | ModerationSource
 
 export interface DatabaseInfractionReference {

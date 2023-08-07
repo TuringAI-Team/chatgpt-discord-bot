@@ -1,5 +1,5 @@
 import { InteractionResponse, Message } from "discord.js";
-import words from "random-words";
+import { generate as words } from "random-words";
 
 import { Response, ResponseSendClass } from "../command/response.js";
 import { Bot } from "../bot/bot.js";
@@ -123,7 +123,7 @@ export class ErrorManager {
      * Generate a unique error identifier.
      */
     private generateIdentifier(): string {
-        return (words as any)({
+        return words({
             join: "-", exactly: 4
         });
     }

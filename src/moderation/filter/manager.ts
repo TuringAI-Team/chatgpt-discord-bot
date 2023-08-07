@@ -22,9 +22,12 @@ export interface ModerationFilterData {
 /* Which action to perform regarding the flagged content */
 export type ModerationFilterActionType = "ban" | "warn" | "block" | "flag"
 
-export type ModerationFilterAction = Pick<DatabaseInfraction, "reason" | "until"> & {
+export type ModerationFilterAction = Pick<DatabaseInfraction, "reason"> & {
     /* Which action to perform */
     type: ModerationFilterActionType;
+
+    /* How long to ban the entry for, if applicable */
+    duration?: number;
 }
 
 export type ModerationFilterActionData = ModerationFilterAction & {
@@ -60,6 +63,10 @@ export class FilterManager {
         this.bot = bot;
     }
 
+    public get(id: string): ModerationFilter | null {
+        return ModerationFilters.find(f => f.id === id) ?? null;
+    }
+
     public async filter(options: ModerationFilterData): Promise<ModerationFilterActionData | null> {
         /* Exempt all owners from the moderation filters. */
         //if (this.bot.db.role.owner(options.db.user)) return null;
@@ -68,8 +75,8 @@ export class FilterManager {
         let flagged: { data: ModerationFilterAction, action: ModerationFilter } | null = null;
 
         for (const filter of ModerationFilters) {
-            /* Execute the filter. */
             try {
+                /* Execute the filter. */
                 const result = await filter.execute(options);
 
                 if (result !== null) {
@@ -83,23 +90,30 @@ export class FilterManager {
             }
         }
 
-        /* If no filter was triggered, return nothing. */
         if (flagged === null) return null;
+        if (flagged.data.type !== "ban" && flagged.data.duration) delete flagged.data.duration;
 
         return {
-            ...flagged.data,
-            action: flagged.action.description
+            ...flagged.data, action: flagged.action.id
         };
     }
 
-    public async execute({ auto, db }: ModerationOptions & { auto: ModerationFilterActionData, result: ModerationResult }): Promise<DatabaseInfraction | null> {
+    public async execute({ auto, db, reference }: ModerationOptions & { auto: ModerationFilterActionData, result: ModerationResult, reference: DatabaseInfraction | null }): Promise<DatabaseInfraction | null> {
         let updated: DatabaseUser = null!;
 
+        const base: Partial<DatabaseInfraction> = {
+            reason: auto.reason, reference: reference ? {
+                type: "infraction", data: reference.id
+            } : undefined
+        };
+
         if (auto.type === "ban") {
-            updated = await this.bot.moderation.ban(db.user, { status: true, reason: auto.reason });
+            updated = await this.bot.moderation.ban(db.user, {
+                ...base, status: true, duration: auto.duration
+            });
 
         } else if (auto.type === "warn") {
-            updated = await this.bot.moderation.warn(db.user, { reason: auto.reason });
+            updated = await this.bot.moderation.warn(db.user, base);
         }
 
         if (updated === null || updated.infractions.length === db.user.infractions.length) return null;

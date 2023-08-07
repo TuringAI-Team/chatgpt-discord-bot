@@ -1,7 +1,7 @@
 import { ActionRow, ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonComponent, ButtonInteraction, ButtonStyle, MessageEditOptions, SlashCommandBuilder, SlashCommandSubcommandBuilder, SlashCommandSubcommandGroupBuilder } from "discord.js";
 
+import { MetricsChart, MetricsCharts, TuringChartResult } from "../../turing/types/chart.js";
 import { Command, CommandInteraction, CommandResponse } from "../../command/command.js";
-import { MetricsChart, MetricsCharts, TuringChartResult } from "../../turing/api.js";
 import { InteractionHandlerResponse } from "../../interaction/handler.js";
 import { LoadingIndicatorManager } from "../../db/types/indicator.js";
 import { NoticeResponse } from "../../command/response/notice.js";

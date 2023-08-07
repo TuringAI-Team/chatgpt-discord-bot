@@ -3,7 +3,7 @@ import translate from "@iamtraction/google-translate";
 import { randomUUID } from "crypto";
 import dayjs from "dayjs";
 
-import { DatabaseInfraction, DatabaseInfractionOptions, DatabaseInfractionReference } from "./types/infraction.js";
+import { DatabaseInfraction, DatabaseInfractionOptions, DatabaseInfractionReference, DatabaseUserInfractionTypeMap } from "./types/infraction.js";
 import { ModerationFilterActionData, ModerationFilterActionType, FilterManager } from "./filter/manager.js";
 import { InteractionHandlerClassType, InteractionHandlerResponse } from "../interaction/handler.js";
 import { ModerationInteractionHandlerData } from "../interactions/moderation.js";
@@ -59,11 +59,11 @@ const FlagToName: Record<string, string> = {
     chatUser: "User message"
 }
 
-type QuickBanType = "warn" | "ban"
+type QuickActionType = "warn" | "ban"
 
 interface QuickAction {
     reason: string;
-    type?: QuickBanType;
+    type?: QuickActionType;
     duration?: Duration;
 }
 
@@ -107,7 +107,6 @@ export interface ModerationOptions {
     source: ModerationSource;
     content: string;
 
-    /* Other data */
     additional?: AdditionalModerationOptions;
 }
 
@@ -116,6 +115,11 @@ export interface ModerationNoticeOptions {
     original?: ResponseSendClass;
     name: string;
     small?: boolean;
+}
+
+export interface ModerationInfractionOverviewOptions {
+    reference?: boolean;
+    by?: boolean;
 }
 
 export interface ModerationWarningModalOptions<T extends DatabaseEntry> {
@@ -152,8 +156,6 @@ export interface ModerationResult {
     /* Source of the moderation request */
     source: ModerationSource;
 }
-
-export type SerializedModerationResult = ModerationResult
 
 export class ModerationManager {
     private readonly bot: Bot;
@@ -234,20 +236,18 @@ export class ModerationManager {
                             });
                         }
 
-                        /* Fetch the user's infractions again. */
-                        const infractions: DatabaseInfraction[] = db.infractions;
+                        /* The infraction the user received */
+                        const infraction = db.infractions[db.infractions.length - 1]
 
                         /* Edit the original flag message. */
                         await original.message.edit(new Response()
                             /* Add the original flag embed. */
                             .addEmbed(EmbedBuilder.from(original.message.embeds[0]))
 
-                            .addEmbed(builder => builder
+                            .addEmbed(this.buildInfractionEmbed(db, infraction, { reference: false })
                                 .setAuthor({ name: original.user.username, iconURL: original.user.displayAvatarURL() })
                                 .setTitle(action === "warn" ? "Warning given ✉️" : "Banned 🔨")
-                                .setDescription(`\`\`\`\n${infractions[infractions.length - 1].reason}\n\`\`\``)
                                 .setColor("Green")
-                                .setTimestamp()
                             )
                         .get() as MessageEditOptions);
                     }
@@ -266,27 +266,29 @@ export class ModerationManager {
             const quick: QuickAction = QuickReasons.find(quick => quick.reason === original.values[0])!;
 
             if (quickAction === "warn") {
-                await this.warn(db, {
+                db = await this.warn(db, {
                     by: original.user.id, reason: quick.reason, reference
                 });
 
             } else if (quickAction === "ban") {
-                await this.ban(db, {
+                db = await this.ban(db, {
                     by: original.user.id, reason: quick.reason, reference, status: true,
                     duration: quick.duration ? quick.duration.asMilliseconds() : undefined
                 });
             }
 
+            /* The infraction the user received */
+            const infraction = db.infractions[db.infractions.length - 1];
+
             /* Edit the original flag message. */
             await original.message.edit(new Response()
+                /* Add the original flag embed. */
                 .addEmbed(EmbedBuilder.from(original.message.embeds[0]))
 
-                .addEmbed(builder => builder
+                .addEmbed(this.buildInfractionEmbed(db, infraction, { reference: false })
                     .setAuthor({ name: original.user.username, iconURL: original.user.displayAvatarURL() })
                     .setTitle(quickAction === "warn" ? "Warning given ✉️" : "Banned 🔨")
-                    .setDescription(`\`\`\`\n${quick.reason}\n\`\`\``)
                     .setColor("Green")
-                    .setTimestamp()
                 )
             .get() as MessageEditOptions);
 
@@ -309,44 +311,9 @@ export class ModerationManager {
         }
     }
 
-    public async buildOverview(target: FindResult, db: DatabaseEntry): Promise<Response> {
+    public async buildOverview(target: FindResult, db: DatabaseEntry, additional: boolean = false): Promise<Response> {
         /* Type of the entry */
         const location = this.bot.db.users.location(db);
-
-        /* Overview of the users' infractions in the description */
-        const infractions: DatabaseInfraction[] = db.infractions.filter(i => i.type !== "moderation");
-        let description: string | null = null;
-    
-        /* List of moderators for the infractions */
-        const moderators: Collection<Snowflake, User> = new Collection();
-    
-        for (const infraction of infractions) {
-            if (!infraction.by || moderators.has(infraction.by)) continue;
-    
-            /* Fetch the moderator, who took this action. */
-            const user: User = await this.bot.client.users.fetch(infraction.by);
-            moderators.set(user.id, user);
-        }
-    
-        if (infractions.length > 0) description = infractions
-            .map(i => `${ActionToEmoji[i.type]} \`${i.type}\` # \`${i.id}\`${i.by ? ` by **${moderators.get(i.by)!.username}**` : ""} @ <t:${Math.round(i.when / 1000)}:f>${i.seen ? " 👀" : ""}${i.reason ? ` » *\`${i.reason}\`*` : ""}`)
-            .join("\n");
-    
-        if (infractions.length > 0) description = `__**${infractions.length}** infractions__\n\n${description}`;
-    
-        /* Previous automated moderation flags for the user */
-        const flags: DatabaseInfraction[] = db.infractions.filter(i => i.type === "moderation" && i.moderation && i.reference && typeof i.reference === "object" && i.reference.data);
-        const shown: DatabaseInfraction[] = flags.slice(-5);
-        
-        /* Format the description for previous automated moderation flags. */
-        let flagDescription: string | null = null;
-
-        if (flags.length > 0) flagDescription = `${flags.length - shown.length !== 0 ? `(*${flags.length - shown.length} previous flags ...*)\n\n` : ""}${shown.map(f => {
-            const content: string = f.moderation!.translation ? f.moderation!.translation.content : f.reference!.data;
-            const translation: boolean = f.moderation!.translation != undefined;
-
-            return `<t:${Math.round(f.when / 1000)}:f> » ${f.moderation!.auto ? `\`${f.moderation!.auto.action}\` ` : ""}${FlagToEmoji[f.moderation!.source]} » ${translation ? "*" : ""}\`${content.split("\n").length > 1 ? `${content.split("\n")[0]} ...` : content}\`${translation ? "*" : ""}`;
-        }).join("\n")}`
 
         /* Formatted meta-data values, for each type */
         let metadataDescription: string = "";
@@ -364,15 +331,13 @@ export class ModerationManager {
         const fields: APIEmbedField[] = [
             { name: "On Discord since <:discord:1097815072602067016>", value: `<t:${Math.floor(target.created / 1000)}:f>` },
             { name: "First interaction 🙌", value: `<t:${Math.floor(Date.parse(db.created) / 1000)}:f>` },
-            { name: "Metadata ⌨️", value: metadataDescription.length > 0 ? metadataDescription : "*(none)*" },
-            { name: "Premium ✨", value: premiumDescription.length > 0 ? premiumDescription : "❌" },
-            { name: "Banned ⚠️", value: this.banned(db) !== null ? "✅" : "❌" }
+            { name: "Premium ✨", value: premiumDescription.length > 0 ? premiumDescription : "❌" }
         ];
+
+        if (metadataDescription.length > 0) fields.push({ name: "Metadata ⌨️", value: metadataDescription });
 
         if (location === "users") {
             const user: DatabaseUser = db as DatabaseUser;
-
-            /* Formatted interactions count, for each category */
             let interactionsDescription: string = "";
         
             for (const [ category, count ] of Object.entries(user.interactions)) {
@@ -382,8 +347,9 @@ export class ModerationManager {
             fields.push(
                 { name: "Roles ⚒️", value: [ ...this.bot.db.role.roles(user), "*User*" ].map(role => `**${Utils.titleCase(role)}**`).join(", ") },
                 { name: "Voted 📩", value: user.voted ? `<t:${Math.round(Date.parse(user.voted) / 1000)}:R>` : "❌" },
-                { name: "Interactions 🦾", value: interactionsDescription }
             );
+
+            if (additional) fields.push({ name: "Interactions 🦾", value: interactionsDescription });
         }
 
         const response = new Response()
@@ -392,12 +358,52 @@ export class ModerationManager {
                 .setAuthor({ name: `${target.name} [${target.id}]`, iconURL: target.icon ?? undefined })
                 .setFields(fields.map(f => ({ ...f, inline: true })))
                 .setColor(this.bot.branding.color)
-                .setDescription(description)
             );
 
-        if (flagDescription !== null) response.addEmbed(builder => builder
-            .setDescription(Utils.truncate(flagDescription!, 2000))
-            .setColor("Purple")
+        /* Previous automated moderation flags for the user */
+        const flags: DatabaseInfraction[] = db.infractions
+            .filter(i => i.type === "moderation" && i.moderation && i.reference && typeof i.reference === "object" && i.reference.data)
+            .slice(-25);
+
+        if (flags.length > 0) {
+            const flagEmbed: EmbedBuilder = new EmbedBuilder()
+                .setTitle("Flags 👀").setColor("Orange");
+
+                flagEmbed.addFields(flags.map(f => {
+                    const translation = f.moderation!.translation;
+                    const content: string = translation ? translation.content : f.reference!.data;
+
+                    const action = f.moderation!.auto ? this.bot.moderation.filter.get(f.moderation!.auto!.action) : null;
+
+                    return {
+                        name: `· ${f.moderation!.auto ? action ? action.description : f.moderation!.auto.action : ""} ${FlagToEmoji[f.moderation!.source]}`,
+                        value: `\`${Utils.truncate(content, 200)}\`${translation ? `· *translated from \`${translation.detected}\`*` : ""} · <t:${Math.floor(f.when / 1000)}:f>`,
+                        inline: true
+                    };
+                }));
+
+            response.addEmbed(flagEmbed);
+        }
+
+        const warnings: DatabaseInfraction[] = db.infractions
+            .filter(i => i.type === "warn" && i.reason).slice(-25);
+
+        if (warnings.length > 0) {
+            const warningEmbed: EmbedBuilder = new EmbedBuilder()
+                .setTitle("Warnings ⚠️").setColor("Yellow");
+
+            warningEmbed.addFields(warnings.map(w => ({
+                name: `· ${w.reason!}${!w.by ? " 🤖" : ""}`, inline: true,
+                value: `${w.by ? `<@${w.by}> · ` : ""}<t:${Math.floor(w.when / 1000)}:f>`
+            })));
+
+            response.addEmbed(warningEmbed);
+        }
+
+        const banned = this.banned(db);
+
+        if (banned !== null) response.addEmbed(
+            this.buildInfractionEmbed(db, banned, { by: true }).setTitle("Ban ⚒️")
         );
     
         return response;
@@ -472,7 +478,7 @@ export class ModerationManager {
         const channel = await this.channel("moderation");
 
         /* Description of the warning embed */
-        const description: string = Utils.truncate(result.translation ? `(Translated from \`${result.translation.detected}\`)\n*\`\`\`\n${result.translation.content.replaceAll("`", "\\`")}\n\`\`\`*` : `\`\`\`\n${content.replaceAll("`", "\\`")}\n\`\`\``, 4096);
+        const description: string = Utils.truncate(result.translation ? `(translated from \`${result.translation.detected}\`)\n*\`\`\`\n${result.translation.content.replaceAll("`", "\\`")}\n\`\`\`*` : `\`\`\`\n${content.replaceAll("`", "\\`")}\n\`\`\``, 4096);
 
         /* Toolbar component rows */
         const rows = this.buildToolbar(db, result);
@@ -492,36 +498,34 @@ export class ModerationManager {
         rows.forEach(row => reply.addComponent(ActionRowBuilder<ButtonBuilder>, row));
 
         if (notice) reply.embeds[0].addFields({
-            name: "Notice 📝",
-            value: `\`${notice}\``,
-            inline: true
+            name: "Notice 📝", value: `\`${notice}\``, inline: true
         });
 
-        if (result.auto) reply.embeds[0].addFields(
-            {
-                name: "Filter 🚩",
-                value: `\`${result.auto!.reason ?? result.auto!.action}\``,
-                inline: true
-            },
+        if (result.auto) {
+            const action = this.bot.moderation.filter.get(result.auto.action);
 
-            {
-                name: "Action ⚠️",
-                value: `\`${result.auto!.type}\` ${ActionToEmoji[result.auto!.type]}`,
-                inline: true
-            }
-        );
+            reply.embeds[0].addFields(
+                {
+                    name: "Filter 🚩",
+                    value: `\`${result.auto!.reason ?? action?.description ?? result.auto!.action}\``,
+                    inline: true
+                },
+    
+                {
+                    name: "Action ⚠️",
+                    value: `\`${result.auto!.type}\` ${ActionToEmoji[result.auto!.type]}`,
+                    inline: true
+                }
+            );
+        }
         
         if (!result.auto) reply.embeds[0].addFields({
-            name: "Blocked ⛔",
-            value: result.blocked ? "✅" : "❌",
-            inline: true
+            name: "Blocked ⛔", value: result.blocked ? "✅" : "❌", inline: true
         });
 
         if (result.source === "image" && additional && additional.model) reply.embeds[0].addFields(
             {
-                name: "Model 😊",
-                value: `\`${additional.model.name}\``,
-                inline: true
+                name: "Model 😊", value: `\`${additional.model.name}\``, inline: true
             }
         );
 
@@ -559,11 +563,8 @@ export class ModerationManager {
 
         /* Final moderation result */
         const data: ModerationResult = {
-            source,
-            auto: auto ?? undefined,
-
-            flagged: flagged,
-            blocked: blocked
+            source, auto: auto ?? undefined,
+            flagged, blocked
         };
 
         /* If the message was flagged or blocked, try to translate the original flagged message into English. */
@@ -593,7 +594,7 @@ export class ModerationManager {
         /* Apply all moderation infractions, if applicable. */
         if (auto !== null && auto.type !== "flag") {
             const temp = (await this.filter.execute({
-                auto, content, db, source, result: data, user, additional
+                auto, content, db, source, result: data, user, additional, reference: infraction 
             }))!;
 
             if (temp !== null) infraction = temp;
@@ -633,37 +634,52 @@ export class ModerationManager {
         else return response;
     }
 
-    public buildBanResponse(entry: DatabaseEntry, infraction: DatabaseInfraction): Response {
-        const until: number | null = infraction.until ?? null;
+    public buildInfractionEmbed(entry: DatabaseEntry, infraction: DatabaseInfraction, options: ModerationInfractionOverviewOptions = {}): EmbedBuilder {
+        const { by, reference }: Required<ModerationInfractionOverviewOptions> = {
+            by: false, reference: true,
+            ...options
+        };
 
-        const location = this.bot.db.users.location(entry);
+        const embed: EmbedBuilder = new EmbedBuilder()
+            .setColor("Red").setTimestamp(infraction.when);
+
+        const until: number | null = infraction.until ? Math.floor(infraction.until / 1000) : null;
         const fields: APIEmbedField[] = [];
 
         if (infraction.reason) fields.push({
-            name: "Reason", value: infraction.reason
+            name: "Reason", value: infraction.reason, inline: true
+        });
+
+        if (by && infraction.by) fields.push({
+            name: "By", value: `<@${infraction.by}>`, inline: true
         });
 
         if (until) fields.push({
-            name: "Until", value: `<t:${Math.floor(until / 1000)}:f>, <t:${Math.floor(until / 1000)}:R>`
+            name: "Until", value: `<t:${until}:f>, <t:${until}:R>`, inline: true
         });
 
-        if (infraction.reference && infraction.reference.type === "infraction") {
+        if (reference && infraction.reference && infraction.reference.type === "infraction") {
             /* Find the corresponding infraction. */
             const flag: DatabaseInfraction | null = entry.infractions.find(i => i.id === infraction.reference!.data && i.reference) ?? null;
 
             if (flag !== null) fields.push({
-                name: "Reference", inline: false,
-                value: `**${FlagToName[flag.reference!.type]}** » \`${flag.reference!.data}\` @ <t:${Math.floor(flag.when / 1000)}:f>`
+                name: "Reference", inline: true,
+                value: `**${FlagToName[flag.reference!.type]}** » \`${flag.reference!.data}\``
             });
         }
 
+        return embed.setFields(fields);
+    }
+
+    public buildBanResponse(entry: DatabaseEntry, infraction: DatabaseInfraction): Response {
+        const until: number | null = infraction.until ? Math.floor(infraction.until / 1000) : null;
+        const builder = this.buildInfractionEmbed(entry, infraction);
+        const location = this.bot.db.users.location(entry);
+
         return new Response()
-            .addEmbed(builder => builder
+            .addEmbed(builder
                 .setTitle(`${location === "guilds" ? "This server is" : "You are"} banned **${until !== null ? "temporarily" : "permanently"}** from using the bot 😔`)
                 .setDescription(`_If you want to appeal or have questions about ${location === "guilds" ? "the server's" : "your"} ban, join the **[support server](https://discord.gg/${this.bot.app.config.discord.inviteCode})**_.`)
-                .setFields(fields.map(f => ({ inline: true, ...f })))
-                .setTimestamp(infraction.when)
-                .setColor("Red")
             )
             .setEphemeral(true);
     }
@@ -696,12 +712,11 @@ export class ModerationManager {
 
             for (const warning of unread) {
                 if (warning.reference && warning.reference.type === "infraction") {
-                    /* Find the corresponding infraction. */
                     const flag: DatabaseInfraction | null = db.infractions.find(i => i.id === warning.reference!.data && i.reference) ?? null;
         
                     fields.push({
 						name: `${warning.reason} ⚠️`,
-						value: flag !== null ? `**${FlagToName[flag.reference!.type]}** » \`${flag.reference!.data}\` @ <t:${Math.floor(flag.when / 1000)}:f>` : `*<t:${Math.floor(warning.when / 1000)}:F>*`
+						value: flag !== null ? `**${FlagToName[flag.reference!.type]}** » \`${Utils.truncate(flag.reference!.data, 128)}\` @ <t:${Math.floor(flag.when / 1000)}:f>` : `*<t:${Math.floor(warning.when / 1000)}:F>*`
 					});
                 }
             }
@@ -709,7 +724,7 @@ export class ModerationManager {
 			const reply = (await new Response()
 				.addComponent(ActionRowBuilder<ButtonBuilder>, row)
 				.addEmbed(builder => builder
-					.setTitle(`Before you continue ...`)
+					.setTitle("Before you continue ...")
 					.setDescription(`You received **${unread.length > 1 ? "several warnings" : "a warning"}**, as a consequence of your messages with the bot. *${unread.length > 1 ? "These are only warnings" : "This is only a warning"}; you can continue to use the bot. If you however keep violating our **usage policies**, we may have to take further moderative actions*.`)
 					.setFields(fields)
 					.setFooter({ text: `If you have any further questions about ${unread.length > 1 ? "these warnings" : "this warning"}, join our support server.` })

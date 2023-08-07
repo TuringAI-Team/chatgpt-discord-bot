@@ -1,6 +1,6 @@
 import { ActionRowBuilder, AttachmentBuilder, Awaitable, ButtonBuilder, ButtonInteraction, ButtonStyle, ChatInputCommandInteraction, ColorResolvable, Colors, Interaction, InteractionEditReplyOptions, InteractionReplyOptions, InteractionUpdateOptions, MessageEditOptions, ModalBuilder, ModalSubmitInteraction, SlashCommandBuilder, Snowflake, StringSelectMenuBuilder, StringSelectMenuInteraction, TextInputBuilder, TextInputStyle, User, resolveColor } from "discord.js";
+import { generate as words } from "random-words";
 import { randomUUID } from "crypto";
-import words from "random-words";
 
 import { DatabaseCampaign, DatabaseCampaignBudgetType, DatabaseCampaignLog } from "../db/managers/campaign.js";
 import { InteractionHandlerResponse, InteractionHandlerRunOptions } from "../interaction/handler.js";
@@ -675,9 +675,11 @@ export default class CampaignsCommand extends Command {
                     campaign, db, preview: true
                 });
 
-                return new Response()
-                    .addComponent(ActionRowBuilder<ButtonBuilder>, row)
+                const response = new Response()
                     .addEmbed(embed).setEphemeral(true);
+                
+                if (row !== null) response.addComponent(ActionRowBuilder<ButtonBuilder>, row);
+                return response;
                     
             } else if (action === "stats") {
                 await interaction.deferReply({

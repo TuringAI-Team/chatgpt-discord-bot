@@ -253,7 +253,7 @@ export default class SummarizeCommand extends Command {
 				/* Generate the summarization result using ChatGPT. */
 				const raw = await this.bot.turing.openAI({
 					messages: prompt.messages, model: "gpt-3.5-turbo",
-					temperature: 0.6, max_tokens: 500
+					temperature: 0.6, tokens: 500
 				});
 
 				/* Summary of the subtitles, by ChatGPT */

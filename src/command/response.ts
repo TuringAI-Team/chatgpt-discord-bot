@@ -1,15 +1,10 @@
-import { EmbedBuilder, ComponentBuilder, Message, InteractionReplyOptions, TextChannel, AttachmentBuilder, MessageCreateOptions, CommandInteraction, MessageComponentInteraction, DMChannel, InteractionResponse, ThreadChannel, MessageEditOptions, InteractionUpdateOptions, ButtonInteraction, ModalSubmitInteraction } from "discord.js";
+import { EmbedBuilder, ComponentBuilder, Message, InteractionReplyOptions, TextChannel, AttachmentBuilder, MessageCreateOptions, CommandInteraction, MessageComponentInteraction, DMChannel, InteractionResponse, ThreadChannel, MessageEditOptions, InteractionUpdateOptions, ButtonInteraction, ModalSubmitInteraction, MessageReplyOptions } from "discord.js";
 import { APIActionRowComponent, APIActionRowComponentTypes } from "discord-api-types/v10";
 
 type Component = APIActionRowComponentTypes | APIActionRowComponent<APIActionRowComponentTypes>
 
-export enum ResponseType {
-	FollowUp,
-	Edit,
-    Send
-}
-
 export type ResponseSendClass = MessageComponentInteraction | CommandInteraction | ModalSubmitInteraction | Message | TextChannel | DMChannel | ThreadChannel
+export type ResponseSendOptions = InteractionReplyOptions | InteractionUpdateOptions | MessageCreateOptions | MessageEditOptions | string
 
 export class Response {
 	/* Content of the message */
@@ -24,19 +19,15 @@ export class Response {
 	/* Components of the message */
 	public components: Component[];
 
-	/* Type of the response */
-	public type: ResponseType;
-
     /* Whether the response is only visible to the user */
     public ephemeral: boolean;
 
-	constructor(type: ResponseType = ResponseType.Send) {
+	constructor() {
         this.ephemeral = false;
 		this.attachments = [];
 		this.components = [];
 		this.content = null;
 		this.embeds = [];
-		this.type = type;
 	}
 
 	public setContent(content: string | null): this {
@@ -57,22 +48,13 @@ export class Response {
 		return this;
 	}
 
-	public addAttachment(attachment: AttachmentBuilder | null): this {
-		if (!attachment) return this;
+	public addAttachment(attachment: AttachmentBuilder): this {
 		this.attachments.push(attachment);
-
 		return this;
 	}
 
-	public addComponent<T extends ComponentBuilder>(type: { new(): T }, builder: ((component: T) => T) | T | null): this {
-		if (builder === null) return this;
-		
+	public addComponent<T extends ComponentBuilder>(type: { new(): T }, builder: ((component: T) => T) | T): this {		
 		this.components.push((typeof builder === "function" ? builder(new type()) : builder).toJSON());
-		return this;
-	}
-
-	public setType(type: ResponseType): this {
-		this.type = type;
 		return this;
 	}
 
@@ -81,16 +63,13 @@ export class Response {
 		return this;
 	}
 
-	/* Get the formatted embed. */
-	public get(): InteractionReplyOptions | InteractionUpdateOptions | MessageCreateOptions | MessageEditOptions {
+	public get<T extends ResponseSendOptions = ResponseSendOptions>(): T {
 		return {
 			content: this.content !== null ? this.content : undefined,
-			embeds: this.embeds ? this.embeds : [],
-			components: this.components as any,
-			ephemeral: this.ephemeral,
-			files: this.attachments,
+			embeds: this.embeds, components: this.components,
+			ephemeral: this.ephemeral, files: this.attachments,
 			allowedMentions: { repliedUser: true, parse: [] }
-		};
+		} as any as T;
 	}
 
 	/* Edit the original interaction reply. */
@@ -100,18 +79,14 @@ export class Response {
 				/* Whether the interaction has already been replied to */
 				const replied: boolean = interaction.replied || interaction.deferred;
 
-				/* Edit the original reply. */
-				if (this.type === ResponseType.Send && !replied) return await interaction.reply(this.get() as InteractionReplyOptions);
-				else if (this.type === ResponseType.Edit || replied) return await interaction.editReply(this.get() as InteractionReplyOptions);
-				else if (this.type === ResponseType.FollowUp) return await interaction.followUp(this.get() as InteractionReplyOptions);
+				if (replied) return await interaction.editReply(this.get());
+				else return await interaction.reply(this.get());
 
 			} else if (interaction instanceof TextChannel || interaction instanceof DMChannel || interaction instanceof ThreadChannel) {
-				/* Send the message to the channel. */
-				return await interaction.send(this.get() as MessageCreateOptions);
+				return await interaction.send(this.get<MessageCreateOptions>());
 
 			} else if (interaction instanceof Message) {
-				/* Send the reply to the message. */
-				return interaction.reply(this.get() as MessageCreateOptions);
+				return interaction.reply(this.get<MessageReplyOptions>());
 			}
 		} catch (_) {}
 

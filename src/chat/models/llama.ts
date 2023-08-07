@@ -9,7 +9,7 @@ export class LLaMAModel extends ChatModel {
     constructor(client: ChatClient) {
         super(client, {
             name: "LLaMA", type: ModelType.LLaMA,
-            capabilities: [ ModelCapability.ImageViewing ]
+            capabilities: [ ModelCapability.ImageViewing, ModelCapability.UserLanguage ]
         });
     }
 
