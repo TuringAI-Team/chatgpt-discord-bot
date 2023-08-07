@@ -6,18 +6,11 @@ interface MessageFormatter {
     execute: (content: string) => string | null;
 }
 
-const MARKDOWN_LINK_REGEXP: RegExp = /\[(.*?)\]\((.*?)\)/g
-
 /* Formatters to execute */
 const formatters: MessageFormatter[] = [
     {
         name: "Fix broken code blocks",
         execute: content => content.split("```").length % 2 === 0 ? `${content}\n\`\`\`` : null
-    },
-
-    {
-        name: "Style Markdown links correctly",
-        execute: content => content.replaceAll(MARKDOWN_LINK_REGEXP, "**$1** (*<$2>*)")
     }
 ]
 
