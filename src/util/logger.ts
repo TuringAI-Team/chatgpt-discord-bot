@@ -65,7 +65,7 @@ export class ClusterLogger extends Logger {
         const time: string = dayjs.unix(now).format("hh:mm A");
 
 		const status: string = chalk.bold.hex(level.color)(level.name);
-		const line: string = `${chalk.green(chalk.bold(`#${this.bot.data.id + 1}`))} ${chalk.gray("»")} ${status} ${chalk.italic(chalk.gray(time))} ${chalk.gray("»")}`.trim();
+		const line: string = `${chalk.green(chalk.bold(`#${this.bot?.data?.id + 1}`))} ${chalk.gray("»")} ${status} ${chalk.italic(chalk.gray(time))} ${chalk.gray("»")}`.trim();
 
 		/* Log the message to the console. */
 		this.print(line, ...message);
