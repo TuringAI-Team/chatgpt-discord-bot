@@ -1,0 +1,2 @@
+<h1 align="center"><b>Turing</b> <img src="https://cdn.discordapp.com/avatars/1053015370115588147/07cbfe46f7dd3235e09b7021863a2a0a.png" width="28" style="border-radius: 50%; margin-bottom: -5px"></h1>
+<p align="center"><i>The ultimate AI-powered Discord bot</i></p>
