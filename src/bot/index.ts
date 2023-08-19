@@ -102,7 +102,7 @@ async function connectRabbitMQ() {
 	} catch (error) {
 		console.error(error);
 	}
-};
+}
 
 await registerCommands();
 

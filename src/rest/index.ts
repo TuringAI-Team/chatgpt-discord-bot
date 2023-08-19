@@ -15,12 +15,6 @@ const rest = createRestManager({
 	customUrl: REST_URL
 });
 
-// @ts-expect-error
-rest.convertRestError = (errorStack, data) => {
-	if (!data) return { message: errorStack.message };
-	return { ...data, message: errorStack.message };
-};
-
 const app = express();
 
 app.use(

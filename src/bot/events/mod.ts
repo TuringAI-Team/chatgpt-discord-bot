@@ -12,11 +12,11 @@ export interface Event<T extends keyof EventHandlers> {
 }
 
 const EVENTS = [
-    InteractionCreate, MessageCreate
+	InteractionCreate, MessageCreate
 ];
 
 export function setupEvents() {
-    for (const event of EVENTS) {
-        bot.events[event.name] = event.handler as any;
-    }
+	for (const event of EVENTS) {
+		bot.events[event.name] = event.handler as any;
+	}
 }

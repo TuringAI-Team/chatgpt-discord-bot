@@ -36,7 +36,7 @@ const gateway = createGatewayManager({
 
 	handleDiscordPayload: () => {},
 
-	tellWorkerToIdentify: async (_gateway, workerID, shardID, bucketID) => {
+	tellWorkerToIdentify: async (_gateway, workerID, shardID) => {
 		let worker = workers.get(workerID);
 
 		if (!worker) {
@@ -55,7 +55,7 @@ const gateway = createGatewayManager({
 
 function createWorker(id: number) {
 	if (id === 0) logger.info(`Identifying with ${gateway.manager.totalShards} total shards`);
-    logger.info(`Tell to identify shard #${id}`);
+	logger.info(`Tell to identify shard #${id}`);
 
 	const workerData: WorkerCreateData = {
 		token: BOT_TOKEN, intents: gateway.manager.gatewayConfig.intents ?? 0,

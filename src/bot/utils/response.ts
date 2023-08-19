@@ -23,23 +23,23 @@ export function transformResponse<T extends (CreateMessage | EditMessage | Inter
     messageReference?: CreateMessage["messageReference"],
     ephemeral?: boolean
 } = CreateMessage>(
-    response: MessageResponse
+	response: MessageResponse
 ): T {
-    return {
-        content: response.content,
+	return {
+		content: response.content,
 
-        embeds: response.embeds ?
-            Array.isArray(response.embeds) ? response.embeds
-            : [ response.embeds ]
-        : undefined,
+		embeds: response.embeds ?
+			Array.isArray(response.embeds) ? response.embeds
+				: [ response.embeds ]
+			: undefined,
 
-        flags: response.ephemeral ? ApplicationCommandFlags.Ephemeral : undefined,
+		flags: response.ephemeral ? ApplicationCommandFlags.Ephemeral : undefined,
 
-        messageReference: response.reference ? {
-            failIfNotExists: false,
-            channelId: response.reference.channelId,
-            guildId: response.reference.guildId,
-            messageId: response.reference.id
-        } : undefined
-    } as T;
+		messageReference: response.reference ? {
+			failIfNotExists: false,
+			channelId: response.reference.channelId,
+			guildId: response.reference.guildId,
+			messageId: response.reference.id
+		} : undefined
+	} as T;
 }

@@ -1,5 +1,5 @@
 import type { Interaction, Message } from "discordeno";
-import type { MessageResponse } from '../utils/response.js';
+import type { MessageResponse } from "../utils/response.js";
 
 export interface CustomInteraction extends Interaction {
 	/** Defer the interaction, to be edited at a future point. */

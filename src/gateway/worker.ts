@@ -54,7 +54,7 @@ const manager = createShardManager({
 			if (existing) return;
 
 			if (loadingGuilds.has(id)) {
-				message.t = "GUILD_LOADED_DD" as any;
+				message.t = "GUILD_CREATE";
 				loadingGuilds.delete(id);
 			}
 
@@ -69,13 +69,13 @@ const manager = createShardManager({
 			guilds.delete(BigInt(guild.id));
 		}
 
-        if (!channel) return;
+		if (!channel) return;
 
-        channel.publish("gateway", "", Buffer.from(JSON.stringify({
+		channel.publish("gateway", "", Buffer.from(JSON.stringify({
 			shard: shard.id, data: message
 		} as GatewayMessage)), {
-            contentType: "application/json"
-        });
+			contentType: "application/json"
+		});
 	},
 
 	requestIdentify: async function (id: number) {
@@ -126,6 +126,6 @@ async function connectRabbitMQ() {
 		log.error(error);
 		channel = undefined;
 	}
-};
+}
 
 await connectRabbitMQ();
