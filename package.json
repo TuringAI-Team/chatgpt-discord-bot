@@ -1,0 +1,38 @@
+{
+	"name": "turing",
+	"description": "The ultimate AI-powered Discord bot",
+	"version": "0.0.1",
+	"main": "index.js",
+	"type": "module",
+	"scripts": {
+		"dev_rest": "nodemon --ignore ./build/bot/**/* --ignore ./build/gateway/**/* --ignore ./build/**/* -e ts build/rest/index.js",
+		"dev_gateway": "nodemon --ignore ./src/bot/**/* --ignore ./build/rest/**/* --ignore ./build/**/* -e ts build/gateway/index.js",
+		"dev_bot": "nodemon --ignore ./build/rest/**/* --ignore ./build/gateway/**/* --ignore ./build/**/* -e ts build/bot/index.js",
+		"build": "tsc",
+		"rest": "node build/rest/index.js",
+		"gateway": "node build/gateway/index.js",
+		"bot": "node build/bot/index.js"
+	},
+	"dependencies": {
+		"@koa/router": "^12.0.0",
+		"amqplib": "^0.10.3",
+		"colorette": "^2.0.19",
+		"discordeno": "^16.0.1",
+		"dotenv": "^16.0.3",
+		"express": "^4.18.2",
+		"fastify": "^4.10.2",
+		"nanoid": "^4.0.0",
+		"node-fetch": "^3.2.10",
+		"redis": "^4.6.7",
+		"web-worker": "^1.2.0"
+	},
+	"devDependencies": {
+		"@types/amqplib": "^0.8.2",
+		"@types/express": "^4.17.17",
+		"@types/node": "^17.0.23",
+		"@types/ws": "^8.5.3",
+		"nodemon": "^2.0.15",
+		"prettier": "2.6.2",
+		"typescript": "^4.9.5"
+	}
+}

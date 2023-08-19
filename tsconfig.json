@@ -1,0 +1,37 @@
+{
+	"compilerOptions": {
+	  /* Language and Environment */
+	  "target": "ESNext",
+	  "lib": [ "ESNext", "DOM" ],
+	  "experimentalDecorators": true,
+	  "emitDecoratorMetadata": true,
+	  
+	  /* Modules */
+	  "module": "NodeNext",
+	  "rootDir": "./src",
+	  "moduleResolution": "NodeNext",
+	  "resolveJsonModule": true,
+	  
+	  /* JavaScript Support */
+	  "allowJs": true,
+	  "checkJs": true,
+  
+	  /* Emit */                                
+	  "outDir": "./build",
+	  "importHelpers": true,
+	  "newLine": "lf",
+	
+	  /* Interop Constraints */
+	  "esModuleInterop": true,
+	  "forceConsistentCasingInFileNames": true,
+  
+	  /* Type Checking */
+	  "strict": true,
+	  "allowUnusedLabels": false,
+	  "allowUnreachableCode": false,
+  
+	  /* Completeness */
+	  "skipLibCheck": true
+	}
+  }
+  
