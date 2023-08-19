@@ -13,6 +13,14 @@ export default createTransformer("interaction", (bot, interaction) => {
         }
     });
 
+    Object.defineProperty(interaction, "defer", {
+        value: function () {
+            return bot.helpers.sendInteractionResponse(interaction.id, interaction.token, {
+                type: InteractionResponseTypes.DeferredChannelMessageWithSource
+            });
+        }
+    });
+
     Object.defineProperty(interaction, "editReply", {
         value: function (response: MessageResponse) {
             return bot.helpers.editOriginalInteractionResponse(interaction.token, transformResponse(response));

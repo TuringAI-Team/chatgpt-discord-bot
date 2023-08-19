@@ -1,16 +1,21 @@
+import { Guild } from "discordeno";
+
+import { EmbedColor, MessageResponse } from "../utils/response.js";
 import { DiscordBot } from "../index.js";
-import { MessageResponse } from "../utils/response.js";
 
 interface HandleErrorOptions {
     error: Error | unknown;
+    guild: bigint | undefined;
 }
 
-export function handleError(bot: DiscordBot, { error }: HandleErrorOptions): MessageResponse {
+export async function handleError(bot: DiscordBot, { error }: HandleErrorOptions): Promise<MessageResponse> {
     bot.logger.error(error);
 
     return {
         embeds: {
-            title: "Uh-oh... "
+            title: "Uh-oh... 😬",
+            description: "It seems like an error has occured. *The developers have been notified.*",
+            color: EmbedColor.Red
         }
-    }
+    };
 }

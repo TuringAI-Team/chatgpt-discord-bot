@@ -14,7 +14,9 @@ export const SHARDS_PER_WORKER = Number(process.env.SHARDS_PER_WORKER!)
 /** REST server */
 export const REST_URL = `${process.env.REST_HOST}:${process.env.REST_PORT}`
 export const REST_PORT = process.env.REST_PORT!
-export const REST_AUTH = process.env.REST_AUTH!
+
+/** Authentication for the HTTP services */
+export const HTTP_AUTH = process.env.HTTP_AUTH!
 
 /** RabbitMQ server URI */
 export const RABBITMQ_URI = process.env.RABBITMQ_URI!

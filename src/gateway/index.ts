@@ -5,10 +5,11 @@ import { Collection, createBot, createGatewayManager, createRestManager } from "
 import { createLogger } from "discordeno/logger";
 import { Worker } from "worker_threads";
 
-import { BOT_TOKEN, INTENTS, REST_AUTH, REST_URL, SHARDS_PER_WORKER, TOTAL_WORKERS } from "../config.js";
-import type { WorkerCreateData, WorkerMessage } from "./worker.js";
+import { BOT_TOKEN, INTENTS, HTTP_AUTH, REST_URL, SHARDS_PER_WORKER, TOTAL_WORKERS } from "../config.js";
+import type { WorkerCreateData, WorkerMessage } from "./types/worker.js";
+import { ManagerMessage } from "./types/manager.js";
 
-const log = createLogger({ name: "[MANAGER]" });
+const logger = createLogger({ name: "[MANAGER]" });
 const workers = new Collection<number, Worker>();
 
 const bot = createBot({
@@ -17,7 +18,7 @@ const bot = createBot({
 
 bot.rest = createRestManager({
 	token: BOT_TOKEN,
-	secretKey: REST_AUTH,
+	secretKey: HTTP_AUTH,
 	customUrl: REST_URL
 });
 
@@ -53,8 +54,8 @@ const gateway = createGatewayManager({
 });
 
 function createWorker(id: number) {
-	if (id === 0) log.info(`Identifying with ${gateway.manager.totalShards} total shards`);
-    log.info(`Tell to identify shard #${id}`);
+	if (id === 0) logger.info(`Identifying with ${gateway.manager.totalShards} total shards`);
+    logger.info(`Tell to identify shard #${id}`);
 
 	const workerData: WorkerCreateData = {
 		token: BOT_TOKEN, intents: gateway.manager.gatewayConfig.intents ?? 0,
@@ -69,7 +70,7 @@ function createWorker(id: number) {
 	worker.on("message", async (data: ManagerMessage) => {
 		switch (data.type) {
 			case "REQUEST_IDENTIFY": {
-				log.info(`Requesting to identify shard #${data.shardID}`);
+				logger.info(`Requesting to identify shard #${data.shardID}`);
 				await gateway.manager.requestIdentify(data.shardID);
 
 				const allowIdentify: WorkerMessage = {
@@ -87,10 +88,3 @@ function createWorker(id: number) {
 }
 
 gateway.spawnShards();
-
-export type ManagerMessage = ManagerRequestIdentify
-
-export interface ManagerRequestIdentify {
-	type: "REQUEST_IDENTIFY";
-	shardID: number;
-}

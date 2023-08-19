@@ -1,13 +1,15 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-import type { DiscordGatewayPayload, DiscordGuild, DiscordReady, DiscordUnavailableGuild, Intents } from "discordeno";
+import type { DiscordGuild, DiscordReady, DiscordUnavailableGuild } from "discordeno";
 import { parentPort, workerData } from "worker_threads";
 import { createLogger } from "discordeno/logger";
 import { createShardManager } from "discordeno";
 import amqplib from "amqplib";
 
-import type { ManagerMessage } from "./index.js";
+import type { GatewayMessage, WorkerCreateData, WorkerMessage } from "./types/worker.js";
+import type { ManagerMessage } from "./types/manager.js";
+
 import { RABBITMQ_URI } from "../config.js";
 
 if (!parentPort) throw new Error("Parent port is null");
@@ -107,31 +109,6 @@ parent.on("message", async (data: WorkerMessage) => {
 		}
 	}
 });
-
-export type WorkerMessage = WorkerIdentifyShard | WorkerAllowIdentify
-
-export interface WorkerIdentifyShard {
-	type: "IDENTIFY_SHARD";
-	shardID: number;
-}
-
-export interface WorkerAllowIdentify {
-	type: "ALLOW_IDENTIFY";
-	shardID: number;
-}
-
-export interface WorkerCreateData {
-	intents: Intents;
-	token: string;
-	path: string;
-	totalShards: number;
-	workerID: number;
-}
-
-export interface GatewayMessage {
-	data: DiscordGatewayPayload;
-	shard: number;
-}
 
 async function connectRabbitMQ() {
 	let connection: amqplib.Connection;

@@ -4,8 +4,8 @@ import { createLogger } from "discordeno/logger";
 import { createClient } from "redis";
 import amqplib from "amqplib";
 
-import { INTENTS, REST_URL, BOT_TOKEN, REST_AUTH, RABBITMQ_URI, REDIS_HOST, REDIS_PORT, REDIS_PASSWORD, REDIS_USER } from "../config.js";
-import { GatewayMessage } from "../gateway/worker.js";
+import { INTENTS, REST_URL, BOT_TOKEN, HTTP_AUTH, RABBITMQ_URI, REDIS_HOST, REDIS_PORT, REDIS_PASSWORD, REDIS_USER } from "../config.js";
+import { GatewayMessage } from "../gateway/types/worker.js";
 
 import { setupTransformers } from "./transformers/mod.js";
 import { registerCommands } from "./commands/mod.js";
@@ -31,7 +31,7 @@ async function createRedis() {
 		password: REDIS_PASSWORD
 	});
 
-	//await client.connect();
+	await client.connect();
 	return client;
 }
 
@@ -51,7 +51,7 @@ export const bot = enableHelpersPlugin(
 			intents: INTENTS,
 			
 			rest: {
-				secretKey: REST_AUTH,
+				secretKey: HTTP_AUTH,
 				customUrl: REST_URL
 			}
 		})
@@ -60,7 +60,7 @@ export const bot = enableHelpersPlugin(
 
 async function handleGatewayMessage({ data, shard }: GatewayMessage) {
 	if (data.t && data.t !== "RESUMED") {
-		// When a guild or something isn't in cache, this will fetch it before doing anything else. */
+		/* When a guild or something isn't in cache, this will fetch it before doing anything else. */
 		if (![ "READY", "GUILD_LOADED_DD" ].includes(data.t)) {
 			await bot.events.dispatchRequirements(bot, data, shard);
 		}
@@ -81,7 +81,7 @@ async function connectRabbitMQ() {
 
 	try {
 		const channel = await connection.createChannel();
-		await channel.assertExchange("gatewayMessage", "direct");
+		await channel.assertExchange("gateway", "direct");
 
 		await channel.assertQueue("gatewayQueue");
 		await channel.bindQueue("gatewayQueue", "gateway", "");

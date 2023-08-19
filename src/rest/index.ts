@@ -5,13 +5,13 @@ import { BASE_URL, RequestMethod, createRestManager } from "discordeno";
 import { createLogger } from "discordeno/logger";
 import express from "express";
 
-import { BOT_TOKEN, REST_URL, REST_AUTH, REST_PORT } from "../config.js";
+import { BOT_TOKEN, REST_URL, REST_PORT, HTTP_AUTH } from "../config.js";
 
 const log = createLogger({ name: "[REST]" });
 
 const rest = createRestManager({
 	token: BOT_TOKEN,
-	secretKey: REST_AUTH,
+	secretKey: HTTP_AUTH,
 	customUrl: REST_URL
 });
 
@@ -32,7 +32,7 @@ app.use(
 app.use(express.json());
 
 app.all("/*", async (req, res) => {
-	if (REST_AUTH !== req.headers.authorization) {
+	if (HTTP_AUTH !== req.headers.authorization) {
 		return res.status(401).json({ error: "Invalid authorization" });
 	}
 
@@ -51,4 +51,6 @@ app.all("/*", async (req, res) => {
 	}
 });
 
-app.listen(REST_PORT);
+app.listen(REST_PORT, () => {
+	log.info("Started.");
+});

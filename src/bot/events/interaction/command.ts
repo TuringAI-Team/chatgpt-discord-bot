@@ -2,9 +2,9 @@ import { Collection } from "discordeno";
 
 import type { CustomInteraction } from "../../types/discordeno.js";
 import type { CommandOptionValue } from "../../types/command.js";
+import { handleError } from "../../moderation/error.js";
 import type { DiscordBot } from "../../index.js";
 
-import { EmbedColor } from "../../utils/response.js";
 import { COMMANDS } from "../../commands/mod.js";
 
 /** Global command cool-downs */
@@ -24,13 +24,9 @@ export async function executeCommand(bot: DiscordBot, interaction: CustomInterac
         if (response) await interaction.reply(response);
 
     } catch (error) {
-        await interaction.reply({
-            embeds: {
-                 title: "Uh-oh... 😬",
-                 description: "It seems like an error has occured. *The developers have been notified.*",
-                 color: EmbedColor.Red
-            }
-        });
+        await interaction.reply(
+            await handleError(bot, { error, guild: interaction.guildId })
+        );
     }
 }
 
