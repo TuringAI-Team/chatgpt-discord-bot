@@ -7,9 +7,9 @@ import amqplib from "amqplib";
 import { INTENTS, REST_URL, BOT_TOKEN, HTTP_AUTH, RABBITMQ_URI, REDIS_HOST, REDIS_PORT, REDIS_PASSWORD, REDIS_USER } from "../config.js";
 import { GatewayMessage } from "../gateway/types/worker.js";
 
-import { setupTransformers } from "./transformers/mod.js";
-import { registerCommands } from "./commands/mod.js";
-import { setupEvents } from "./events/mod.js";
+import { setupTransformers } from "./transformers/index.js";
+import { registerCommands } from "./commands/index.js";
+import { setupEvents } from "./events/index.js";
 
 /* Custom type of the Discordeno bot class, so we can add custom properties */
 export type DiscordBot<B extends Bot = Bot> = B & {

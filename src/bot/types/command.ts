@@ -12,7 +12,7 @@ export type CommandOptionValue<T extends string | number | boolean = string | nu
     /** Type of the option */
     type: ApplicationCommandOptionTypes;
 
-    /** Value of option */
+    /** Value of the option */
     value: T;
 }
 

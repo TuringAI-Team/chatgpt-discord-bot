@@ -10,6 +10,9 @@ export interface CustomInteraction extends Interaction {
 
 	/** Edit a deferred reply of an interaction. */
 	editReply: (response: MessageResponse) => Promise<Message>;
+
+	/** Delete the original reply to the interaction. */
+	deleteReply: () => void;
 }
 
 export interface CustomMessage extends Message {

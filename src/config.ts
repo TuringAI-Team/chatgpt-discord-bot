@@ -32,6 +32,12 @@ export const TURING_API_KEY = process.env.TURING_API_KEY!;
 export const TURING_CAPTCHA_KEY = process.env.TURING_CAPTCHA_KEY!;
 export const TURING_SUPER_KEY = process.env.TURING_SUPER_KEY!;
 
+/** Support server invite code */
+export const SUPPORT_INVITE = `discord.gg/${process.env.SUPPORT_INVITE_CODE!}`;
+
+/* Color to use for most embeds */
+export const BRANDING_COLOR = parseInt(process.env.BRANDING_COLOR!, 16);
+
 /** Which gateway intents should be used */
 export const INTENTS: Intents =
     Intents.DirectMessages |

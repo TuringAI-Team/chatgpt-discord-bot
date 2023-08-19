@@ -1,6 +1,6 @@
 import type { Transformers } from "discordeno";
 
-import type { Transformer } from "../transformers/mod.js";
+import type { Transformer } from "../transformers/index.js";
 import { DiscordBot } from "../index.js";
 
 export function createTransformer<T extends keyof Transformers>(
