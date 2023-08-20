@@ -2,7 +2,7 @@ import { InteractionTypes } from "discordeno";
 
 import type { CustomInteraction } from "../../types/discordeno.js";
 
-import { handleInteraction } from "../../interactions/index.js";
+import { handleInteraction } from "../../interactions/mod.js";
 import { createEvent } from "../../helpers/event.js";
 import { executeCommand } from "./command.js";
 

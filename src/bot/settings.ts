@@ -5,7 +5,7 @@ import { SettingsCategory, SettingsLocation, SettingsOption, SettingsOptionType 
 
 import type { InteractionHandlerOptions } from "./types/interaction.js";
 import type { MessageResponse } from "./utils/response.js";
-import type { DBEnvironment } from "../db/types/index.js";
+import type { DBEnvironment } from "../db/types/mod.js";
 import type { DBGuild } from "../db/types/guild.js";
 import type { DBUser } from "../db/types/user.js";
 

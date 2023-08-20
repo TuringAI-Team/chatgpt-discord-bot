@@ -1,9 +1,9 @@
 import type { EventHandlers } from "discordeno";
 
 import type { Args, ReplaceBot } from "../types/args.js";
-import { bot } from "../index.js";
+import { bot } from "../mod.js";
 
-import InteractionCreate from "./interaction/index.js";
+import InteractionCreate from "./interaction/mod.js";
 import MessageCreate from "./message/create.js";
 
 export interface Event<T extends keyof EventHandlers> {

@@ -1,6 +1,6 @@
 import type { InteractionHandler } from "../types/interaction.js";
 import type { CustomInteraction } from "../types/discordeno.js";
-import type { DiscordBot } from "../index.js";
+import type { DiscordBot } from "../mod.js";
 
 import { getCooldown, setCooldown } from "../events/interaction/command.js";
 import { handleError } from "../moderation/error.js";

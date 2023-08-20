@@ -1,7 +1,7 @@
 import { CreateApplicationCommand } from "discordeno";
 
 import type { Command } from "../types/command.js";
-import { bot } from "../index.js";
+import { bot } from "../mod.js";
 
 import Settings from "./settings.js";
 import Test from "./test.js";

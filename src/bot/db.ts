@@ -1,6 +1,6 @@
 import RabbitMQ from "rabbitmq-client";
 
-import { CollectionName, DBEnvironment, DBObject, DBRequestData, DBRequestType, DBRequestUpdate, DBResponse, DBType } from "../db/types/index.js";
+import { CollectionName, DBEnvironment, DBObject, DBRequestData, DBRequestType, DBRequestUpdate, DBResponse, DBType } from "../db/types/mod.js";
 import { RABBITMQ_URI } from "../config.js";
 
 import type { DBGuild } from "../db/types/guild.js";

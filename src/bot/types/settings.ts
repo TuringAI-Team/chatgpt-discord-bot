@@ -1,6 +1,6 @@
 import type { DBGuild } from "../../db/types/guild.js";
 import type { DBUser } from "../../db/types/user.js";
-import type { DiscordBot } from "../index.js";
+import type { DiscordBot } from "../mod.js";
 
 export enum SettingsLocation {
 	Guild = "g",

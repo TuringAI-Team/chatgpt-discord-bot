@@ -1,6 +1,6 @@
 import type { Transformers } from "discordeno";
 
-import { type DiscordBot, bot } from "../index.js";
+import { type DiscordBot, bot } from "../mod.js";
 
 import Interaction from "./interaction.js";
 import Message from "./message.js";

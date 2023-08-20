@@ -1,5 +1,5 @@
-import type { DBEnvironment } from "../../db/types/index.js";
-import type { DiscordBot } from "../index.js";
+import type { DBEnvironment } from "../../db/types/mod.js";
+import type { DiscordBot } from "../mod.js";
 
 import { DBRole } from "../../db/types/user.js";
 

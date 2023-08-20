@@ -1,7 +1,8 @@
 import EventEmitter from "events";
 
 import type { Conversation, ConversationMessage } from "../types/conversation.js";
-import type { DiscordBot } from "../../index.js";
+import type { DBEnvironment } from "../../../db/types/mod.js";
+import type { DiscordBot } from "../../mod.js";
 
 import ChatGPT from "./chatgpt.js";
 
@@ -44,8 +45,9 @@ export interface ChatModel {
 
 interface ChatModelHandlerOptions {
 	bot: DiscordBot;
+	env: DBEnvironment;
 	conversation: Conversation;
-	input: ConversationMessage;
+	input: ConversationMessage & { author: "user" };
 	emitter: ChatEmitter;
 }
 

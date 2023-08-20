@@ -1,7 +1,7 @@
 import type { CustomMessage } from "../../types/discordeno.js";
 
 import { createEvent } from "../../helpers/event.js";
-import { handleMessage } from "../../chat/index.js";
+import { handleMessage } from "../../chat/mod.js";
 
 export default createEvent("messageCreate", async (bot, message) => {
 	try {

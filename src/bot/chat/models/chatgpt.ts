@@ -1,7 +1,7 @@
 import EventEmitter from "events";
 
 import { createChatModel } from "../../helpers/chat.js";
-import { ChatModelName } from "./index.js";
+import { ChatModelName } from "./mod.js";
 
 export default createChatModel({
 	name: ChatModelName.ChatGPT,

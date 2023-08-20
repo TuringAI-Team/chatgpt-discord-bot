@@ -2,13 +2,13 @@ import { Collection } from "discordeno";
 
 import type { CustomInteraction } from "../../types/discordeno.js";
 import type { CommandOptionValue } from "../../types/command.js";
-import type { DiscordBot } from "../../index.js";
+import type { DiscordBot } from "../../mod.js";
 
 import { handleError } from "../../moderation/error.js";
 import { ResponseError } from "../../types/error.js";
 import { EmbedColor } from "../../utils/response.js";
 
-import { COMMANDS } from "../../commands/index.js";
+import { COMMANDS } from "../../commands/mod.js";
 
 /** Global command cool-downs */
 const cooldowns: Collection<string, number> = new Collection();

@@ -1,6 +1,6 @@
 import { EmbedColor, MessageResponse } from "../utils/response.js";
 import { SUPPORT_INVITE } from "../../config.js";
-import { DiscordBot } from "../index.js";
+import { DiscordBot } from "../mod.js";
 
 interface HandleErrorOptions {
     error: Error | unknown;

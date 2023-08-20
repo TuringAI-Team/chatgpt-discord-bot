@@ -1,4 +1,4 @@
-import type { DiscordBot } from "../index.js";
+import type { DiscordBot } from "../mod.js";
 
 type Tail<T extends any[]> = T extends [any, ...infer U] ? U : never;
 
