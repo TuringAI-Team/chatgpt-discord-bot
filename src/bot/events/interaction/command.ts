@@ -36,7 +36,6 @@ export async function executeCommand(bot: DiscordBot, interaction: CustomInterac
 		}
 	}
 
-
 	const args: Record<string, CommandOptionValue> =
         parseCommandOptions(interaction);
 

@@ -1,13 +1,13 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-import type { DiscordGuild, DiscordReady, DiscordUnavailableGuild } from "discordeno";
+import { DiscordGuild, DiscordReady, DiscordUnavailableGuild } from "discordeno";
 import { parentPort, workerData } from "worker_threads";
 import { createLogger } from "discordeno/logger";
 import { createShardManager } from "discordeno";
-import amqplib from "amqplib";
+import RabbitMQ from "rabbitmq-client";
 
-import type { GatewayMessage, WorkerCreateData, WorkerMessage } from "./types/worker.js";
+import type { WorkerCreateData, WorkerMessage } from "./types/worker.js";
 import type { ManagerMessage } from "./types/manager.js";
 
 import { RABBITMQ_URI } from "../config.js";
@@ -17,11 +17,11 @@ if (!parentPort) throw new Error("Parent port is null");
 const parent = parentPort!;
 const data: WorkerCreateData = workerData;
 
-const log = createLogger({ name: `[WORKER #${data.workerID}]` });
-
+const logger = createLogger({ name: `[WORKER #${data.workerID}]` });
 const identifyPromises = new Map<number, () => void>();
 
-let channel: amqplib.Channel | undefined;
+const connection = new RabbitMQ.Connection(RABBITMQ_URI);
+const publisher = connection.createPublisher();
 
 /* Store loading guild & guild IDs to change GUILD_CREATE to GUILD_LOADED_DD, if needed. */
 const loadingGuilds: Set<bigint> = new Set();
@@ -42,7 +42,7 @@ const manager = createShardManager({
 		if (message.t === "READY") {
 			/* Marks which guilds the bot is in, when doing initial loading in cache. */
 			(message.d as DiscordReady).guilds.forEach((g) => loadingGuilds.add(BigInt(g.id)));
-			log.info(`Shard #${shard.id} is ready`);
+			logger.info(`Shard #${shard.id} is ready`);
 		}
 
 		// If GUILD_CREATE event came from a shard loaded event, change event to GUILD_LOADED_DD.
@@ -69,12 +69,8 @@ const manager = createShardManager({
 			guilds.delete(BigInt(guild.id));
 		}
 
-		if (!channel) return;
-
-		channel.publish("gateway", "", Buffer.from(JSON.stringify({
+		await publisher.send("gateway", {
 			shard: shard.id, data: message
-		} as GatewayMessage)), {
-			contentType: "application/json"
 		});
 	},
 
@@ -95,7 +91,7 @@ const manager = createShardManager({
 parent.on("message", async (data: WorkerMessage) => {
 	switch (data.type) {
 		case "IDENTIFY_SHARD": {
-			log.info(`Starting to identify #${data.shardID}`);
+			logger.info(`Starting to identify #${data.shardID}`);
 			await manager.identify(data.shardID);
 
 			break;
@@ -109,23 +105,3 @@ parent.on("message", async (data: WorkerMessage) => {
 		}
 	}
 });
-
-async function connectRabbitMQ() {
-	let connection: amqplib.Connection;
-
-	try {
-		connection = await amqplib.connect(RABBITMQ_URI);
-	} catch (error) {
-		log.error(error);
-		throw error;
-	}
-	try {
-		channel = await connection.createChannel();
-		await channel.assertExchange("gateway", "direct");
-	} catch (error) {
-		log.error(error);
-		channel = undefined;
-	}
-}
-
-await connectRabbitMQ();

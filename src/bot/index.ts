@@ -1,8 +1,8 @@
 const { enableHelpersPlugin } = await import("discordeno/helpers-plugin");
 import { type Bot, createBot } from "discordeno";
 import { createLogger } from "discordeno/logger";
+import RabbitMQ from "rabbitmq-client";
 import { createClient } from "redis";
-import amqplib from "amqplib";
 
 import { INTENTS, REST_URL, BOT_TOKEN, HTTP_AUTH, RABBITMQ_URI, REDIS_HOST, REDIS_PORT, REDIS_PASSWORD, REDIS_USER } from "../config.js";
 import { GatewayMessage } from "../gateway/types/worker.js";
@@ -10,6 +10,7 @@ import { GatewayMessage } from "../gateway/types/worker.js";
 import { setupTransformers } from "./transformers/index.js";
 import { registerCommands } from "./commands/index.js";
 import { setupEvents } from "./events/index.js";
+import { createDB } from "./db/index.js";
 
 /* Custom type of the Discordeno bot class, so we can add custom properties */
 export type DiscordBot<B extends Bot = Bot> = B & {
@@ -18,6 +19,9 @@ export type DiscordBot<B extends Bot = Bot> = B & {
 
 	/** Redis connection */
 	redis: ReturnType<typeof createClient>;
+
+	/** Database manager */
+	db: ReturnType<typeof createDB>;
 }
 
 async function createRedis() {
@@ -40,9 +44,18 @@ async function customizeBot<B extends Bot = Bot>(bot: B) {
 
 	customized.logger = createLogger({ name: "[BOT]" });
 	customized.redis = await createRedis();
+	customized.db = createDB();
 
 	return customized;
 }
+
+const connection = new RabbitMQ.Connection(RABBITMQ_URI);
+
+connection.createConsumer({
+	queue: "gateway"
+}, message => {
+	handleGatewayMessage(message.body);
+});
 
 export const bot = enableHelpersPlugin(
 	await customizeBot(
@@ -69,46 +82,9 @@ async function handleGatewayMessage({ data, shard }: GatewayMessage) {
 	}
 }
 
-async function connectRabbitMQ() {
-	let connection: amqplib.Connection;
-
-	try {
-		connection = await amqplib.connect(RABBITMQ_URI);
-	} catch (error) {
-		console.error(error);
-		throw error;
-	}
-
-	try {
-		const channel = await connection.createChannel();
-		await channel.assertExchange("gateway", "direct");
-
-		await channel.assertQueue("gatewayQueue");
-		await channel.bindQueue("gatewayQueue", "gateway", "");
-
-		await channel.consume(
-			"gatewayQueue",
-			async msg => {
-				if (msg === null) return;
-
-				const data = JSON.parse(msg.content.toString()) as GatewayMessage;
-				await handleGatewayMessage(data);
-
-				channel.ack(msg);
-			},
-
-			{ noAck: false }
-		);
-	} catch (error) {
-		console.error(error);
-	}
-}
-
 await registerCommands();
 
 setupTransformers();
 setupEvents();
-
-await connectRabbitMQ();
 
 bot.logger.info("Started.");

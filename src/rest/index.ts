@@ -7,7 +7,7 @@ import express from "express";
 
 import { BOT_TOKEN, REST_URL, REST_PORT, HTTP_AUTH } from "../config.js";
 
-const log = createLogger({ name: "[REST]" });
+const logger = createLogger({ name: "[REST]" });
 
 const rest = createRestManager({
 	token: BOT_TOKEN,
@@ -35,7 +35,7 @@ app.all("/*", async (req, res) => {
 			rest, req.method as RequestMethod, `${BASE_URL}${req.url}`, req.body
 		);
 
-		log.info(req.method, req.url);
+		logger.info(req.method, req.url);
 
 		if (result) res.status(200).json(result);
 		else res.status(204).json();
@@ -46,5 +46,5 @@ app.all("/*", async (req, res) => {
 });
 
 app.listen(REST_PORT, () => {
-	log.info("Started.");
+	logger.info("Started.");
 });

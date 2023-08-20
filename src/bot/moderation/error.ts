@@ -13,8 +13,8 @@ export async function handleError(bot: DiscordBot, { error }: HandleErrorOptions
 	return {
 		embeds: {
 			title: "Uh-oh... 😬",
-			description: "It seems like an error has occured. *The developers have been notified.*",
-			footer: { text: SUPPORT_INVITE },
+			description: "It seems like an error has occurred. *The developers have been notified.*",
+			footer: { text: SUPPORT_INVITE }, timestamp: Date.now(),
 			color: EmbedColor.Red
 		},
 
