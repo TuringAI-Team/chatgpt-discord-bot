@@ -2,7 +2,7 @@
 	"name": "turing",
 	"description": "The ultimate AI-powered Discord bot",
 	"version": "0.0.1",
-	"main": "index.js",
+	"main": "mod.js",
 	"type": "module",
 	"scripts": {
 		"build": "swc --delete-dir-on-start src --out-dir build",
@@ -10,26 +10,21 @@
 		"dev_gateway": "nodemon --watch src/gateway/ --exec \"npm run build && npm run gateway\"",
 		"dev_db": "nodemon --watch src/db/ --exec \"npm run build && npm run db\"",
 		"dev_bot": "nodemon --watch src/bot/ --exec \"npm run build && npm run bot\"",
-		"rest": "node build/rest/index.js",
-		"gateway": "node build/gateway/index.js",
-		"db": "node build/db/index.js",
-		"bot": "node build/bot/index.js"
+		"rest": "node build/rest/mod.js",
+		"gateway": "node build/gateway/mod.js",
+		"db": "node build/db/mod.js",
+		"bot": "node build/bot/mod.js"
 	},
 	"dependencies": {
-		"@koa/router": "^12.0.0",
 		"@supabase/supabase-js": "^2.32.0",
-		"colorette": "^2.0.19",
 		"discordeno": "^16.0.1",
 		"dotenv": "^16.0.3",
 		"express": "^4.18.2",
-		"fastify": "^4.10.2",
-		"nanoid": "^4.0.0",
 		"node-fetch": "^3.2.10",
 		"rabbitmq-client": "^4.2.1",
 		"redis": "^4.6.7",
 		"swc": "^1.0.11",
-		"turing.sh": "^0.0.1-beta.1",
-		"web-worker": "^1.2.0"
+		"turing.sh": "^0.0.1-beta.1"
 	},
 	"devDependencies": {
 		"@types/express": "^4.17.17",

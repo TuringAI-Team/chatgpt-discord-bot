@@ -19,7 +19,8 @@ export const SettingsCategories: SettingsCategory[] = [
 				name: "Partial messages",
 				description: "Whether chat messages by the bot should be shown while they're being generated",
 				emoji: "⏳", default: true,
-				type: SettingsOptionType.Boolean
+				type: SettingsOptionType.Boolean,
+				location: SettingsLocation.User
 			}
 
 			/* TODO: Add all other settings */
