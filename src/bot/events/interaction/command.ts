@@ -5,6 +5,7 @@ import type { CommandOptionValue } from "../../types/command.js";
 import type { DiscordBot } from "../../index.js";
 
 import { handleError } from "../../moderation/error.js";
+import { ResponseError } from "../../types/error.js";
 import { EmbedColor } from "../../utils/response.js";
 
 import { COMMANDS } from "../../commands/index.js";
@@ -36,14 +37,30 @@ export async function executeCommand(bot: DiscordBot, interaction: CustomInterac
 		}
 	}
 
-	const args: Record<string, CommandOptionValue> =
+	const env = await bot.db.env(interaction.user.id, interaction.guildId);
+
+	const options: Record<string, CommandOptionValue> =
         parseCommandOptions(interaction);
 
 	try {
-		const response = await command.handler(bot, interaction, args);
+		const response = await command.handler({
+			bot, interaction, options, env
+		});
+
 		if (response) await interaction.reply(response);
 
 	} catch (error) {
+		if (error instanceof ResponseError) {
+			return void await interaction.reply({
+				embeds: {
+					description: `${error.options.message} ${error.options.emoji}`,
+					color: error.options.color
+				},
+
+				ephemeral: true
+			});
+		}
+
 		await interaction.reply(
 			await handleError(bot, { error, guild: interaction.guildId })
 		);
@@ -61,7 +78,7 @@ function parseCommandOptions(interaction: CustomInteraction) {
 	return args;
 }
 
-function getCooldown(interaction: CustomInteraction) {
+export function getCooldown(interaction: CustomInteraction) {
 	const existing = cooldowns.get(cooldownKey(interaction)) ?? null;
 	if (!existing || existing < Date.now()) return null;
 
@@ -71,10 +88,10 @@ function getCooldown(interaction: CustomInteraction) {
 	};
 }
 
-function setCooldown(interaction: CustomInteraction, duration: number) {
+export function setCooldown(interaction: CustomInteraction, duration: number) {
 	cooldowns.set(cooldownKey(interaction), Date.now() + duration);
 }
 
-function cooldownKey(interaction: CustomInteraction) {
+export function cooldownKey(interaction: CustomInteraction) {
 	return `${interaction.user.id}-${interaction.data?.name}`;
 }

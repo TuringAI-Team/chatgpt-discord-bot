@@ -19,6 +19,15 @@ export default createTransformer("interaction", (bot, interaction) => {
 		}
 	});
 
+	Object.defineProperty(interaction, "update", {
+		value: function(response: MessageResponse) {
+			return bot.helpers.sendInteractionResponse(interaction.id, interaction.token, {
+				type: InteractionResponseTypes.UpdateMessage,
+				data: transformResponse<InteractionCallbackData>(response)
+			});
+		}
+	});
+
 	Object.defineProperty(interaction, "deleteReply", {
 		value: function() {
 			return bot.helpers.deleteOriginalInteractionResponse(interaction.token);

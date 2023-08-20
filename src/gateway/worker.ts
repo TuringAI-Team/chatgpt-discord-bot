@@ -8,7 +8,6 @@ import { createShardManager } from "discordeno";
 import RabbitMQ from "rabbitmq-client";
 
 import type { WorkerCreateData, WorkerMessage } from "./types/worker.js";
-import type { ManagerMessage } from "./types/manager.js";
 
 import { RABBITMQ_URI } from "../config.js";
 
@@ -42,7 +41,11 @@ const manager = createShardManager({
 		if (message.t === "READY") {
 			/* Marks which guilds the bot is in, when doing initial loading in cache. */
 			(message.d as DiscordReady).guilds.forEach((g) => loadingGuilds.add(BigInt(g.id)));
-			logger.info(`Shard #${shard.id} is ready`);
+			
+			parent.postMessage({
+				type: "READY",
+				shardID: shard.id
+			});
 		}
 
 		// If GUILD_CREATE event came from a shard loaded event, change event to GUILD_LOADED_DD.
@@ -78,12 +81,10 @@ const manager = createShardManager({
 		return await new Promise((resolve) => {
 			identifyPromises.set(id, resolve);
 
-			const identifyRequest: ManagerMessage = {
+			parent.postMessage({
 				type: "REQUEST_IDENTIFY",
 				shardID: id
-			};
-
-			parent.postMessage(identifyRequest);
+			});
 		});
 	}
 });
@@ -91,7 +92,7 @@ const manager = createShardManager({
 parent.on("message", async (data: WorkerMessage) => {
 	switch (data.type) {
 		case "IDENTIFY_SHARD": {
-			logger.info(`Starting to identify #${data.shardID}`);
+			logger.info(`Starting to identify shard #${data.shardID}`);
 			await manager.identify(data.shardID);
 
 			break;

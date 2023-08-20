@@ -1,9 +1,10 @@
 import type { ApplicationCommandOption, ApplicationCommandOptionTypes, ApplicationCommandTypes } from "discordeno";
 
+import type { RestrictionType } from "../utils/restriction.js";
+import type { DBEnvironment } from "../../db/types/index.js";
 import type { MessageResponse } from "../utils/response.js";
+import type { CustomInteraction } from "./discordeno.js";
 import type { DiscordBot } from "../index.js";
-
-import { CustomInteraction } from "./discordeno.js";
 
 export type CommandOption = Omit<ApplicationCommandOption, "name">
 export type CommandOptionWithName = ApplicationCommandOption
@@ -26,12 +27,22 @@ export interface CommandCooldown {
     time: number;
 }
 
+interface CommandHandlerOptions<T extends Record<string, CommandOption>> {
+	bot: DiscordBot;
+	interaction: CustomInteraction;
+	options: Record<keyof T, CommandOptionValue>;
+	env: DBEnvironment;
+}
+
 export interface Command<T extends Record<string, CommandOption> = Record<string, CommandOption>> {
     /** Name of the command */
     name: string;
 
     /** Description of the command */
     description: string;
+
+	/** Restrictions of the command */
+	restrictions?: RestrictionType[];
 
     /** Type of the command */
     type?: ApplicationCommandTypes;
@@ -44,6 +55,6 @@ export interface Command<T extends Record<string, CommandOption> = Record<string
 
     /** Handler of the command */
     handler: (
-        bot: DiscordBot, interaction: CustomInteraction, options: Record<keyof T, CommandOptionValue>
+        options: CommandHandlerOptions<T>
     ) => Promise<MessageResponse | void> | MessageResponse | void;
 }

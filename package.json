@@ -28,6 +28,7 @@
 		"rabbitmq-client": "^4.2.1",
 		"redis": "^4.6.7",
 		"swc": "^1.0.11",
+		"turing.sh": "^0.0.1-beta.1",
 		"web-worker": "^1.2.0"
 	},
 	"devDependencies": {

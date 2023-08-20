@@ -8,8 +8,11 @@ export interface CustomInteraction extends Interaction {
 	/** Send a reply to an interaction. */
 	reply: (response: MessageResponse) => Promise<Message>;
 
-	/** Edit a deferred reply of an interaction. */
+	/** Edit the original reply to an interaction. */
 	editReply: (response: MessageResponse) => Promise<Message>;
+
+	/** Update the original reply to an interaction. */
+	update: (response: MessageResponse) => Promise<Message>;
 
 	/** Delete the original reply to the interaction. */
 	deleteReply: () => void;

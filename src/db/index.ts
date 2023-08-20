@@ -4,9 +4,10 @@ import { createLogger } from "discordeno/logger";
 import RabbitMQ from "rabbitmq-client";
 
 import { DB_KEY, DB_QUEUE_INTERVAL, DB_URL, RABBITMQ_URI, REDIS_HOST, REDIS_PASSWORD, REDIS_PORT, REDIS_USER } from "../config.js";
-import { CollectionName, CollectionNames, DBObject, DBRequestData } from "./types/index.js";
-import { DBGuild } from "./types/guild.js";
-import { DBUser } from "./types/user.js";
+import { type CollectionName, CollectionNames, type DBObject, type DBRequestData } from "./types/index.js";
+import type { Conversation } from "../bot/chat/types/conversation.js";
+import type { DBGuild } from "./types/guild.js";
+import type { DBUser } from "./types/user.js";
 
 const logger = createLogger({ name: "[DB]" });
 
@@ -16,7 +17,8 @@ const logger = createLogger({ name: "[DB]" });
  */
 const CollectionNameMap: Record<CollectionName, string> = {
 	guilds: "guilds_new",
-	users: "users_new"
+	users: "users_new",
+	conversations: "convos"
 };
 
 /** Collection templates */
@@ -36,7 +38,11 @@ const CollectionTemplates: Record<CollectionName, (id: string) => DBObject> = {
 		subscription: null, plan: null,
 		settings: {}, metadata: {},
 		infractions: [], roles: []
-	}) as DBUser)
+	}) as DBUser),
+
+	conversations: id => (({
+		id, history: []
+	}) as Conversation)
 };
 
 /** Update queue */
@@ -74,16 +80,18 @@ async function getCache<T>(key: string): Promise<T | null> {
 	else return null;
 }
 
-async function setCache(key: string, data: any) {
-	await redis.set(key, JSON.stringify(data)) ?? null;
+async function setCache<T>(key: string, data: T) {
+	await redis.set(key, JSON.stringify(data), {
+		EX: 30 * 60
+	});
 }
 
 function collectionKey(collection: CollectionName, id: string) {
-	return `${collection}-${id}`;
+	return `${collection}::${id}`;
 }
 
 async function update<T extends DBObject = DBObject>(
-	collection: CollectionName, obj: string | DBObject, updates: Record<string, any>
+	collection: CollectionName, obj: string | DBObject, updates: Partial<DBObject>
 ) {
 	const id: string = typeof obj === "string" ? obj : obj.id;
 
@@ -91,14 +99,17 @@ async function update<T extends DBObject = DBObject>(
 	let updated: T;
 
 	if (typeof obj === "string") {
-		updated = { ...queued, ...updates as T };
+		const cached: T = (await getCache(collectionKey(collection, id)))!;
+		updated = { ...cached, ...queued, ...updates as T };
 	} else {
 		updated = { ...obj, ...queued, ...updates as T };
 	}
 
-	queue[collection][id] = updated;
-	await setCache(collectionKey(collection, id), updated);
+	queue[collection][id] = {
+		id, ...updates
+	} as DBObject;
 
+	await setCache(collectionKey(collection, id), updated);
 	return updated;
 }
 
@@ -112,6 +123,7 @@ async function get<T extends DBObject = DBObject>(collection: CollectionName, id
 
 	if (data === null || data.length === 0) return null;
 	const entry = data[0];
+
 
 	await setCache(collectionKey(collection, id), entry);
 	return entry as T;

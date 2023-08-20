@@ -1,4 +1,7 @@
 export interface Conversation {
+	/** ID of the conversation */
+	id: string;
+
 	/** Messages in the history */
 	history: ConversationMessage[];
 }

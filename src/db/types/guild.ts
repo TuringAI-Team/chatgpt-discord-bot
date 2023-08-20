@@ -1,5 +1,6 @@
-import { DBPlan, DBSubscription } from "./premium.js";
-import { DBInfraction } from "./moderation.js";
+import type { DBSettings } from "../../bot/types/settings.js";
+import type { DBPlan, DBSubscription } from "./premium.js";
+import type { DBInfraction } from "./moderation.js";
 
 export interface DBGuild {
 	/** ID of the guild */
@@ -18,7 +19,7 @@ export interface DBGuild {
 	plan: DBPlan | null;
 
 	/** The guild's configured settings */
-	settings: Record<string, any>;
+	settings: DBSettings;
 
     /* The guild's metadata */
     metadata: Record<string, any>;

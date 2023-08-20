@@ -1,5 +1,5 @@
 const { enableHelpersPlugin } = await import("discordeno/helpers-plugin");
-import { type Bot, createBot } from "discordeno";
+import { type Bot, createBot, createRestManager } from "discordeno";
 import { createLogger } from "discordeno/logger";
 import RabbitMQ from "rabbitmq-client";
 import { createClient } from "redis";
@@ -8,9 +8,11 @@ import { INTENTS, REST_URL, BOT_TOKEN, HTTP_AUTH, RABBITMQ_URI, REDIS_HOST, REDI
 import { GatewayMessage } from "../gateway/types/worker.js";
 
 import { setupTransformers } from "./transformers/index.js";
+import { createModeration } from "./moderation/index.js";
 import { registerCommands } from "./commands/index.js";
 import { setupEvents } from "./events/index.js";
-import { createDB } from "./db/index.js";
+import { createAPI } from "./api.js";
+import { createDB } from "./db.js";
 
 /* Custom type of the Discordeno bot class, so we can add custom properties */
 export type DiscordBot<B extends Bot = Bot> = B & {
@@ -22,6 +24,12 @@ export type DiscordBot<B extends Bot = Bot> = B & {
 
 	/** Database manager */
 	db: ReturnType<typeof createDB>;
+
+	/** Moderation manager */
+	moderation: ReturnType<typeof createModeration>;
+
+	/** Turing API */
+	api: ReturnType<typeof createAPI>;
 }
 
 async function createRedis() {
@@ -45,9 +53,26 @@ async function customizeBot<B extends Bot = Bot>(bot: B) {
 	customized.logger = createLogger({ name: "[BOT]" });
 	customized.redis = await createRedis();
 	customized.db = createDB();
+	customized.moderation = createModeration();
+	customized.api = createAPI();
 
 	return customized;
 }
+
+export const bot = enableHelpersPlugin(
+	await customizeBot(
+		createBot({
+			token: BOT_TOKEN,
+			intents: INTENTS
+		})
+	)
+);
+
+bot.rest = createRestManager({
+	secretKey: HTTP_AUTH,
+	customUrl: REST_URL,
+	token: BOT_TOKEN
+});
 
 const connection = new RabbitMQ.Connection(RABBITMQ_URI);
 
@@ -56,20 +81,6 @@ connection.createConsumer({
 }, message => {
 	handleGatewayMessage(message.body);
 });
-
-export const bot = enableHelpersPlugin(
-	await customizeBot(
-		createBot({
-			token: BOT_TOKEN,
-			intents: INTENTS,
-			
-			rest: {
-				secretKey: HTTP_AUTH,
-				customUrl: REST_URL
-			}
-		})
-	)
-);
 
 async function handleGatewayMessage({ data, shard }: GatewayMessage) {
 	if (data.t && data.t !== "RESUMED") {

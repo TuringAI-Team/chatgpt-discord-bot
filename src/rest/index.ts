@@ -15,6 +15,19 @@ const rest = createRestManager({
 	customUrl: REST_URL
 });
 
+interface RESTError {
+	ok: boolean;
+	status: number;
+	error: string;
+	body: string;
+}
+
+// @ts-expect-error Missing property
+rest.convertRestError = (errorStack, data) => {
+	if (!data) return { message: errorStack.message };
+	return { ...data, message: errorStack.message };
+};
+
 const app = express();
 
 app.use(
@@ -40,8 +53,11 @@ app.all("/*", async (req, res) => {
 		if (result) res.status(200).json(result);
 		else res.status(204).json();
 
-	} catch (error) {
-		res.status(500).json(error);
+	} catch (err) {
+		const error = err as RESTError;
+
+		logger.error(req.method, req.url, `status code ${error.status} ->`, error.error);
+		res.status(error.status).json(error);
 	}
 });
 

@@ -44,13 +44,11 @@ const gateway = createGatewayManager({
 			workers.set(workerID, worker);
 		}
 
-		const identify: WorkerMessage = {
+		worker.postMessage({
 			type: "IDENTIFY_SHARD",
 			shardID
-		};
-
-		worker.postMessage(identify);
-	},
+		});
+	}
 });
 
 function createWorker(id: number) {
@@ -80,6 +78,10 @@ function createWorker(id: number) {
 
 				worker.postMessage(allowIdentify);
 				break;
+			}
+
+			case "READY": {
+				logger.info(`Shard #${data.shardID} is ready`);
 			}
 		}
 	});

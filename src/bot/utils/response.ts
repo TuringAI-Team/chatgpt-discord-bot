@@ -1,4 +1,4 @@
-import { ApplicationCommandFlags, type CreateMessage, type EditMessage, type Embed, type InteractionCallbackData } from "discordeno";
+import { ActionRow, ApplicationCommandFlags, type CreateMessage, type EditMessage, type Embed, type InteractionCallbackData } from "discordeno";
 import type { CustomMessage } from "../types/discordeno.js";
 
 export interface MessageResponse {
@@ -7,6 +7,9 @@ export interface MessageResponse {
 
     /** Embeds of the response */
     embeds?: Embed | Embed[];
+
+	/** Components of the message */
+	components?: ActionRow[];
 
     /** Whether the response should only be shown to the author */
     ephemeral?: boolean;
@@ -62,6 +65,8 @@ export function transformResponse<T extends (CreateMessage | EditMessage | Inter
 			: undefined,
 
 		flags: response.ephemeral ? ApplicationCommandFlags.Ephemeral : undefined,
+
+		components: response.components,
 
 		messageReference: response.reference ? {
 			failIfNotExists: false,

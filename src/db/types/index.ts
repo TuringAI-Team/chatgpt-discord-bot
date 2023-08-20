@@ -1,13 +1,20 @@
-import { type DBUser } from "./user.js";
+import type { Conversation } from "../../bot/chat/types/conversation.js";
+import type { DBGuild } from "./guild.js";
+import type { DBUser } from "./user.js";
 
-export type CollectionName = "users" | "guilds";
-export const CollectionNames: CollectionName[] = [ "users", "guilds" ];
+export type CollectionName = "users" | "guilds" | "conversations";
+export const CollectionNames: CollectionName[] = [ "users", "guilds", "conversations" ];
 
-export type DBType = DBUser;
+export type DBType = DBUser | DBGuild | Conversation;
 
 export type DBObject = {
 	id: string;
 } & Record<string, any>
+
+export interface DBEnvironment {
+	user: DBUser;
+	guild: DBGuild | null;
+}
 
 export type DBRequestType = "get" | "fetch" | "update" | "delete"
 
