@@ -15,6 +15,10 @@ export const SHARDS_PER_WORKER = Number(process.env.SHARDS_PER_WORKER!);
 export const REST_URL = `${process.env.REST_HOST}:${process.env.REST_PORT}`;
 export const REST_PORT = process.env.REST_PORT!;
 
+/** Gateway HTTP server */
+export const GATEWAY_URL = `${process.env.GATEWAY_HOST}:${process.env.GATEWAY_PORT}`;
+export const GATEWAY_PORT = process.env.GATEWAY_PORT!;
+
 /** Authentication for the HTTP services */
 export const HTTP_AUTH = process.env.HTTP_AUTH!;
 

@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-import { DiscordGuild, DiscordReady, DiscordUnavailableGuild } from "discordeno";
+import { ActivityTypes, DiscordGuild, DiscordReady, DiscordUnavailableGuild } from "discordeno";
 import { parentPort, workerData } from "worker_threads";
 import { createLogger } from "discordeno/logger";
 import { createShardManager } from "discordeno";
@@ -34,6 +34,20 @@ const manager = createShardManager({
 
 	totalShards: data.totalShards,
 	shardIds: [],
+
+	createShardOptions: {
+		makePresence: () => ({
+			status: "online",
+
+			activities: [
+				{
+					type: ActivityTypes.Game,
+					name: ".gg/turing » @ChatGPT",
+					createdAt: Date.now()
+				}
+			]
+		})
+	},
 
 	handleMessage: async (shard, message) => {
 		if (!message.t) return;
@@ -72,9 +86,18 @@ const manager = createShardManager({
 			guilds.delete(BigInt(guild.id));
 		}
 
-		await publisher.send("gateway", {
-			shard: shard.id, data: message
-		});
+		switch (message.t) {
+			case "MESSAGE_CREATE":
+			case "INTERACTION_CREATE":
+				await publisher.send("gateway", {
+					shard: shard.id, data: message
+				});
+
+				break;
+
+			default:
+				break;
+		}
 	},
 
 	requestIdentify: async function (id: number) {

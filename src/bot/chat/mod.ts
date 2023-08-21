@@ -77,7 +77,7 @@ export async function handleMessage(bot: DiscordBot, message: CustomMessage) {
 					}))
 				);
 			}
-		} catch (_) {
+		} catch {
 			/* Stub */
 		}
 	};

@@ -4,13 +4,24 @@ dotenv.config();
 import { Collection, createBot, createGatewayManager, createRestManager } from "discordeno";
 import { createLogger } from "discordeno/logger";
 import { Worker } from "worker_threads";
+import express from "express";
 
-import { BOT_TOKEN, INTENTS, HTTP_AUTH, REST_URL, SHARDS_PER_WORKER, TOTAL_WORKERS } from "../config.js";
-import type { WorkerCreateData, WorkerMessage } from "./types/worker.js";
-import { ManagerMessage } from "./types/manager.js";
+import { BOT_TOKEN, INTENTS, HTTP_AUTH, REST_URL, SHARDS_PER_WORKER, TOTAL_WORKERS, GATEWAY_PORT } from "../config.js";
+import { ManagerHTTPRequest, ManagerMessage } from "./types/manager.js";
+import type { WorkerCreateData } from "./types/worker.js";
 
 const logger = createLogger({ name: "[MANAGER]" });
 const workers = new Collection<number, Worker>();
+
+const app = express();
+
+app.use(
+	express.urlencoded({
+		extended: true
+	})
+);
+
+app.use(express.json());
 
 const bot = createBot({
 	token: BOT_TOKEN
@@ -71,17 +82,17 @@ function createWorker(id: number) {
 				logger.info(`Requesting to identify shard #${data.shardID}`);
 				await gateway.manager.requestIdentify(data.shardID);
 
-				const allowIdentify: WorkerMessage = {
+				worker.postMessage({
 					type: "ALLOW_IDENTIFY",
 					shardID: data.shardID
-				};
+				});
 
-				worker.postMessage(allowIdentify);
 				break;
 			}
 
 			case "READY": {
 				logger.info(`Shard #${data.shardID} is ready`);
+				break;
 			}
 		}
 	});
@@ -90,3 +101,33 @@ function createWorker(id: number) {
 }
 
 gateway.spawnShards();
+
+app.all("/*", async (req, res) => {
+	if (HTTP_AUTH !== req.headers.authorization) {
+		return res.status(401).json({ error: "Invalid authorization" });
+	}
+
+	try {
+		const data = req.body as ManagerHTTPRequest;
+
+		switch (data.type) {
+			case "SHARD_PAYLOAD": {
+				for (const worker of workers.values()) {
+					worker.postMessage(data);
+				}
+				
+				break;
+			}
+		}
+
+		return res.status(200).json({ processing: true });
+	} catch (error) {
+		return res.status(500).json({
+			processing: false, error: (error as Error).toString()
+		});
+	}
+});
+
+app.listen(GATEWAY_PORT, () => {
+	logger.info("Started HTTP server.");
+});
