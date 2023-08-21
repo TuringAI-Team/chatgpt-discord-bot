@@ -20,7 +20,7 @@ export interface ChatTone {
 	restrictions?: RestrictionType[];
 
 	/** Messages for the tone */
-	messages?: ConversationMessage[];
+	prompt?: ConversationMessage;
 }
 
 export const TONES: ChatTone[] = [

@@ -2,8 +2,8 @@ import { ApplicationCommandOptionTypes, calculatePermissions } from "discordeno"
 
 import { SettingsCategories, buildSettingsPage, whichEntry } from "../settings.js";
 import { SettingsLocation } from "../types/settings.js";
+import { ResponseError } from "../error/response.js";
 import { createCommand } from "../helpers/command.js";
-import { ResponseError } from "../types/error.js";
 
 export default createCommand({
 	name: "settings",

@@ -1,6 +1,6 @@
 import EventEmitter from "events";
 
-import type { Conversation, ConversationMessage, ConversationResult, ConversationUserMessage } from "../../types/conversation.js";
+import type { ConversationMessage, ConversationResult, ConversationUserMessage } from "../../types/conversation.js";
 import type { DiscordComponentEmoji } from "../../types/discordeno.js";
 import type { RestrictionType } from "../../utils/restriction.js";
 import type { DBEnvironment } from "../../../db/types/mod.js";
@@ -61,7 +61,7 @@ export interface ChatModel {
 	restrictions?: RestrictionType[];
 
 	/* Initial instructions to pass to the request */
-	initialPrompt?: ConversationMessage[];
+	initialPrompt?: ConversationMessage;
 
 	/** Limits of the model, in terms of tokens */
 	maxTokens: number;
@@ -73,7 +73,6 @@ export interface ChatModel {
 interface ChatModelHandlerOptions {
 	bot: DiscordBot;
 	env: DBEnvironment;
-	conversation: Conversation;
 	history: HistoryData;
 	input: ConversationUserMessage;
 	emitter: ChatEmitter;

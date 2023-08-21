@@ -1,4 +1,4 @@
-import { EmbedColor } from "../utils/response.js";
+import { EmbedColor, MessageResponse } from "../utils/response.js";
 
 interface ResponseErrorOptions {
 	/** Which message to display */
@@ -20,6 +20,17 @@ export class ResponseError extends Error {
 		this.options = {
 			color: EmbedColor.Red, emoji: "❌",
 			...options
+		};
+	}
+
+	public display(): MessageResponse {
+		return {
+			embeds: {
+				description: `${this.options.message} ${this.options.emoji}`,
+				color: this.options.color
+			},
+
+			ephemeral: true
 		};
 	}
 }

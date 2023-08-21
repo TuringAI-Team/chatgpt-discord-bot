@@ -4,7 +4,7 @@ import { CollectionName, DBEnvironment, DBObject, DBRequestData, DBRequestType, 
 import { RABBITMQ_URI } from "../config.js";
 
 import type { DBGuild } from "../db/types/guild.js";
-import { DBRole, DBUser } from "../db/types/user.js";
+import { DBRole, DBUser, DBUserType } from "../db/types/user.js";
 
 import { getSettingsValue } from "./settings.js";
 
@@ -85,8 +85,21 @@ export function createDB() {
 		return Date.parse(user.voted);
 	};
 
+	const types = (env: DBEnvironment): DBUserType[] => {
+		const types: DBUserType[] = [];
+		const p = premium(env);
+
+		if (p) {
+			if (p.type === "subscription") types.push(DBUserType.PremiumSubscription);
+			else if (p.type === "plan") types.push(DBUserType.PremiumPlan);
+		}
+
+		types.push(DBUserType.User);
+		return types;
+	};
+
 	return { 
-		rpc, execute, get, fetch, update, premium, voted,
+		rpc, execute, get, fetch, update, premium, voted, types,
 
 		env: async (user: bigint, guild?: bigint): Promise<DBEnvironment> => {
 			const data: Partial<DBEnvironment> = {};
@@ -109,6 +122,10 @@ export function createDB() {
 			]);
 
 			return data as DBEnvironment;
+		},
+
+		type: (env: DBEnvironment): DBUserType => {
+			return types(env)[0];
 		},
 
 		icon: (env: DBEnvironment) => {

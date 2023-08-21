@@ -18,6 +18,7 @@
 	"dependencies": {
 		"@dqbd/tiktoken": "^1.0.7",
 		"@supabase/supabase-js": "^2.32.0",
+		"colorette": "^2.0.20",
 		"discordeno": "^16.0.1",
 		"dotenv": "^16.0.3",
 		"express": "^4.18.2",

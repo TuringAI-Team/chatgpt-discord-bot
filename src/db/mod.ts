@@ -2,6 +2,7 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { createClient as createRedisClient } from "redis";
 import { createLogger } from "discordeno/logger";
 import RabbitMQ from "rabbitmq-client";
+import { bold } from "colorette";
 
 import { DB_KEY, DB_QUEUE_INTERVAL, DB_URL, RABBITMQ_URI, REDIS_HOST, REDIS_PASSWORD, REDIS_PORT, REDIS_USER } from "../config.js";
 import { type CollectionName, CollectionNames, type DBObject, type DBRequestData } from "./types/mod.js";
@@ -184,7 +185,7 @@ async function workOnQueue() {
 				.upsert(entry, { onConflict: "id" });
 
 			if (error !== null) {
-				logger.error(`Failed to to save '${id}' to collection '${type}' ->`, error);
+				logger.error(`Failed to to save ${bold(id)} to collection ${bold(type)} ->`, error);
 			} else if (error === null) {
 				delete queue[type][id];
 			}

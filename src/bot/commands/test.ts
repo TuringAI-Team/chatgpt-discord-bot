@@ -1,9 +1,12 @@
-import { DBUser } from "../../db/types/user.js";
+import { RestrictionType } from "../utils/restriction.js";
 import { createCommand } from "../helpers/command.js";
+import { DBUser } from "../../db/types/user.js";
 
 export default createCommand({
 	name: "test",
 	description: "Testing command",
+
+	restrictions: [ RestrictionType.Developer ],
 
 	cooldown: {
 		time: 5 * 1000

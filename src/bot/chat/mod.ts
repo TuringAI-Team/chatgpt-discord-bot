@@ -11,12 +11,12 @@ import type { DBEnvironment } from "../../db/types/mod.js";
 
 import { getLoadingIndicatorFromUser, loadingIndicatorToString } from "../../db/types/user.js";
 import { ChatEmitter, MODELS, type ChatModel, type ChatModelResult } from "./models/mod.js";
+import { SettingsLocation } from "../types/settings.js";
+import { ResponseError } from "../error/response.js";
 import { TONES, type ChatTone } from "./tones/mod.js";
 import { handleError } from "../moderation/error.js";
-import { ResponseError } from "../types/error.js";
-import { buildHistory } from "./history.js";
 import { getSettingsValue } from "../settings.js";
-import { SettingsLocation } from "../types/settings.js";
+import { buildHistory } from "./history.js";
 
 interface ExecuteOptions {
 	bot: DiscordBot;
@@ -53,7 +53,7 @@ export async function handleMessage(bot: DiscordBot, message: CustomMessage) {
 
 	/* Input, to pass to the AI model */
 	const input: ConversationUserMessage = {
-		author: "user", content: message.content
+		author: "user", content: clean(bot, message)
 	};
 
 	/* ID of the message to edit, if applicable */
@@ -82,7 +82,9 @@ export async function handleMessage(bot: DiscordBot, message: CustomMessage) {
 		}
 	};
 
-	emitter.on(handler);
+	/* Whether partial messages should be enabled */
+	const partial = getSettingsValue<boolean>(env.user, "chat:partial_messages");
+	if (partial) emitter.on(handler);
 
 	/* Start the generation process. */
 	try {
@@ -127,11 +129,14 @@ export async function handleMessage(bot: DiscordBot, message: CustomMessage) {
 
 		runningGenerations.delete(message.authorId);
 	}
+
+	/** Apply all updates to the conversation's history. */
+	await bot.db.update("conversations", conversation.id, conversation);
 }
 
 /** Execute the chat request, on the specified model. */
 async function execute(options: ExecuteOptions): Promise<ConversationResult> {
-	const { bot, conversation, env, input } = options;
+	const { bot, env, input } = options;
 	const id = randomUUID();
 
 	/* Build the chat history for the model. */
@@ -146,13 +151,18 @@ async function execute(options: ExecuteOptions): Promise<ConversationResult> {
 
 	/* Execute the model generation handler. */
 	options.model.handler({
-		bot, conversation, env, input, history, emitter
+		bot, env, input, history, emitter
 	});
 
 	/* Wait for the generation to finish, or throw an error when it times out. */
 	const result = formatResult(
 		await emitter.wait(), id
 	);
+
+	/* Add the generated response to the user's history. */
+	options.conversation.history.push({
+		id, input, output: result.message
+	});
 
 	return result;
 }
@@ -221,6 +231,16 @@ function getTone(env: DBEnvironment) {
 	return TONES.find(t => t.id === id) ?? TONES[0];
 }
 
+/** Check whether the specified message pinged the bot. */
 function mentions(bot: DiscordBot, message: CustomMessage) {
 	return message.mentionedUserIds.includes(bot.id);
+}
+
+/** Remove all bot & user mentions from the specified message. */
+function clean(bot: DiscordBot, message: CustomMessage) {
+	for (const id of message.mentionedUserIds) {
+		message.content = message.content.replaceAll(`<@${id}>`, "").trim();
+	}
+
+	return message.content.trim();
 }

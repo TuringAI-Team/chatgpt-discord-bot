@@ -37,6 +37,13 @@ export interface DBUser {
     roles: DBRole[];
 }
 
+export enum DBUserType {
+	PremiumSubscription = "subscription",
+	PremiumPlan = "plan",
+	Voter = "voter",
+	User = "user"
+}
+
 export enum DBRole {
 	Owner = "owner",
 	Moderator = "moderator",

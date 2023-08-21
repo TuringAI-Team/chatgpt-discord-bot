@@ -7,6 +7,8 @@ import type { ChatModel } from "./models/mod.js";
 import type { ChatTone } from "./tones/mod.js";
 import type { DiscordBot } from "../mod.js";
 
+import { ChatError, ChatErrorType } from "../error/chat.js";
+
 interface BuildHistoryOptions {
 	bot: DiscordBot;
 	conversation: Conversation;
@@ -20,38 +22,76 @@ export interface HistoryData {
 	/** Maximum amount of tokens to generate */
 	maxTokens: number;
 
+	/** Amount of tokens used for the history */
+	usedTokens: number;
+
 	/** Messages in the history */
 	messages: ConversationMessage[];
 }
 
 const MAX_LENGTH = {
 	Context: {
-		free: 700,
+		user: 700,
 		voter: 750,
 		subscription: 950,
 		plan: 1000
 	},
 
 	Generation: {
-		free: 350,
+		user: 350,
 		voter: 400,
 		subscription: 650,
 		plan: 1000
 	}
 };
 
-export function buildHistory(_: BuildHistoryOptions): HistoryData {
+export function buildHistory({ bot, env, model, tone, conversation, input }: BuildHistoryOptions): HistoryData {
 	let messages: ConversationMessage[] = [];
 	let tokens = 0;
 
+	const type = bot.db.type(env);
+	
+	/** TODO: Limits for pay-as-you-go members */
+	let maxGenerationLength = Math.min(MAX_LENGTH.Generation[type], model.maxTokens);
+	const maxContextLength = Math.min(MAX_LENGTH.Context[type], model.maxTokens);
+
+	if (getChatMessageLength(input) > maxContextLength) throw new ChatError(
+		ChatErrorType.Length
+	);
+
 	do {
 		if (messages.length > 0) messages = [];
+
+		/* Add the model's and tone's initial prompts to the history. */
+		if (model.initialPrompt) messages.push(model.initialPrompt);
+		if (tone.prompt) messages.push(tone.prompt);
+
+		/** Add the conversation's history. */
+		for (const entry of conversation.history) {
+			messages.push(
+				{ author: "user", content: entry.input.content },
+				{ author: "assistant", content: entry.output.content }
+			);
+		}
+
+		/* Add the user's request. */
+		messages.push(input);
+
+		/* Tokens used for the initial prompt */
+		tokens = getChatMessageLength(...messages);
+
+		if (maxContextLength - tokens <= 0) conversation.history.shift();
+		else break;
 		
 		/* Get the initial prompt. */
-	} while (tokens > 0);
+	} while (maxContextLength - tokens <= 0);
+
+	maxGenerationLength = Math.min(
+		model.maxTokens - tokens, maxGenerationLength
+	);
 
 	return {
-		maxTokens: 0, messages
+		maxTokens: maxGenerationLength, usedTokens: tokens, messages
 	};
 }
 

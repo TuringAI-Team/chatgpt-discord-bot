@@ -8,12 +8,10 @@ export default createChatModel({
 
 	maxTokens: 8191,
 
-	initialPrompt: [
-		{
-			author: "system",
-			content: "You are ChatGPT, an AI language model created by OpenAI."
-		}
-	],
+	initialPrompt: {
+		author: "system",
+		content: "You are ChatGPT, an AI language model created by OpenAI."
+	},
 
 	handler: async ({ bot, emitter, history }) => {
 		const event: EventEmitter = await bot.api.text.gpt({

@@ -1,22 +1,23 @@
 import { setTimeout } from "timers/promises";
-import { createChatModel } from "../../helpers/chat.js";
+
 import { RestrictionType } from "../../utils/restriction.js";
+import { createChatModel } from "../../helpers/chat.js";
 
 export default createChatModel({
 	name: "Dummy", description: "Testing model",
 	emoji: "⚠️", id: "dummy",
 
+	initialPrompt: {
+		author: "system",
+		content: "You are ChatGPT, an AI language model created by OpenAI."
+	},
+
 	restrictions: [ RestrictionType.Developer ],
 	maxTokens: 8191,
 
-	initialPrompt: [
-		{
-			author: "system",
-			content: "You are ChatGPT, an AI language model created by OpenAI."
-		}
-	],
+	handler: async ({ emitter, history }) => {
+		console.log(history);
 
-	handler: async ({ emitter }) => {
 		emitter.emit({
 			content: "not done", done: false
 		});

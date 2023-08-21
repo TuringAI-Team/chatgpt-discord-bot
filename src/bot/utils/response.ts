@@ -1,5 +1,7 @@
-import { ActionRow, ApplicationCommandFlags, type CreateMessage, type EditMessage, type Embed, type InteractionCallbackData } from "discordeno";
+import type { ActionRow, FileContent, CreateMessage, EditMessage, Embed, InteractionCallbackData } from "discordeno";
 import type { CustomMessage } from "../types/discordeno.js";
+
+import { ApplicationCommandFlags } from "discordeno";
 
 export interface MessageResponse {
     /** Content of the response */
@@ -10,6 +12,9 @@ export interface MessageResponse {
 
 	/** Components of the message */
 	components?: ActionRow[];
+
+	/** Which file to upload */
+	file?: FileContent;
 
     /** Whether the response should only be shown to the author */
     ephemeral?: boolean;
@@ -65,8 +70,8 @@ export function transformResponse<T extends (CreateMessage | EditMessage | Inter
 			: undefined,
 
 		flags: response.ephemeral ? ApplicationCommandFlags.Ephemeral : undefined,
-
 		components: response.components,
+		file: response.file,
 
 		messageReference: response.reference ? {
 			failIfNotExists: false,

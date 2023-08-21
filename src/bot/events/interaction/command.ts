@@ -5,7 +5,7 @@ import type { CommandOptionValue } from "../../types/command.js";
 import type { DiscordBot } from "../../mod.js";
 
 import { handleError } from "../../moderation/error.js";
-import { ResponseError } from "../../types/error.js";
+import { ResponseError } from "../../error/response.js";
 import { EmbedColor } from "../../utils/response.js";
 
 import { COMMANDS } from "../../commands/mod.js";
@@ -51,14 +51,9 @@ export async function executeCommand(bot: DiscordBot, interaction: CustomInterac
 
 	} catch (error) {
 		if (error instanceof ResponseError) {
-			return void await interaction.reply({
-				embeds: {
-					description: `${error.options.message} ${error.options.emoji}`,
-					color: error.options.color
-				},
-
-				ephemeral: true
-			});
+			return void await interaction.reply(
+				error.display()
+			);
 		}
 
 		await interaction.reply(
