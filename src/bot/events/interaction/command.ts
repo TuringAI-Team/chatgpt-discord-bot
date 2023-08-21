@@ -26,7 +26,7 @@ export async function executeCommand(bot: DiscordBot, interaction: CustomInterac
 			return void await interaction.reply({
 				embeds: {
 					title: "Whoa-whoa... slow down ⏳",
-					description: `This command is currently on cool-down. You can execute it again <t:${Math.floor(cooldown.when / 1000)}:R>.`,
+					description: `This command is currently on cool-down. You can use it again <t:${Math.floor(cooldown.when / 1000)}:R>.`,
 					color: EmbedColor.Yellow
 				},
 

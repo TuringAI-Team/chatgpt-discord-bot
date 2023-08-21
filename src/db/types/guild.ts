@@ -21,6 +21,6 @@ export interface DBGuild {
 	/** The guild's configured settings */
 	settings: DBSettings;
 
-    /* The guild's metadata */
+    /** The guild's metadata */
     metadata: Record<string, any>;
 }

@@ -1,4 +1,4 @@
-import type { Conversation } from "../../bot/chat/types/conversation.js";
+import type { Conversation } from "../../bot/types/conversation.js";
 import type { DBGuild } from "./guild.js";
 import type { DBUser } from "./user.js";
 

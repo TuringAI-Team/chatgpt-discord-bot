@@ -16,6 +16,7 @@
 		"bot": "node build/bot/mod.js"
 	},
 	"dependencies": {
+		"@dqbd/tiktoken": "^1.0.7",
 		"@supabase/supabase-js": "^2.32.0",
 		"discordeno": "^16.0.1",
 		"dotenv": "^16.0.3",

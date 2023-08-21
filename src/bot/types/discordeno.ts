@@ -18,7 +18,27 @@ export interface CustomInteraction extends Interaction {
 	deleteReply: () => void;
 }
 
-export interface CustomMessage extends Message {
+export interface CustomMessage extends Omit<Message, "stickerItems" | "application" | "applicationId" | "components" | "reactions" | "nonce" | "interaction"> {
+	/** Author of the message */
+	author: {
+		/** Username of the author */
+		name: string;
+
+		/** ID of the author */
+		id: bigint;
+	};
+
     /** Reply to a message. */
 	reply: (response: Omit<MessageResponse, "reference"> | string) => Promise<Message>;
+}
+
+export interface DiscordComponentEmoji {
+	/** Emoji ID */
+	id?: bigint;
+
+	/** Emoji name */
+	name: string;
+
+	/** Whether this emoji is animated */
+	animated?: boolean;
 }

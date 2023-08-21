@@ -4,7 +4,9 @@ import { CollectionName, DBEnvironment, DBObject, DBRequestData, DBRequestType, 
 import { RABBITMQ_URI } from "../config.js";
 
 import type { DBGuild } from "../db/types/guild.js";
-import type { DBUser } from "../db/types/user.js";
+import { DBRole, DBUser } from "../db/types/user.js";
+
+import { getSettingsValue } from "./settings.js";
 
 export function createDB() {
 	const connection = new RabbitMQ.Connection(RABBITMQ_URI);
@@ -42,8 +44,49 @@ export function createDB() {
 		} as DBRequestUpdate);
 	};
 
-	return {
-		rpc, execute, get, fetch, update,
+	const premium = (env: DBEnvironment): { type: "subscription" | "plan", location: "guild" | "user" } | null => {
+		/* In which order to use the plans in */
+		const locationPriority: "guild" | "user" = getSettingsValue(env.user, "premium:location_priority");
+
+		/* Whether to prefer the Premium of the guild or user itself */
+		const typePriority: "plan" | "subscription" = getSettingsValue(
+			env.guild ? env[locationPriority]! : env.user, "premium:type_priority"
+		);
+
+		const checks: Record<typeof typePriority, (entry: DBGuild | DBUser) => boolean> = {
+			subscription: entry => entry.subscription !== null && Date.now() > entry.subscription.expires,
+			plan: entry => entry.plan !== null && entry.plan.total > entry.plan.used
+		};
+
+		const locations: typeof locationPriority[] = [ "guild", "user" ];
+		const types: typeof typePriority[] = [ "plan", "subscription" ];
+
+		if (locationPriority !== locations[0]) locations.reverse();
+		if (typePriority !== types[0]) types.reverse();
+
+		for (const type of types) {
+			for (const location of locations) {
+				const entry = env[location];
+				if (!entry) continue;
+
+				if (checks[type](entry)) return {
+					location, type
+				};
+			}
+		}
+
+		return null;
+	};
+
+	const voted = (user: DBUser) => {
+		if (!user.voted) return null;
+		if (Date.now() - Date.parse(user.voted) > 12.5 * 60 * 60 * 1000) return null;
+
+		return Date.parse(user.voted);
+	};
+
+	return { 
+		rpc, execute, get, fetch, update, premium, voted,
 
 		env: async (user: bigint, guild?: bigint): Promise<DBEnvironment> => {
 			const data: Partial<DBEnvironment> = {};
@@ -68,15 +111,24 @@ export function createDB() {
 			return data as DBEnvironment;
 		},
 
-		premium: (entry: DBUser | DBGuild) => {
-			if (entry.subscription !== null && Date.now() > entry.subscription.expires) return "subscription";
-			if (entry.plan !== null && entry.plan.total > entry.plan.used) return "plan";
+		icon: (env: DBEnvironment) => {
+			if (env.user.roles.includes(DBRole.Moderator)) return "⚒️";
+			const p = premium(env);
 
-			return null;
-		},
+			if (p) {
+				if (p.type === "plan" && p.location === "user") return "📊";
+				if (p.type === "subscription" && p.location === "user") return "✨";
+				if (p.location === "guild") return "💫";
+			}
 
-		settings: (entry: DBUser | DBGuild) => {
-			return entry.settings;
+			const votedAt = voted(env.user);
+
+			if (votedAt) {
+				if ((votedAt + 12.5 * 60 * 60 * 1000) - Date.now() < 30 * 60 * 1000) return "📩";
+				else return "✉️";
+			}
+
+			return "👤";
 		}
 	};
 }

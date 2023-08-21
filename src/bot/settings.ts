@@ -9,6 +9,10 @@ import type { DBEnvironment } from "../db/types/mod.js";
 import type { DBGuild } from "../db/types/guild.js";
 import type { DBUser } from "../db/types/user.js";
 
+import { LOADING_INDICATORS, USER_LANGUAGES } from "../db/types/user.js";
+import { MODELS } from "./chat/models/mod.js";
+import { TONES } from "./chat/tones/mod.js";
+
 export const SettingsCategories: SettingsCategory[] = [
 	{
 		name: "General",
@@ -16,16 +20,114 @@ export const SettingsCategories: SettingsCategory[] = [
 
 		options: [
 			{
+				name: "Language",
+				description: "Primary language to use for the bot",
+				emoji: "🌐", type: SettingsOptionType.Choices,
+				location: SettingsLocation.User,
+				default: "en-US",
+				
+				choices: USER_LANGUAGES.map(l => ({
+					name: l.name, emoji: l.emoji, value: l.id
+				}))
+			},
+
+			{
+				name: "Loading indicator",
+				description: "Which emoji to use throughout the bot to indicating loading",
+				emoji: "🔄", type: SettingsOptionType.Choices,
+				location: SettingsLocation.User,
+				default: LOADING_INDICATORS[0].emoji.id.toString(),
+				
+				choices: LOADING_INDICATORS.map(l => ({
+					name: l.name, emoji: l.emoji, value: l.emoji.id.toString()
+				}))
+			}
+		]
+	},
+
+	{
+		name: "Chat",
+		emoji: "🗨️",
+
+		options: [
+			{
+				name: "Model",
+				description: "Which AI language model to use for chatting",
+				emoji: "🤖", type: SettingsOptionType.Choices,
+				location: SettingsLocation.User,
+				default: "chatgpt",
+				
+				choices: MODELS.map(m => ({
+					name: m.name, description: m.description, emoji: m.emoji, value: m.id
+				}))
+			},
+
+			{
+				name: "Tone",
+				description: "Which tone the AI language model should have",
+				emoji: "😊", type: SettingsOptionType.Choices,
+				location: SettingsLocation.User,
+				default: "neutral",
+				
+				choices: TONES.map(t => ({
+					name: t.name, description: t.description, emoji: t.emoji, value: t.id
+				}))
+			},
+
+			{
 				name: "Partial messages",
 				description: "Whether chat messages by the bot should be shown while they're being generated",
 				emoji: "⏳", default: true,
 				type: SettingsOptionType.Boolean,
 				location: SettingsLocation.User
 			}
-
-			/* TODO: Add all other settings */
 		]
-	}
+	},
+
+	{
+		name: "Premium",
+		emoji: "✨",
+		
+		options: [
+			{
+				name: "Type priority", emoji: "✨",
+				description: "Which premium type to prioritize",
+				location: SettingsLocation.Both, default: "plan",
+				type: SettingsOptionType.Choices,
+
+				choices: [
+					{
+						name: "Pay-as-you-go", emoji: "📊", value: "plan",
+						description: "Use the credit-based pay-as-you-go plan first"
+					},
+		
+					{
+						name: "Subscription", emoji: "💸", value: "subscription",
+						description: "Use the fixed subscription first"
+					}
+				]
+			},
+
+			{
+				name: "Location priority", emoji: "✨",
+				description: "Whether to prioritize your own or the server's Premium",
+				location: SettingsLocation.Both, default: "guild",
+				type: SettingsOptionType.Choices,
+
+				choices: [
+					{
+						name: "The server's Premium", emoji: "☎️", value: "guild",
+						description: "Use the server's Premium before using your own"
+					},
+		
+					{
+						name: "My own Premium", emoji: "👤", value: "user",
+						description: "Always use your own Premium, not regarding whether the server has Premium or not"
+					}
+				]
+			}
+		]
+	},
 ];
 
 function categoryKey(category: SettingsCategory) {
@@ -54,13 +156,13 @@ function getOption(key: string): SettingsOption {
 	return option;
 }
 
-function getSettingsValue<T = string | number | boolean>(entry: DBGuild | DBUser, key: string): T {
+export function getSettingsValue<T = string | number | boolean>(entry: DBGuild | DBUser, key: string): T {
 	const option = getOption(key);
 	return entry.settings[key] as T ?? option.default;
 }
 
 export async function handleSettingsInteraction({ bot, args, env, interaction }: InteractionHandlerOptions) {
-	const action: "page" | "current" | "change" = args.shift()! as any;
+	const action: "page" | "current" | "change" | "view" = args.shift()! as any;
 	const location: SettingsLocation = args.shift()! as SettingsLocation;
 
 	const categoryName = args.shift()!;
@@ -110,15 +212,16 @@ export async function handleSettingsInteraction({ bot, args, env, interaction }:
 
 			entry = await bot.db.update<DBGuild | DBUser>(
 				location === SettingsLocation.Guild ? "guilds" : "users", entry,
-
-				{
-					settings: {
-						...settings,[key]: newValue
-					}
-				}
+				{ settings: { ...settings,[key]: newValue } }
 			);
 
 		}
+
+	/* View a specific settings category */
+	} else if (action === "view") {
+		return void await interaction.reply(
+			buildSettingsPage(location, category, entry)
+		);
 	}
 
 	await interaction.update(
@@ -177,7 +280,7 @@ function buildOption(
 			options: option.choices.map(c => ({
 				label: c.name, value: c.value,
 				description: c.description,
-				emoji: c.emoji ? { name: c.emoji } : undefined,
+				emoji: c.emoji ? typeof c.emoji === "string" ? { name: c.emoji } : c.emoji : undefined,
 				default: c.value === current
 			}))
 		});
@@ -202,7 +305,7 @@ function buildPageSwitcher(location: SettingsLocation, category: SettingsCategor
 
 		{
 			type: MessageComponentTypes.Button,
-			label: category.name, emoji: { name: category.emoji },
+			label: category.name, emoji: typeof category.emoji === "string" ? { name: category.emoji } : category.emoji,
 			style: ButtonStyles.Success,
 			customId: `settings:current:${location}:${categoryKey(category)}`
 		},

@@ -5,22 +5,23 @@ import { type DiscordBot, bot } from "../mod.js";
 import Interaction from "./interaction.js";
 import Message from "./message.js";
 
-export interface Transformer<T extends keyof Transformers> {
+export interface Transformer<T extends keyof Transformers, Transformed, Raw> {
     name: T;
-    handler: (bot: DiscordBot, ...args: unknown[]) => unknown;
+    handler: (bot: DiscordBot, transformedPayload: Transformed, raw: Raw) => unknown;
 }
 
-const TRANSFORMERS: Transformer<keyof Transformers>[] = [
+const TRANSFORMERS: Transformer<keyof Transformers, any, any>[] = [
 	Interaction, Message
 ];
 
 export function setupTransformers() {
 	for (const transformer of TRANSFORMERS) {
-		const old = bot.transformers[transformer.name];
+		const oldTransformer = bot.transformers[transformer.name];
 
 		bot.transformers[transformer.name] = ((bot: DiscordBot, payload: unknown) => {
-			payload = (old as any)(bot, payload);
-			return transformer.handler(bot, payload);
+			const transformed = (oldTransformer as any)(bot, payload);
+
+			return transformer.handler(bot, transformed, payload);
 		}) as any;
 	}
 }

@@ -1,3 +1,4 @@
+import type { DiscordComponentEmoji } from "./discordeno.js";
 import type { DBGuild } from "../../db/types/guild.js";
 import type { DBUser } from "../../db/types/user.js";
 import type { DiscordBot } from "../mod.js";
@@ -26,7 +27,7 @@ export interface SettingsOptionChoice<T> {
     description?: string;
 
 	/** Emoji of the choice */
-	emoji?: string;
+	emoji?: DiscordComponentEmoji | string;
 
 	/** Value of the choice */
 	value: T;
@@ -73,7 +74,7 @@ export interface SettingsCategory {
     name: string;
 
     /** Emoji for the category */
-    emoji: string;
+    emoji: DiscordComponentEmoji | string;
 
 	/** Available options for the category */
 	options: SettingsOption[];

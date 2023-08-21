@@ -1,17 +1,39 @@
-import { Message } from "discordeno";
+import { DiscordMessage, Message } from "discordeno";
 
 import { transformResponse, type MessageResponse } from "../utils/response.js";
 import { createTransformer } from "../helpers/transformer.js";
 import type { CustomMessage } from "../types/discordeno.js";
 
-export default createTransformer("message", (bot, message: Message) => {
-	Object.defineProperty(message, "reply", {
-		value: function (response: Omit<MessageResponse, "reference">) {
-			return bot.helpers.sendMessage(bot.transformers.snowflake(message.channelId), transformResponse({
-				...response, reference: message as CustomMessage
-			}));
-		}
-	});
+export default createTransformer<"message", Message, DiscordMessage>(
+	"message",
+	
+	(bot, message, raw) => {
+		Object.defineProperty(message, "reply", {
+			value: function (response: Omit<MessageResponse, "reference">) {
+				return bot.helpers.sendMessage(bot.transformers.snowflake(message.channelId), transformResponse({
+					...response, reference: message as CustomMessage
+				}));
+			}
+		});
 
-	return message;
-});
+		Object.defineProperty(message, "author", {
+			value: {
+				name: raw.author.username,
+				id: BigInt(raw.author.id)
+			},
+
+			enumerable: true
+		});
+
+		delete message.activity;
+		delete message.application;
+		delete message.applicationId;
+		delete message.components;
+		delete message.stickerItems;
+		delete message.reactions;
+		delete message.nonce;
+		delete message.interaction;
+
+		return message;
+	}
+);

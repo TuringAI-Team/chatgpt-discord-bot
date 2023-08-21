@@ -5,7 +5,7 @@ import RabbitMQ from "rabbitmq-client";
 
 import { DB_KEY, DB_QUEUE_INTERVAL, DB_URL, RABBITMQ_URI, REDIS_HOST, REDIS_PASSWORD, REDIS_PORT, REDIS_USER } from "../config.js";
 import { type CollectionName, CollectionNames, type DBObject, type DBRequestData } from "./types/mod.js";
-import type { Conversation } from "../bot/chat/types/conversation.js";
+import type { Conversation } from "../bot/types/conversation.js";
 import type { DBGuild } from "./types/guild.js";
 import type { DBUser } from "./types/user.js";
 

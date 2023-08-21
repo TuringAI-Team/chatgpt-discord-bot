@@ -28,7 +28,7 @@ export async function handleInteraction(bot: DiscordBot, interaction: CustomInte
 			return void await interaction.reply({
 				embeds: {
 					title: "Whoa-whoa... slow down ⏳",
-					description: `This command is currently on cool-down. You can execute it again <t:${Math.floor(cooldown.when / 1000)}:R>.`,
+					description: `This interaction is currently on cool-down. You can use it again <t:${Math.floor(cooldown.when / 1000)}:R>.`,
 					color: EmbedColor.Yellow
 				},
 
