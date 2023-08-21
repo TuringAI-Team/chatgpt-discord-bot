@@ -8,7 +8,6 @@ import { INTENTS, REST_URL, BOT_TOKEN, HTTP_AUTH, RABBITMQ_URI, REDIS_HOST, REDI
 import { GatewayMessage } from "../gateway/types/worker.js";
 
 import { setupTransformers } from "./transformers/mod.js";
-import { createModeration } from "./moderation/mod.js";
 import { registerCommands } from "./commands/mod.js";
 import { setupEvents } from "./events/mod.js";
 import { createAPI } from "./api.js";
@@ -24,9 +23,6 @@ export type DiscordBot<B extends Bot = Bot> = B & {
 
 	/** Database manager */
 	db: ReturnType<typeof createDB>;
-
-	/** Moderation manager */
-	moderation: ReturnType<typeof createModeration>;
 
 	/** Turing API */
 	api: ReturnType<typeof createAPI>;
@@ -53,7 +49,6 @@ async function customizeBot<B extends Bot = Bot>(bot: B) {
 	customized.logger = createLogger({ name: "[BOT]" });
 	customized.redis = await createRedis();
 	customized.db = createDB();
-	customized.moderation = createModeration();
 	customized.api = createAPI();
 
 	return customized;

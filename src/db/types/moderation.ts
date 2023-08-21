@@ -1,6 +1,7 @@
-export type DBInfractionType = "ban" | "unban" | "warn" | "moderation"
+import type { ModerationResult, ModerationSource } from "../../bot/moderation/types/mod.js";
 
-export type DBInfractionReferenceType = "infraction" // | ModerationSource
+export type DBInfractionType = "ban" | "unban" | "warn" | "moderation"
+export type DBInfractionReferenceType = "infraction" | ModerationSource
 
 export interface DBInfractionReference {
     type: DBInfractionReferenceType;
@@ -33,5 +34,7 @@ export interface DBInfraction {
     reference?: DBInfractionReference;
 
     /** Used for `moderation` infractions */
-    //moderation?: ModerationResult;
+    moderation?: ModerationResult;
 }
+
+export type GiveInfractionOptions = Omit<DBInfraction, "id" | "when">

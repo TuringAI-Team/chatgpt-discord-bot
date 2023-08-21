@@ -4,10 +4,11 @@ import type { Command } from "../types/command.js";
 import { bot } from "../mod.js";
 
 import Settings from "./settings.js";
-import Test from "./test.js";
+import Imagine from "./imagine.js";
+import Reset from "./reset.js";
 
 export const COMMANDS: Command[] = [
-	Test, Settings
+	Settings, Reset, Imagine
 ];
 
 function transformCommand(command: Command): CreateApplicationCommand {

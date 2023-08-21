@@ -1,9 +1,10 @@
 import type { ApplicationCommandOption, ApplicationCommandOptionTypes, ApplicationCommandTypes } from "discordeno";
 
-import type { RestrictionType } from "../utils/restriction.js";
+import type { RestrictionName } from "../utils/restriction.js";
 import type { DBEnvironment } from "../../db/types/mod.js";
 import type { MessageResponse } from "../utils/response.js";
 import type { CustomInteraction } from "./discordeno.js";
+import { DBUserType } from "../../db/types/user.js";
 import type { DiscordBot } from "../mod.js";
 
 export type CommandOption = Omit<ApplicationCommandOption, "name">
@@ -23,9 +24,7 @@ export type CommandOptionValueWithName<T extends string | number | boolean = str
         name: string;
     }
 
-export interface CommandCooldown {
-    time: number;
-}
+export type CommandCooldown = Partial<Record<DBUserType, number>>;
 
 interface CommandHandlerOptions<T extends Record<string, CommandOption>> {
 	bot: DiscordBot;
@@ -42,7 +41,7 @@ export interface Command<T extends Record<string, CommandOption> = Record<string
     description: string;
 
 	/** Restrictions of the command */
-	restrictions?: RestrictionType[];
+	restrictions?: RestrictionName[];
 
     /** Type of the command */
     type?: ApplicationCommandTypes;

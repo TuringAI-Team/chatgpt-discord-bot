@@ -69,8 +69,8 @@ export function buildHistory({ bot, env, model, tone, conversation, input }: Bui
 		/** Add the conversation's history. */
 		for (const entry of conversation.history) {
 			messages.push(
-				{ author: "user", content: entry.input.content },
-				{ author: "assistant", content: entry.output.content }
+				{ role: "user", content: entry.input.content },
+				{ role: "assistant", content: entry.output.content }
 			);
 		}
 

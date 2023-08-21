@@ -37,10 +37,18 @@ export default createTransformer<"interaction", Interaction, DiscordInteraction>
 			}
 		});
 
-		Object.defineProperty(interaction, "defer", {
+		Object.defineProperty(interaction, "deferReply", {
 			value: function() {
 				return bot.helpers.sendInteractionResponse(interaction.id, interaction.token, {
 					type: InteractionResponseTypes.DeferredChannelMessageWithSource
+				});
+			}
+		});
+
+		Object.defineProperty(interaction, "deferUpdate", {
+			value: function() {
+				return bot.helpers.sendInteractionResponse(interaction.id, interaction.token, {
+					type: InteractionResponseTypes.DeferredUpdateMessage
 				});
 			}
 		});

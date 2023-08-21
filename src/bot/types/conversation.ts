@@ -27,12 +27,12 @@ export interface ConversationResult {
 
 export interface ConversationMessage {
 	/** Author of the message */
-	author: "assistant" | "user" | "system";
+	role: "assistant" | "user" | "system";
 
 	/** Content of the message */
 	content: string;
 }
 
 export type ConversationUserMessage = ConversationMessage & {
-	author: "user";
+	role: "user";
 }

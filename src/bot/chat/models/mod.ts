@@ -1,48 +1,14 @@
-import EventEmitter from "events";
-
-import type { ConversationMessage, ConversationResult, ConversationUserMessage } from "../../types/conversation.js";
+import type { ConversationMessage, ConversationUserMessage } from "../../types/conversation.js";
 import type { DiscordComponentEmoji } from "../../types/discordeno.js";
-import type { RestrictionType } from "../../utils/restriction.js";
+import type { RestrictionName } from "../../utils/restriction.js";
 import type { DBEnvironment } from "../../../db/types/mod.js";
 import type { HistoryData } from "../history.js";
 import type { DiscordBot } from "../../mod.js";
 
+import { Emitter } from "../../utils/event.js";
+
 import ChatGPT from "./chatgpt.js";
 import Dummy from "./dummy.js";
-
-export class ChatEmitter<T extends ConversationResult | ChatModelResult = ChatModelResult> {
-	private readonly emitter: EventEmitter;
-
-	constructor() {
-		this.emitter = new EventEmitter();
-	}
-
-	public emit(data: T) {
-		this.emitter.emit("data", data);
-	}
-
-	public on(listener: (data: T) => void) {
-		this.emitter.on("data", listener);
-	}
-
-	/** Wait until the chat request has been completed. */
-	public async wait(timeout: number = 120 * 1000): Promise<T> {
-		return Promise.race<T>([
-			new Promise(resolve => {
-				this.on(data => {
-					if (data.done) resolve(data);
-				});
-			}),
-
-			// eslint-disable-next-line @typescript-eslint/no-unused-vars
-			new Promise((_, reject) => {
-				setTimeout(() => {
-					reject(new Error("Timed out"));
-				}, timeout);
-			})
-		]);
-	}
-}
 
 export interface ChatModel {
 	/** Name of the chat model */
@@ -58,7 +24,7 @@ export interface ChatModel {
 	emoji: DiscordComponentEmoji | string;
 
 	/** Which users this chat model is restricted to */
-	restrictions?: RestrictionType[];
+	restrictions?: RestrictionName[];
 
 	/* Initial instructions to pass to the request */
 	initialPrompt?: ConversationMessage;
@@ -75,7 +41,7 @@ interface ChatModelHandlerOptions {
 	env: DBEnvironment;
 	history: HistoryData;
 	input: ConversationUserMessage;
-	emitter: ChatEmitter;
+	emitter: Emitter<ChatModelResult>;
 }
 
 export interface ChatModelResult {
@@ -86,6 +52,6 @@ export interface ChatModelResult {
 	done: boolean;
 }
 
-export const MODELS: ChatModel[] = [
+export const CHAT_MODELS: ChatModel[] = [
 	ChatGPT, Dummy
 ];

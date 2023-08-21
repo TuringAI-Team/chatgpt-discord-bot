@@ -3,7 +3,21 @@ import type { DiscordBot } from "../mod.js";
 
 import { DBRole } from "../../db/types/user.js";
 
-export enum RestrictionType {
+export interface RestrictionType {
+	/** Name of the restriction */
+	name: RestrictionName;
+
+	/** Emoji of the restriction */
+	emoji: string;
+
+	/** Description of the restriction, e.g. "premium-only" */
+	description: string;
+}
+
+export enum RestrictionName {
+	/** Testing restriction; not given to anyone */
+	Test = "test",
+
 	/** Restricted to bot developers & the development server */
 	Developer = "dev",
 
@@ -21,22 +35,65 @@ export enum RestrictionType {
 }
 
 /** Determine which restriction type applies to a user. */
-function restrictions(bot: DiscordBot, { user }: DBEnvironment): RestrictionType[] {
-	const types: RestrictionType[] = [];
+function restrictions(bot: DiscordBot, env: DBEnvironment): RestrictionName[] {
+	const types: RestrictionName[] = [];
 
-	if (user.roles.includes(DBRole.Owner)) types.push(RestrictionType.Developer);
-	if (user.roles.includes(DBRole.Moderator)) types.push(RestrictionType.Moderator);
+	if (env.user.roles.includes(DBRole.Owner)) types.push(RestrictionName.Developer);
+	if (env.user.roles.includes(DBRole.Moderator)) types.push(RestrictionName.Moderator);
 
-	const premiumType = bot.db.premium(user);
+	const premium = bot.db.premium(env);
 
-	if (premiumType === "subscription") types.push(RestrictionType.PremiumSubscription);
-	if (premiumType === "plan") types.push(RestrictionType.PremiumPlan);
-	if (premiumType !== null) types.push(RestrictionType.Premium);
+	if (premium) {
+		if (premium.type === "subscription") types.push(RestrictionName.PremiumSubscription);
+		if (premium.type === "plan") types.push(RestrictionName.PremiumPlan);
+		
+		types.push(RestrictionName.Premium);
+	}
 
 	return types;
 }
 
 /** Determine whether a user is equal to the restriction type. */
-export function restricted(bot: DiscordBot, env: DBEnvironment, type: RestrictionType): boolean {
-	return restrictions(bot, env).includes(type);
+export function canUse(bot: DiscordBot, env: DBEnvironment, types: RestrictionName[]): boolean {
+	return restrictions(bot, env).some(r => types.includes(r));
+}
+
+export function restrictionTypes(restrictions: RestrictionName[]) {
+	const types: RestrictionType[] = [];
+
+	for (const r of restrictions) {
+		switch (r) {
+			case RestrictionName.Test: {
+				types.push({ name: r, description: "testing-only", emoji: "🤫" });
+				break;
+			}
+
+			case RestrictionName.Developer: {
+				types.push({ name: r, description: "developer-only", emoji: "🔧" });
+				break;
+			}
+
+			case RestrictionName.Premium: {
+				types.push({ name: r, description: "premium-only", emoji: "✨" });
+				break;
+			}
+
+			case RestrictionName.Moderator: {
+				types.push({ name: r, description: "moderator-only", emoji: "🛠️" });
+				break;
+			}
+
+			case RestrictionName.PremiumPlan: {
+				types.push({ name: r, description: "plan-only", emoji: "📊" });
+				break;
+			}
+
+			case RestrictionName.PremiumSubscription: {
+				types.push({ name: r, description: "subscription-only", emoji: "💸" });
+				break;
+			}
+		}
+	}
+
+	return types;
 }

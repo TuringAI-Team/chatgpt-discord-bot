@@ -19,11 +19,12 @@ const logger = createLogger({ name: "[DB]" });
 const CollectionNameMap: Record<CollectionName, string> = {
 	guilds: "guilds_new",
 	users: "users_new",
-	conversations: "convos"
+	conversations: "convos",
+	images: "images_new"
 };
 
 /** Collection templates */
-const CollectionTemplates: Record<CollectionName, (id: string) => DBObject> = {
+const CollectionTemplates: Partial<Record<CollectionName, (id: string) => DBObject>> = {
 	guilds: id => (({
 		id,
 		created: new Date().toISOString(),
@@ -134,7 +135,11 @@ async function fetch<T extends DBObject = DBObject>(collection: CollectionName, 
 	const existing = await get<T>(collection, id);
 	if (existing) return existing;
 
-	const template = CollectionTemplates[collection](id) as T;
+	if (!CollectionTemplates[collection])  {
+		throw new Error(`No template available for collection '${collection}'`);
+	}
+
+	const template = CollectionTemplates[collection]!(id) as T;
 	await setCache(collectionKey(collection, id), template);
 
 	return template;

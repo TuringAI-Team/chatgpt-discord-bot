@@ -3,7 +3,10 @@ import type { MessageResponse } from "../utils/response.js";
 
 export interface CustomInteraction extends Interaction {
 	/** Defer the interaction, to be edited at a future point. */
-	defer: () => Promise<void>;
+	deferReply: () => Promise<void>;
+
+	/** Defer an update, meaning that the interaction is silently acknowledged. */
+	deferUpdate: () => Promise<void>;
 
 	/** Send a reply to an interaction. */
 	reply: (response: MessageResponse) => Promise<Message>;

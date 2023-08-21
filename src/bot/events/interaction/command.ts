@@ -9,6 +9,7 @@ import { ResponseError } from "../../error/response.js";
 import { EmbedColor } from "../../utils/response.js";
 
 import { COMMANDS } from "../../commands/mod.js";
+import { canUse, restrictionTypes } from "../../utils/restriction.js";
 
 /** Global command cool-downs */
 const cooldowns: Collection<string, number> = new Collection();
@@ -18,6 +19,9 @@ export async function executeCommand(bot: DiscordBot, interaction: CustomInterac
 
 	const command = COMMANDS.find(c => c.name === interaction.data?.name) ?? null;
 	if (!command) return;
+
+	const env = await bot.db.env(interaction.user.id, interaction.guildId);
+	const type = bot.db.type(env);
 
 	if (command.cooldown) {
 		const cooldown = getCooldown(interaction);
@@ -33,11 +37,27 @@ export async function executeCommand(bot: DiscordBot, interaction: CustomInterac
 				ephemeral: true
 			});
 		} else {
-			setCooldown(interaction, command.cooldown.time);
+			if (command.cooldown[type]) setCooldown(interaction, command.cooldown[type]!);
 		}
 	}
 
-	const env = await bot.db.env(interaction.user.id, interaction.guildId);
+	/* Whether the user can access this command */
+	const access = command.restrictions
+		? canUse(bot, env, command.restrictions)
+		: true;
+
+	if (command.restrictions && !access) {
+		const allowed = restrictionTypes(command.restrictions);
+
+		return void await interaction.reply({
+			embeds: {
+				description: `This command is ${allowed.map(a => `**${a.description}** ${a.emoji}`).join(", ")}.`,
+				color: EmbedColor.Yellow
+			},
+
+			ephemeral: true
+		});
+	}
 
 	const options: Record<string, CommandOptionValue> =
         parseCommandOptions(interaction);

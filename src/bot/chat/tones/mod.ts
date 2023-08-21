@@ -1,5 +1,5 @@
 import type { ConversationMessage } from "../../types/conversation.js";
-import type { RestrictionType } from "../../utils/restriction.js";
+import type { RestrictionName } from "../../utils/restriction.js";
 
 import Neutral from "./neutral.js";
 
@@ -17,7 +17,7 @@ export interface ChatTone {
 	emoji: string;
 
 	/** Which users this chat tone is restricted to */
-	restrictions?: RestrictionType[];
+	restrictions?: RestrictionName[];
 
 	/** Messages for the tone */
 	prompt?: ConversationMessage;

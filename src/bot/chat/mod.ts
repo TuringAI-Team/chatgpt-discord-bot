@@ -2,21 +2,23 @@
 import { type ButtonComponent, MessageComponentTypes, ButtonStyles } from "discordeno";
 import { randomUUID } from "crypto";
 
+import type { Conversation, ConversationResult, ConversationUserMessage } from "../types/conversation.js";
 import type { CustomMessage } from "../types/discordeno.js";
+import type { DBEnvironment } from "../../db/types/mod.js";
 import type { DiscordBot } from "../mod.js";
 
-import type { Conversation, ConversationResult, ConversationUserMessage } from "../types/conversation.js";
-import { transformResponse, type MessageResponse } from "../utils/response.js";
-import type { DBEnvironment } from "../../db/types/mod.js";
-
 import { getLoadingIndicatorFromUser, loadingIndicatorToString } from "../../db/types/user.js";
-import { ChatEmitter, MODELS, type ChatModel, type ChatModelResult } from "./models/mod.js";
+import { CHAT_MODELS, type ChatModel, type ChatModelResult } from "./models/mod.js";
+import { transformResponse, type MessageResponse } from "../utils/response.js";
 import { SettingsLocation } from "../types/settings.js";
-import { ResponseError } from "../error/response.js";
 import { TONES, type ChatTone } from "./tones/mod.js";
+import { ResponseError } from "../error/response.js";
 import { handleError } from "../moderation/error.js";
 import { getSettingsValue } from "../settings.js";
 import { buildHistory } from "./history.js";
+import { Emitter } from "../utils/event.js";
+import { moderate, moderationNotice } from "../moderation/mod.js";
+import { ModerationSource } from "../moderation/types/mod.js";
 
 interface ExecuteOptions {
 	bot: DiscordBot;
@@ -25,13 +27,14 @@ interface ExecuteOptions {
 	model: ChatModel;
 	tone: ChatTone;
 	env: DBEnvironment;
-	emitter: ChatEmitter<ConversationResult>;
+	emitter: Emitter<ConversationResult>;
 }
 
 /** Set of currently running generations */
-const runningGenerations = new Set<bigint>();
+export const runningGenerations = new Set<bigint>();
 
 export async function handleMessage(bot: DiscordBot, message: CustomMessage) {
+	if (message.isFromBot || message.content.length === 0) return;
 	if (!mentions(bot, message)) return;
 
 	if (runningGenerations.has(message.authorId)) throw new ResponseError({
@@ -49,11 +52,11 @@ export async function handleMessage(bot: DiscordBot, message: CustomMessage) {
 	const tone = getTone(env);
 
 	/* Event emitter, to receive partial results */
-	const emitter = new ChatEmitter<ConversationResult>();
+	const emitter = new Emitter<ConversationResult>();
 
 	/* Input, to pass to the AI model */
 	const input: ConversationUserMessage = {
-		author: "user", content: clean(bot, message)
+		role: "user", content: clean(bot, message)
 	};
 
 	/* ID of the message to edit, if applicable */
@@ -77,14 +80,21 @@ export async function handleMessage(bot: DiscordBot, message: CustomMessage) {
 					}))
 				);
 			}
-		} catch {
-			/* Stub */
-		}
+		} catch { /* Stub */ }
 	};
 
 	/* Whether partial messages should be enabled */
 	const partial = getSettingsValue<boolean>(env.user, "chat:partial_messages");
 	if (partial) emitter.on(handler);
+
+	/* Moderate the user's prompt. */
+	const moderation = await moderate({
+		bot, env, content: input.content, source: ModerationSource.ChatFromUser
+	});
+
+	if (moderation.blocked) return void await message.reply(
+		moderationNotice({ result: moderation })
+	);
 
 	/* Start the generation process. */
 	try {
@@ -143,10 +153,18 @@ async function execute(options: ExecuteOptions): Promise<ConversationResult> {
 	const history = buildHistory(options);
 
 	/* The event emitter for the chat model, to send partial results */
-	const emitter = new ChatEmitter();
+	const emitter = new Emitter<ChatModelResult>();
+
+	/* When the last event was sent, timestamp */
+	let lastEvent = Date.now();
 
 	emitter.on(data => {
-		if (!data.done) options.emitter.emit(formatResult(data, id));
+		if (data.content.trim().length === 0) return;
+
+		if (!data.done && Date.now() - lastEvent > 5 * 1000) {
+			options.emitter.emit(formatResult(data, id));
+			lastEvent = Date.now();
+		}
 	});
 
 	/* Execute the model generation handler. */
@@ -170,7 +188,7 @@ async function execute(options: ExecuteOptions): Promise<ConversationResult> {
 function formatResult(result: ChatModelResult, id: string): ConversationResult {
 	return {
 		id, done: result.done,
-		message: { author: "assistant", content: result.content }
+		message: { role: "assistant", content: result.content }
 	};
 }
 
@@ -223,7 +241,7 @@ function format(
 
 function getModel(env: DBEnvironment) {
 	const id: string = getSettingsValue(env.user, "chat:model");
-	return MODELS.find(m => m.id === id) ?? MODELS[0];
+	return CHAT_MODELS.find(m => m.id === id) ?? CHAT_MODELS[0];
 }
 
 function getTone(env: DBEnvironment) {
@@ -233,7 +251,7 @@ function getTone(env: DBEnvironment) {
 
 /** Check whether the specified message pinged the bot. */
 function mentions(bot: DiscordBot, message: CustomMessage) {
-	return message.mentionedUserIds.includes(bot.id);
+	return message.mentionedUserIds.includes(bot.id) || !message.guildId;
 }
 
 /** Remove all bot & user mentions from the specified message. */

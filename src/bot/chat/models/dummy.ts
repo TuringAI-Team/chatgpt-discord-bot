@@ -1,6 +1,6 @@
 import { setTimeout } from "timers/promises";
 
-import { RestrictionType } from "../../utils/restriction.js";
+import { RestrictionName } from "../../utils/restriction.js";
 import { createChatModel } from "../../helpers/chat.js";
 
 export default createChatModel({
@@ -8,11 +8,11 @@ export default createChatModel({
 	emoji: "⚠️", id: "dummy",
 
 	initialPrompt: {
-		author: "system",
+		role: "system",
 		content: "You are ChatGPT, an AI language model created by OpenAI."
 	},
 
-	restrictions: [ RestrictionType.Developer ],
+	restrictions: [ RestrictionName.Developer ],
 	maxTokens: 8191,
 
 	handler: async ({ emitter, history }) => {

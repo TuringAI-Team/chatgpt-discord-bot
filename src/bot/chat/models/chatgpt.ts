@@ -9,7 +9,7 @@ export default createChatModel({
 	maxTokens: 8191,
 
 	initialPrompt: {
-		author: "system",
+		role: "system",
 		content: "You are ChatGPT, an AI language model created by OpenAI."
 	},
 
@@ -20,8 +20,6 @@ export default createChatModel({
 		}) as EventEmitter;
 
 		event.on("data", data => {
-			console.log(data);
-
 			emitter.emit({
 				content: data.result,
 				done: data.done

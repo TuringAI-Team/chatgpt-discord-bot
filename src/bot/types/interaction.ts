@@ -1,4 +1,4 @@
-import type { RestrictionType } from "../utils/restriction.js";
+import type { RestrictionName } from "../utils/restriction.js";
 import type { DBEnvironment } from "../../db/types/mod.js";
 import type { MessageResponse } from "../utils/response.js";
 import type { CustomInteraction } from "./discordeno.js";
@@ -21,7 +21,7 @@ export interface InteractionHandler {
     name: string;
 
 	/** Restrictions of the interaction */
-	restrictions?: RestrictionType[];
+	restrictions?: RestrictionName[];
 
     /** Type of the interaction */
     type?: InteractionHandlerType;

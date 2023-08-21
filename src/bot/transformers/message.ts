@@ -1,4 +1,4 @@
-import { DiscordMessage, Message } from "discordeno";
+import { DiscordMessage, Message, transformUser } from "discordeno";
 
 import { transformResponse, type MessageResponse } from "../utils/response.js";
 import { createTransformer } from "../helpers/transformer.js";
@@ -17,11 +17,7 @@ export default createTransformer<"message", Message, DiscordMessage>(
 		});
 
 		Object.defineProperty(message, "author", {
-			value: {
-				name: raw.author.username,
-				id: BigInt(raw.author.id)
-			},
-
+			value: transformUser(bot, raw.author),
 			enumerable: true
 		});
 

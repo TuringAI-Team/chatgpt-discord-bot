@@ -1,11 +1,12 @@
 import type { Conversation } from "../../bot/types/conversation.js";
 import type { DBGuild } from "./guild.js";
+import { DBImage } from "./image.js";
 import type { DBUser } from "./user.js";
 
-export type CollectionName = "users" | "guilds" | "conversations";
-export const CollectionNames: CollectionName[] = [ "users", "guilds", "conversations" ];
+export type CollectionName = "users" | "guilds" | "conversations" | "images";
+export const CollectionNames: CollectionName[] = [ "users", "guilds", "conversations", "images" ];
 
-export type DBType = DBUser | DBGuild | Conversation;
+export type DBType = DBUser | DBGuild | Conversation | DBImage;
 
 export type DBObject = {
 	id: string;

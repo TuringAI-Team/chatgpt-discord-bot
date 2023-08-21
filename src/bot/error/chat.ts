@@ -1,6 +1,9 @@
 export enum ChatErrorType {
 	/** The chat input is too long */
-	Length
+	Length,
+
+	/** The request timed out */
+	TimedOut
 }
 
 export class ChatError extends Error {

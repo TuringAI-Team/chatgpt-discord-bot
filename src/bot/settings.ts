@@ -10,7 +10,9 @@ import type { DBGuild } from "../db/types/guild.js";
 import type { DBUser } from "../db/types/user.js";
 
 import { LOADING_INDICATORS, USER_LANGUAGES } from "../db/types/user.js";
-import { MODELS } from "./chat/models/mod.js";
+import { CHAT_MODELS } from "./chat/models/mod.js";
+import { IMAGE_MODELS } from "./image/models.js";
+import { IMAGE_STYLES } from "./image/styles.js";
 import { TONES } from "./chat/tones/mod.js";
 
 export const SettingsCategories: SettingsCategory[] = [
@@ -57,7 +59,7 @@ export const SettingsCategories: SettingsCategory[] = [
 				location: SettingsLocation.User,
 				default: "chatgpt",
 				
-				choices: MODELS.map(m => ({
+				choices: CHAT_MODELS.map(m => ({
 					name: m.name, description: m.description, emoji: m.emoji, value: m.id
 				}))
 			},
@@ -126,6 +128,35 @@ export const SettingsCategories: SettingsCategory[] = [
 					}
 				]
 			}
+		]
+	},
+
+	{
+		name: "Image",
+		emoji: "🖼️",
+		
+		options: [
+			{
+				name: "Model", emoji: "🖼️",
+				description: "Which image generation model to use",
+				location: SettingsLocation.User, default: "kandinsky",
+				type: SettingsOptionType.Choices,
+
+				choices: IMAGE_MODELS.map(m => ({
+					name: m.name, value: m.id
+				}))
+			},
+
+			{
+				name: "Style", emoji: "🖌️",
+				description: "Which image style to use",
+				location: SettingsLocation.User, default: "none",
+				type: SettingsOptionType.Choices,
+
+				choices: IMAGE_STYLES.map(m => ({
+					name: m.name, emoji: m.emoji, value: m.id
+				}))
+			},
 		]
 	},
 ];
