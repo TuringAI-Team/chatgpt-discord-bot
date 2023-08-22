@@ -1,6 +1,7 @@
 import type { ConversationMessage, ConversationUserMessage } from "../../types/conversation.js";
 import type { DiscordComponentEmoji } from "../../types/discordeno.js";
 import type { RestrictionName } from "../../utils/restriction.js";
+import type { CommandCooldown } from "../../types/command.js";
 import type { DBEnvironment } from "../../../db/types/mod.js";
 import type { HistoryData } from "../history.js";
 import type { DiscordBot } from "../../mod.js";
@@ -9,6 +10,7 @@ import { Emitter } from "../../utils/event.js";
 
 import ChatGPT from "./chatgpt.js";
 import Dummy from "./dummy.js";
+import GPT4 from "./gpt-4.js";
 
 export interface ChatModel {
 	/** Name of the chat model */
@@ -25,6 +27,9 @@ export interface ChatModel {
 
 	/** Which users this chat model is restricted to */
 	restrictions?: RestrictionName[];
+
+	/** Cool-down for this model */
+	cooldown?: CommandCooldown;
 
 	/* Initial instructions to pass to the request */
 	initialPrompt?: ConversationMessage;
@@ -44,14 +49,22 @@ interface ChatModelHandlerOptions {
 	emitter: Emitter<ChatModelResult>;
 }
 
+type ChatModelFinishReason = "stop" | "length"
+
 export interface ChatModelResult {
 	/** Result message */
 	content: string;
+
+	/** Cost of the generation */
+	cost?: number;
+
+	/** Why the generation stopped */
+	finishReason?: ChatModelFinishReason;
 	
 	/** Whether the generation is done */
 	done: boolean;
 }
 
 export const CHAT_MODELS: ChatModel[] = [
-	ChatGPT, Dummy
+	ChatGPT, Dummy, GPT4
 ];

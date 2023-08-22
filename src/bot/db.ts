@@ -8,12 +8,16 @@ import { DBRole, DBUser, DBUserType } from "../db/types/user.js";
 
 import { getSettingsValue } from "./settings.js";
 
-export function createDB() {
+export async function createDB() {
 	const connection = new RabbitMQ.Connection(RABBITMQ_URI);
 
 	const rpc = connection.createRPCClient({
 		confirm: true
 	});
+
+	await new Promise<void>(resolve =>
+		connection.on("connection", () => resolve())
+	);
 
 	const execute = async <T>(type: DBRequestType, body: Omit<DBRequestData, "type">): Promise<T> => {
 		const data = await rpc.send("db", {

@@ -44,6 +44,10 @@ app.all("/*", async (req, res) => {
 	}
 
 	try {
+		if (req.body.file) {
+			req.body.file.blob = base64ToBlob(req.body.file.blob);
+		}
+
 		const result = await rest.runMethod(
 			rest, req.method as RequestMethod, `${BASE_URL}${req.url}`, req.body
 		);
@@ -60,6 +64,25 @@ app.all("/*", async (req, res) => {
 		res.status(error.status).json(error);
 	}
 });
+
+function base64ToBlob(base64: string, contentType: string = "", sliceSize: number = 512): Blob {
+	const byteCharacters = Buffer.from(base64, "base64").toString();
+	const byteArrays = [];
+
+	for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+		const slice = byteCharacters.slice(offset, offset + sliceSize);
+
+		const byteNumbers = new Array(slice.length);
+		for (let i = 0; i < slice.length; i++) {
+			byteNumbers[i] = slice.charCodeAt(i);
+		}
+
+		const byteArray = new Uint8Array(byteNumbers);
+		byteArrays.push(byteArray);
+	}
+
+	return new Blob(byteArrays, { type: contentType });
+}
 
 app.listen(REST_PORT, () => {
 	logger.info("Started.");

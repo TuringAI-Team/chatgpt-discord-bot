@@ -1,7 +1,12 @@
 import type { ConversationMessage } from "../../types/conversation.js";
 import type { RestrictionName } from "../../utils/restriction.js";
 
+import Helpful from "./helpful.js";
 import Neutral from "./neutral.js";
+import Precise from "./precise.js";
+import Angry from "./angry.js";
+import Drunk from "./drunk.js";
+import Funny from "./funny.js";
 
 export interface ChatTone {
 	/** Name of the chat tone */
@@ -24,5 +29,5 @@ export interface ChatTone {
 }
 
 export const TONES: ChatTone[] = [
-	Neutral
+	Neutral, Helpful, Funny, Precise, Angry, Drunk
 ];

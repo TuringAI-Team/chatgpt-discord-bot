@@ -21,6 +21,9 @@ export async function handleInteraction(bot: DiscordBot, interaction: CustomInte
 	const handler = HANDLERS.find(c => c.name === name) ?? null;
 	if (!handler) return;
 
+	const env = await bot.db.env(interaction.user.id, interaction.guildId);
+	const type = bot.db.type(env);
+
 	if (handler.cooldown) {
 		const cooldown = getCooldown(interaction);
 
@@ -35,11 +38,9 @@ export async function handleInteraction(bot: DiscordBot, interaction: CustomInte
 				ephemeral: true
 			});
 		} else {
-			setCooldown(interaction, handler.cooldown.time);
+			if (handler.cooldown[type]) setCooldown(interaction, handler.cooldown[type]!);
 		}
 	}
-
-	const env = await bot.db.env(interaction.user.id, interaction.guildId);
 
 	try {
 		const response = await handler.handler({

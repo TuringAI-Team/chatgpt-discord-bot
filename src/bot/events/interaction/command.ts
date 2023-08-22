@@ -10,6 +10,7 @@ import { EmbedColor } from "../../utils/response.js";
 
 import { COMMANDS } from "../../commands/mod.js";
 import { canUse, restrictionTypes } from "../../utils/restriction.js";
+import { banNotice, isBanned } from "../../moderation/mod.js";
 
 /** Global command cool-downs */
 const cooldowns: Collection<string, number> = new Collection();
@@ -22,6 +23,10 @@ export async function executeCommand(bot: DiscordBot, interaction: CustomInterac
 
 	const env = await bot.db.env(interaction.user.id, interaction.guildId);
 	const type = bot.db.type(env);
+
+	if (isBanned(env.user)) return void await interaction.reply(
+		banNotice(env.user, isBanned(env.user)!)
+	);
 
 	if (command.cooldown) {
 		const cooldown = getCooldown(interaction);

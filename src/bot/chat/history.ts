@@ -33,7 +33,7 @@ const MAX_LENGTH = {
 	Context: {
 		user: 700,
 		voter: 750,
-		subscription: 950,
+		subscription: 900,
 		plan: 1000
 	},
 

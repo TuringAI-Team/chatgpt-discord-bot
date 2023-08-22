@@ -22,7 +22,7 @@ export type DiscordBot<B extends Bot = Bot> = B & {
 	redis: ReturnType<typeof createClient>;
 
 	/** Database manager */
-	db: ReturnType<typeof createDB>;
+	db: Awaited<ReturnType<typeof createDB>>;
 
 	/** Turing API */
 	api: ReturnType<typeof createAPI>;
@@ -48,7 +48,7 @@ async function customizeBot<B extends Bot = Bot>(bot: B) {
 
 	customized.logger = createLogger({ name: "[BOT]" });
 	customized.redis = await createRedis();
-	customized.db = createDB();
+	customized.db = await createDB();
 	customized.api = createAPI();
 
 	return customized;
@@ -69,14 +69,6 @@ bot.rest = createRestManager({
 	token: BOT_TOKEN
 });
 
-const connection = new RabbitMQ.Connection(RABBITMQ_URI);
-
-connection.createConsumer({
-	queue: "gateway"
-}, message => {
-	handleGatewayMessage(message.body);
-});
-
 async function handleGatewayMessage({ data, shard }: GatewayMessage) {
 	if (data.t && data.t !== "RESUMED") {
 		/* When a guild or something isn't in cache, this will fetch it before doing anything else. */
@@ -92,5 +84,13 @@ await registerCommands();
 
 setupTransformers();
 setupEvents();
+
+const connection = new RabbitMQ.Connection(RABBITMQ_URI);
+
+connection.createConsumer({
+	queue: "gateway"
+}, message => {
+	handleGatewayMessage(message.body);
+});
 
 bot.logger.info("Started.");

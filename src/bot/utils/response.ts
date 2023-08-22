@@ -1,4 +1,4 @@
-import type { ActionRow, FileContent, CreateMessage, EditMessage, Embed, InteractionCallbackData } from "discordeno";
+import type { ActionRow, CreateMessage, EditMessage, Embed, InteractionCallbackData } from "discordeno";
 import type { CustomMessage } from "../types/discordeno.js";
 
 import { ApplicationCommandFlags } from "discordeno";
@@ -14,7 +14,13 @@ export interface MessageResponse {
 	components?: ActionRow[];
 
 	/** Which file to upload */
-	file?: FileContent;
+	file?: {
+		/** Name of the file */
+		name: string;
+
+		/** Base64-encoded data of the file */
+		blob: string;
+	};
 
     /** Whether the response should only be shown to the author */
     ephemeral?: boolean;

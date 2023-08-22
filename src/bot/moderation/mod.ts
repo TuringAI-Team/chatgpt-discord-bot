@@ -111,3 +111,15 @@ export function isBanned(entry: DBGuild | DBUser) {
 
 	return infraction;
 }
+
+export function banNotice(entry: DBGuild | DBUser, infraction: DBInfraction): MessageResponse {
+	const location = (entry as any).interactions ? "user" : "guild";
+
+	return {
+		embeds: {
+			title: `${location === "guild" ? "This server is" : "You are"} banned **${infraction.until ? "temporarily" : "permanently"}** from using the bot 😔`,
+			description: `_If you want to appeal or have questions about this ban, join the **[support server](https://${SUPPORT_INVITE})**_.`,
+			color: EmbedColor.Red
+		}
+	};
+}

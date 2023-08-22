@@ -1,4 +1,4 @@
-import type { Interaction, Message } from "discordeno";
+import type { DiscordUser, Interaction, Message } from "discordeno";
 import type { MessageResponse } from "../utils/response.js";
 
 export interface CustomInteraction extends Interaction {
@@ -23,13 +23,7 @@ export interface CustomInteraction extends Interaction {
 
 export interface CustomMessage extends Omit<Message, "stickerItems" | "application" | "applicationId" | "components" | "reactions" | "nonce" | "interaction"> {
 	/** Author of the message */
-	author: {
-		/** Username of the author */
-		name: string;
-
-		/** ID of the author */
-		id: bigint;
-	};
+	author: DiscordUser;
 
     /** Reply to a message. */
 	reply: (response: Omit<MessageResponse, "reference"> | string) => Promise<Message>;

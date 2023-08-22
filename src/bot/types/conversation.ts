@@ -1,3 +1,5 @@
+import type { ChatModelResult } from "../chat/models/mod.js";
+
 export interface Conversation {
 	/** ID of the conversation */
 	id: string;
@@ -14,13 +16,10 @@ export interface ConversationInteraction {
 	output: ConversationMessage;
 }
 
-export interface ConversationResult {
+export type ConversationResult = Pick<ChatModelResult, "done" | "cost" | "finishReason"> & {
 	/** The ID of the message */
 	id: string;
-
-	/** Whether the generation is done */
-	done: boolean;
-
+	
 	/** The resulting message */
 	message: ConversationMessage;
 }

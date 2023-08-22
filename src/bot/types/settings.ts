@@ -1,3 +1,4 @@
+import type { RestrictionName } from "../utils/restriction.js";
 import type { DiscordComponentEmoji } from "./discordeno.js";
 import type { DBGuild } from "../../db/types/guild.js";
 import type { DBUser } from "../../db/types/user.js";
@@ -28,6 +29,9 @@ export interface SettingsOptionChoice<T> {
 
 	/** Emoji of the choice */
 	emoji?: DiscordComponentEmoji | string;
+
+	/** Restrictions of the choice */
+	restrictions?: RestrictionName[];
 
 	/** Value of the choice */
 	value: T;

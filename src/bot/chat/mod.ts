@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { type ButtonComponent, MessageComponentTypes, ButtonStyles } from "discordeno";
+import { type ButtonComponent, MessageComponentTypes, ButtonStyles, Embed } from "discordeno";
 import { randomUUID } from "crypto";
 
 import type { Conversation, ConversationResult, ConversationUserMessage } from "../types/conversation.js";
@@ -8,8 +8,10 @@ import type { DBEnvironment } from "../../db/types/mod.js";
 import type { DiscordBot } from "../mod.js";
 
 import { getLoadingIndicatorFromUser, loadingIndicatorToString } from "../../db/types/user.js";
+import { transformResponse, type MessageResponse, EmbedColor } from "../utils/response.js";
+import { banNotice, isBanned, moderate, moderationNotice } from "../moderation/mod.js";
 import { CHAT_MODELS, type ChatModel, type ChatModelResult } from "./models/mod.js";
-import { transformResponse, type MessageResponse } from "../utils/response.js";
+import { ModerationSource } from "../moderation/types/mod.js";
 import { SettingsLocation } from "../types/settings.js";
 import { TONES, type ChatTone } from "./tones/mod.js";
 import { ResponseError } from "../error/response.js";
@@ -17,8 +19,6 @@ import { handleError } from "../moderation/error.js";
 import { getSettingsValue } from "../settings.js";
 import { buildHistory } from "./history.js";
 import { Emitter } from "../utils/event.js";
-import { moderate, moderationNotice } from "../moderation/mod.js";
-import { ModerationSource } from "../moderation/types/mod.js";
 
 interface ExecuteOptions {
 	bot: DiscordBot;
@@ -41,8 +41,12 @@ export async function handleMessage(bot: DiscordBot, message: CustomMessage) {
 		message: "You already have a request running; *wait for it to finish*", emoji: "😔"
 	});
 
-	const env = await bot.db.env(message.authorId, message.guildId);
 	const conversation: Conversation = await bot.db.fetch("conversations", message.authorId);
+	const env = await bot.db.env(message.authorId, message.guildId);
+
+	if (isBanned(env.user)) return void await message.reply(
+		banNotice(env.user, isBanned(env.user)!)
+	);
 
 	/* User's loading indicator */
 	const indicator = getLoadingIndicatorFromUser(env.user);
@@ -188,7 +192,8 @@ async function execute(options: ExecuteOptions): Promise<ConversationResult> {
 function formatResult(result: ChatModelResult, id: string): ConversationResult {
 	return {
 		id, done: result.done,
-		message: { role: "assistant", content: result.content }
+		message: { role: "assistant", content: result.content },
+		cost: result.cost, finishReason: result.finishReason
 	};
 }
 
@@ -201,14 +206,18 @@ function format(
 	const indicator = getLoadingIndicatorFromUser(env.user);
 	const emoji = loadingIndicatorToString(indicator);
 
+	const response: MessageResponse = {};
+	let content = result.message.content.trim();
+
 	const components: ButtonComponent[] = [];
+	const embeds: Embed[] = [];
 
 	if (result.done) {
 		components.push({
 			type: MessageComponentTypes.Button,
 			label: model.name,
 			emoji: typeof model.emoji === "string" ? { name: model.emoji } : model.emoji,
-			customId: `settings:view:${SettingsLocation.User}:chat`,
+			customId: `settings:view:${SettingsLocation.User}:chat:model`,
 			style: ButtonStyles.Secondary
 		});
 
@@ -216,27 +225,49 @@ function format(
 			type: MessageComponentTypes.Button,
 			label: tone.name,
 			emoji: typeof tone.emoji === "string" ? { name: tone.emoji } : tone.emoji,
-			customId: `settings:view:${SettingsLocation.User}:chat`,
+			customId: `settings:view:${SettingsLocation.User}:chat:tone`,
 			style: ButtonStyles.Secondary
 		});
 
 		if (components.length < 2) components.push({
 			type: MessageComponentTypes.Button,
-			label: `@${message.author.name}`,
+			label: `@${message.author.username}`,
 			emoji: { name: bot.db.icon(env) },
 			style: ButtonStyles.Secondary, disabled: true,
 			customId: randomUUID()
 		});
 	}
 
-	return {
-		content: `${result.message.content}${!result.done ? ` **...** ${emoji}` : ""}`,
+	if (result.finishReason === "length") {
+		embeds.push({
+			description: "This message reached the length limit, and was not fully generated.",
+			color: EmbedColor.Yellow
+		});
 
-		components: components.length > 0 ? [ {
-			type: MessageComponentTypes.ActionRow,
-			components: components as [ ButtonComponent ]
-		} ] : undefined
-	};
+		content += " **...**";
+	}
+
+	if (components.length > 0) response.components = [ {
+		type: MessageComponentTypes.ActionRow,
+		components: components as [ ButtonComponent ]
+	} ];
+
+	if (embeds.length > 0) response.embeds = embeds;
+
+	/* Generated response, with the pending indicator */
+	const formatted: string = `${content} **...** ${emoji}`;
+
+	if (formatted.length > 2000) {
+		response.file = {
+			name: `${model.id}-${tone.id}-${Date.now()}.txt`, blob: Buffer.from(content).toString("base64")
+		};
+
+		response.content = !result.done ? emoji : "";
+	} else {
+		response.content = !result.done ? formatted : content;
+	}
+
+	return response;
 }
 
 function getModel(env: DBEnvironment) {

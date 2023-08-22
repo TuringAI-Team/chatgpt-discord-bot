@@ -4,12 +4,13 @@ import { randomUUID } from "crypto";
 import { SettingsCategory, SettingsLocation, SettingsOption, SettingsOptionType } from "./types/settings.js";
 
 import type { InteractionHandlerOptions } from "./types/interaction.js";
-import type { MessageResponse } from "./utils/response.js";
+import { EmbedColor, type MessageResponse } from "./utils/response.js";
 import type { DBEnvironment } from "../db/types/mod.js";
 import type { DBGuild } from "../db/types/guild.js";
 import type { DBUser } from "../db/types/user.js";
 
 import { LOADING_INDICATORS, USER_LANGUAGES } from "../db/types/user.js";
+import { canUse, restrictionTypes } from "./utils/restriction.js";
 import { CHAT_MODELS } from "./chat/models/mod.js";
 import { IMAGE_MODELS } from "./image/models.js";
 import { IMAGE_STYLES } from "./image/styles.js";
@@ -60,7 +61,7 @@ export const SettingsCategories: SettingsCategory[] = [
 				default: "chatgpt",
 				
 				choices: CHAT_MODELS.map(m => ({
-					name: m.name, description: m.description, emoji: m.emoji, value: m.id
+					name: m.name, description: m.description, emoji: m.emoji, restrictions: m.restrictions, value: m.id
 				}))
 			},
 
@@ -236,6 +237,20 @@ export async function handleSettingsInteraction({ bot, args, env, interaction }:
 
 		} else if (option.type === SettingsOptionType.Choices) {
 			newValue = interaction.data?.values?.[0] ?? currentValue;
+			const choice = option.choices.find(c => c.value === newValue)!;
+
+			if (choice.restrictions && !canUse(bot, env, choice.restrictions)) {
+				const allowed = restrictionTypes(choice.restrictions);
+
+				return void await interaction.reply({
+					embeds: {
+						description: `The choice ${choice.name} is ${allowed.map(a => `**${a.description}** ${a.emoji}`).join(", ")}.`,
+						color: EmbedColor.Orange
+					},
+		
+					ephemeral: true
+				});
+			}
 		}
 
 		if (newValue !== null) {
@@ -308,12 +323,18 @@ function buildOption(
 
 			placeholder: `${option.name} ${option.emoji}`,
 
-			options: option.choices.map(c => ({
-				label: c.name, value: c.value,
-				description: c.description,
-				emoji: c.emoji ? typeof c.emoji === "string" ? { name: c.emoji } : c.emoji : undefined,
-				default: c.value === current
-			}))
+			options: option.choices.map(c => {
+				const restrictions = c.restrictions ? restrictionTypes(c.restrictions) : [];
+
+				return ({
+					label: `${c.name} ${restrictions.map(r => r.emoji).join(" ")}`, value: c.value,
+					description: c.restrictions
+						? `${c.description ?? ""} (${restrictions.map(r => r.description).join(", ")})`
+						: c.description,
+					emoji: c.emoji ? typeof c.emoji === "string" ? { name: c.emoji } : c.emoji : undefined,
+					default: c.value === current
+				});
+			})
 		});
 	}
 	return {
