@@ -21,7 +21,7 @@ export function cooldownNotice(target: CooldownTarget): MessageResponse {
 	const embeds: Embed[] = [
 		{
 			title: "Whoa-whoa... slow down ⌛",
-			description: `This action is currently on cool-down; you can use it again <t:${Math.floor(cooldown!.when / 1000)}:R>.`,
+			description: `This action is currently on cool-down; you can use it again <t:${Math.floor((cooldown!.when - 1000) / 1000)}:R>.`,
 			color: EmbedColor.Yellow
 		}
 	];

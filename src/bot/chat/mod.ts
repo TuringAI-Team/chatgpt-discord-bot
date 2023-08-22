@@ -10,7 +10,7 @@ import { getLoadingIndicatorFromUser, loadingIndicatorToString } from "../../db/
 import { transformResponse, type MessageResponse, EmbedColor } from "../utils/response.js";
 import { banNotice, isBanned, moderate, moderationNotice } from "../moderation/mod.js";
 import { CHAT_MODELS, type ChatModel, type ChatModelResult } from "./models/mod.js";
-import { cooldownNotice, getCooldown, hasCooldown } from "../utils/cooldown.js";
+import { cooldownNotice, getCooldown, hasCooldown, setCooldown } from "../utils/cooldown.js";
 import { ModerationSource } from "../moderation/types/mod.js";
 import { SettingsLocation } from "../types/settings.js";
 import { TONES, type ChatTone } from "./tones/mod.js";
@@ -42,16 +42,18 @@ export async function handleMessage(bot: DiscordBot, message: CustomMessage) {
 	});
 
 	const conversation: Conversation = await bot.db.fetch("conversations", message.authorId);
-	const env = await bot.db.env(message.authorId, message.guildId);
 
 	if (hasCooldown(conversation)) {
 		const reply = await message.reply(cooldownNotice(conversation));
-		const { remaining } = getCooldown(conversation);
+		const { remaining } = getCooldown(conversation)!;
 
 		return void setTimeout(() => {
 			reply.delete().catch(() => {});
 		}, remaining);
 	}
+
+	const env = await bot.db.env(message.authorId, message.guildId);
+	const type = bot.db.type(env);
 
 	if (isBanned(env.user)) return void await message.reply(
 		banNotice(env.user, isBanned(env.user)!)
@@ -151,6 +153,11 @@ export async function handleMessage(bot: DiscordBot, message: CustomMessage) {
 		);
 
 		runningGenerations.delete(message.authorId);
+	}
+
+	/* Apply the model's specific cool-down to the user. */ 
+	if (model.cooldown && model.cooldown[type]) {
+		setCooldown(conversation, model.cooldown[type]!);
 	}
 
 	/** Apply all updates to the conversation's history. */

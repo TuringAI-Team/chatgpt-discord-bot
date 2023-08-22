@@ -6,9 +6,10 @@ import { cooldownNotice, getCooldown, hasCooldown, setCooldown } from "../utils/
 import { handleError } from "../moderation/error.js";
 
 import Settings from "./settings.js";
+import Premium from "./premium.js";
 
 export const HANDLERS: InteractionHandler[] = [
-	Settings
+	Settings, Premium
 ];
 
 export async function handleInteraction(bot: DiscordBot, interaction: CustomInteraction) {
