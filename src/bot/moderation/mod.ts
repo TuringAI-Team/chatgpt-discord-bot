@@ -1,10 +1,11 @@
-import type { Embed } from "discordeno";
+import type { DiscordEmbedField, Embed } from "discordeno";
 
 import RabbitMQ from "rabbitmq-client";
 import { randomUUID } from "crypto";
 
 import type { ModerationNoticeOptions, ModerationOptions, ModerationResult } from "./types/mod.js";
 import type { DBInfraction, GiveInfractionOptions } from "../../db/types/moderation.js";
+import type { DBEnvironment } from "../../db/types/mod.js";
 import type { DBGuild } from "../../db/types/guild.js";
 import type { DBUser } from "../../db/types/user.js";
 import type { DiscordBot } from "../mod.js";
@@ -48,6 +49,7 @@ export async function moderate({ bot, env, source, content }: ModerationOptions)
 	/* Apply the given infraction. */
 	if (infraction) env.user = await giveInfraction(bot, env.user, infraction);
 
+	await sendModerationData(env, data);
 	return data;
 }
 
@@ -114,12 +116,29 @@ export function isBanned(entry: DBGuild | DBUser) {
 
 export function banNotice(entry: DBGuild | DBUser, infraction: DBInfraction): MessageResponse {
 	const location = (entry as any).interactions ? "user" : "guild";
+	const fields: DiscordEmbedField[] = [];
+
+	if (infraction.reason) fields.push({
+		name: "Reason", value: infraction.reason, inline: true
+	});
+
+	if (infraction.until) fields.push({
+		name: "Until", value: `<t:${Math.floor(infraction.until / 1000)}:f>, <t:${Math.floor(infraction.until / 1000)}:R>`, inline: true
+	});
 
 	return {
 		embeds: {
 			title: `${location === "guild" ? "This server is" : "You are"} banned **${infraction.until ? "temporarily" : "permanently"}** from using the bot 😔`,
 			description: `_If you want to appeal or have questions about this ban, join the **[support server](https://${SUPPORT_INVITE})**_.`,
+			timestamp: infraction.when, fields,
 			color: EmbedColor.Red
 		}
 	};
+}
+
+/** Send the flag through RabbitMQ, to be handled by a separate management bot. */
+async function sendModerationData(env: DBEnvironment, result: ModerationResult) {
+	publisher.send("moderation", {
+		env, result
+	});
 }

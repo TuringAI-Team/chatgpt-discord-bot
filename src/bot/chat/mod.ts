@@ -7,10 +7,10 @@ import type { DBEnvironment } from "../../db/types/mod.js";
 import type { DiscordBot } from "../mod.js";
 
 import { getLoadingIndicatorFromUser, loadingIndicatorToString } from "../../db/types/user.js";
+import { cooldownNotice, getCooldown, hasCooldown, setCooldown } from "../utils/cooldown.js";
 import { transformResponse, type MessageResponse, EmbedColor } from "../utils/response.js";
 import { banNotice, isBanned, moderate, moderationNotice } from "../moderation/mod.js";
 import { CHAT_MODELS, type ChatModel, type ChatModelResult } from "./models/mod.js";
-import { cooldownNotice, getCooldown, hasCooldown, setCooldown } from "../utils/cooldown.js";
 import { ModerationSource } from "../moderation/types/mod.js";
 import { SettingsLocation } from "../types/settings.js";
 import { TONES, type ChatTone } from "./tones/mod.js";
@@ -62,7 +62,6 @@ export async function handleMessage(bot: DiscordBot, message: CustomMessage) {
 	/* User's loading indicator */
 	const indicator = getLoadingIndicatorFromUser(env.user);
 
-	/* Get the configured model & tone of the user. */
 	const model = getModel(env);
 	const tone = getTone(env);
 
@@ -102,7 +101,6 @@ export async function handleMessage(bot: DiscordBot, message: CustomMessage) {
 	const partial = getSettingsValue<boolean>(env.user, "chat:partial_messages");
 	if (partial) emitter.on(handler);
 
-	/* Moderate the user's prompt. */
 	const moderation = await moderate({
 		bot, env, content: input.content, source: ModerationSource.ChatFromUser
 	});
@@ -159,9 +157,6 @@ export async function handleMessage(bot: DiscordBot, message: CustomMessage) {
 	if (model.cooldown && model.cooldown[type]) {
 		setCooldown(conversation, model.cooldown[type]!);
 	}
-
-	/** Apply all updates to the conversation's history. */
-	await bot.db.update("conversations", conversation.id, conversation);
 }
 
 /** Execute the chat request, on the specified model. */
@@ -202,6 +197,10 @@ async function execute(options: ExecuteOptions): Promise<ConversationResult> {
 		id, input, output: result.message
 	});
 
+	/** Apply all updates to the conversation's history. */
+	await bot.db.update("conversations", options.conversation.id, options.conversation);
+
+	/* TODO: Pay-as-you-go charges */
 	return result;
 }
 

@@ -1,5 +1,5 @@
 import { Text, Image } from "turing.sh";
-import { TURING_API_KEY, TURING_CAPTCHA_KEY } from "../config.js";
+import { TURING_API_KEY, TURING_CAPTCHA_KEY, TURING_HOST } from "../config.js";
 
 export function createAPI() {
 	return {
@@ -8,6 +8,7 @@ export function createAPI() {
 			captchaKey: TURING_CAPTCHA_KEY,
 
 			options: {
+				host: TURING_HOST,
 				stream: true
 			}
 		}),
@@ -17,6 +18,7 @@ export function createAPI() {
 			captchaKey: TURING_CAPTCHA_KEY,
 
 			options: {
+				host: TURING_HOST,
 				stream: true
 			}
 		})

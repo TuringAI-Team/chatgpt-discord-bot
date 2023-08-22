@@ -32,11 +32,13 @@ const app = express();
 
 app.use(
 	express.urlencoded({
-		extended: true
+		extended: true, limit: "50mb"
 	})
 );
 
-app.use(express.json());
+app.use(express.json({
+	limit: "50mb"
+}));
 
 app.all("/*", async (req, res) => {
 	if (HTTP_AUTH !== req.headers.authorization) {
@@ -45,7 +47,7 @@ app.all("/*", async (req, res) => {
 
 	try {
 		if (req.body.file) {
-			req.body.file.blob = base64ToBlob(req.body.file.blob);
+			req.body.file.blob = new Blob([ Buffer.from(req.body.file.blob, "base64") ]);
 		}
 
 		const result = await rest.runMethod(
@@ -64,25 +66,6 @@ app.all("/*", async (req, res) => {
 		res.status(error.status).json(error);
 	}
 });
-
-function base64ToBlob(base64: string, contentType: string = "", sliceSize: number = 512): Blob {
-	const byteCharacters = Buffer.from(base64, "base64").toString();
-	const byteArrays = [];
-
-	for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
-		const slice = byteCharacters.slice(offset, offset + sliceSize);
-
-		const byteNumbers = new Array(slice.length);
-		for (let i = 0; i < slice.length; i++) {
-			byteNumbers[i] = slice.charCodeAt(i);
-		}
-
-		const byteArray = new Uint8Array(byteNumbers);
-		byteArrays.push(byteArray);
-	}
-
-	return new Blob(byteArrays, { type: contentType });
-}
 
 app.listen(REST_PORT, () => {
 	logger.info("Started.");

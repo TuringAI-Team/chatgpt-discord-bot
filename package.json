@@ -17,6 +17,7 @@
 	},
 	"dependencies": {
 		"@dqbd/tiktoken": "^1.0.7",
+		"@napi-rs/canvas": "^0.1.44",
 		"@supabase/supabase-js": "^2.32.0",
 		"colorette": "^2.0.20",
 		"discordeno": "^16.0.1",
@@ -26,7 +27,7 @@
 		"rabbitmq-client": "^4.2.1",
 		"redis": "^4.6.7",
 		"swc": "^1.0.11",
-		"turing.sh": "^0.0.1-beta.1"
+		"turing.sh": "^0.0.3-beta.0"
 	},
 	"devDependencies": {
 		"@types/express": "^4.17.17",

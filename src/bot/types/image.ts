@@ -1,5 +1,3 @@
-import type { Image } from "turing.sh";
-
 import type { Emitter } from "../utils/event.js";
 import type { DiscordBot } from "../mod.js";
 
@@ -14,9 +12,6 @@ export interface ImageConfigModelSettings {
 
     /* The base resolution when specifying a ratio */
     baseSize?: ImageConfigModelSize | null;
-
-    /** Whether this model can be chosen randomly */
-    random?: boolean;
 }
 
 export interface ImageModel {
@@ -27,10 +22,16 @@ export interface ImageModel {
 	description: string;
 
 	/** ID of the model */
-	id: keyof Image;
+	id: string;
+
+	/** Which path is used */
+	path: "anything" | "kandinsky" | "sh";
 
     /** Various settings for the model */
     settings?: ImageConfigModelSettings;
+
+	/** Overwrites for the request body */
+	body?: Partial<ImageGenerationBody>;
 }
 
 export interface ImageStyle {
@@ -103,7 +104,7 @@ export type ImageRawResult = ImageResult & {
     base64: string;
 }
 
-export type ImageGenerationType = "generate" | "upscale"
+export type ImageGenerationAction = "generate" | "upscale"
 
 export type ImageStatus = "success" | "filtered" | "failed"
 export type ImageGenerationStatus = "queued" | "generating" | "done" | "failed"
@@ -113,6 +114,7 @@ export interface ImageGenerationResult {
 	done: boolean;
     status: ImageGenerationStatus;
     results: ImageRawResult[];
+	progress: number | null;
     error: string | null;
     cost: number | null;
 }
@@ -125,5 +127,5 @@ export interface ImagePrompt {
     negative?: string;
 
     /** Which filter was used */
-    style?: string;
+    style: string;
 }

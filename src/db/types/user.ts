@@ -240,11 +240,11 @@ export const LOADING_INDICATORS: LoadingIndicator[] = [
 	}
 ];
 
-export function loadingIndicatorToString(indicator: LoadingIndicator) {
-	return `<${indicator.emoji.animated ? "a" : ""}:${indicator.emoji.name}:${indicator.emoji.id}>`;
-}
-
 export function getLoadingIndicatorFromUser(user: DBUser) {
 	const id: string = getSettingsValue(user, "general:loading_indicator");
 	return LOADING_INDICATORS.find(i => i.emoji.id.toString() === id)!;
+}
+
+export function loadingIndicatorToString(indicator: LoadingIndicator) {
+	return `<${indicator.emoji.animated ? "a" : ""}:${indicator.emoji.name}:${indicator.emoji.id}>`;
 }

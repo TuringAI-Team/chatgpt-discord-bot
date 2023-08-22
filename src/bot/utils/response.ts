@@ -70,8 +70,9 @@ export function transformResponse<T extends (CreateMessage | EditMessage | Inter
 	return {
 		content: response.content,
 
-		embeds: response.embeds ?
-			Array.isArray(response.embeds) ? response.embeds
+		embeds: response.embeds
+			? Array.isArray(response.embeds)
+				? response.embeds
 				: [ response.embeds ]
 			: undefined,
 

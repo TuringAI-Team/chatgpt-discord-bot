@@ -4,6 +4,8 @@ import type { ModerationFilter, ModerationFilterAction, ModerationFilterActionTy
 import type { GiveInfractionOptions } from "../../db/types/moderation.js";
 import type { ModerationOptions } from "./types/mod.js";
 
+import { DBRole } from "../../db/types/user.js";
+
 const MODERATION_FILTERS: ModerationFilter[] = [
 	{
 		name: "Turing filter",
@@ -26,7 +28,9 @@ const MODERATION_FILTERS: ModerationFilter[] = [
 	{
 		name: "Development filter",
 
-		handler: async ({ content }) => {
+		handler: async ({ env, content }) => {
+			if (!env.user.roles.includes(DBRole.Owner)) return null;
+
 			/* Types of actions to take */
 			const types: ModerationFilterActionType[] = [ "ban", "warn", "block", "flag" ];
 
@@ -45,7 +49,7 @@ const MODERATION_FILTERS: ModerationFilter[] = [
 ];
 
 /** Execute all of the moderation filters. */
-export async function executeFilters({ bot, content, source }: ModerationOptions): Promise<ModerationFilterAction | null> {
+export async function executeFilters({ bot, env, source, content }: ModerationOptions): Promise<ModerationFilterAction | null> {
 	/* Which action should be performed, if any */
 	let action: ModerationFilterAction | null = null;
 
@@ -53,7 +57,7 @@ export async function executeFilters({ bot, content, source }: ModerationOptions
 		/* Try to execute the filter. */
 		try {
 			const result = await filter.handler({
-				bot, content, source
+				bot, env, source, content
 			});
 
 			if (result !== null) {
@@ -79,6 +83,14 @@ export function applyFilters({ auto }: {
 	if (auto.type === "warn") {
 		return {
 			type: "warn", reason: auto.reason, seen: false
+		};
+	} else if (auto.type === "ban") {
+		return {
+			type: "ban", reason: auto.reason,
+			
+			until: auto.duration
+				? Date.now() + auto.duration
+				: undefined
 		};
 	}
 

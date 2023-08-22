@@ -1,4 +1,5 @@
 import type { DBInfraction } from "../../../db/types/moderation.js";
+import type { DBEnvironment } from "../../../db/types/mod.js";
 import type { ModerationSource } from "./mod.js";
 import type { DiscordBot } from "../../mod.js";
 
@@ -20,6 +21,7 @@ interface ModerationFilterHandlerOptions {
 	bot: DiscordBot;
 	content: string;
 	source: ModerationSource;
+	env: DBEnvironment
 }
 
 export interface ModerationFilter {

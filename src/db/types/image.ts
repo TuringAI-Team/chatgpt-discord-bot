@@ -1,4 +1,4 @@
-import type { ImageGenerationBody, ImageGenerationType, ImagePrompt, ImageResult } from "../../bot/types/image.js";
+import type { ImageGenerationBody, ImageGenerationAction, ImagePrompt, ImageResult } from "../../bot/types/image.js";
 
 export interface DBImage {
     /* Unique identifier of the generation request */
@@ -11,7 +11,7 @@ export interface DBImage {
     created: string;
 
     /* Which action was performed */
-    action: ImageGenerationType;
+    action: ImageGenerationAction;
 
     /* Which prompt was used to generate the image */
     prompt: ImagePrompt;

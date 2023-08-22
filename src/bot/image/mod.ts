@@ -1,13 +1,17 @@
 import { randomUUID } from "crypto";
 
-import type { ImageGenerationOptions, ImageGenerationRatio, ImageGenerationResult, ImageGenerationSize, ImageGenerationType, ImageModel, ImagePrompt, ImageUpscaleOptions } from "../types/image.js";
+import type { ImageGenerationOptions, ImageGenerationRatio, ImageGenerationResult, ImageGenerationSize, ImageGenerationAction, ImageModel, ImagePrompt, ImageUpscaleOptions } from "../types/image.js";
 import type { DBImage } from "../../db/types/image.js";
 
 export async function generate({ bot, model, emitter, body }: ImageGenerationOptions) {
-	const request = await bot.api.image[model.id](body as any);
+	const request = await bot.api.image[model.path]({
+		...body, ...model.body ?? {}
+	} as any);
 
 	request.on("data", (data: ImageGenerationResult) => {
-		emitter.emit(data);
+		emitter.emit({
+			...data, done: data.status === "done"
+		});
 	});
 
 	return await emitter.wait(3 * 60 * 1000);
@@ -27,7 +31,7 @@ export async function upscale({ bot, url }: ImageUpscaleOptions): Promise<ImageG
 			base64: response.result
 		} ],
 		
-		cost: response.cost, id: randomUUID(),
+		cost: response.cost, id: randomUUID(), progress: null,
 		status: "done", error: null, done: true
 	};
 }
@@ -37,7 +41,7 @@ export function resultToDatabase(
 	{ body, model }: ImageGenerationOptions,
 	result: ImageGenerationResult,
 	time: string,
-	action: ImageGenerationType
+	action: ImageGenerationAction
 ): DBImage {
 	return {
 		id: result.id, created: time, action, prompt, model: model.id,
