@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { type ButtonComponent, MessageComponentTypes, ButtonStyles, Embed } from "discordeno";
 import { randomUUID } from "crypto";
 
@@ -11,6 +10,7 @@ import { getLoadingIndicatorFromUser, loadingIndicatorToString } from "../../db/
 import { transformResponse, type MessageResponse, EmbedColor } from "../utils/response.js";
 import { banNotice, isBanned, moderate, moderationNotice } from "../moderation/mod.js";
 import { CHAT_MODELS, type ChatModel, type ChatModelResult } from "./models/mod.js";
+import { cooldownNotice, getCooldown, hasCooldown } from "../utils/cooldown.js";
 import { ModerationSource } from "../moderation/types/mod.js";
 import { SettingsLocation } from "../types/settings.js";
 import { TONES, type ChatTone } from "./tones/mod.js";
@@ -43,6 +43,15 @@ export async function handleMessage(bot: DiscordBot, message: CustomMessage) {
 
 	const conversation: Conversation = await bot.db.fetch("conversations", message.authorId);
 	const env = await bot.db.env(message.authorId, message.guildId);
+
+	if (hasCooldown(conversation)) {
+		const reply = await message.reply(cooldownNotice(conversation));
+		const { remaining } = getCooldown(conversation);
+
+		return void setTimeout(() => {
+			reply.delete().catch(() => {});
+		}, remaining);
+	}
 
 	if (isBanned(env.user)) return void await message.reply(
 		banNotice(env.user, isBanned(env.user)!)

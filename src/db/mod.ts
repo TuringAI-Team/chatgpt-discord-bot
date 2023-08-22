@@ -20,7 +20,8 @@ const CollectionNameMap: Record<CollectionName, string> = {
 	guilds: "guilds_new",
 	users: "users_new",
 	conversations: "convos",
-	images: "images_new"
+	images: "images_new",
+	campaigns: "campaigns_new"
 };
 
 /** Collection templates */
@@ -145,6 +146,13 @@ async function fetch<T extends DBObject = DBObject>(collection: CollectionName, 
 	return template;
 }
 
+async function all<T extends DBObject = DBObject>(collection: CollectionName): Promise<T[]> {
+	const { data } = await db.from(CollectionNameMap[collection])
+		.select("*");
+
+	return data as T[];
+}
+
 async function handleMessage(data: DBRequestData): Promise<any> {
 	if (data.type === "get") {
 		return await get(data.collection, data.id);
@@ -152,6 +160,8 @@ async function handleMessage(data: DBRequestData): Promise<any> {
 		return await fetch(data.collection, data.id);
 	} else if (data.type === "update") {
 		return await update(data.collection, data.id, data.updates);
+	} else if (data.type === "all") {
+		return await all(data.collection);
 	}
 
 	throw new Error("Not implemented");

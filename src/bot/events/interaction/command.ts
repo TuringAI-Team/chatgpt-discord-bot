@@ -1,5 +1,3 @@
-import { Collection } from "discordeno";
-
 import type { CustomInteraction } from "../../types/discordeno.js";
 import type { CommandOptionValue } from "../../types/command.js";
 import type { DiscordBot } from "../../mod.js";
@@ -8,12 +6,11 @@ import { handleError } from "../../moderation/error.js";
 import { ResponseError } from "../../error/response.js";
 import { EmbedColor } from "../../utils/response.js";
 
-import { COMMANDS } from "../../commands/mod.js";
 import { canUse, restrictionTypes } from "../../utils/restriction.js";
+import { cooldownNotice, getCooldown, hasCooldown, setCooldown } from "../../utils/cooldown.js";
 import { banNotice, isBanned } from "../../moderation/mod.js";
 
-/** Global command cool-downs */
-const cooldowns: Collection<string, number> = new Collection();
+import { COMMANDS } from "../../commands/mod.js";
 
 export async function executeCommand(bot: DiscordBot, interaction: CustomInteraction) {
 	if (!interaction.data) return;
@@ -27,20 +24,15 @@ export async function executeCommand(bot: DiscordBot, interaction: CustomInterac
 	if (isBanned(env.user)) return void await interaction.reply(
 		banNotice(env.user, isBanned(env.user)!)
 	);
-
+	
 	if (command.cooldown) {
-		const cooldown = getCooldown(interaction);
+		if (hasCooldown(interaction)) {
+			await interaction.reply(cooldownNotice(interaction));
+			const { remaining } = getCooldown(interaction)!;
 
-		if (cooldown) {
-			return void await interaction.reply({
-				embeds: {
-					title: "Whoa-whoa... slow down ⏳",
-					description: `This command is currently on cool-down. You can use it again <t:${Math.floor(cooldown.when / 1000)}:R>.`,
-					color: EmbedColor.Yellow
-				},
-
-				ephemeral: true
-			});
+			return void setTimeout(() => {
+				interaction.deleteReply().catch(() => {});
+			}, remaining);
 		} else {
 			if (command.cooldown[type]) setCooldown(interaction, command.cooldown[type]!);
 		}
@@ -98,20 +90,3 @@ function parseCommandOptions(interaction: CustomInteraction) {
 	return args;
 }
 
-export function getCooldown(interaction: CustomInteraction) {
-	const existing = cooldowns.get(cooldownKey(interaction)) ?? null;
-	if (!existing || existing < Date.now()) return null;
-
-	return {
-		remaining: existing - Date.now(),
-		when: existing
-	};
-}
-
-export function setCooldown(interaction: CustomInteraction, duration: number) {
-	cooldowns.set(cooldownKey(interaction), Date.now() + duration);
-}
-
-export function cooldownKey(interaction: CustomInteraction) {
-	return `${interaction.user.id}-${interaction.data?.name}`;
-}

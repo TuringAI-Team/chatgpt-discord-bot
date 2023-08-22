@@ -12,6 +12,7 @@ import { registerCommands } from "./commands/mod.js";
 import { setupEvents } from "./events/mod.js";
 import { createAPI } from "./api.js";
 import { createDB } from "./db.js";
+import { fetchCampaigns } from "./campaign.js";
 
 /* Custom type of the Discordeno bot class, so we can add custom properties */
 export type DiscordBot<B extends Bot = Bot> = B & {
@@ -81,6 +82,7 @@ async function handleGatewayMessage({ data, shard }: GatewayMessage) {
 }
 
 await registerCommands();
+await fetchCampaigns();
 
 setupTransformers();
 setupEvents();

@@ -1,12 +1,11 @@
 import RabbitMQ from "rabbitmq-client";
 
-import { CollectionName, DBEnvironment, DBObject, DBRequestData, DBRequestType, DBRequestUpdate, DBResponse, DBType } from "../db/types/mod.js";
-import { RABBITMQ_URI } from "../config.js";
-
+import type { CollectionName, DBEnvironment, DBObject, DBRequestAll, DBRequestData, DBRequestFetch, DBRequestGet, DBRequestType, DBRequestUpdate, DBResponse, DBType } from "../db/types/mod.js";
+import { DBRole, type DBUser, DBUserType } from "../db/types/user.js";
 import type { DBGuild } from "../db/types/guild.js";
-import { DBRole, DBUser, DBUserType } from "../db/types/user.js";
 
 import { getSettingsValue } from "./settings.js";
+import { RABBITMQ_URI } from "../config.js";
 
 export async function createDB() {
 	const connection = new RabbitMQ.Connection(RABBITMQ_URI);
@@ -26,26 +25,32 @@ export async function createDB() {
 
 		const response: DBResponse = data.body;
 
-		if (!response.success && response.error) throw new Error(response.error);
+		if (!response.success && response.error) throw new Error(`DB error: ${response.error}`);
 		return response.data;
 	};
 
 	const get = async<T = DBType> (collection: CollectionName, id: string | bigint): Promise<T | null> => {
 		return await execute("get", {
 			collection, id: id.toString()
-		});
+		} as DBRequestGet);
 	};
 
 	const fetch = async<T = DBType> (collection: CollectionName, id: string | bigint): Promise<T> => {
 		return await execute("fetch", {
 			collection, id: id.toString()
-		});
+		} as DBRequestFetch);
 	};
 
 	const update = async<T = DBType> (collection: CollectionName, id: string | bigint | DBObject, updates: Partial<Omit<T, "id">>): Promise<T> => {
 		return await execute("update", {
 			collection, id: typeof id === "bigint" ? id.toString() : id, updates
 		} as DBRequestUpdate);
+	};
+
+	const all = async<T = DBType> (collection: CollectionName): Promise<T[]> => {
+		return await execute("all", {
+			collection
+		} as DBRequestAll);
 	};
 
 	const premium = (env: DBEnvironment): { type: "subscription" | "plan", location: "guild" | "user" } | null => {
@@ -103,7 +108,7 @@ export async function createDB() {
 	};
 
 	return { 
-		rpc, execute, get, fetch, update, premium, voted, types,
+		rpc, execute, get, fetch, update, premium, voted, types, all,
 
 		env: async (user: bigint, guild?: bigint): Promise<DBEnvironment> => {
 			const data: Partial<DBEnvironment> = {};

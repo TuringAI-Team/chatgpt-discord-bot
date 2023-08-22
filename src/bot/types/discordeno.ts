@@ -9,16 +9,16 @@ export interface CustomInteraction extends Interaction {
 	deferUpdate: () => Promise<void>;
 
 	/** Send a reply to an interaction. */
-	reply: (response: MessageResponse) => Promise<Message>;
+	reply: (response: MessageResponse) => Promise<void>;
 
 	/** Edit the original reply to an interaction. */
-	editReply: (response: MessageResponse) => Promise<Message>;
+	editReply: (response: MessageResponse) => Promise<CustomMessage | undefined>;
 
 	/** Update the original reply to an interaction. */
-	update: (response: MessageResponse) => Promise<Message>;
+	update: (response: MessageResponse) => Promise<void>;
 
 	/** Delete the original reply to the interaction. */
-	deleteReply: () => void;
+	deleteReply: () => Promise<void>;
 }
 
 export interface CustomMessage extends Omit<Message, "stickerItems" | "application" | "applicationId" | "components" | "reactions" | "nonce" | "interaction"> {
@@ -26,7 +26,10 @@ export interface CustomMessage extends Omit<Message, "stickerItems" | "applicati
 	author: DiscordUser;
 
     /** Reply to a message. */
-	reply: (response: Omit<MessageResponse, "reference"> | string) => Promise<Message>;
+	reply: (response: Omit<MessageResponse, "reference"> | string) => Promise<CustomMessage>;
+
+	/** Delete the message. */
+	delete: () => Promise<void>;
 }
 
 export interface DiscordComponentEmoji {

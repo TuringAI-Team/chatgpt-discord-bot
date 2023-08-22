@@ -2,9 +2,8 @@ import type { InteractionHandler } from "../types/interaction.js";
 import type { CustomInteraction } from "../types/discordeno.js";
 import type { DiscordBot } from "../mod.js";
 
-import { getCooldown, setCooldown } from "../events/interaction/command.js";
+import { cooldownNotice, getCooldown, hasCooldown, setCooldown } from "../utils/cooldown.js";
 import { handleError } from "../moderation/error.js";
-import { EmbedColor } from "../utils/response.js";
 
 import Settings from "./settings.js";
 
@@ -25,18 +24,13 @@ export async function handleInteraction(bot: DiscordBot, interaction: CustomInte
 	const type = bot.db.type(env);
 
 	if (handler.cooldown) {
-		const cooldown = getCooldown(interaction);
+		if (hasCooldown(interaction)) {
+			await interaction.reply(cooldownNotice(interaction));
+			const { remaining } = getCooldown(interaction)!;
 
-		if (cooldown) {
-			return void await interaction.reply({
-				embeds: {
-					title: "Whoa-whoa... slow down ⏳",
-					description: `This interaction is currently on cool-down. You can use it again <t:${Math.floor(cooldown.when / 1000)}:R>.`,
-					color: EmbedColor.Yellow
-				},
-
-				ephemeral: true
-			});
+			return void setTimeout(() => {
+				interaction.deleteReply().catch(() => {});
+			}, remaining);
 		} else {
 			if (handler.cooldown[type]) setCooldown(interaction, handler.cooldown[type]!);
 		}
