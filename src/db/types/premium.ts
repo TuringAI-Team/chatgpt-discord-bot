@@ -6,13 +6,13 @@ export interface DBSubscription {
     expires: number;
 }
 
-type PlanExpenseType = "image" | "api" | "summary" | "chat" | "describe" | "translate" | "music";
+export type PlanExpenseType = "image" | "api" | "summary" | "chat" | "describe" | "translate" | "music";
 
-type PlanExpenseData = {
+export type PlanExpenseData = {
     [key: string]: string | number | boolean | PlanExpenseData;
 }
 
-interface PlanExpense<T extends PlanExpenseData = PlanExpenseData> {
+export interface PlanExpense<T extends PlanExpenseData = PlanExpenseData> {
     /** Type of expense */
     type: PlanExpenseType;
 
@@ -26,10 +26,10 @@ interface PlanExpense<T extends PlanExpenseData = PlanExpenseData> {
     data: T;
 }
 
-type PlanCreditType = "web" | "grant";
-type PlanCreditGateway = "BITCOIN" | "ETHEREUM" | "BINANCE_COIN" | "MONERO" | "STRIPE" | "PAYPAL" | "BINANCE";
+export type PlanCreditType = "web" | "grant";
+export type PlanCreditGateway = "BITCOIN" | "ETHEREUM" | "BINANCE_COIN" | "MONERO" | "STRIPE" | "PAYPAL" | "BINANCE";
 
-interface PlanCredit {
+export interface PlanCredit {
     /** What type of charge-up this is */
     type: PlanCreditType;
 

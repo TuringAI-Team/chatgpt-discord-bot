@@ -19,6 +19,7 @@ import { handleError } from "../moderation/error.js";
 import { getSettingsValue } from "../settings.js";
 import { buildHistory } from "./history.js";
 import { Emitter } from "../utils/event.js";
+import { charge } from "../premium.js";
 
 interface ExecuteOptions {
 	bot: DiscordBot;
@@ -200,7 +201,14 @@ async function execute(options: ExecuteOptions): Promise<ConversationResult> {
 	/** Apply all updates to the conversation's history. */
 	await bot.db.update("conversations", options.conversation.id, options.conversation);
 
-	/* TODO: Pay-as-you-go charges */
+	/* Charge the user accordingly, if they're using the pay-as-you-go plan. */
+	await charge(bot, env, {
+		type: "chat", used: result.cost ?? 0, data: {
+			model: options.model.id,
+			tone: options.tone.id
+		}
+	});
+
 	return result;
 }
 

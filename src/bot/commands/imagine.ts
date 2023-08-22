@@ -23,6 +23,7 @@ import { BRANDING_COLOR } from "../../config.js";
 import { mergeImages } from "../utils/merge.js";
 import { titleCase } from "../utils/helpers.js";
 import { Emitter } from "../utils/event.js";
+import { charge } from "../premium.js";
 
 interface ImageStartOptions {
 	bot: DiscordBot;
@@ -264,7 +265,11 @@ async function start({
 		message: "All of the generated images were deemed as **not safe for work**", emoji: "🔞"
 	});
 
-	/* TODO: Pay-as-you-go charges */
+	await charge(bot, env, {
+		type: "image", used: result.cost ?? 0, data: {
+			model: model.id
+		}
+	});
 
 	return await formatResult({
 		result, action, prompt, interaction, env, size
