@@ -32,7 +32,7 @@ export default createCommand({
 			? calculatePermissions(interaction.member.permissions)
 			: null;
 
-		if (permissions && !permissions.includes("MANAGE_GUILD")) throw new ResponseError({
+		if (location === SettingsLocation.Guild && permissions && !permissions.includes("MANAGE_GUILD")) throw new ResponseError({
 			message: "You must have the `Manage Server` permission to view & change these settings", emoji: "😔"
 		});
 

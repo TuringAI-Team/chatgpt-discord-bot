@@ -90,7 +90,7 @@ setupEvents();
 const connection = new RabbitMQ.Connection(RABBITMQ_URI);
 
 connection.createConsumer({
-	queue: "gateway"
+	queue: "gateway", concurrency: 16
 }, message => {
 	handleGatewayMessage(message.body);
 });

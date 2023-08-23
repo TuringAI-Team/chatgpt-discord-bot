@@ -1,4 +1,4 @@
-import { bold } from "colorette";
+// import { bold } from "colorette";
 
 import { EmbedColor, MessageResponse } from "../utils/response.js";
 import { SUPPORT_INVITE } from "../../config.js";
@@ -18,7 +18,7 @@ interface HandleErrorOptions {
 
 export async function handleError(bot: DiscordBot, { error, guild }: HandleErrorOptions): Promise<MessageResponse> {
 	const data = errorToJSON(error as Error);
-	bot.logger.error(bold("An error occurred"), "->", data);
+	// bot.logger.error(bold("An error occurred"), "->", data);
 
 	await publisher.send("error", {
 		error: data, guild: guild?.toString() ?? null

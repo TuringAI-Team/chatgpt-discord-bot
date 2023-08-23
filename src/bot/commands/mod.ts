@@ -5,10 +5,11 @@ import { bot } from "../mod.js";
 
 import Settings from "./settings.js";
 import Imagine from "./imagine.js";
+import Premium from "./premium.js";
 import Reset from "./reset.js";
 
 export const COMMANDS: Command[] = [
-	Settings, Reset, Imagine
+	Settings, Reset, Imagine, Premium
 ];
 
 function transformCommand(command: Command): CreateApplicationCommand {

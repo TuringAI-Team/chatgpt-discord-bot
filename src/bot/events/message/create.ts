@@ -11,7 +11,7 @@ export default createEvent("messageCreate", async (bot, message) => {
 		if (error instanceof ResponseError) {
 			return void await (message as CustomMessage).reply(
 				error.display()
-			);
+			).catch(() => {});
 		}
 
 		runningGenerations.delete(message.authorId);

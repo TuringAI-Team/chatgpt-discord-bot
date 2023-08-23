@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-import { ActivityTypes, DiscordGuild, DiscordReady, DiscordUnavailableGuild } from "discordeno";
+import { ActivityTypes, DiscordGuild, DiscordMessage, DiscordReady, DiscordUnavailableGuild } from "discordeno";
 import { parentPort, workerData } from "worker_threads";
 import { createLogger } from "discordeno/logger";
 import { createShardManager } from "discordeno";
@@ -89,6 +89,8 @@ const manager = createShardManager({
 		switch (message.t) {
 			case "MESSAGE_CREATE":
 			case "INTERACTION_CREATE":
+				if (message.t === "MESSAGE_CREATE" && (message.d as DiscordMessage).content?.length === 0) return;
+
 				await publisher.send("gateway", {
 					shard: shard.id, data: message
 				});

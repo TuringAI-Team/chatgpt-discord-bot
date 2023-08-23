@@ -26,8 +26,8 @@ export async function handleInteraction(bot: DiscordBot, interaction: CustomInte
 
 	if (handler.cooldown) {
 		if (hasCooldown(interaction)) {
-			await interaction.reply(cooldownNotice(interaction));
 			const { remaining } = getCooldown(interaction)!;
+			await interaction.reply(cooldownNotice(interaction));
 
 			return void setTimeout(() => {
 				interaction.deleteReply().catch(() => {});

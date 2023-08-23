@@ -45,8 +45,8 @@ export async function handleMessage(bot: DiscordBot, message: CustomMessage) {
 	const conversation: Conversation = await bot.db.fetch("conversations", message.authorId);
 
 	if (hasCooldown(conversation)) {
-		const reply = await message.reply(cooldownNotice(conversation));
 		const { remaining } = getCooldown(conversation)!;
+		const reply = await message.reply(cooldownNotice(conversation));
 
 		return void setTimeout(() => {
 			reply.delete().catch(() => {});
@@ -76,16 +76,22 @@ export async function handleMessage(bot: DiscordBot, message: CustomMessage) {
 
 	/* ID of the message to edit, if applicable */
 	let messageID: bigint | null = null;
+	let queued = false;
 
 	/* Handler for partial messages */
 	const handler = async (result: ConversationResult) => {
 		try {
+			if (messageID === null && queued) return;
+
 			if (messageID === null) {
+				queued = true;
+
 				const reply = await message.reply(
 					format({ bot, message, env, model, tone, result })
 				);
 
 				messageID = reply.id;
+				queued = false;
 			} else {
 				await bot.helpers.editMessage(
 					message.channelId, messageID,
