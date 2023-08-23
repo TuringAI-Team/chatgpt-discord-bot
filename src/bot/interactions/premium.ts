@@ -6,8 +6,8 @@ import { EmbedColor } from "../utils/response.js";
 export default createInteractionHandler({
 	name: "premium",
 
-	handler: (options) => {
-		const action = options.args[0];
+	handler: ({ args }) => {
+		const action = args[0];
 
 		if (action === "purchase") {
 			return {

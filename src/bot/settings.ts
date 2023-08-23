@@ -253,7 +253,7 @@ export async function handleSettingsInteraction({ bot, args, env, interaction }:
 
 				return void await interaction.reply({
 					embeds: {
-						description: `The choice ${choice.name} is ${allowed.map(a => `**${a.description}** ${a.emoji}`).join(", ")}.`,
+						description: `The choice **${choice.name}** is ${allowed.map(a => `**${a.description}** ${a.emoji}`).join(", ")}.`,
 						color: EmbedColor.Orange
 					},
 		

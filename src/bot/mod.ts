@@ -70,6 +70,12 @@ bot.rest = createRestManager({
 	token: BOT_TOKEN
 });
 
+// @ts-expect-error Missing property
+bot.rest.convertRestError = (error, data) => {
+	if (!data) return { message: error.message };
+	return { ...data, error: error };
+};
+
 async function handleGatewayMessage({ data, shard }: GatewayMessage) {
 	if (data.t && data.t !== "RESUMED") {
 		/* When a guild or something isn't in cache, this will fetch it before doing anything else. */

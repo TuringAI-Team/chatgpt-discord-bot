@@ -1,4 +1,5 @@
 import { type ButtonComponent, MessageComponentTypes, ButtonStyles, Embed } from "discordeno";
+import { setTimeout as delay } from "timers/promises";
 import { randomUUID } from "crypto";
 
 import type { Conversation, ConversationResult, ConversationUserMessage } from "../types/conversation.js";
@@ -44,17 +45,17 @@ export async function handleMessage(bot: DiscordBot, message: CustomMessage) {
 
 	const conversation: Conversation = await bot.db.fetch("conversations", message.authorId);
 
+	const env = await bot.db.env(message.authorId, message.guildId);
+	const type = bot.db.type(env);
+
 	if (hasCooldown(conversation)) {
 		const { remaining } = getCooldown(conversation)!;
-		const reply = await message.reply(cooldownNotice(conversation));
+		const reply = await message.reply(cooldownNotice(conversation, env));
 
 		return void setTimeout(() => {
 			reply.delete().catch(() => {});
 		}, remaining);
 	}
-
-	const env = await bot.db.env(message.authorId, message.guildId);
-	const type = bot.db.type(env);
 
 	if (isBanned(env.user)) return void await message.reply(
 		banNotice(env.user, isBanned(env.user)!)
@@ -101,7 +102,9 @@ export async function handleMessage(bot: DiscordBot, message: CustomMessage) {
 					}))
 				);
 			}
-		} catch { /* Stub */ }
+		} catch {
+			queued = false;
+		}
 	};
 
 	/* Whether partial messages should be enabled */
@@ -131,6 +134,11 @@ export async function handleMessage(bot: DiscordBot, message: CustomMessage) {
 		const result = await execute({
 			bot, conversation, emitter, env, input, model, tone
 		});
+
+		/* Wait for the queued message to send. */
+		while (queued) {
+			await delay(500);
+		}
 
 		if (messageID !== null) {
 			await bot.helpers.editMessage(

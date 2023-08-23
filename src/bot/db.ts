@@ -63,7 +63,7 @@ export async function createDB() {
 		);
 
 		const checks: Record<typeof typePriority, (entry: DBGuild | DBUser) => boolean> = {
-			subscription: entry => entry.subscription !== null && Date.now() > entry.subscription.expires,
+			subscription: entry => entry.subscription !== null && Date.now() < entry.subscription.expires,
 			plan: entry => entry.plan !== null && entry.plan.total > entry.plan.used
 		};
 

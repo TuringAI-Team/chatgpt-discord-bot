@@ -54,7 +54,7 @@ app.all("/*", async (req, res) => {
 			rest, req.method as RequestMethod, `${BASE_URL}${req.url}`, req.body
 		);
 
-		logger.info(req.method, req.url);
+		logger.debug(req.method, req.url);
 
 		if (result) res.status(200).json(result);
 		else res.status(204).json();

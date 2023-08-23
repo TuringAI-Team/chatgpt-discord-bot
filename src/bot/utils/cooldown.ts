@@ -1,8 +1,10 @@
 import { Collection, type Embed } from "discordeno";
 
-import { EmbedColor, type MessageResponse } from "./response.js";
 import type { CustomInteraction } from "../types/discordeno.js";
 import type { Conversation } from "../types/conversation.js";
+import type { DBEnvironment } from "../../db/types/mod.js";
+
+import { EmbedColor, type MessageResponse } from "./response.js";
 import { advertisement } from "../campaign.js";
 
 type CooldownTarget = Conversation | CustomInteraction
@@ -10,9 +12,9 @@ type CooldownTarget = Conversation | CustomInteraction
 /** Global command cool-downs */
 const cooldowns: Collection<string, number> = new Collection();
 
-export function cooldownNotice(target: CooldownTarget): MessageResponse {
+export function cooldownNotice(target: CooldownTarget, env: DBEnvironment): MessageResponse {
 	const cooldown = getCooldown(target);
-	const ad = advertisement();
+	const ad = advertisement(env);
 
 	const response: MessageResponse = {
 		ephemeral: true

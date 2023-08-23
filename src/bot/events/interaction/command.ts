@@ -28,7 +28,7 @@ export async function executeCommand(bot: DiscordBot, interaction: CustomInterac
 	if (command.cooldown) {
 		if (hasCooldown(interaction)) {
 			const { remaining } = getCooldown(interaction)!;
-			await interaction.reply(cooldownNotice(interaction));
+			await interaction.reply(cooldownNotice(interaction, env));
 
 			return void setTimeout(() => {
 				interaction.deleteReply().catch(() => {});

@@ -1,8 +1,10 @@
 import { MessageComponentTypes, ButtonStyles, type ActionRow, type Embed } from "discordeno";
 
 import type { CampaignDisplay, CampaignRender, DBCampaign } from "../db/types/campaign.js";
-import { bot } from "./mod.js";
+import type { DBEnvironment } from "../db/types/mod.js";
+
 import { EmbedColor } from "./utils/response.js";
+import { bot } from "./mod.js";
 
 /** List of all database campaigns */
 const campaigns: DBCampaign[] = [];
@@ -14,8 +16,20 @@ export async function fetchCampaigns() {
 	);
 }
 
+export function getCampaign(id: string) {
+	return campaigns.find(c => c.id === id) ?? null;
+}
+
+export function trackingURL(campaign: DBCampaign, env: DBEnvironment) {
+	return `https://l.turing.sh/${campaign.id}/${env.user.id}`;
+}
+
 /** Pick a random campaign to display, increment its views & format it accordingly.1 */
-export function advertisement(): CampaignDisplay | null {
+export function advertisement(env: DBEnvironment): CampaignDisplay | null {
+	/* Disable all ads for Premium users. */
+	const type = bot.db.premium(env);
+	if (type !== null) return null;
+
 	const campaign = pick();
 	if (!campaign) return null;
 
