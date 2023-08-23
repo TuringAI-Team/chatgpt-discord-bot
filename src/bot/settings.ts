@@ -15,6 +15,7 @@ import { CHAT_MODELS } from "./chat/models/mod.js";
 import { IMAGE_MODELS } from "./image/models.js";
 import { IMAGE_STYLES } from "./image/styles.js";
 import { TONES } from "./chat/tones/mod.js";
+import { resetConversation } from "./chat/mod.js";
 
 export const SettingsCategories: SettingsCategory[] = [
 	{
@@ -62,7 +63,11 @@ export const SettingsCategories: SettingsCategory[] = [
 				
 				choices: CHAT_MODELS.map(m => ({
 					name: m.name, description: m.description, emoji: m.emoji, restrictions: m.restrictions, value: m.id
-				}))
+				})),
+
+				handler: (bot, env) => {
+					return resetConversation(bot, env);
+				}
 			},
 
 			{
@@ -74,7 +79,11 @@ export const SettingsCategories: SettingsCategory[] = [
 				
 				choices: TONES.map(t => ({
 					name: t.name, description: t.description, emoji: t.emoji, value: t.id
-				}))
+				})),
+
+				handler: (bot, env) => {
+					return resetConversation(bot, env);
+				}
 			},
 
 			{
@@ -261,6 +270,9 @@ export async function handleSettingsInteraction({ bot, args, env, interaction }:
 				{ settings: { ...settings,[key]: newValue } }
 			);
 
+			if (option.handler) await option.handler(
+				bot, env, newValue as any
+			);
 		}
 
 	/* View a specific settings category */

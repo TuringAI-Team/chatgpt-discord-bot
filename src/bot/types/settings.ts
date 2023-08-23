@@ -1,7 +1,6 @@
 import type { RestrictionName } from "../utils/restriction.js";
 import type { DiscordComponentEmoji } from "./discordeno.js";
-import type { DBGuild } from "../../db/types/guild.js";
-import type { DBUser } from "../../db/types/user.js";
+import type { DBEnvironment } from "../../db/types/mod.js";
 import type { DiscordBot } from "../mod.js";
 
 export enum SettingsLocation {
@@ -56,7 +55,7 @@ interface BaseSettingsOption<T> {
     location?: SettingsLocation;
 
     /** Handler to execute when this setting is changed */
-    handler?: (bot: DiscordBot, entry: DBGuild | DBUser, value: T) => Promise<void> | void;
+    handler?: (bot: DiscordBot, env: DBEnvironment, value: T) => Promise<void> | void;
 
     /** Default value of this settings option */
     default: T;

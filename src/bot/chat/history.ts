@@ -63,8 +63,15 @@ export function buildHistory({ bot, env, model, tone, conversation, input }: Bui
 		if (messages.length > 0) messages = [];
 
 		/* Add the model's and tone's initial prompts to the history. */
-		if (model.initialPrompt) messages.push(model.initialPrompt);
-		if (tone.prompt) messages.push(tone.prompt);
+		if (model.initialPrompt) {
+			if (Array.isArray(model.initialPrompt)) messages.push(...model.initialPrompt);
+			else messages.push(model.initialPrompt);
+		}
+
+		if (tone.prompt) {
+			if (Array.isArray(tone.prompt)) messages.push(...tone.prompt);
+			else messages.push(tone.prompt);
+		}
 
 		/** Add the conversation's history. */
 		for (const entry of conversation.history) {

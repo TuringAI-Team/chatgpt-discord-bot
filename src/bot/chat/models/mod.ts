@@ -8,8 +8,9 @@ import type { DiscordBot } from "../../mod.js";
 
 import { Emitter } from "../../utils/event.js";
 
+import OpenChat from "./openchat.js";
 import ChatGPT from "./chatgpt.js";
-import Dummy from "./dummy.js";
+import Claude from "./claude.js";
 import GPT4 from "./gpt-4.js";
 
 export interface ChatModel {
@@ -32,7 +33,7 @@ export interface ChatModel {
 	cooldown?: CommandCooldown;
 
 	/* Initial instructions to pass to the request */
-	initialPrompt?: ConversationMessage;
+	initialPrompt?: ConversationMessage | ConversationMessage[];
 
 	/** Limits of the model, in terms of tokens */
 	maxTokens: number;
@@ -66,5 +67,5 @@ export interface ChatModelResult {
 }
 
 export const CHAT_MODELS: ChatModel[] = [
-	ChatGPT, Dummy, GPT4
+	ChatGPT, GPT4, Claude, OpenChat
 ];

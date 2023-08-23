@@ -26,7 +26,10 @@ export interface CustomMessage extends Omit<Message, "stickerItems" | "applicati
 	author: DiscordUser;
 
     /** Reply to a message. */
-	reply: (response: Omit<MessageResponse, "reference"> | string) => Promise<CustomMessage>;
+	reply: (response: Omit<MessageResponse, "reference">) => Promise<CustomMessage>;
+
+	/** Edit the message. */
+	edit: (response: Omit<MessageResponse, "reference">) => Promise<CustomMessage>;
 
 	/** Delete the message. */
 	delete: () => Promise<void>;

@@ -9,15 +9,21 @@ export default createTransformer<"message", Message, DiscordMessage>(
 	
 	(bot, message, raw) => {
 		Object.defineProperty(message, "reply", {
-			value: function (response: Omit<MessageResponse, "reference">) {
+			value: function(response: Omit<MessageResponse, "reference">) {
 				return bot.helpers.sendMessage(message.channelId, transformResponse({
 					...response, reference: message as CustomMessage
 				}));
 			}
 		});
 
+		Object.defineProperty(message, "edit", {
+			value: function(response: Omit<MessageResponse, "reference">) {
+				return bot.helpers.editMessage(message.channelId, message.id, transformResponse(response));
+			}
+		});
+
 		Object.defineProperty(message, "delete", {
-			value: function () {
+			value: function() {
 				return bot.helpers.deleteMessage(message.channelId, message.id);
 			}
 		});

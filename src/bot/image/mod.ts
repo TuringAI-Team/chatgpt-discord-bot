@@ -1,7 +1,6 @@
 import { randomUUID } from "crypto";
 
-import type { ImageGenerationOptions, ImageGenerationRatio, ImageGenerationResult, ImageGenerationSize, ImageGenerationAction, ImageModel, ImagePrompt, ImageUpscaleOptions } from "../types/image.js";
-import type { DBImage } from "../../db/types/image.js";
+import type { ImageGenerationOptions, ImageGenerationRatio, ImageGenerationResult, ImageGenerationSize, ImageModel, ImageUpscaleOptions } from "../types/image.js";
 
 export async function generate({ bot, model, emitter, body }: ImageGenerationOptions) {
 	const request = await bot.api.image[model.path]({
@@ -33,27 +32,6 @@ export async function upscale({ bot, url }: ImageUpscaleOptions): Promise<ImageG
 		
 		cost: response.cost, id: randomUUID(), progress: null,
 		status: "done", error: null, done: true
-	};
-}
-
-export function resultToDatabase(
-	prompt: ImagePrompt,
-	{ body, model }: ImageGenerationOptions,
-	result: ImageGenerationResult,
-	time: string,
-	action: ImageGenerationAction
-): DBImage {
-	return {
-		id: result.id, created: time, action, prompt, model: model.id,
-		
-		options: body,
-		cost: result.cost ?? 0,
-		
-		results: result.results.map(image => ({
-			id: image.id,
-			status: image.status,
-			seed: image.seed
-		}))
 	};
 }
 

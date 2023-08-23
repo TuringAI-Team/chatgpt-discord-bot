@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { ApplicationCommandOptionTypes } from "discordeno";
+import { ApplicationCommandOptionTypes, DiscordEmbedField } from "discordeno";
 import { createCommand } from "../helpers/command.js";
 
 import type { ImageGenerationAction, ImageModel, ImagePrompt, ImageSampler, ImageGenerationOptions, ImageGenerationSize } from "../types/image.js";
-import type { CustomInteraction } from "../types/discordeno.js";
+import type { CustomInteraction, CustomMessage } from "../types/discordeno.js";
 import type { DBEnvironment } from "../../db/types/mod.js";
 import type { DiscordBot } from "../mod.js";
 
@@ -141,7 +141,7 @@ export default createCommand({
 
 		/* Which prompt to use for generation */
 		const prompt = options.prompt.value as string;
-		const negativePrompt = options.prompt?.value as string ?? null;
+		const negativePrompt = options.negative?.value as string ?? null;
 
 		/* Which model to use */
 		const modelID = options.model?.value as string ?? getSettingsValue(env.user, "image:model");
@@ -158,7 +158,6 @@ export default createCommand({
 			message: `**${model.name}** has a fixed resolution of \`${model.settings.forcedSize.width}×${model.settings.forcedSize.height}\`; *you cannot modify the aspect ratio*`
 		});
 
-		/* Moderate the user's prompt. */
 		const moderation = await moderate({
 			bot, env, content: prompt, source: ModerationSource.ImagePrompt
 		});
@@ -175,11 +174,8 @@ export default createCommand({
 				}
 			});
 
-			const message = await bot.helpers.getOriginalInteractionResponse(interaction.token);
-
-			await bot.helpers.editMessage(
-				message.channelId, message.id, transformResponse(result)
-			);
+			const message = await bot.helpers.getOriginalInteractionResponse(interaction.token) as CustomMessage;
+			await message.edit(result);
 
 		} catch (error) {
 			if (error instanceof ResponseError) {
@@ -197,9 +193,9 @@ export default createCommand({
 	}
 });
 
-async function start({
-	bot, ratio: rawRatio, model, prompt, action, source, sampler, steps, guidance, count, interaction, env
-}: ImageStartOptions): Promise<MessageResponse> {
+async function start(options: ImageStartOptions): Promise<MessageResponse> {
+	const { bot, ratio: rawRatio, model, prompt, action, source, sampler, steps, guidance, count, interaction, env } = options;
+
 	/* Parse & validate the given aspect ratio. */
 	const ratio = validRatio(rawRatio);
 
@@ -220,15 +216,20 @@ async function start({
 
 	/* Just why... */
 	await interaction.reply(
-		await formatResult({ action, env, interaction, prompt, size, result: {
+		await formatResult({ ...options, size, result: {
 			cost: 0, done: false, error: null, id: "", progress: null, results: [], status: "generating"
 		}})
 	);
 
+	/* Fetch the interaction reply, so we can edit it later. */
+	const message = await bot.helpers.getOriginalInteractionResponse(interaction.token) as CustomMessage;
+
 	const handler = async (data: ImageGenerationResult) => {
+		if (data.done) return;
+
 		try {
-			await interaction.editReply(
-				await formatResult({ result, action, prompt, interaction, env, size })
+			await message.edit(
+				await formatResult({ ...options, result: data, size })
 			);
 		} catch { /* Stub */ }
 	};
@@ -237,7 +238,7 @@ async function start({
 	emitter.on(handler);
 
 	/* Image generation options */
-	const options: ImageGenerationOptions = {
+	const body: ImageGenerationOptions = {
 		body: {
 			prompt: formattedPrompt,
 			negative_prompt: prompt.negative ? prompt.negative : undefined,
@@ -251,7 +252,7 @@ async function start({
 
 	const result = action === "upscale" && source
 		? await upscale({ bot, url: source })
-		: await generate(options);
+		: await generate(body);
 
 	/* Whether the generated images are still usable */
 	const usable: boolean = result.results.filter(i => i.status === "success").length > 0;
@@ -272,14 +273,14 @@ async function start({
 	});
 
 	return await formatResult({
-		result, action, prompt, interaction, env, size
+		...options, result, size
 	});
 }
 
 /** Format the image generation result into a clean embed. */
-async function formatResult(
-	{ action, env, interaction, prompt, result, size }: ImageFormatOptions
-): Promise<MessageResponse> {
+async function formatResult(options: ImageFormatOptions & ImageStartOptions): Promise<MessageResponse> {
+	const { action, env, interaction, prompt, result, size } = options;
+
 	if (!result.done) {
 		const indicator = getLoadingIndicatorFromUser(env.user);
 		const emoji = loadingIndicatorToString(indicator);
@@ -294,15 +295,47 @@ async function formatResult(
 	return {
 		embeds: {
 			title: displayPrompt({ action, interaction, prompt }),
-			image: { url: "attachment://result.png", ...size },
+			image: { url: `attachment://${result.id}.png`, ...size },
+			fields: displayFields(options),
 			color: BRANDING_COLOR
 		},
 
 		file: {
-			name: "result.png",
+			name: `${result.id}.png`,
 			blob: (await mergeImages({ result, size })).toString("base64")
 		}
 	};
+}
+
+function displayFields(options: ImageStartOptions): DiscordEmbedField[] {
+	const fields: Omit<DiscordEmbedField, "inline">[] = [];
+	fields.push({ name: "Model", value: options.model.name });
+
+	if (options.ratio !== "1:1") {
+		const ratio = validRatio(options.ratio)!;
+		const { width, height } = findBestSize(ratio, options.model);
+
+		fields.push({ name: "Ratio", value: `\`${ratio.a}:${ratio.b}\` (**${width}**×**${height}**)` });
+	}
+
+	if (options.prompt.negative) fields.push({
+		name: "Negative", value: `\`${options.prompt.negative}\``
+	});
+
+	if (options.steps !== DEFAULT_GEN_OPTIONS.steps) fields.push({
+		name: "Steps", value: `${options.steps}`
+	});
+
+	if (options.guidance !== DEFAULT_GEN_OPTIONS.cfg_scale) fields.push({
+		name: "Guidance", value: `${options.guidance}`
+	});
+
+	if (options.prompt.style !== "none") {
+		const style = IMAGE_STYLES.find(s => s.id === options.prompt.style)!;
+		fields.push({ name: "Style", value: `${style.name} ${style.emoji}` });
+	}
+
+	return fields.map(field => ({ ...field, inline: true }));
 }
 
 /** Display the user's given prompt nicely. */

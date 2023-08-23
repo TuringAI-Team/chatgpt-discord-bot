@@ -71,7 +71,7 @@ export async function handleMessage(bot: DiscordBot, message: CustomMessage) {
 
 	/* Input, to pass to the AI model */
 	const input: ConversationUserMessage = {
-		role: "user", content: clean(bot, message)
+		role: "user", content: clean(message)
 	};
 
 	/* ID of the message to edit, if applicable */
@@ -293,6 +293,16 @@ function format(
 	return response;
 }
 
+/** Reset the user's conversation. */
+export async function resetConversation(bot: DiscordBot, env: DBEnvironment) {
+	const conversation = await bot.db.fetch<Conversation>("conversations", env.user.id);
+	if (conversation.history.length === 0) return;
+
+	await bot.db.update("conversations", conversation, {
+		history: []
+	});
+}
+
 function getModel(env: DBEnvironment) {
 	const id: string = getSettingsValue(env.user, "chat:model");
 	return CHAT_MODELS.find(m => m.id === id) ?? CHAT_MODELS[0];
@@ -309,7 +319,7 @@ function mentions(bot: DiscordBot, message: CustomMessage) {
 }
 
 /** Remove all bot & user mentions from the specified message. */
-function clean(bot: DiscordBot, message: CustomMessage) {
+function clean(message: CustomMessage) {
 	for (const id of message.mentionedUserIds) {
 		message.content = message.content.replaceAll(`<@${id}>`, "").trim();
 	}
