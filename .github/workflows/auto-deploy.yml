@@ -1,0 +1,34 @@
+name: Deploy to SSH VPS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout code from the main branch
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # Connect to remote server via SSH to pull all changes and re-build the bot
+      - name: Deploy ddeno bot
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          password: ${{ secrets.PASSWORD }}
+          script: |
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"            
+            cd /home/trident/github/ddeno-bot
+            nvm use 20
+            PATH="$HOME/.nvm/versions/node/v20.0.0/bin:$PATH"
+            npm run git
+            npm i
+            rm -r dist
+            npm run build
