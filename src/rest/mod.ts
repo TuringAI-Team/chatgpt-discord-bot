@@ -69,5 +69,4 @@ app.all("/*", async (req, res) => {
 
 app.listen(REST_PORT, () => {
 	logger.info("Started.");
-	console.log(`token: ${BOT_TOKEN}`)
 });
