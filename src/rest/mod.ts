@@ -6,7 +6,6 @@ import { createLogger } from "discordeno/logger";
 import express from "express";
 
 import { BOT_TOKEN, REST_URL, REST_PORT, HTTP_AUTH } from "../config.js";
-console.log(`token: ${BOT_TOKEN}`)
 
 const logger = createLogger({ name: "[REST]" });
 
@@ -70,4 +69,5 @@ app.all("/*", async (req, res) => {
 
 app.listen(REST_PORT, () => {
 	logger.info("Started.");
+	console.log(`token: ${BOT_TOKEN}`)
 });
