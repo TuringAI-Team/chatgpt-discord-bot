@@ -11,11 +11,20 @@ export default createCommand({
 
   handler: async ({ bot, env, interaction }) => {
     let stats = await bot.api.other.stats();
-    console.log(stats);
+    let startDate = new Date("Thu, 15 Dec 2022 18:27:08 UTC");
+    let msStart = startDate.getTime();
     return {
       embeds: {
+        title: "Bot Statistics",
         description: `Bot: ${JSON.stringify(stats)}`,
+        fields: [
+          {
+            name: "Servers 🖥️",
+            value: `${stats.guilds}`,
+          },
+        ],
         color: BRANDING_COLOR,
+        timestamp: msStart,
       },
 
       ephemeral: false,
