@@ -11,6 +11,7 @@ export default createCommand({
 
   handler: async ({ bot, env, interaction }) => {
     let stats = await bot.api.other.stats();
+    console.log(stats);
     return {
       embeds: {
         description: `Bot: ${JSON.stringify(stats)}`,
