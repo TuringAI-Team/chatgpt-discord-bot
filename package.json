@@ -13,7 +13,8 @@
 		"rest": "node build/rest/mod.js",
 		"gateway": "node build/gateway/mod.js",
 		"db": "node build/db/mod.js",
-		"bot": "node build/bot/mod.js"
+		"bot": "node build/bot/mod.js",
+		"git": "git fetch && git pull"
 	},
 	"dependencies": {
 		"@dqbd/tiktoken": "^1.0.7",
