@@ -61,6 +61,10 @@ export default createCommand({
       {
         type: MessageComponentTypes.Button,
         label: "GitHub",
+        emoji: {
+          name: "github",
+          id: "1097828013871222865",
+        },
         url: `https://github.com/${repo}`,
         style: ButtonStyles.Link,
       },
@@ -77,7 +81,7 @@ export default createCommand({
             },
             {
               name: "Version 🔃",
-              value: `[${getLastRelease()}](https://github.com/${repo}/releases/latest)`,
+              value: `[${await getLastRelease()}](https://github.com/${repo}/releases/latest)`,
             },
           ],
           color: BRANDING_COLOR,
