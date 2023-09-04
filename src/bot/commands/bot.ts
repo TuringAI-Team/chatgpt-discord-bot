@@ -78,16 +78,19 @@ export default createCommand({
             {
               name: "Servers 🖥️",
               value: `${stats.guilds}`,
+              inline: true,
             },
             {
               name: "Version 🔃",
               value: `[${await getLastRelease()}](https://github.com/${repo}/releases/latest)`,
+              inline: true,
             },
             {
               name: "Cluster & Shard 💎",
               value: `${
                 bot.gateway.totalWorkers
               } clusters, ${bot.gateway.calculateTotalShards()} shards`,
+              inline: true,
             },
           ],
           color: BRANDING_COLOR,
