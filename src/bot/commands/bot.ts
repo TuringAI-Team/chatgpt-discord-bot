@@ -21,6 +21,15 @@ const partners = [
       "Providing various GPU models for the bot, like image recognition",
   },
 ];
+const repo = "TuringAI-Team/chatgpt-discord-bot";
+
+async function getLastRelease(): Promise<string> {
+  const response = await fetch(
+    `https://api.github.com/repos/${repo}/releases/latest`
+  );
+  const { tag_name } = await response.json();
+  return tag_name;
+}
 
 export default createCommand({
   name: "bot",
@@ -38,6 +47,10 @@ export default createCommand({
             {
               name: "Servers 🖥️",
               value: `${stats.guilds}`,
+            },
+            {
+              name: "Version 🔃",
+              value: `[${getLastRelease()}](https://github.com/${repo}/releases/latest)`,
             },
           ],
           color: BRANDING_COLOR,
