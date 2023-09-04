@@ -65,7 +65,7 @@ export default createCommand({
           name: "github",
           id: "1097828013871222865",
         },
-        url: `https://github.com/${repo}`,
+        url: `https://github.com/${repo}/tree/ddeno`,
         style: ButtonStyles.Link,
       },
     ];
