@@ -1,12 +1,15 @@
 import type { Conversation } from "../types/conversation.js";
+import {
+  ButtonComponent,
+  ButtonStyles,
+  MessageComponentTypes,
+} from "discordeno";
 
 import { createCommand } from "../helpers/command.js";
 import { ResponseError } from "../error/response.js";
 import { EmbedColor } from "../utils/response.js";
 
-import { BRANDING_COLOR } from "../../config.js";
-
-import pm2, { ProcessDescription } from "pm2";
+import { BRANDING_COLOR, SUPPORT_INVITE } from "../../config.js";
 
 const partners = [
   {
@@ -42,6 +45,29 @@ export default createCommand({
     let startDate = new Date("Thu, 15 Dec 2022 18:27:08 UTC");
     let msStart = startDate.getTime();
 
+    const buttons = [
+      {
+        type: MessageComponentTypes.Button,
+        label: "Add me to your server",
+        url: "https://discord.com/oauth2/authorize?client_id=1053015370115588147&permissions=281357371712&scope=bot%20applications.commands",
+        style: ButtonStyles.Link,
+      },
+      {
+        type: MessageComponentTypes.Button,
+        label: "Support Server",
+        url: `https://${SUPPORT_INVITE}`,
+        style: ButtonStyles.Link,
+      },
+      {
+        type: MessageComponentTypes.Button,
+        emoji: {
+          name: "<:github:1097828013871222865>",
+        },
+        label: "GitHub",
+        url: `https://github.com/${repo}`,
+      },
+    ];
+
     return {
       embeds: [
         {
@@ -70,6 +96,12 @@ export default createCommand({
                 }`
             )
             .join("\n"),
+        },
+      ],
+      components: [
+        {
+          type: MessageComponentTypes.ActionRow,
+          components: buttons as [ButtonComponent],
         },
       ],
 
