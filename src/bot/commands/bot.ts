@@ -60,9 +60,7 @@ export default createCommand({
       },
       {
         type: MessageComponentTypes.Button,
-        emoji: {
-          name: "<:github:1097828013871222865>",
-        },
+
         label: "GitHub",
         url: `https://github.com/${repo}`,
       },
