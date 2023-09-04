@@ -83,6 +83,12 @@ export default createCommand({
               name: "Version 🔃",
               value: `[${await getLastRelease()}](https://github.com/${repo}/releases/latest)`,
             },
+            {
+              name: "Cluster & Shard 💎",
+              value: `${
+                bot.gateway.totalWorkers
+              } clusters, ${bot.gateway.calculateTotalShards()} shards`,
+            },
           ],
           color: BRANDING_COLOR,
           timestamp: msStart,
