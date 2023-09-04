@@ -60,9 +60,9 @@ export default createCommand({
       },
       {
         type: MessageComponentTypes.Button,
-
         label: "GitHub",
         url: `https://github.com/${repo}`,
+        style: ButtonStyles.Link,
       },
     ];
 
