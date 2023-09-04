@@ -6,6 +6,8 @@ import { EmbedColor } from "../utils/response.js";
 
 import { BRANDING_COLOR } from "../../config.js";
 
+import pm2, { ProcessDescription } from "pm2";
+
 const partners = [
   {
     emoji: "<:trident:1128664558425362522>",
@@ -39,6 +41,7 @@ export default createCommand({
     let stats = await bot.api.other.stats();
     let startDate = new Date("Thu, 15 Dec 2022 18:27:08 UTC");
     let msStart = startDate.getTime();
+
     return {
       embeds: [
         {
