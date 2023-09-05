@@ -46,8 +46,9 @@ export default createCommand({
     let msStart = startDate.getTime();
     let shardId = bot.utils.calculateShardId(bot.gateway, interaction.guildId!);
     if (!shardId) shardId = 0;
-    let ping = bot.gateway.manager.shards.get(shardId)?.heart?.lastBeat;
-    ping = ping ? Date.now() - ping : 0;
+    let ping: any = bot.gateway.manager.shards.get(shardId)?.heart;
+    console.log(ping);
+    ping = ping ? Date.now() - ping?.lastBeat : 0;
     const buttons = [
       {
         type: MessageComponentTypes.Button,
