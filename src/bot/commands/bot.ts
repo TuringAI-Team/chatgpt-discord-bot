@@ -44,9 +44,12 @@ export default createCommand({
     let stats = await bot.api.other.stats();
     let startDate = new Date("Thu, 15 Dec 2022 18:27:08 UTC");
     let msStart = startDate.getTime();
-    let shardId = bot.utils.calculateShardId(bot.gateway, interaction.guildId!);
-    if (!shardId) shardId = 0;
+    let shardId = await bot.utils.calculateShardId(
+      bot.gateway,
+      interaction.guildId!
+    );
     console.log(shardId);
+    if (!shardId) shardId = 0;
     let ping: any = bot.gateway.manager.shards.get(shardId)?.heart;
     console.log(ping);
     ping = ping ? Date.now() - ping?.lastBeat : 0;
