@@ -50,9 +50,9 @@ export default createCommand({
     );
     console.log(shardId);
     if (!shardId) shardId = 0;
-    let ping: any = bot.gateway.manager.shards.get(shardId)?.heart;
-    console.log(ping);
-    ping = ping ? Date.now() - ping?.lastBeat : 0;
+    let shard: any = bot.gateway.manager.shards.get(shardId);
+    console.log(shard);
+    let ping = shard ? Date.now() - shard.heart?.lastBeat : 0;
     const buttons = [
       {
         type: MessageComponentTypes.Button,
