@@ -44,7 +44,10 @@ export default createCommand({
     let stats = await bot.api.other.stats();
     let startDate = new Date("Thu, 15 Dec 2022 18:27:08 UTC");
     let msStart = startDate.getTime();
-
+    let shardId = bot.utils.calculateShardId(bot.gateway, interaction.guildId!);
+    if (!shardId) shardId = 0;
+    let ping = bot.gateway.manager.shards.get(shardId)?.heart?.lastBeat;
+    ping = ping ? Date.now() - ping : 0;
     const buttons = [
       {
         type: MessageComponentTypes.Button,
@@ -91,6 +94,10 @@ export default createCommand({
                 bot.gateway.totalWorkers
               } clusters, ${bot.gateway.calculateTotalShards()} shards`,
               inline: true,
+            },
+            {
+              name: "Latency 🛰️",
+              value: `${ping}ms`,
             },
           ],
           color: BRANDING_COLOR,
