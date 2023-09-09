@@ -58,12 +58,5 @@ export const IMAGE_MODELS: ImageModel[] = [
 		body: {
 			model: "ICBINP - I Can't Believe It's Not Photography"
 		}
-	},
-
-	{
-		name: "Anything Diffusion",
-		description: "Stable Diffusion-based model for generating anime",
-		id: "anything-diffusion",
-		path: "anything"
 	}
 ];
