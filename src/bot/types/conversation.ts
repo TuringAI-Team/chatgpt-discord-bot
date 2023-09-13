@@ -1,4 +1,4 @@
-import type { ChatModelResult } from "../chat/models/mod.js";
+import type { ChatModelResult } from "../chat/index.js";
 
 export interface Conversation {
 	/** ID of the conversation */
@@ -19,10 +19,10 @@ export interface ConversationInteraction {
 export type ConversationResult = Pick<ChatModelResult, "done" | "cost" | "finishReason"> & {
 	/** The ID of the message */
 	id: string;
-	
+
 	/** The resulting message */
 	message: ConversationMessage;
-}
+};
 
 export interface ConversationMessage {
 	/** Author of the message */
@@ -34,4 +34,4 @@ export interface ConversationMessage {
 
 export type ConversationUserMessage = ConversationMessage & {
 	role: "user";
-}
+};

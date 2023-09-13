@@ -1,5 +1,4 @@
-import { Intents } from "discordeno";
-
+import { Intents } from "@discordeno/types";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -9,6 +8,7 @@ export const BOT_ID = process.env.BOT_ID!;
 
 /** Load distribution */
 export const TOTAL_WORKERS = Number(process.env.TOTAL_WORKERS!);
+export const TOTAL_SHARDS = Number(process.env.TOTAL_SHARDS!);
 export const SHARDS_PER_WORKER = Number(process.env.SHARDS_PER_WORKER!);
 
 /** REST server */
@@ -18,9 +18,10 @@ export const REST_PORT = process.env.REST_PORT!;
 /** Gateway HTTP server */
 export const GATEWAY_URL = `${process.env.GATEWAY_HOST}:${process.env.GATEWAY_PORT}`;
 export const GATEWAY_PORT = process.env.GATEWAY_PORT!;
+export const GATEWAY_AUTH = process.env.GATEWAY_AUTH!;
 
 /** Authentication for the HTTP services */
-export const HTTP_AUTH = process.env.HTTP_AUTH!;
+export const REST_AUTH = process.env.REST_AUTH!;
 
 /** RabbitMQ server URI */
 export const RABBITMQ_URI = process.env.RABBITMQ_URI!;
@@ -51,6 +52,4 @@ export const SUPPORT_INVITE = `discord.gg/${process.env.SUPPORT_INVITE_CODE!}`;
 export const BRANDING_COLOR = parseInt(process.env.BRANDING_COLOR!, 16);
 
 /** Which gateway intents should be used */
-export const INTENTS: Intents =
-    Intents.DirectMessages |
-    Intents.GuildMessages;
+export const INTENTS = Intents.DirectMessages | Intents.GuildMessages;

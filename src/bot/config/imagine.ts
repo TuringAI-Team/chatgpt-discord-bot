@@ -1,0 +1,91 @@
+import { CommandConfig, normalizeChoices, optionsTranformer } from "./setup.js";
+
+export const imagineConfig: CommandConfig = {
+	name: "imagine",
+	description: "Generate beautiful images with AI",
+	type: "ChatInput",
+	options: optionsTranformer([
+		{
+			type: "String",
+			name: "prompt",
+			description: "The prompt that will be used for the image generation",
+			max_length: 1000,
+			required: true,
+		},
+		{
+			type: "String",
+			name: "negative",
+			description: "What will the AI try not to add to the picture",
+		},
+		{
+			type: "String",
+			name: "model",
+			description: "The model that will be used for the image generation",
+			choices: normalizeChoices([
+				["SDXL · Latest Stable Diffusion model", "sdxl"],
+				["Kandinsky · Multi-lingual latent diffusion model", "kandinsky"],
+				["Project Unreal Engine 5 · Model trained on Unreal Engine 5 renders", "pue5"],
+				["Dreamshaper · A mix of several Stable Diffusion models", "dreamshaper"],
+				["ICBINP · Model trained on highly-realistic images", "icbninp"],
+				["Anything Diffusion · Stable Diffusion-based model trained on Anime", "anything"],
+			]),
+		},
+		{
+			type: "String",
+			name: "style",
+			description: "The style that will be applied to the image",
+			choices: [],
+		},
+		{
+			type: "Number",
+			name: "steps",
+			description: "How much denoising steps will be run",
+			min_value: 15,
+			max_value: 100,
+		},
+		{
+			type: "Number",
+			name: "guidance",
+			description: "How much the AI will prioritize your prompt",
+		},
+		{
+			type: "String",
+			name: "sampler",
+			description: "The sampler that will be used for the denoising steps",
+			choices: normalizeChoices([
+				["Euler", "euler"],
+				["Euler A", "eulera"],
+				["Heun", "heun"],
+				["Lms", "lms"],
+				["DPM 2M", "dpm2m"],
+				["DPM 2A", "dpm2a"],
+				["DPM Fast", "dpmfast"],
+				["DPM Adaptive", "dpmadaptive"],
+				["DPM++ 2M", "dpmpp2m"],
+				["DPM++ 2S A", "dpmpp2sa"],
+				["DPM++ SDE", "dpmppsde"],
+			]),
+		},
+		{
+			type: "Number",
+			name: "seed",
+			description: "The seed that will be used for the image generation",
+			min_value: 0,
+			max_value: 2147483647,
+		},
+		{
+			type: "String",
+			name: "ratio",
+			description: "The aspect ratio that will be used for the image generation",
+		},
+		{
+			type: "String",
+			name: "enhance",
+			description: "Shall we enhance your prompt?",
+			choices: normalizeChoices([
+				["Yes, improve my prompt.", "enhanceyes"],
+				["No, don't improve my prompt.", "enhanceno"],
+			]),
+		},
+	]),
+};
