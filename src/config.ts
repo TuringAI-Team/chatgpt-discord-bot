@@ -1,5 +1,6 @@
 import { Intents } from "@discordeno/types";
 import dotenv from "dotenv";
+import { CommandCooldown } from "./bot/types";
 dotenv.config();
 
 /** Token & ID of the bot */
@@ -53,3 +54,28 @@ export const BRANDING_COLOR = parseInt(process.env.BRANDING_COLOR!, 16);
 
 /** Which gateway intents should be used */
 export const INTENTS = Intents.DirectMessages | Intents.GuildMessages;
+
+/** Turing partners */
+export const PARTNERS = [
+	{
+		emoji: "<:trident:1128664558425362522>",
+		name: "TridentNodes",
+		url: "https://link.turing.sh/tridentnodes",
+		description: "Reliable, powerful, affordable hosting",
+	},
+	{
+		emoji: "<:runpod:1121108621170839592>",
+		name: "RunPod",
+		url: "https://link.turing.sh/runpod",
+		description: "Providing various GPU models for the bot, like image recognition",
+	},
+];
+
+/** Home repo */
+export const HOME_REPO = "https://github.com/TuringAI-Team/chatgpt-discord-bot";
+
+export const NoCooldown: CommandCooldown = {
+	user: 0,
+	voter: 0,
+	subscription: 0,
+};

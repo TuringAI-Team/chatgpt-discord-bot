@@ -5,6 +5,18 @@ import {
 	DiscordApplicationCommandOptionChoice,
 	PermissionStrings,
 } from "@discordeno/bot";
+import { Command } from "../types";
+
+export interface CreateCommand extends Omit<Command, "body"> {
+	body: Omit<CommandConfig, "options"> & { options?: CustomOptionParser[] };
+}
+
+export function createCommand({ body, ...base }: CreateCommand): Command {
+	const { options, ...info } = body;
+	const payload: Command = { ...base, body: { ...info, type: ApplicationCommandTypes[body.type!] ?? ApplicationCommandTypes.ChatInput } };
+	if (options) payload.body.options = optionsTranformer(options);
+	return payload;
+}
 
 export type CustomChoices = [name: string, value?: string];
 
@@ -23,7 +35,10 @@ export type CustomOption = Omit<DiscordApplicationCommandOption, "type"> & {
 	type: keyof typeof ApplicationCommandOptionTypes;
 };
 
-export type CustomOptionParser = Omit<CustomOption, "description_localizations" | "name_localizations">;
+export type CustomOptionParser = Omit<CustomOption, "description_localizations" | "name_localizations" | "choices" | "options"> & {
+	choices?: CustomChoices[];
+	options?: CustomOptionParser[];
+};
 
 export function optionsTranformer(options: CustomOptionParser[]): DiscordApplicationCommandOption[] {
 	return options.map((option) => {
@@ -31,6 +46,8 @@ export function optionsTranformer(options: CustomOptionParser[]): DiscordApplica
 			...option,
 			type: ApplicationCommandOptionTypes[option.type],
 		} as DiscordApplicationCommandOption;
+		if (option.choices) clone.choices = normalizeChoices(option.choices);
+		if (option.options) clone.options = optionsTranformer(option.options);
 		// get langs
 		const factor = false;
 		if (factor) {
@@ -44,7 +61,7 @@ export function optionsTranformer(options: CustomOptionParser[]): DiscordApplica
 export interface CommandConfig {
 	name: string;
 	description: string;
-	type: keyof typeof ApplicationCommandTypes;
+	type?: keyof typeof ApplicationCommandTypes;
 	defaultMemberPermissions?: PermissionStrings[];
 	dmPermission?: boolean;
 	nsfw?: boolean;

@@ -71,8 +71,26 @@ async function update(collection: CollectionName, id: string, data: NonNullable<
 
 async function insert(collection: CollectionName, id: string, data: NonNullable<unknown>) {
 	const collectionKey = getCollectionKey(collection, id);
-	await db.from(collection).insert({ id, ...data });
-	await setCache(collectionKey, { id, ...data });
+	let existing = await getCache(collectionKey);
+	if (!existing) {
+		existing = await db.from(collection).select("*").eq("id", id).single();
+		if (existing) {
+			await setCache(collectionKey, existing);
+			return;
+		}
+		await db.from(collection).insert({ id, ...data });
+		await setCache(collectionKey, { id, ...data });
+	}
+}
+
+async function remove(
+	collection: CollectionName,
+	id: string,
+) {
+	const collectionKey = getCollectionKey(collection, id);
+	await db.from(collection).delete().eq("id", id);
+	await redis.del(collectionKey);
+
 }
 
 /** Handlers */
@@ -96,7 +114,7 @@ connection.createConsumer(
 );
 
 async function handleMessage(message: {
-	action: "update" | "insert";
+	action: "update" | "insert" | "remove";
 	collection: CollectionName;
 	id: string;
 	data: NonNullable<unknown>;
@@ -111,6 +129,9 @@ async function handleMessage(message: {
 
 		case "insert":
 			await insert(message.collection, message.id, message.data);
+			break;
+		case "remove":
+			await remove(message.collection, message.id);
 			break;
 	}
 	return null;

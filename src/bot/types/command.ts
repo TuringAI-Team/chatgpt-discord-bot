@@ -1,11 +1,22 @@
-import { Interaction } from "@discordeno/bot";
+import { Bot, Interaction } from "@discordeno/bot";
 import { CreateSlashApplicationCommand } from "@discordeno/types";
+import { Environment } from "../../types/other";
 
-export type Command = {
-	cooldown: {
-		user: number;
-		voter: number;
-		subscription: number;
-	};
-	execute: (interaction: Interaction) => Promise<void>;
-} & CreateSlashApplicationCommand;
+export interface CommandCooldown {
+	user: number;
+	voter: number;
+	subscription: number;
+}
+
+export interface Command {
+	execute: (interaction: CommandContext) => Promise<void>;
+	body: CreateSlashApplicationCommand;
+	cooldown: CommandCooldown;
+	isPrivate?: boolean;
+}
+
+export interface CommandContext {
+	interaction: Interaction;
+	bot: Bot;
+	env: Environment;
+}

@@ -1,13 +1,13 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-import { parentPort, workerData } from "worker_threads";
-import type { WorkerCreateData, WorkerMessage } from "./types/worker.js";
 import { Collection, createLogger } from "@discordeno/utils";
 import RabbitMQ from "rabbitmq-client";
+import { parentPort, workerData } from "worker_threads";
+import type { WorkerCreateData, WorkerMessage } from "./types/worker.js";
 
-import { BOT_TOKEN, INTENTS, RABBITMQ_URI, TOTAL_SHARDS } from "../config.js";
 import { DiscordenoShard } from "@discordeno/gateway";
+import { BOT_TOKEN, INTENTS, RABBITMQ_URI, TOTAL_SHARDS } from "../config.js";
 
 if (!parentPort) throw new Error("Parent port is null");
 
@@ -17,7 +17,7 @@ const data: WorkerCreateData = workerData;
 const logger = createLogger({ name: `[WORKER #${data.workerId}]` });
 const identifyPromises = new Map<number, () => void>();
 
-const connection = new RabbitMQ.Connection(RABBITMQ_URI);
+const connection = new RabbitMQ(RABBITMQ_URI);
 const publisher = connection.createPublisher();
 
 const shards = new Collection<number, DiscordenoShard>();

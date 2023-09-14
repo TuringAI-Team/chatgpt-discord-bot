@@ -1,5 +1,5 @@
 import { EventHandlers, InteractionTypes, logger } from "@discordeno/bot";
-import { commands } from "../commands/index.js";
+import { commands } from "../index";
 
 export const interactionCreate: EventHandlers["interactionCreate"] = async (interaction) => {
 	switch (interaction.type) {
@@ -13,7 +13,10 @@ export const interactionCreate: EventHandlers["interactionCreate"] = async (inte
 				return;
 			}
 
-			cmd.execute(interaction).catch((err) => {
+			await interaction.defer(cmd.isPrivate ?? false);
+
+			// @ts-expect-error fix soon
+			await cmd.execute({ interaction, bot: interaction.bot, env: {} }).catch((err) => {
 				interaction.bot.logger.error(`There was an error trying to execute the command ${interaction.data!.name}`);
 				interaction.bot.logger.error("A detailed walkthrough is provided below.");
 				interaction.bot.logger.error(err);

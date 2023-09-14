@@ -8,9 +8,9 @@
 		"allowSyntheticDefaultImports": true,
 	  
 	  /* Modules */
-	  "module": "ES2020",
+	  "module": "esnext",
 	  "rootDir": "./src",
-	  "moduleResolution": "Bundler", // Update this to Node16 as well
+	  "moduleResolution": "Bundler",
 	  
 	  /* JavaScript Support */
 	  "allowJs": true,
@@ -29,6 +29,7 @@
 	  "strict": true,
 	  "allowUnusedLabels": false,
 	  "allowUnreachableCode": false,
+		"types": ["node"],
   
 	  /* Completeness */
 	  "skipLibCheck": true

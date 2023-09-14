@@ -1,18 +1,17 @@
 import { createGatewayManager } from "@discordeno/gateway";
-import { rest } from "./rest.js";
 import { Intents } from "@discordeno/types";
-import { BOT_TOKEN, SHARDS_PER_WORKER, TOTAL_SHARDS, TOTAL_WORKERS } from "../config.js";
 import { Collection, logger } from "@discordeno/utils";
-import { WorkerCreateData, WorkerMessage } from "./types/worker.js";
-import { ManagerMessage } from "./types/manager.js";
 import { Worker } from "worker_threads";
+import { BOT_TOKEN, SHARDS_PER_WORKER, TOTAL_WORKERS } from "../config.js";
+import { rest } from "./rest.js";
+import { ManagerMessage } from "./types/manager.js";
+import { WorkerCreateData, WorkerMessage } from "./types/worker.js";
 
 const workers = new Collection<number, Worker>();
 
 export const gateway = createGatewayManager({
 	token: BOT_TOKEN,
 	intents: Intents.Guilds | Intents.GuildMessages,
-	totalShards: TOTAL_SHARDS,
 	shardsPerWorker: SHARDS_PER_WORKER,
 	totalWorkers: TOTAL_WORKERS,
 	connection: await rest.getSessionInfo(),

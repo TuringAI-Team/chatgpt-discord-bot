@@ -1,7 +1,7 @@
 import { Collection, createLogger } from "@discordeno/utils";
 import { createClient } from "redis";
 import API from "../api.js";
-import { CommandList } from "../commands/index.js";
+import { CommandList } from "../handlers/index";
 
 declare module "@discordeno/bot" {
 	interface Bot {
