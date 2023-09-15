@@ -28,6 +28,12 @@ redis.on("connect", () => {
 redis.on("error", (error) => {
 	logger.error(error);
 });
+redis.on("reconnecting", () => {
+	logger.info("Reconnecting to Redis");
+});
+redis.on("ready", () => {
+	logger.info("Redis is ready");
+});
 
 /** Supabase client */
 const db = createSupabaseClient(DB_URL, DB_KEY, {
