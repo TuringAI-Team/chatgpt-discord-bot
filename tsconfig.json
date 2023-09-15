@@ -8,9 +8,9 @@
 		"allowSyntheticDefaultImports": true,
 	  
 	  /* Modules */
-	  "module": "esnext",
+	  "module": "NodeNext",
 	  "rootDir": "./src",
-	  "moduleResolution": "Bundler",
+	  "moduleResolution": "NodeNext", // Update this to Node16 as well
 	  
 	  /* JavaScript Support */
 	  "allowJs": true,
@@ -29,10 +29,12 @@
 	  "strict": true,
 	  "allowUnusedLabels": false,
 	  "allowUnreachableCode": false,
-		"types": ["node"],
   
 	  /* Completeness */
-	  "skipLibCheck": true
+	  "skipLibCheck": true,
+
+	  // bun?
+	  "types": [ "bun-types" ]
 	}
   }
   

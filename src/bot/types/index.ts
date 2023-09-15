@@ -1,4 +1,3 @@
-export * from "./imagine";
-export * from "./conversation";
-export * from "./command";
-export * from "./bot";
+export * from "./imagine.js";
+export * from "./command.js";
+export * from "./bot.js";

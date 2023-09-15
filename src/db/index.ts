@@ -4,9 +4,12 @@ import RabbitMQ from "rabbitmq-client";
 import { createClient as createRedisClient } from "redis";
 import { DB_KEY, DB_URL, RABBITMQ_URI, REDIS_HOST, REDIS_PASSWORD, REDIS_PORT, REDIS_USER } from "../config.js";
 
-import { CollectionName, CollectionNames } from "../types/collections";
+import { CollectionName, CollectionNames } from "../types/collections.js";
 
 const logger = createLogger({ name: "[DB]" });
+
+var queue = "db";
+if (process.env.NODE_ENV === "development") queue = "db-dev";
 
 /** Redis client */
 const redis = createRedisClient({
@@ -18,6 +21,13 @@ const redis = createRedisClient({
 	username: REDIS_USER,
 	password: REDIS_PASSWORD,
 });
+// check if redis is connected
+redis.on("connect", () => {
+	logger.info("Connected to Redis");
+});
+redis.on("error", (error) => {
+	logger.error(error);
+});
 
 /** Supabase client */
 const db = createSupabaseClient(DB_URL, DB_KEY, {
@@ -27,7 +37,11 @@ const db = createSupabaseClient(DB_URL, DB_KEY, {
 });
 
 /** RabbitMQ connection */
-const connection = new RabbitMQ(RABBITMQ_URI);
+const connection = new RabbitMQ.Connection(RABBITMQ_URI);
+
+connection.on("connection", () => {
+	logger.info("Connected to RabbitMQ");
+});
 
 /** Cache */
 async function getCache<T>(key: string): Promise<T | null> {
@@ -83,20 +97,16 @@ async function insert(collection: CollectionName, id: string, data: NonNullable<
 	}
 }
 
-async function remove(
-	collection: CollectionName,
-	id: string,
-) {
+async function remove(collection: CollectionName, id: string) {
 	const collectionKey = getCollectionKey(collection, id);
 	await db.from(collection).delete().eq("id", id);
 	await redis.del(collectionKey);
-
 }
 
 /** Handlers */
 connection.createConsumer(
 	{
-		queue: "db",
+		queue: queue,
 	},
 	async (message, reply) => {
 		try {
@@ -119,6 +129,7 @@ async function handleMessage(message: {
 	id: string;
 	data: NonNullable<unknown>;
 }) {
+	// no borres el comentario cabrón.
 	// biome-ignore lint/complexity/useSimplifiedLogicExpression: spaghetti code by lol
 	if (!message.action || !message.collection || !message.id || !message.data) throw new Error(`Invalid message: ${message}`);
 	if (!Object.keys(CollectionNames).includes(message.collection)) throw new Error(`Invalid collection name: ${message.collection}`);

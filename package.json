@@ -5,10 +5,14 @@
   "description": "The ultimate AI-powered Discord bot",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
-    "check": "biome check ./src",
-    "check:apply": "biome check --appply",
-    "lint": "biome format --write ./src/"
+    "build": "rm -r ./dist && bun run lint && bun ./src/build.ts",
+    "build:all": "bun run build && bun run check:types",
+    "check:types": "bunx tsc --noEmit",
+    "lint": "bunx biome format --write ./src/",
+    "start:gateway": "npm run build && node dist/gateway/index.js",
+    "start:db": "npm run build && node dist/db/index.js",
+    "start:bot": "npm run build && node dist/bot/index.js",
+    "git": "git fetch && git pull"
   },
   "repository": {
     "type": "git",
@@ -36,6 +40,7 @@
     "@discordeno/utils": "^19.0.0-next.a087a52",
     "@supabase/supabase-js": "^2.33.2",
     "axios": "^1.5.0",
+    "bun-types": "^1.0.2",
     "express": "^4.18.2",
     "rabbitmq-client": "^4.3.0",
     "redis": "^4.6.8",

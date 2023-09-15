@@ -1,15 +1,9 @@
-import { Localization } from "@discordeno/types";
-
 type ImageStyle = {
 	name: string;
 	emoji: string;
 	tags: string[];
 	id: string;
 }[];
-
-type ImageStyleTranslation = {
-	[key: string]: Localization | null;
-};
 
 export const imageStyles: ImageStyle = [
 	{
@@ -85,30 +79,3 @@ export const imageStyles: ImageStyle = [
 		id: "isometric",
 	},
 ];
-
-export const imageStylesTranslation: ImageStyleTranslation = {
-	Cinematic: {
-		"es-ES": "Cinemático",
-	},
-	"Comic book": {
-		"es-ES": "Tebeo / Comic",
-	},
-	Photographic: {
-		"es-ES": "Fotografía",
-	},
-	"Digital Art": {
-		"es-ES": "Arte Digital",
-	},
-	"Line Art": {
-		"es-ES": "Arte linear",
-	},
-	"Analog film": {
-		"es-ES": "Pelicula antigua",
-	},
-	"3D Model": {
-		"es-ES": "Modelo 3D",
-	},
-	Isometric: {
-		"es-ES": "Vista Isometrica",
-	},
-};

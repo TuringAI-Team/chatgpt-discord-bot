@@ -1,5 +1,5 @@
 import { EventHandlers, InteractionTypes, logger } from "@discordeno/bot";
-import { commands } from "../index";
+import { commands } from "../index.js";
 
 export const interactionCreate: EventHandlers["interactionCreate"] = async (interaction) => {
 	switch (interaction.type) {

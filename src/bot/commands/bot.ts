@@ -1,6 +1,6 @@
 import { BRANDING_COLOR, NoCooldown, SUPPORT_INVITE } from "../../config.js";
 import { createCommand } from "../config/setup.js";
-import type { Command } from "../types";
+import type { Command } from "../types/index.js";
 
 export default createCommand({
 	body: {
@@ -9,5 +9,7 @@ export default createCommand({
 	},
 	cooldown: NoCooldown,
 
-	execute: async (ctx) => {},
+	execute: async (ctx: NonNullable<unknown>) => {
+		console.log(ctx);
+	},
 });

@@ -5,7 +5,7 @@ import {
 	DiscordApplicationCommandOptionChoice,
 	PermissionStrings,
 } from "@discordeno/bot";
-import { Command } from "../types";
+import { Command } from "../types/index.js";
 
 export interface CreateCommand extends Omit<Command, "body"> {
 	body: Omit<CommandConfig, "options"> & { options?: CustomOptionParser[] };

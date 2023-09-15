@@ -1,6 +1,6 @@
 import { Intents } from "@discordeno/types";
 import dotenv from "dotenv";
-import { CommandCooldown } from "./bot/types";
+import { CommandCooldown } from "./bot/types/index.js";
 dotenv.config();
 
 /** Token & ID of the bot */

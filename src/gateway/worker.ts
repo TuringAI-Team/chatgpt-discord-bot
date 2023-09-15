@@ -17,7 +17,7 @@ const data: WorkerCreateData = workerData;
 const logger = createLogger({ name: `[WORKER #${data.workerId}]` });
 const identifyPromises = new Map<number, () => void>();
 
-const connection = new RabbitMQ(RABBITMQ_URI);
+const connection = new RabbitMQ.Connection(RABBITMQ_URI);
 const publisher = connection.createPublisher();
 
 const shards = new Collection<number, DiscordenoShard>();

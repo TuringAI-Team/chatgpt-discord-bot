@@ -4,12 +4,22 @@ import { createLogger } from "@discordeno/utils";
 import axios from "axios";
 import { Connection } from "rabbitmq-client";
 import { createClient } from "redis";
-import { BOT_TOKEN, GATEWAY_AUTH, GATEWAY_URL, INTENTS, RABBITMQ_URI, REDIS_HOST, REDIS_PASSWORD, REDIS_PORT, REDIS_USER } from "../config";
-import API from "./api";
-import { events } from "./events/index";
-import { handleGatewayMessage } from "./gateway";
-import { loadCommands } from "./handlers";
-import { Command } from "./types";
+import {
+	BOT_TOKEN,
+	GATEWAY_AUTH,
+	GATEWAY_URL,
+	INTENTS,
+	RABBITMQ_URI,
+	REDIS_HOST,
+	REDIS_PASSWORD,
+	REDIS_PORT,
+	REDIS_USER,
+} from "../config.js";
+import API from "./api.js";
+import { events } from "./events/index.js";
+import { handleGatewayMessage } from "./gateway.js";
+import { loadCommands } from "./handlers/index.js";
+import { Command } from "./types/index.js";
 
 const connection = new Connection(RABBITMQ_URI);
 
