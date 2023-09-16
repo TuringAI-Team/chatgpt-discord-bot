@@ -21,25 +21,24 @@ const redis = createRedisClient({
 	username: REDIS_USER,
 	password: REDIS_PASSWORD,
 });
-// check if redis is connected
-redis.on("connect", () => {
-	logger.info("Connected to Redis");
-});
-redis.on("error", (error) => {
-	logger.error(error);
-});
-redis.on("reconnecting", () => {
-	logger.info("Reconnecting to Redis");
-});
-redis.on("ready", () => {
-	logger.info("Redis is ready");
-});
+redis.connect()
+	.then(() => {
+		logger.info("Redis connected");
+	}).catch
+	((error) => {
+		logger.error(error);
+	});
 
 /** Supabase client */
 const db = createSupabaseClient(DB_URL, DB_KEY, {
 	auth: {
 		persistSession: false,
 	},
+});
+// check if supabase is connected
+db.auth.onAuthStateChange((_, session) => {
+	if (session) logger.info("Connected to Supabase");
+	else logger.info("Disconnected from Supabase");
 });
 
 /** RabbitMQ connection */
