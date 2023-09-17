@@ -21,7 +21,17 @@ import { handleGatewayMessage } from "./gateway.js";
 import { loadCommands } from "./handlers/index.js";
 import { Command } from "./types/index.js";
 
+export const logger = createLogger({ name: "[BOT]" });
+
+import { env, premium } from "./utils/db.js";
+
 const connection = new Connection(RABBITMQ_URI);
+
+let environ = await env("530102778408861706");
+console.log(environ);
+if (environ) {
+	premium(environ);
+}
 
 export const bot = createBot({
 	token: BOT_TOKEN,
@@ -38,8 +48,6 @@ const client = createClient({
 	username: REDIS_USER,
 	password: REDIS_PASSWORD,
 });
-
-export const logger = createLogger({ name: "[BOT]" });
 
 await client.connect();
 bot.redis = client;

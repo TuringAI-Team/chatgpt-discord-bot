@@ -10,7 +10,7 @@
     "check:types": "bunx tsc --noEmit",
     "lint": "bunx biome format --write ./src/",
     "start:gateway": "bun run build && node ./dist/gateway/index.js",
-    "start:db": "node ./dist/db/index.js",
+    "start:db": "bun run build && node ./dist/db/index.js",
     "start:bot": "bun run build && node ./dist/bot/index.js",
     "git": "git fetch && git pull"
   },

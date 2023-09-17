@@ -8,12 +8,13 @@ import { ManagerMessage } from "./types/manager.js";
 import { WorkerCreateData, WorkerMessage } from "./types/worker.js";
 
 const workers = new Collection<number, Worker>();
-
 export const gateway = createGatewayManager({
 	token: BOT_TOKEN,
 	intents: Intents.Guilds | Intents.GuildMessages,
-	shardsPerWorker: SHARDS_PER_WORKER,
-	totalWorkers: TOTAL_WORKERS,
+	//shardsPerWorker: SHARDS_PER_WORKER,
+	//totalWorkers: TOTAL_WORKERS,
+	totalShards: 288,
+	lastShardId: 287,
 	connection: await rest.getSessionInfo(),
 	events: {},
 });
@@ -30,7 +31,6 @@ gateway.tellWorkerToIdentify = async (workerId, shardId) => {
 		type: "IDENTIFY_SHARD",
 		shardId,
 	};
-
 	worker.postMessage(identify);
 };
 
@@ -46,7 +46,7 @@ function createWorker(id: number) {
 		path: "./worker.ts",
 	};
 
-	const worker = new Worker("./build/gateway/worker.js", {
+	const worker = new Worker("./dist/gateway/worker.js", {
 		workerData,
 	});
 
