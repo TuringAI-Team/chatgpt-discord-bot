@@ -32,7 +32,7 @@ gateway.tellWorkerToIdentify = async (workerId, shardId, bucketId) => {
     let worker = workers.get(workerId);
     if (!worker) {
         worker = createWorker(workerId);
-        workers.set(worker);
+        workers.set(workerId, worker);
     }
 };
 
