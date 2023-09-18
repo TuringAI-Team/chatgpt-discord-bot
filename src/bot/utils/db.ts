@@ -1,7 +1,7 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import RabbitMQ from "rabbitmq-client";
 import { createClient as createRedisClient } from "redis";
-import { DB_KEY, DB_URL, RABBITMQ_URI, REDIS_HOST, REDIS_PASSWORD, REDIS_PORT, REDIS_USER } from "../../config.js";
+import config from "../../config.js";
 import { logger } from "../index.js";
 
 import { CollectionName, CollectionNames } from "../../types/collections.js";
@@ -15,23 +15,22 @@ if (process.env.NODE_ENV === "development") queue = "db-dev";
 /** Redis client */
 const redis = createRedisClient({
 	socket: {
-		host: REDIS_HOST,
-		port: REDIS_PORT,
+		host: config.database.redis.host,
+		port: config.database.redis.port,
 	},
 
-	username: REDIS_USER,
-	password: REDIS_PASSWORD,
+	password: config.database.redis.password,
 });
 
 /** Supabase client */
-const db = createSupabaseClient(DB_URL, DB_KEY, {
+const db = createSupabaseClient(config.database.supabase.url, config.database.supabase.key, {
 	auth: {
 		persistSession: false,
 	},
 });
 
 /** RabbitMQ connection */
-const connection = new RabbitMQ.Connection(RABBITMQ_URI);
+const connection = new RabbitMQ.Connection(config.rabbitmq.uri);
 
 const publisher = connection.createPublisher();
 async function sendQuery(body: NonNullable<unknown>) {

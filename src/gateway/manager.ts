@@ -2,19 +2,15 @@ import { createGatewayManager } from "@discordeno/gateway";
 import { Intents } from "@discordeno/types";
 import { Collection, logger } from "@discordeno/utils";
 import { Worker } from "worker_threads";
-import { BOT_TOKEN, SHARDS_PER_WORKER, TOTAL_WORKERS } from "../config.js";
+import config from "../config.js";
 import { rest } from "./rest.js";
 import { ManagerMessage } from "./types/manager.js";
 import { WorkerCreateData, WorkerMessage } from "./types/worker.js";
 
 const workers = new Collection<number, Worker>();
 export const gateway = createGatewayManager({
-	token: BOT_TOKEN,
+	token: config.bot.token,
 	intents: Intents.Guilds | Intents.GuildMessages,
-	//shardsPerWorker: SHARDS_PER_WORKER,
-	//totalWorkers: TOTAL_WORKERS,
-	totalShards: 288,
-	lastShardId: 287,
 	connection: await rest.getSessionInfo(),
 	events: {},
 });
@@ -31,6 +27,7 @@ gateway.tellWorkerToIdentify = async (workerId, shardId) => {
 		type: "IDENTIFY_SHARD",
 		shardId,
 	};
+
 	worker.postMessage(identify);
 };
 
@@ -39,7 +36,7 @@ function createWorker(id: number) {
 	logger.info(`Tell to identify shard #${id}`);
 
 	const workerData: WorkerCreateData = {
-		token: BOT_TOKEN,
+		token: config.bot.token,
 		intents: gateway.intents ?? 0,
 		totalShards: gateway.totalShards,
 		workerId: id,

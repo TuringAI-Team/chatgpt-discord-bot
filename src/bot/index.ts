@@ -4,17 +4,7 @@ import { createLogger } from "@discordeno/utils";
 import axios from "axios";
 import { Connection } from "rabbitmq-client";
 import { createClient } from "redis";
-import {
-	BOT_TOKEN,
-	GATEWAY_AUTH,
-	GATEWAY_URL,
-	INTENTS,
-	RABBITMQ_URI,
-	REDIS_HOST,
-	REDIS_PASSWORD,
-	REDIS_PORT,
-	REDIS_USER,
-} from "../config.js";
+import config from "../config.js";
 import API from "./api.js";
 import { events } from "./events/index.js";
 import { handleGatewayMessage } from "./gateway.js";
@@ -25,7 +15,7 @@ export const logger = createLogger({ name: "[BOT]" });
 
 import { env, premium } from "./utils/db.js";
 
-const connection = new Connection(RABBITMQ_URI);
+const connection = new Connection(config.rabbitmq.uri);
 
 let environ = await env("530102778408861706");
 console.log(environ);
@@ -34,19 +24,18 @@ if (environ) {
 }
 
 export const bot = createBot({
-	token: BOT_TOKEN,
-	intents: INTENTS,
+	token: config.bot.token,
+	intents: config.gateway.intents,
 	events,
 });
 
 const client = createClient({
 	socket: {
-		host: REDIS_HOST,
-		port: REDIS_PORT,
+		host: config.database.redis.host,
+		port: config.database.redis.port,
 	},
 
-	username: REDIS_USER,
-	password: REDIS_PASSWORD,
+	password: config.database.redis.password,
 });
 
 await client.connect();
@@ -54,7 +43,7 @@ bot.redis = client;
 bot.logger = logger;
 bot.api = API;
 bot.rest = createRestManager({
-	token: BOT_TOKEN,
+	token: config.bot.token,
 });
 
 const cmds = await loadCommands();
@@ -66,9 +55,9 @@ logger.info(`${commands.size} commands deployed`);
 // @ts-expect-error remove the expect error and see the magic of typescript errors
 bot.gateway.requestMembers = async (guildId, options) => {
 	await axios
-		.post(GATEWAY_URL, {
+		.post(config.gateway.url, {
 			headers: {
-				Authorization: GATEWAY_AUTH,
+				Authorization: config.gateway.auth,
 			},
 			body: JSON.stringify({ type: "REQUEST_MEMBERS", guildId, options }),
 		})

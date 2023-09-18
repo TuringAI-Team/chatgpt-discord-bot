@@ -2,4 +2,7 @@ node_modules/
 .env
 bun.lockb
 dist/
-src/gateway/based/*
+src/config.ts
+/src/config.ts
+src/
+config.ts
