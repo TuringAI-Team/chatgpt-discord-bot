@@ -6,13 +6,14 @@ async function getFiles(dir: string): Promise<string[]> {
 	const files = await Promise.all(
 		dirents.map((dirent) => {
 			const res = dirent.name;
-			const path = dir + "/" + res;
+			const path = `${dir}/${res}`;
 			return dirent.isDirectory() ? getFiles(path) : path;
 		}),
 	);
 	return Array.prototype.concat(...files);
 }
 
+// biome-ignore lint/correctness/noUndeclaredVariables: tsconfig types which biome doesnt understand
 const result = await Bun.build({
 	entrypoints: await getFiles("./src"),
 	root: "./src",

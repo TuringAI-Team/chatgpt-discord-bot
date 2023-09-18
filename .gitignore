@@ -3,6 +3,4 @@ node_modules/
 bun.lockb
 dist/
 src/config.ts
-/src/config.ts
-src/
 config.ts
