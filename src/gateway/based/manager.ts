@@ -30,6 +30,10 @@ gateway.tellWorkerToIdentify = async (workerId, shardId, bucketId) => {
     logger.debug("Tell worker", { workerId, shardId, bucketId });
 
     let worker = workers.get(workerId);
+    if (!worker) {
+        worker = createWorker(workerId);
+        workers.set(worker);
+    }
 };
 
 export function createWorker(workerId: number): Worker {
@@ -43,23 +47,26 @@ export function createWorker(workerId: number): Worker {
 
     const worker = new Worker(`${join(process.cwd(), "dist", "src", "gateway", "based", "worker")}.js`, { workerData: data });
 
-    worker.on('message', async (data: MessageFromWorker) => {
-        switch (data.type) {
-            case "SHARD_ON":
-                await delay(gateway.spawnShardDelay);
-                logger.info('Resolving shard ready');
-                gateway.buckets.get(data.shardId % connection.sessionStartLimit.maxConcurrency)!.identifyRequests.shift()?.();
-                break;
-            case "TO_IDENTIFY":
-                logger.info('Rquest identify #', data.shardId);
-                await gateway.requestIdentify(data.shardId);
-                worker.postMessage({ type: 'ALLOW_IDENTIFY', shardId: data.shardId });
-                break;
-            case "PONG_REPLY":
-                pongs.get(data.pong)?.(data.data);
-        }
+    worker.on('message', (data) => workerListerner(worker, data));
 
-    })
+    return worker;
+}
+
+export async function workerListerner(worker: Worker, data: MessageFromWorker) {
+    switch (data.type) {
+        case "SHARD_ON":
+            await delay(gateway.spawnShardDelay);
+            logger.info('Resolving shard ready');
+            gateway.buckets.get(data.shardId % connection.sessionStartLimit.maxConcurrency)!.identifyRequests.shift()?.();
+            break;
+        case "TO_IDENTIFY":
+            logger.info('Rquest identify #', data.shardId);
+            await gateway.requestIdentify(data.shardId);
+            worker.postMessage({ type: 'ALLOW_IDENTIFY', shardId: data.shardId });
+            break;
+        case "PONG_REPLY":
+            pongs.get(data.pong)?.(data.data);
+    }
 }
 
 export type MessageFromWorker = ShardReady | RequestIdentify | PongReply<WorkerShardInfo[]>;
