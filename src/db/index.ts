@@ -8,7 +8,7 @@ import { CollectionName, CollectionNames } from "../types/collections.js";
 
 const logger = createLogger({ name: "[DB]" });
 
-var queue = "db";
+let queue = "db";
 if (process.env.NODE_ENV === "development") queue = "db-dev";
 
 /** Redis client */
@@ -22,11 +22,15 @@ const redis = createRedisClient({
 });
 
 /** Supabase client */
-const db = createSupabaseClient(config.database.supabase.url, config.database.supabase.key, {
-	auth: {
-		persistSession: false,
+const db = createSupabaseClient(
+	config.database.supabase.url,
+	config.database.supabase.key,
+	{
+		auth: {
+			persistSession: false,
+		},
 	},
-});
+);
 
 /** RabbitMQ connection */
 const connection = new RabbitMQ.Connection(config.rabbitmq.uri);
@@ -54,7 +58,11 @@ function getCollectionKey(collection: CollectionName, id: string) {
 }
 
 /** Actions */
-async function update(collection: CollectionName, id: string, data: NonNullable<unknown>) {
+async function update(
+	collection: CollectionName,
+	id: string,
+	data: NonNullable<unknown>,
+) {
 	const collectionKey = getCollectionKey(collection, id);
 	let existing = await getCache(collectionKey);
 	if (!existing) {
@@ -75,7 +83,11 @@ async function update(collection: CollectionName, id: string, data: NonNullable<
 	await setCache(collectionKey, { ...existing, ...data });
 }
 
-async function insert(collection: CollectionName, id: string, data: NonNullable<unknown>) {
+async function insert(
+	collection: CollectionName,
+	id: string,
+	data: NonNullable<unknown>,
+) {
 	const collectionKey = getCollectionKey(collection, id);
 	let existing = await getCache(collectionKey);
 	if (!existing) {
@@ -121,10 +133,10 @@ async function handleMessage(message: {
 	id: string;
 	data: NonNullable<unknown>;
 }) {
-	// no borres el comentario cabrón.
-	// biome-ignore lint/complexity/useSimplifiedLogicExpression: spaghetti code by lol
-	if (!message.action || !message.collection || !message.id || !message.data) throw new Error(`Invalid message: ${message}`);
-	if (!Object.keys(CollectionNames).includes(message.collection)) throw new Error(`Invalid collection name: ${message.collection}`);
+	if (!message.action || !message.collection || !message.id || !message.data)
+		throw new Error(`Invalid message: ${message}`);
+	if (!Object.keys(CollectionNames).includes(message.collection))
+		throw new Error(`Invalid collection name: ${message.collection}`);
 	switch (message.action) {
 		case "update":
 			await update(message.collection, message.id, message.data);

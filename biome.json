@@ -1,40 +1,39 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.1.2/schema.json",
-  "linter": {
-    "enabled": true,
-    "rules": {
-      "all": true,
-      "style": {
-        "useWhile": "off",
-        "noNonNullAssertion": "off"
-      },
-      "suspicious": {
-        "noExplicitAny": "error",
-        "noAssignInExpressions": "off"
-      },
-      "nursery": {
-        "all": true,
-        "useNamingConvention": "off",
-        "useImportRestrictions": "off"
-      }
-    }
-  },
-  "formatter": {
-    "enabled": true,
-    "indentSize": 4,
-    "indentStyle": "tab",
-    "lineWidth": 140,
-    "formatWithErrors": true
-  },
-  "files": {
-    "ignore": ["node_modules/", "dist"]
-  },
-  "organizeImports": {
-    "enabled": true
-  },
-  "vcs": {
-    "enabled": true,
-    "clientKind": "git",
-    "useIgnoreFile": true
-  }
+	"$schema": "https://biomejs.dev/schemas/1.1.2/schema.json",
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"all": true,
+			"style": {
+				"useWhile": "off",
+				"noNonNullAssertion": "off"
+			},
+			"suspicious": {
+				"noExplicitAny": "error",
+				"noAssignInExpressions": "off"
+			},
+			"nursery": {
+				"all": true,
+				"useImportRestrictions": "off"
+			}
+		}
+	},
+	"formatter": {
+		"enabled": true,
+		"indentSize": 4,
+		"indentStyle": "tab",
+		"lineWidth": 140,
+		"formatWithErrors": true
+	},
+	"files": {
+		"ignore": ["node_modules/", "dist"]
+	},
+	"organizeImports": {
+		"enabled": true
+	},
+	"vcs": {
+		"enabled": true,
+		"clientKind": "git",
+		"useIgnoreFile": true
+	}
 }

@@ -3,5 +3,5 @@ import { User } from "./models/users.js";
 
 export interface Environment {
 	user: User;
-	guild: Guild | null;
+	guild?: Guild;
 }
