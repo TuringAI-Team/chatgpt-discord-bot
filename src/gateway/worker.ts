@@ -1,71 +1,145 @@
-import dotenv from "dotenv";
-dotenv.config();
-
-import { Collection, createLogger } from "@discordeno/utils";
-import RabbitMQ from "rabbitmq-client";
+import {
+	Camelize,
+	DiscordGatewayPayload,
+	DiscordGuild,
+	DiscordReady,
+	DiscordUnavailableGuild,
+	DiscordenoShard,
+	ShardGatewayConfig,
+	ShardSocketRequest,
+	ShardState,
+	createLogger,
+} from "@discordeno/bot";
+import { Connection } from "rabbitmq-client";
 import { parentPort, workerData } from "worker_threads";
-import type { WorkerCreateData, WorkerMessage } from "./types/worker.js";
-
-import { DiscordenoShard } from "@discordeno/gateway";
 import config from "../config.js";
+import { MessageFromWorker } from "./manager.js";
 
-if (!parentPort) throw new Error("Parent port is null");
+if (!parentPort) {
+	throw new Error("Parent port is null");
+}
 
-const parent = parentPort!;
-const data: WorkerCreateData = workerData;
+const script: WorkerCreateData = workerData;
+const logger = createLogger({ name: `[WORKER #${script.workerId}]` });
 
-const logger = createLogger({ name: `[WORKER #${data.workerId}]` });
-const identifyPromises = new Map<number, () => void>();
+const identifys = new Map<number, () => void>();
 
-const connection = new RabbitMQ.Connection(config.rabbitmq.uri);
+const guilds: Set<string> = new Set();
+const loads: Set<string> = new Set();
+
+const manager = new Map<number, DiscordenoShard>();
+
+const connection = new Connection(config.rabbitmq.uri);
 const publisher = connection.createPublisher();
 
-const shards = new Collection<number, DiscordenoShard>();
+setInterval(() => {
+	for (const shard of manager.values()) {
+		if (shard.state === ShardState.Connected) continue;
+		shard.identify();
+		logger.info(`Shard ${shard.id} re-identifying`);
+	}
+}, 6e4);
 
-parent.on("message", async (data: WorkerMessage) => {
+parentPort.on("message", parentListener);
+
+async function parentListener(data: WorkerMessage) {
 	switch (data.type) {
 		case "IDENTIFY_SHARD": {
-			logger.info(`[Shard] identifying ${shards.has(data.shardId) ? "existing" : "new"} shard (${data.shardId})`);
-			const shard =
-				shards.get(data.shardId) ??
-				new DiscordenoShard({
-					id: data.shardId,
-					connection: {
-						compress: false,
-						intents: config.gateway.intents,
-						properties: {
-							os: "linux",
-							device: "Discordeno",
-							browser: "Discordeno",
-						},
-						token: config.bot.token,
-						totalShards: config.gateway.shardsPerWorker,
-						url: "wss://gateway.discord.gg",
-						version: 10,
-					},
-					events: {
-						async message(shrd, payload) {
-							publisher
-								.send("gateway", {
-									payload,
-									shardId: shrd.id,
-								})
-								.catch(logger.error);
-						},
-					},
-				});
+			logger.info(`Start to identify shard #${data.shardId}`);
+			if (manager.has(data.shardId)) return logger.warn("Shard already exist");
+			const shard = new DiscordenoShard({
+				id: data.shardId,
+				events: {
+					message: handleMessage,
+				},
+				connection: data.connection,
+			});
+			shard.forwardToBot = (payload) => shard.events.message?.(shard, payload);
 
-			shards.set(shard.id, shard);
+			shard.shardIsReady = async () => {
+				const request: MessageFromWorker = { type: "SHARD_ON", shardId: shard.id };
+				parentPort?.postMessage(request);
+			};
+
+			manager.set(shard.id, shard);
+
 			await shard.identify();
-
 			break;
 		}
+		case "ALLOW_IDENTIFY":
+			identifys.get(data.shardId)?.();
+			identifys.delete(data.shardId);
+			break;
+		case "SHARD_PAYLOAD":
+			manager.get(data.shardId)?.send(data.data);
+			break;
+	}
+}
 
-		case "ALLOW_IDENTIFY": {
-			identifyPromises.get(data.shardId)?.();
-			identifyPromises.delete(data.shardId);
-
+async function handleMessage(shard: DiscordenoShard, message: Camelize<DiscordGatewayPayload>) {
+	logger.info(`${shard.id} ${message.t} ${message.op}`);
+	switch (message.t) {
+		case "READY":
+			for (const guild of (message.d as DiscordReady).guilds) {
+				loads.add(guild.id);
+			}
+			break;
+		case "GUILD_CREATE": {
+			const guild = message.d as DiscordGuild;
+			if (guilds.has(guild.id)) return;
+			if (loads.has(guild.id)) {
+				message.t = "GUILD_LOADED" as never;
+				loads.delete(guild.id);
+			}
+			guilds.add(guild.id);
+			break;
+		}
+		case "GUILD_DELETE": {
+			const guild = message.d as DiscordUnavailableGuild;
+			if (guild.unavailable) return;
+			guilds.delete(guild.id);
 			break;
 		}
 	}
-});
+
+	switch (message.t) {
+		case "READY":
+		case "RESUMED":
+		case "GUILD_CREATE":
+		case "GUILD_DELETE":
+		case "INTERACTION_CREATE":
+			await publisher.send({ routingKey: "gateway" }, { shardId: shard.id, payload: message });
+	}
+}
+export interface WorkerShardInfo {
+	workerId: number;
+	shardId: number;
+	rtt: number;
+	state: ShardState;
+}
+
+export type WorkerMessage = WorkerIdentifyShard | WorkerAllowIdentify | WorkerShardPayload;
+export interface WorkerIdentifyShard {
+	type: "IDENTIFY_SHARD";
+	shardId: number;
+	connection: ShardGatewayConfig;
+}
+
+export interface WorkerAllowIdentify {
+	type: "ALLOW_IDENTIFY";
+	shardId: number;
+}
+
+export interface WorkerShardPayload {
+	type: "SHARD_PAYLOAD";
+	shardId: number;
+	data: ShardSocketRequest;
+}
+
+export interface WorkerCreateData {
+	intents: number;
+	token: string;
+	path: string;
+	totalShards: number;
+	workerId: number;
+}

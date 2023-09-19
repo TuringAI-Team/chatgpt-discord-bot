@@ -1,13 +1,14 @@
-import { createCommand } from "../config/setup.js";
+import { NoCooldown, createCommand } from "../config/setup.js";
+import { CommandContext } from "../types/command.js";
 
 export default createCommand({
 	body: {
 		name: "bot",
 		description: "View information & statistics about the bot",
 	},
-	cooldown: { subscription: 0, user: 0, voter: 0 },
+	cooldown: NoCooldown,
 
-	execute: async (ctx: NonNullable<unknown>) => {
-		console.log(ctx);
+	execute: async (ctx: CommandContext) => {
+		ctx;
 	},
 });

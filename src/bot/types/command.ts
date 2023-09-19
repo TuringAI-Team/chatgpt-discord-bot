@@ -1,6 +1,5 @@
-import { Bot, Interaction } from "@discordeno/bot";
+import { Interaction } from "@discordeno/bot";
 import { CreateSlashApplicationCommand } from "@discordeno/types";
-import { Environment } from "../../types/other.js";
 
 export interface CommandCooldown {
 	user: number;
@@ -17,6 +16,4 @@ export interface Command {
 
 export interface CommandContext {
 	interaction: Interaction;
-	bot: Bot;
-	env: Environment;
 }

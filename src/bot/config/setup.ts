@@ -23,7 +23,7 @@ export type CustomChoices = [name: string, value?: string];
 export function normalizeChoices(choices: CustomChoices[]): DiscordApplicationCommandOptionChoice[] {
 	const result: DiscordApplicationCommandOptionChoice[] = [];
 	for (let [name, value] of choices) {
-		value ??= name.toLowerCase().trim().replace(/+s/, "");
+		value ??= name.toLowerCase().trim().replace(/ +/, "");
 		// get traduction
 		result.push({ name, value });
 	}
@@ -67,3 +67,5 @@ export interface CommandConfig {
 	nsfw?: boolean;
 	options?: ReturnType<typeof optionsTranformer>;
 }
+
+export const NoCooldown = { subscription: 0, user: 0, voter: 0 };

@@ -7,7 +7,7 @@ export type CommandList = keyof typeof commands;
 
 export async function loadCommands(): Promise<Command[]> {
 	const result: Command[] = [];
-	const paths = await walk(join(process.cwd(), "dist", "src", "bot", "commands"));
+	const paths = (await walk(join(process.cwd(), "dist", "bot", "commands"))).map((x) => `file://${x}`);
 	for (const path of paths) {
 		if (!path.endsWith("js")) continue;
 		const cmd = (await import(path)) as ResolveImport<Command>;
