@@ -7,7 +7,7 @@ import { parentPort, workerData } from "worker_threads";
 import type { WorkerCreateData, WorkerMessage } from "./types/worker.js";
 
 import { DiscordenoShard } from "@discordeno/gateway";
-import { BOT_TOKEN, INTENTS, RABBITMQ_URI, TOTAL_SHARDS } from "../config.js";
+import config from "../config.js";
 
 if (!parentPort) throw new Error("Parent port is null");
 
@@ -17,7 +17,7 @@ const data: WorkerCreateData = workerData;
 const logger = createLogger({ name: `[WORKER #${data.workerId}]` });
 const identifyPromises = new Map<number, () => void>();
 
-const connection = new RabbitMQ.Connection(RABBITMQ_URI);
+const connection = new RabbitMQ.Connection(config.rabbitmq.uri);
 const publisher = connection.createPublisher();
 
 const shards = new Collection<number, DiscordenoShard>();
@@ -32,14 +32,14 @@ parent.on("message", async (data: WorkerMessage) => {
 					id: data.shardId,
 					connection: {
 						compress: false,
-						intents: INTENTS,
+						intents: config.gateway.intents,
 						properties: {
 							os: "linux",
 							device: "Discordeno",
 							browser: "Discordeno",
 						},
-						token: BOT_TOKEN,
-						totalShards: TOTAL_SHARDS,
+						token: config.bot.token,
+						totalShards: config.gateway.shardsPerWorker,
 						url: "wss://gateway.discord.gg",
 						version: 10,
 					},

@@ -23,15 +23,11 @@ const redis = createRedisClient({
 });
 
 /** Supabase client */
-const db = createSupabaseClient(
-	config.database.supabase.url,
-	config.database.supabase.key,
-	{
-		auth: {
-			persistSession: false,
-		},
+const db = createSupabaseClient(config.database.supabase.url, config.database.supabase.key, {
+	auth: {
+		persistSession: false,
 	},
-);
+});
 
 /** RabbitMQ connection */
 const connection = new RabbitMQ.Connection(config.rabbitmq.uri);
@@ -61,11 +57,7 @@ export function getCollectionKey(collection: string, id: string) {
 
 /** Actions */
 
-export async function update(
-	collection: CollectionName,
-	id: string,
-	data: NonNullable<unknown>,
-) {
+export async function update(collection: CollectionName, id: string, data: NonNullable<unknown>) {
 	const body = {
 		type: "update",
 		collection,
@@ -76,11 +68,7 @@ export async function update(
 	return result;
 }
 
-export async function insert(
-	collection: CollectionName,
-	data: NonNullable<unknown>,
-	id?: string,
-) {
+export async function insert(collection: CollectionName, data: NonNullable<unknown>, id?: string) {
 	let body: {
 		type: "insert";
 		collection: CollectionName;
@@ -107,32 +95,22 @@ export type GetParams<T = string | undefined> = {
 };
 
 export async function get(params: GetParams): Promise<NonNullable<unknown>>;
-export async function get(
-	params: GetParams<string>,
-): Promise<NonNullable<unknown>>;
+export async function get(params: GetParams<string>): Promise<NonNullable<unknown>>;
 export async function get(params: GetParams | GetParams<string>) {
 	let collection: string = params.collection;
-	if (CollectionNames[params.collection])
-		collection = CollectionNames[params.collection];
+	if (CollectionNames[params.collection]) collection = CollectionNames[params.collection];
 
 	if (params.id) {
 		const collectionKey = getCollectionKey(params.collection, params.id);
 		const existing = await getCache(collectionKey);
 		console.log(`existing  ${JSON.stringify(existing)}`);
 		if (existing) return existing;
-		const { data: result } = await db
-			.from(collection)
-			.select("*")
-			.eq("id", params.id)
-			.single();
+		const { data: result } = await db.from(collection).select("*").eq("id", params.id).single();
 		if (!result) return null;
 		await setCache(collectionKey, result);
 		return result;
 	} else if (params.filter) {
-		const { data: result } = await db
-			.from(collection)
-			.select("*")
-			.match(params.filter);
+		const { data: result } = await db.from(collection).select("*").match(params.filter);
 		return result;
 	} else {
 		const { data: result } = await db.from(collection).select("*");
@@ -166,10 +144,7 @@ export function premium(env: Environment): {
 	location: "user" | "guild";
 } | null {
 	/* In which order to use the plans in */
-	const locationPriority: "guild" | "user" = getSettingsValue(
-		env.user,
-		"premium:location_priority",
-	) as "guild" | "user";
+	const locationPriority: "guild" | "user" = getSettingsValue(env.user, "premium:location_priority") as "guild" | "user";
 
 	/* Whether to prefer the Premium of the guild or user itself */
 	const typePriority: "plan" | "subscription" = getSettingsValue(
@@ -178,13 +153,10 @@ export function premium(env: Environment): {
 		"premium:type_priority",
 	) as "plan" | "subscription";
 
-	const checks: Record<typeof typePriority, (entry: Guild | User) => boolean> =
-		{
-			subscription: (entry) =>
-				entry.subscription !== null && Date.now() < entry.subscription.expires,
-			plan: (entry) =>
-				entry.plan !== null && entry.plan.total > entry.plan.used,
-		};
+	const checks: Record<typeof typePriority, (entry: Guild | User) => boolean> = {
+		subscription: (entry) => entry.subscription !== null && Date.now() < entry.subscription.expires,
+		plan: (entry) => entry.plan !== null && entry.plan.total > entry.plan.used,
+	};
 
 	const locations: typeof locationPriority[] = ["guild", "user"];
 	const types: typeof typePriority[] = ["plan", "subscription"];
@@ -228,8 +200,7 @@ export async function icon(env: Environment) {
 	const votedAt = voted(env.user);
 
 	if (votedAt) {
-		if (votedAt + 12.5 * 60 * 60 * 1000 - Date.now() < 30 * 60 * 1000)
-			return "📩";
+		if (votedAt + 12.5 * 60 * 60 * 1000 - Date.now() < 30 * 60 * 1000) return "📩";
 		else return "✉️";
 	}
 
