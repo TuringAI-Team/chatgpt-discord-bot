@@ -107,6 +107,7 @@ async function handleMessage(shard: DiscordenoShard, message: Camelize<DiscordGa
 		case "RESUMED":
 		case "GUILD_CREATE":
 		case "GUILD_DELETE":
+		case "MESSAGE_CREATE":
 		case "INTERACTION_CREATE":
 			await publisher.send({ routingKey: "gateway" }, { shardId: shard.id, payload: message });
 	}
