@@ -16,8 +16,6 @@ const workers = new Map<number, Worker>();
 
 const concurrency = (shardId: number) => shardId % connection.sessionStartLimit.maxConcurrency;
 
-console.log(connection);
-
 const gateway = createGatewayManager({
 	connection,
 	compress: false,
