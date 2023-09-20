@@ -1,5 +1,5 @@
 import { InfractionReference, InfractionType, ModerationResult } from "../moderation.js";
-import { SettingsCategory } from "../settings.js";
+import { SettingsCategory } from "./settings.js";
 import { Plan, Subscription } from "../subscription.js";
 
 export interface Infractions {

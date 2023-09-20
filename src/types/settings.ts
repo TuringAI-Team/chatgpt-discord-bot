@@ -16,19 +16,17 @@ export enum SettingsLocation {
 	Both = "b",
 }
 
-export type SettingsChoices = string | number | boolean;
-export interface SettingsOption {
+export type SettingChoice = string | number | boolean;
+export interface SettingOption {
 	id: string;
 	name: string;
 	value: string | number | boolean | object;
 	emoji: string;
-	options: SettingsChoices[];
+	options: SettingChoice[];
 }
 
-export interface SettingsCategory {
+export interface SettingCategory {
 	name: string;
-
 	emoji: string;
-
-	options: SettingsOption[];
+	options: SettingOption[];
 }

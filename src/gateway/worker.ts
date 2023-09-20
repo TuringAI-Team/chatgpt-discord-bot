@@ -77,7 +77,7 @@ async function parentListener(data: WorkerMessage) {
 }
 
 async function handleMessage(shard: DiscordenoShard, message: Camelize<DiscordGatewayPayload>) {
-	logger.info(`${shard.id} ${message.t} ${message.op}`);
+	logger.info(`Got event ${message.t ?? "Heartbeat"} (${message.op}) in Shard #${shard.id}`);
 	switch (message.t) {
 		case "READY":
 			for (const guild of (message.d as DiscordReady).guilds) {

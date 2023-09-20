@@ -3,5 +3,4 @@ import { commands } from "../index.js";
 
 export const messageCreate: EventHandlers["messageCreate"] = async (message) => {
 	console.log(message);
-	console.log(message.author);
 };

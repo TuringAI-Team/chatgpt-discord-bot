@@ -1,4 +1,4 @@
-import { SettingsCategory } from "../settings.js";
+import { SettingsCategory } from "./settings.js";
 import { Plan, Subscription } from "../subscription.js";
 import { Infractions } from "./users.js";
 
