@@ -31,10 +31,14 @@ const client = createClient({
 await client.connect();
 bot.redis = client;
 bot.logger = logger;
+bot.shards = new Map();
 bot.api = API;
 bot.rest = createRestManager({
 	token: config.bot.token,
+	applicationId: config.bot.id,
 });
+
+export const gatewayConfig = await bot.rest.getGatewayBot();
 
 const cmds = await loadCommands();
 const applicationCommands: CreateApplicationCommand[] = cmds.map((cmd) => cmd.body);

@@ -21,6 +21,7 @@ export default {
 		token: "",
 		id: "",
 		intents: Intents.DirectMessages | Intents.GuildMessages,
+		permissions: 0,
 	},
 	rest: {
 		host: "",
@@ -50,7 +51,8 @@ export default {
 	},
 	brand: {
 		invite: "",
-		color: "",
+		color: 0,
 	},
 	partners,
+	repository: "TuringAI-Team/chatgpt-discord-bot",
 } as const;

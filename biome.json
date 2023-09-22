@@ -1,5 +1,5 @@
 {
-	"$schema": "https://biomejs.dev/schemas/1.1.2/schema.json",
+	"$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
 	"linter": {
 		"enabled": true,
 		"rules": {
@@ -14,7 +14,8 @@
 			},
 			"nursery": {
 				"all": true,
-				"useImportRestrictions": "off"
+				"useImportRestrictions": "off",
+				"useNamingConvention": "off"
 			}
 		}
 	},

@@ -15,7 +15,7 @@ export const interactionCreate: EventHandlers["interactionCreate"] = async (inte
 
 			await interaction.defer(cmd.isPrivate ?? false);
 
-			await cmd.execute({ interaction }).catch((err) => {
+			await cmd.interaction({ interaction }).catch((err) => {
 				interaction.bot.logger.error(`There was an error trying to execute the command ${interaction.data?.name}`);
 				interaction.bot.logger.error("A detailed walkthrough is provided below.");
 				interaction.bot.logger.error(err);

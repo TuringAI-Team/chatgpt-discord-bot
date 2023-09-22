@@ -54,14 +54,14 @@ export default createCommand({
 				name: "sampler",
 				description: "The sampler that will be used for the denoising steps",
 				choices: [
-					["Euler", "euler"],
-					["Euler A", "eulera"],
-					["Heun", "heun"],
-					["Lms", "lms"],
-					["DPM 2M", "dpm2m"],
-					["DPM 2A", "dpm2a"],
-					["DPM Fast", "dpmfast"],
-					["DPM Adaptive", "dpmadaptive"],
+					["Euler"],
+					["Euler A"],
+					["Heun"],
+					["Lms"],
+					["DPM 2M"],
+					["DPM 2A"],
+					["DPM Fast"],
+					["DPM Adaptive"],
 					["DPM++ 2M", "dpmpp2m"],
 					["DPM++ 2S A", "dpmpp2sa"],
 					["DPM++ SDE", "dpmppsde"],
@@ -95,7 +95,7 @@ export default createCommand({
 		voter: 4 * 60 * 1000,
 		subscription: 1.5 * 60 * 1000,
 	},
-	execute: async (ctx: NonNullable<unknown>) => {
+	interaction: async (ctx) => {
 		console.log(ctx);
 	},
 });

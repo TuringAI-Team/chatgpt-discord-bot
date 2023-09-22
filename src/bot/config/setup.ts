@@ -1,10 +1,14 @@
 import {
 	ApplicationCommandOptionTypes,
 	ApplicationCommandTypes,
+	ButtonStyles,
 	DiscordApplicationCommandOption,
 	DiscordApplicationCommandOptionChoice,
+	DiscordButtonComponent,
+	MessageComponentTypes,
 	PermissionStrings,
 } from "@discordeno/bot";
+import config from "../../config.js";
 import { Command } from "../types/index.js";
 
 export interface CreateCommand extends Omit<Command, "body"> {
@@ -69,3 +73,30 @@ export interface CommandConfig {
 }
 
 export const NoCooldown = { subscription: 0, user: 0, voter: 0 };
+
+export type ButtonNames = "invite" | "support" | "github";
+
+export const buttonInfo: Record<ButtonNames, DiscordButtonComponent> = {
+	invite: {
+		type: MessageComponentTypes.Button,
+		label: "Add me to your server",
+		url: `https://discord.com/oauth2/authorize?client_id=${config.bot.id}&permissions=${config.bot.permissions}&scope=bot%20applications.commands`,
+		style: ButtonStyles.Link,
+	},
+	support: {
+		type: MessageComponentTypes.Button,
+		label: "Support Server",
+		url: `https://discord.gg/${config.brand.invite}`,
+		style: ButtonStyles.Link,
+	},
+	github: {
+		type: MessageComponentTypes.Button,
+		label: "GitHub",
+		url: `https://github.com/${config.repository}/tree/ddeno-new`,
+		style: ButtonStyles.Link,
+		emoji: {
+			name: "github",
+			id: "1097828013871222865",
+		},
+	},
+};

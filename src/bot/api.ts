@@ -1,5 +1,13 @@
-import { Text, Image, Audio, Video } from "turing.sh";
+import { Audio, Image, Other, Text, Video } from "turing.sh";
 import config from "../config.js";
+
+export type Api = {
+	text: Text;
+	image: Image;
+	audio: Audio;
+	video: Video;
+	other: Other;
+};
 
 export default {
 	text: new Text({
@@ -34,4 +42,12 @@ export default {
 			stream: true,
 		},
 	}),
-};
+	other: new Other({
+		apiKey: config.api.key,
+		captchaKey: config.api.captchaKey,
+		options: {
+			host: config.api.host,
+			stream: true,
+		},
+	}),
+} satisfies Api;

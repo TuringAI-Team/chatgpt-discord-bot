@@ -13,6 +13,7 @@ import {
 import { Connection } from "rabbitmq-client";
 import { parentPort, workerData } from "worker_threads";
 import config from "../config.js";
+import type { ShardInfo } from "../types/other.js";
 import { MessageFromWorker } from "./manager.js";
 
 if (!parentPort) {
@@ -77,7 +78,22 @@ async function parentListener(data: WorkerMessage) {
 }
 
 async function handleMessage(shard: DiscordenoShard, message: Camelize<DiscordGatewayPayload>) {
-	logger.info(`Got event ${message.t ?? "Heartbeat"} (${message.op}) in Shard #${shard.id}`);
+	logger.debug(`Got event ${message.t ?? "Heartbeat"} (${message.op}) in Shard #${shard.id}`);
+
+	handleInternalEvent(message);
+
+	switch (message.t) {
+		case "READY":
+		case "RESUMED":
+		case "GUILD_CREATE":
+		case "GUILD_DELETE":
+		case "MESSAGE_CREATE":
+		case "INTERACTION_CREATE":
+			await publisher.send({ routingKey: "gateway" }, { shardId: shard.id, payload: message });
+	}
+}
+
+export function handleInternalEvent(message: Camelize<DiscordGatewayPayload>) {
 	switch (message.t) {
 		case "READY":
 			for (const guild of (message.d as DiscordReady).guilds) {
@@ -101,17 +117,24 @@ async function handleMessage(shard: DiscordenoShard, message: Camelize<DiscordGa
 			break;
 		}
 	}
-
-	switch (message.t) {
-		case "READY":
-		case "RESUMED":
-		case "GUILD_CREATE":
-		case "GUILD_DELETE":
-		case "MESSAGE_CREATE":
-		case "INTERACTION_CREATE":
-			await publisher.send({ routingKey: "gateway" }, { shardId: shard.id, payload: message });
-	}
 }
+
+setInterval(
+	(shards, pub) => {
+		const data: ShardInfo[] = [...shards.values()].map((s) => ({
+			id: s.id,
+			workerId: script.workerId,
+			state: s.state,
+			rtt: s.heart.rtt ?? -1,
+		}));
+
+		pub.send({ routingKey: "gateway" }, { payload: { d: data, t: "SHARD_INFO" } });
+	},
+	6e5,
+	manager,
+	publisher,
+);
+
 export interface WorkerShardInfo {
 	workerId: number;
 	shardId: number;

@@ -1,4 +1,4 @@
-import { Interaction } from "@discordeno/bot";
+import { Bot, Interaction, Message } from "@discordeno/bot";
 import { CreateSlashApplicationCommand } from "@discordeno/types";
 
 export interface CommandCooldown {
@@ -8,7 +8,8 @@ export interface CommandCooldown {
 }
 
 export interface Command {
-	execute: (interaction: CommandContext) => Promise<void>;
+	interaction: (interaction: CommandContext) => Promise<void>;
+	message?: (message: MessageContext) => Promise<void>;
 	body: CreateSlashApplicationCommand;
 	cooldown: CommandCooldown;
 	isPrivate?: boolean;
@@ -16,4 +17,9 @@ export interface Command {
 
 export interface CommandContext {
 	interaction: Interaction;
+}
+
+export interface MessageContext extends Omit<CommandContext, "interaction"> {
+	message: Message;
+	bot: Bot;
 }
