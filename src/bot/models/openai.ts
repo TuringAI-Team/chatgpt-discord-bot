@@ -1,4 +1,4 @@
-import { DALLEModel, GPTModel, ImageModel } from "./index.js";
+import { DALLEModel, GPTModel } from "./index.js";
 
 const GPT3 = {
 	name: "ChatGPT",
@@ -41,14 +41,23 @@ const GPT4 = {
 
 const DALLE2 = {
 	name: "DALL-E 2",
-	description: "DALL-E 2 by OpenAI",
-	baseSize: {
-		width: 256,
-		height: 256
+	variableSizes: {
+		0: {
+			width: 256,
+			height: 256,
+		},
+		1: {
+			width: 512,
+			height: 512,
+		},
+		2: {
+			width: 1024,
+			height: 1024,
+		},
 	},
 	run: (api, data) => {
-		return api.image.dall(data)
-	}
-} satisfies DALLEModel<0>;
+		return api.image.dall(data);
+	},
+} satisfies DALLEModel<2>;
 
 export { GPT3, GPT316K, GPT4, DALLE2 };

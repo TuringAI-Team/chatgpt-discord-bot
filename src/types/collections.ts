@@ -6,4 +6,5 @@ export enum CollectionNames {
 	conversations = "convos",
 	images = "images_new",
 	campaigns = "campaigns_new",
+	metrics = "metrics_new",
 }

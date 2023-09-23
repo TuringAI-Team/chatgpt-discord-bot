@@ -1,6 +1,6 @@
 import { Guild } from "../../types/models/guilds.js";
 import { User } from "../../types/models/users.js";
-import { SettingCategory, SettingChoice } from "../../types/models/settings.js";
+import { SettingCategory, SettingChoice } from "../../types/settings.js";
 
 function key2data(key: string) {
 	const [collection, id] = key.split(":");

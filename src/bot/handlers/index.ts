@@ -14,6 +14,6 @@ export async function loadCommands(): Promise<Command[]> {
 		if (!cmd.default) continue;
 		result.push(cmd.default);
 	}
-
+	console.log(result);
 	return result;
 }

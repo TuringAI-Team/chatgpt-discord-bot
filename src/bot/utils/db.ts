@@ -38,7 +38,7 @@ async function sendQuery(body: NonNullable<unknown>) {
 }
 
 /** Cache */
-async function setCache<T>(key: string, data: T) {
+export async function setCache<T>(key: string, data: T) {
 	await redis.set(key, JSON.stringify(data), {
 		EX: 30 * 60,
 	});
@@ -51,8 +51,9 @@ export async function getCache<T>(key: string): Promise<T | null> {
 	else return null;
 }
 
-export function getCollectionKey(collection: string, id: string) {
-	return `${collection}::${id}`;
+export function getCollectionKey(collection: string, id: string, extra?: string) {
+	if (extra) return `${collection}::${id}::${extra}`;
+	else return `${collection}::${id}`;
 }
 
 /** Actions */
