@@ -9,9 +9,11 @@ import { events } from "./events/index.js";
 import { handleGatewayMessage } from "./gateway.js";
 import { loadCommands } from "./handlers/index.js";
 import { Command } from "./types/index.js";
+import { setMetrics } from "./utils/metrics.js";
 
 export const logger = createLogger({ name: "[BOT]" });
 const connection = new Connection(config.rabbitmq.uri);
+console.log(await setMetrics("guilds", { "premium.total": "+1" }));
 
 export const bot = createBot({
 	token: config.bot.token,

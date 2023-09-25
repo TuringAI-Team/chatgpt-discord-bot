@@ -13,7 +13,7 @@ export type ImagineOption =
 	| "ratio"
 	| "enhance";
 
-export type ImagineValues = Partial<Record<ImagineOption, string | number | boolean | undefined>>;
+export type ImagineValues = Partial<Record<ImagineOption, string>>;
 
 export type ImagineOptions = {
 	[key in ImagineOption]?: InteractionDataOption;

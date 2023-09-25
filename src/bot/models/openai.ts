@@ -55,9 +55,7 @@ const DALLE2 = {
 			height: 1024,
 		},
 	},
-	run: (api, data) => {
-		return api.image.dall(data);
-	},
+	run: (api, data) => api.image.dall(data),
 } satisfies DALLEModel<2>;
 
 export { GPT3, GPT316K, GPT4, DALLE2 };

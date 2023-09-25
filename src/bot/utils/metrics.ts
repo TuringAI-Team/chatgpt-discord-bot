@@ -5,16 +5,20 @@ let lastPush;
 
 const MetricTypesArr: Array<MetricTypes> = ["guilds", "users", "credits", "chat", "image", "vote", "commands", "campaigns"];
 
-async function getMetrics(type: MetricTypes) {
+export async function getMetrics(type: MetricTypes) {
 	let collectionKey = getCollectionKey("metrics", type, "latest");
 	const latest = await getCache(collectionKey);
 	if (latest) return latest;
 }
 
-async function setMetrics(type: MetricTypes, newData: Object) {
-	// newData -> locates the parameter and use +1 to add data
+export async function setMetrics(type: MetricTypes, newData: Object) {
+	// newData -> locates the parameter as string "param.param.param: '+1'"and use +1 to add data
 	let oldMetrics = await getMetrics(type);
-	let newMetrics = { ...oldMetrics, ...newData };
+	let newMetric = Object.keys(newData)[0].split(".");
+	let newMetricValue = Object.values(newData)[0];
+	console.log(newMetric, newMetricValue);
+	let newMetrics = { ...oldMetrics };
+	return;
 	let collectionKey = getCollectionKey("metrics", type, "latest");
 	await setCache(collectionKey, newMetrics);
 	return newMetrics;
