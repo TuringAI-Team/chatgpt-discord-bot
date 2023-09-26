@@ -1,6 +1,6 @@
 export type MetricTypes = "guilds" | "users" | "credits" | "chat" | "image" | "vote" | "commands" | "campaigns";
 
-interface GuildsMetric {
+export interface GuildsMetric {
 	total: number;
 	joins: number;
 	leaves: number;
@@ -10,7 +10,7 @@ interface GuildsMetric {
 		plan: number;
 	};
 }
-interface UsersMetric {
+export interface UsersMetric {
 	total: number;
 	new: number;
 	premium: {
@@ -19,7 +19,7 @@ interface UsersMetric {
 		plan: number;
 	};
 }
-interface CreditsMetric {
+export interface CreditsMetric {
 	total: number; // total credits in all time
 	totalUsed: number; // total credits used in all time
 	used: number; // credits used in the time period (1 hour)
@@ -36,7 +36,7 @@ interface CreditsMetric {
 		bought: number; // credits bought in the time period (1 hour)
 	};
 }
-interface ChatMetric {
+export interface ChatMetric {
 	tokens: {
 		completion: {
 			models: Array<{
@@ -73,7 +73,7 @@ interface ChatMetric {
 		}>;
 	};
 }
-interface ImageMetric {
+export interface ImageMetric {
 	requests: {
 		total: number;
 		models: Array<{
@@ -89,11 +89,11 @@ interface ImageMetric {
 		}>;
 	};
 }
-interface VoteMetric {
+export interface VoteMetric {
 	total: number;
 	new: number;
 }
-interface CommandsMetric {
+export interface CommandsMetric {
 	executed: number;
 	executions: Array<{
 		command: string;
@@ -101,7 +101,7 @@ interface CommandsMetric {
 		cooldowns: number;
 	}>;
 }
-interface CampaignsMetric {
+export interface CampaignsMetric {
 	views: {
 		now: Array<{
 			campaign: string;
