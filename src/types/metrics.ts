@@ -39,54 +39,30 @@ export interface CreditsMetric {
 export interface ChatMetric {
 	tokens: {
 		completion: {
-			models: Array<{
-				name: string;
-				tokens: number;
-			}>;
+			models: Object; // name: tokens
 			total: number;
-			tones: Array<{
-				name: string;
-				tokens: number;
-			}>;
+			tones: Object; // tone name: tokens
 		};
 		prompt: {
-			models: Array<{
-				name: string;
-				tokens: number;
-			}>;
+			models: Object; // name: tokens
 			total: number;
-			tones: Array<{
-				name: string;
-				tokens: number;
-			}>;
+			tones: Object; // tone name: tokens
 		};
 	};
 	requests: {
 		total: number;
-		models: Array<{
-			name: string;
-			requests: number;
-		}>;
-		tones: Array<{
-			name: string;
-			requests: number;
-		}>;
+		models: Object; // name: requests
+		tones: Object; // tone name: requests
 	};
 }
 export interface ImageMetric {
 	requests: {
 		total: number;
-		models: Array<{
-			name: string;
-			requests: number;
-		}>;
+		models: Object; // name: requests
 	};
 	images: {
 		total: number;
-		models: Array<{
-			name: string;
-			images: number;
-		}>;
+		models: Object; // name: images amount
 	};
 }
 export interface VoteMetric {
@@ -95,32 +71,16 @@ export interface VoteMetric {
 }
 export interface CommandsMetric {
 	executed: number;
-	executions: Array<{
-		command: string;
-		executions: number;
-		cooldowns: number;
-	}>;
+	executions: Object // command: { cooldowns: number,  executions: number};
 }
 export interface CampaignsMetric {
 	views: {
-		now: Array<{
-			campaign: string;
-			views: number;
-		}>;
-		total: Array<{
-			campaign: string;
-			views: number;
-		}>;
+		now: Object; // campaign: number
+		total: Object;
 	};
 	clicks: {
-		now: Array<{
-			campaign: string;
-			clicks: number;
-		}>;
-		total: Array<{
-			campaign: string;
-			clicks: number;
-		}>;
+		now: Object; // campaign: number
+		total: Object;
 	};
 }
 

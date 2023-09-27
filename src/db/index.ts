@@ -101,11 +101,11 @@ connection.createConsumer(
 		queue: queue,
 	},
 	async (message, reply) => {
+		console.log(message);
 		try {
 			const result = await handleMessage(message.body);
-			if (result) await reply({ success: true, data: result });
 		} catch (error) {
-			logger.error(error);
+			logger.error(JSON.stringify(error));
 
 			await reply({
 				success: false,

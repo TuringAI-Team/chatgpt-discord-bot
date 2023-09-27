@@ -1,17 +1,42 @@
 import { update, insert, get, getCache, setCache, getCollectionKey } from "./db.js";
-import { MetricTypes, GuildsMetric, UsersMetric, CreditsMetric, ChatMetric, ImageMetric, VoteMetric, CommandsMetric, CampaignsMetric } from "../../types/metrics.js";
+import {
+	MetricTypes,
+	GuildsMetric,
+	UsersMetric,
+	CreditsMetric,
+	ChatMetric,
+	ImageMetric,
+	VoteMetric,
+	CommandsMetric,
+	CampaignsMetric,
+} from "../../types/metrics.js";
 import { randomUUID } from "crypto";
 let lastPush;
 
 const MetricTypesArr: Array<MetricTypes> = ["guilds", "users", "credits", "chat", "image", "vote", "commands", "campaigns"];
 
-export async function getMetrics(type: MetricTypes): Promise<GuildsMetric | UsersMetric | CreditsMetric | ChatMetric | ImageMetric | VoteMetric | CommandsMetric | CampaignsMetric | undefined> {
+export async function getMetrics(
+	type: MetricTypes,
+): Promise<
+	GuildsMetric | UsersMetric | CreditsMetric | ChatMetric | ImageMetric | VoteMetric | CommandsMetric | CampaignsMetric | undefined
+> {
 	const collectionKey = getCollectionKey("metrics", type, "latest");
-	const latest = await getCache(collectionKey) as GuildsMetric | UsersMetric | CreditsMetric | ChatMetric | ImageMetric | VoteMetric | CommandsMetric | CampaignsMetric | undefined;
+	const latest = (await getCache(collectionKey)) as
+		| GuildsMetric
+		| UsersMetric
+		| CreditsMetric
+		| ChatMetric
+		| ImageMetric
+		| VoteMetric
+		| CommandsMetric
+		| CampaignsMetric
+		| undefined;
 	if (latest) return latest;
 }
 
-export function getDefaultMetrics(type: MetricTypes): GuildsMetric | UsersMetric | CreditsMetric | ChatMetric | ImageMetric | VoteMetric | CommandsMetric | CampaignsMetric | undefined {
+export function getDefaultMetrics(
+	type: MetricTypes,
+): GuildsMetric | UsersMetric | CreditsMetric | ChatMetric | ImageMetric | VoteMetric | CommandsMetric | CampaignsMetric | undefined {
 	switch (type) {
 		case "guilds":
 			// get type and change number type to 0
@@ -76,43 +101,46 @@ export function getDefaultMetrics(type: MetricTypes): GuildsMetric | UsersMetric
 					models: [],
 					total: 0,
 					tones: [],
-				}
-			}
+				},
+			};
 			return chat;
 		case "image":
 			let image: ImageMetric = {
 				requests: {
 					total: 0,
 					models: [],
-				}, images: {
+				},
+				images: {
 					total: 0,
 					models: [],
-				}
-			}
+				},
+			};
 			return image;
 		case "vote":
 			let vote: VoteMetric = {
 				total: 0,
 				new: 0,
-			}
+			};
 			return vote;
 		case "commands":
 			let commands: CommandsMetric = {
 				executed: 0,
-				executions: [],
-			}
+				executions: {
+					// command: { cooldowns: number,  executions: number};
+				},
+			};
 			return commands;
 		case "campaigns":
 			let campaigns: CampaignsMetric = {
 				views: {
-					total: [],
-					now: [],
+					total: {},
+					now: {},
 				},
 				clicks: {
-					total: [],
-					now: [],
+					total: {},
+					now: {},
 				},
-			}
+			};
 			return campaigns;
 		default:
 			return;
@@ -127,17 +155,32 @@ export async function setMetrics(type: MetricTypes, newData: NonNullable<unknown
 	if (!oldMetrics) oldMetrics = getDefaultMetrics(type);
 	if (!oldMetrics) return;
 	let oldMetricValue: NonNullable<unknown> = oldMetrics;
+	let newMetrics = { ...oldMetrics };
+
 	if (newMetric.length > 1) {
 		// @ts-ignore
 		oldMetricValue = oldMetrics[newMetric[0]];
+		// @ts-ignore
+		if (newMetric.length >= 2) oldMetricValue = oldMetricValue[newMetric[1]];
+		let newValue: NonNullable<unknown> = oldMetricValue;
+		if (typeof newMetricValue == "string" && typeof oldMetricValue == "number") {
+			let symbol = newMetricValue.includes("+") ? "+" : "-";
+			let value = parseInt(newMetricValue.replace(symbol, ""));
+			newValue = symbol == "+" ? oldMetricValue + value : oldMetricValue - value;
+		}
+		if (newMetric.length == 1) {
+			// @ts-ignore
+			newMetrics[newMetric[0]] = newValue;
+		} else if (newMetric.length == 2) {
+			// @ts-ignore
+			newMetrics[newMetric[0]][newMetric[1]] = newValue;
+		}
 	}
 
-	const newMetrics = { ...oldMetrics };
-	return;
-	/*
 	let collectionKey = getCollectionKey("metrics", type, "latest");
+	console.log(`${type}, ${JSON.stringify(newMetrics)}, ${collectionKey}`);
 	await setCache(collectionKey, newMetrics);
-	return newMetrics;*/
+	return newMetrics;
 }
 
 setInterval(async () => {
