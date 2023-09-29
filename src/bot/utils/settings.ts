@@ -9,13 +9,13 @@ function key2data(key: string) {
 
 export async function oldSettingsMigration(entry: Guild | User) {
 	if (entry.settings_new.length >= 1) return;
-	let oldSettings = entry.settings;
+	const oldSettings = entry.settings;
 	if (!oldSettings) return;
-	let newSettings: Array<SettingCategory> = [];
-	let oldSettingsArray = Object.entries(oldSettings);
+	const newSettings: Array<SettingCategory> = [];
+	const oldSettingsArray = Object.entries(oldSettings);
 	for (let i = 0; i < oldSettingsArray.length; i++) {
-		let category = oldSettingsArray[i];
-		let newCategory = {
+		const category = oldSettingsArray[i];
+		const newCategory = {
 			name: category[0],
 			emoji: "🔧",
 			options: [],

@@ -21,6 +21,7 @@ export const handleGatewayMessage = (bot: Bot, payload: TuringGatewayPayload, sh
 			messageCreate(bot.transformers.message(bot, payload.d as DiscordMessage), bot);
 			break;
 		case "SHARD_INFO":
+			bot.logger.info('Shard info recieved');
 			for (const info of payload.d as ShardInfo[]) {
 				bot.shards.set(info.id, info);
 			}

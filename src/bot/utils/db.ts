@@ -87,7 +87,7 @@ export async function insert(collection: CollectionName, data: NonNullable<unkno
 
 export type GetParams<T = string | undefined> = {
 	collection: CollectionName;
-	id: T;
+	id?: T;
 	filter?: Array<{
 		column: string;
 		operator: string;

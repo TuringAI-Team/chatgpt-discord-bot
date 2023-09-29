@@ -11,7 +11,6 @@ import {
 	CampaignsMetric,
 } from "../../types/metrics.js";
 import { randomUUID } from "crypto";
-let lastPush;
 
 const MetricTypesArr: Array<MetricTypes> = ["guilds", "users", "credits", "chat", "image", "vote", "commands", "campaigns"];
 
@@ -38,7 +37,7 @@ export function getDefaultMetrics(
 	type: MetricTypes,
 ): GuildsMetric | UsersMetric | CreditsMetric | ChatMetric | ImageMetric | VoteMetric | CommandsMetric | CampaignsMetric | undefined {
 	switch (type) {
-		case "guilds":
+		case "guilds": {
 			// get type and change number type to 0
 			// type = GuildMetric
 			// return type
@@ -53,8 +52,9 @@ export function getDefaultMetrics(
 				},
 			};
 			return guilds;
-		case "users":
-			let users: UsersMetric = {
+		}
+		case "users": {
+			const users: UsersMetric = {
 				total: 0,
 				new: 0,
 				premium: {
@@ -64,8 +64,9 @@ export function getDefaultMetrics(
 				},
 			};
 			return users;
-		case "credits":
-			let credits: CreditsMetric = {
+		}
+		case "credits": {
+			const credits: CreditsMetric = {
 				total: 0,
 				totalUsed: 0,
 				used: 0,
@@ -83,55 +84,60 @@ export function getDefaultMetrics(
 				},
 			};
 			return credits;
-		case "chat":
-			let chat: ChatMetric = {
+		}
+		case "chat": {
+			const chat: ChatMetric = {
 				tokens: {
 					completion: {
-						models: [],
+						models: {},
 						total: 0,
-						tones: [],
+						tones: {},
 					},
 					prompt: {
-						models: [],
+						models: {},
 						total: 0,
-						tones: [],
+						tones: {},
 					},
 				},
 				requests: {
-					models: [],
+					models: {},
 					total: 0,
-					tones: [],
+					tones: {},
 				},
 			};
 			return chat;
-		case "image":
-			let image: ImageMetric = {
+		}
+		case "image": {
+			const image: ImageMetric = {
 				requests: {
 					total: 0,
-					models: [],
+					models: {},
 				},
 				images: {
 					total: 0,
-					models: [],
+					models: {},
 				},
 			};
 			return image;
-		case "vote":
-			let vote: VoteMetric = {
+		}
+		case "vote": {
+			const vote: VoteMetric = {
 				total: 0,
 				new: 0,
 			};
 			return vote;
-		case "commands":
-			let commands: CommandsMetric = {
+		}
+		case "commands": {
+			const commands: CommandsMetric = {
 				executed: 0,
 				executions: {
 					// command: { cooldowns: number,  executions: number};
 				},
 			};
 			return commands;
-		case "campaigns":
-			let campaigns: CampaignsMetric = {
+		}
+		case "campaigns": {
+			const campaigns: CampaignsMetric = {
 				views: {
 					total: {},
 					now: {},
@@ -142,6 +148,7 @@ export function getDefaultMetrics(
 				},
 			};
 			return campaigns;
+		}
 		default:
 			return;
 	}
@@ -155,29 +162,49 @@ export async function setMetrics(type: MetricTypes, newData: NonNullable<unknown
 	if (!oldMetrics) oldMetrics = getDefaultMetrics(type);
 	if (!oldMetrics) return;
 	let oldMetricValue: NonNullable<unknown> = oldMetrics;
-	let newMetrics = { ...oldMetrics };
+	const newMetrics = { ...oldMetrics };
 
 	if (newMetric.length > 1) {
 		// @ts-ignore
 		oldMetricValue = oldMetrics[newMetric[0]];
 		// @ts-ignore
 		if (newMetric.length >= 2) oldMetricValue = oldMetricValue[newMetric[1]];
+		// @ts-ignore
+		if (newMetric.length >= 3) oldMetricValue = oldMetricValue[newMetric[2]];
+		// @ts-ignore
+		if (newMetric.length >= 4) oldMetricValue = oldMetricValue[newMetric[3]];
+		// @ts-ignore
+		if (newMetric.length >= 5) oldMetricValue = oldMetricValue[newMetric[4]];
 		let newValue: NonNullable<unknown> = oldMetricValue;
-		if (typeof newMetricValue == "string" && typeof oldMetricValue == "number") {
-			let symbol = newMetricValue.includes("+") ? "+" : "-";
-			let value = parseInt(newMetricValue.replace(symbol, ""));
-			newValue = symbol == "+" ? oldMetricValue + value : oldMetricValue - value;
+		if (typeof newMetricValue === "string" && typeof oldMetricValue === "number") {
+			const symbol = newMetricValue.includes("+") ? "+" : "-";
+			const value = parseInt(newMetricValue.replace(symbol, ""));
+			newValue = symbol === "+" ? oldMetricValue + value : oldMetricValue - value;
 		}
-		if (newMetric.length == 1) {
+		if (typeof newMetricValue === "string" && (!oldMetricValue || typeof oldMetricValue !== "number")) {
+			const symbol = newMetricValue.includes("+") ? "+" : "-";
+			const value = parseInt(newMetricValue.replace(symbol, ""));
+			newValue = value;
+		}
+		if (newMetric.length === 1) {
 			// @ts-ignore
 			newMetrics[newMetric[0]] = newValue;
-		} else if (newMetric.length == 2) {
+		} else if (newMetric.length === 2) {
 			// @ts-ignore
 			newMetrics[newMetric[0]][newMetric[1]] = newValue;
+		} else if (newMetric.length === 3) {
+			// @ts-ignore
+			newMetrics[newMetric[0]][newMetric[1]][newMetric[2]] = newValue;
+		} else if (newMetric.length === 4) {
+			// @ts-ignore
+			newMetrics[newMetric[0]][newMetric[1]][newMetric[2]][newMetric[3]] = newValue;
+		} else if (newMetric.length === 5) {
+			// @ts-ignore
+			newMetrics[newMetric[0]][newMetric[1]][newMetric[2]][newMetric[3]][newMetric[4]] = newValue;
 		}
 	}
 
-	let collectionKey = getCollectionKey("metrics", type, "latest");
+	const collectionKey = getCollectionKey("metrics", type, "latest");
 	console.log(`${type}, ${JSON.stringify(newMetrics)}, ${collectionKey}`);
 	await setCache(collectionKey, newMetrics);
 	return newMetrics;

@@ -9,7 +9,6 @@ export default createCommand({
 		description: "View information & statistics about the bot",
 	},
 	cooldown: NoCooldown,
-
 	interaction: async ({ interaction }) => {
 		console.log(interaction);
 		await interaction.edit({ ...(await buildInfo(interaction.bot, interaction.guildId)) });
@@ -28,13 +27,15 @@ export default createCommand({
 
 async function buildInfo(bot: Bot, guildId?: BigString): Promise<CreateMessageOptions> {
 	const shardId = guildId ? bot.gateway.calculateShardId(guildId, gatewayConfig.shards) : 0;
-	const shard = bot.shards.get(shardId) ?? bot.shards.get(0)!;
-	const ping = shard.rtt;
+	const shard = bot.shards.get(shardId) ?? bot.shards.get(0);
+	let ping: number = Infinity, workers = new Set<number>()
+	if (shard) {
+		ping = shard.rtt;
 
-	// can change with gateway info rework
-	const workers = new Set<number>();
-	// biome-ignore lint/complexity/noForEach: In maps is the same.
-	bot.shards.forEach((shard) => workers.add(shard.workerId));
+		// can change with gateway info rework
+		// biome-ignore lint/complexity/noForEach: In maps is the same.
+		bot.shards.forEach((shard) => workers.add(shard.workerId));
+	}
 
 	const stats = await bot.api.other.stats();
 
@@ -45,7 +46,7 @@ async function buildInfo(bot: Bot, guildId?: BigString): Promise<CreateMessageOp
 				fields: [
 					{
 						name: "Servers 🖥️",
-						value: `${stats.guilds}`,
+						value: `${stats?.guilds ?? Infinity}`,
 						inline: true,
 					},
 					{

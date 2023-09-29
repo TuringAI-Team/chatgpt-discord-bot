@@ -78,6 +78,7 @@ async function update(collection: CollectionName, id: string, data: NonNullable<
 async function insert(collection: CollectionName, id: string, data: NonNullable<unknown>) {
 	const collectionKey = getCollectionKey(collection, id);
 	let existing = await getCache(collectionKey);
+	console.log(existing);
 	if (!existing) {
 		existing = await db.from(collection).select("*").eq("id", id).single();
 		if (existing) {
@@ -107,10 +108,10 @@ connection.createConsumer(
 		} catch (error) {
 			logger.error(JSON.stringify(error));
 
-			await reply({
+			/*await reply({
 				success: false,
 				error: (error as Error).toString(),
-			});
+			});*/
 		}
 	},
 );

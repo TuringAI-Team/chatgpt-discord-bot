@@ -71,7 +71,7 @@ export interface VoteMetric {
 }
 export interface CommandsMetric {
 	executed: number;
-	executions: Object // command: { cooldowns: number,  executions: number};
+	executions: Object; // command: { cooldowns: number,  executions: number};
 }
 export interface CampaignsMetric {
 	views: {

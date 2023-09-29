@@ -7,13 +7,13 @@ import config from "../config.js";
 import API from "./api.js";
 import { events } from "./events/index.js";
 import { handleGatewayMessage } from "./gateway.js";
-import { loadCommands } from "./handlers/index.js";
-import { Command } from "./types/index.js";
+import { commands as cmds } from "./commands/index.js";
+import type { Command } from "./types/index.js";
 import { setMetrics } from "./utils/metrics.js";
 
 export const logger = createLogger({ name: "[BOT]" });
 const connection = new Connection(config.rabbitmq.uri);
-//console.log(await setMetrics("guilds", { "premium.total": "+1" }));
+//console.log(await setMetrics("chat", { "tokens.completion.models.gpt3-5": "+1" }));
 
 export const bot = createBot({
 	token: config.bot.token,
@@ -43,8 +43,6 @@ bot.rest = createRestManager({
 export const gatewayConfig = await bot.rest.getGatewayBot();
 
 console.log("post gateway // pre commands");
-
-const cmds = await loadCommands();
 
 console.log("post commands // pre create commands");
 
