@@ -30,6 +30,7 @@ const GPT4 = {
 	name: "GPT 4",
 	description: "The latest iteration of OpenAI's GPT models",
 	emoji: { name: "gpt3", id: "1097849352657047562" },
+	premium: true,
 	maxTokens: 8192,
 	run: (api, data) => {
 		return api.text.gpt({

@@ -104,7 +104,6 @@ export async function get(params: GetParams | GetParams<string>) {
 	if (params.id) {
 		const collectionKey = getCollectionKey(params.collection, params.id);
 		const existing = await getCache(collectionKey);
-		console.log(`existing  ${JSON.stringify(existing)}`);
 		if (existing) return existing;
 		const { data: result } = await db.from(collection).select("*").eq("id", params.id).single();
 		if (!result) return null;

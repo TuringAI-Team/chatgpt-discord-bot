@@ -5,15 +5,18 @@ import { Connection } from "rabbitmq-client";
 import { createClient } from "redis";
 import config from "../config.js";
 import API from "./api.js";
+import { commands as cmds } from "./commands/index.js";
 import { events } from "./events/index.js";
 import { handleGatewayMessage } from "./gateway.js";
-import { commands as cmds } from "./commands/index.js";
 import type { Command } from "./types/index.js";
 import { setMetrics } from "./utils/metrics.js";
+import { env, premium } from "./utils/db.js";
 
 export const logger = createLogger({ name: "[BOT]" });
 const connection = new Connection(config.rabbitmq.uri);
-//console.log(await setMetrics("chat", { "tokens.completion.models.gpt3-5": "+1" }));
+const envrionment = await env("530102778408861706");
+if (!envrionment) throw new Error("no envrionment");
+console.log(await premium(envrionment));
 
 export const bot = createBot({
 	token: config.bot.token,

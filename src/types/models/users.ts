@@ -1,5 +1,5 @@
 import { InfractionReference, InfractionType, ModerationResult } from "../moderation.js";
-import { SettingsCategory } from "./settings.js";
+import { SettingCategory } from "../settings.js";
 import { Plan, Subscription } from "../subscription.js";
 
 export interface Infractions {
@@ -40,8 +40,8 @@ export interface User {
 	subscription: Subscription | null;
 	plan: Plan | null;
 	voted: string | null;
-	settings: SettingsCategory[];
-	settings_new: SettingsCategory[];
+	settings: SettingCategory[];
+	settings_new: SettingCategory[];
 	metadata: Record<string, unknown>;
 	roles: Role[];
 }

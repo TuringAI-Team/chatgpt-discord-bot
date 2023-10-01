@@ -7,6 +7,10 @@ function key2data(key: string) {
 	return { collection, id };
 }
 
+export async function generateEmbed() {
+	return null;
+}
+
 export async function oldSettingsMigration(entry: Guild | User) {
 	if (entry.settings_new.length >= 1) return;
 	const oldSettings = entry.settings;
@@ -22,7 +26,10 @@ export async function oldSettingsMigration(entry: Guild | User) {
 		};
 		if (newSettings.find((category) => category.name === newCategory.name)) {
 			// update options
-
+			const category = newSettings.find((category) => category.name === newCategory.name);
+			if (!category) continue;
+			const oldOptions = category.options;
+			oldOptions.push(...newCategory.options);
 			continue;
 		}
 		newSettings.push(newCategory);

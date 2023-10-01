@@ -1,5 +1,7 @@
 import { Bot, Interaction, Message } from "@discordeno/bot";
 import { CreateSlashApplicationCommand } from "@discordeno/types";
+import { Environment } from "../../types/other.js";
+import { OptionResolver } from "../handlers/OptionResolver.js";
 
 export interface CommandCooldown {
 	user: number;
@@ -17,9 +19,12 @@ export interface Command {
 
 export interface CommandContext {
 	interaction: Interaction;
+	options: OptionResolver;
+	env: Environment;
 }
 
-export interface MessageContext extends Omit<CommandContext, "interaction"> {
+export interface MessageContext extends Omit<CommandContext, "interaction" | "options"> {
 	message: Message;
+	args: string[];
 	bot: Bot;
 }

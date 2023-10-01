@@ -28,7 +28,8 @@ export default createCommand({
 async function buildInfo(bot: Bot, guildId?: BigString): Promise<CreateMessageOptions> {
 	const shardId = guildId ? bot.gateway.calculateShardId(guildId, gatewayConfig.shards) : 0;
 	const shard = bot.shards.get(shardId) ?? bot.shards.get(0);
-	let ping: number = Infinity, workers = new Set<number>()
+	let ping: number = Infinity;
+	const workers = new Set<number>();
 	if (shard) {
 		ping = shard.rtt;
 

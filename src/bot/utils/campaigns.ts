@@ -2,7 +2,7 @@ import { get, insert } from "./db.js";
 import { Campaign } from "../../types/models/campaigns.js";
 
 async function getCampaigns() {
-	let campaigns = await get({
+	const campaigns = await get({
 		collection: "campaigns",
 		filter: [
 			{
@@ -20,22 +20,22 @@ async function getCampaigns() {
 }
 
 export async function getCampaign() {
-	let campaigns = await getCampaigns();
-	let campaign = await checkCampaigns(campaigns);
+	const campaigns = await getCampaigns();
+	const campaign = await checkCampaigns(campaigns);
 	return campaign;
 }
 
 async function checkCampaigns(campaigns: Campaign[]) {
 	let finalCampaign;
 
-	let totalBudget = campaigns.reduce((acc, campaign: Campaign) => acc + (campaign.budget.total - campaign.budget.used), 0);
+	const totalBudget = campaigns.reduce((acc, campaign: Campaign) => acc + (campaign.budget.total - campaign.budget.used), 0);
 
-	let random = Math.floor(Math.random() * 100) + 1;
+	const random = Math.floor(Math.random() * 100) + 1;
 
 	let start = 0;
 	let end = 0;
 	for (let i = 0; i < campaigns.length; i++) {
-		let campaign = campaigns[i];
+		const campaign = campaigns[i];
 		let percent = Math.round(((campaign.budget.total - campaign.budget.used) / totalBudget) * 100);
 		if (percent > 20) {
 			percent = 20 - (percent - 20);
