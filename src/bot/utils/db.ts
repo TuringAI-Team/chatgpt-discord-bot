@@ -5,9 +5,9 @@ import config from "../../config.js";
 import { logger } from "../index.js";
 
 import { CollectionName, CollectionNames } from "../../types/collections.js";
-import { Environment } from "../../types/other.js";
-import { Role, User } from "../../types/models/users.js";
 import { Guild } from "../../types/models/guilds.js";
+import { Role, User } from "../../types/models/users.js";
+import { Environment } from "../../types/other.js";
 import { getSettingsValue } from "./settings.js";
 
 let queue = "db";
@@ -38,17 +38,16 @@ async function sendQuery(body: NonNullable<unknown>) {
 }
 
 /** Cache */
-export async function setCache<T>(key: string, data: T) {
+export async function setCache<T>(key: string, data: T, EX = 6e5) {
 	await redis.set(key, JSON.stringify(data), {
-		EX: 30 * 60,
+		EX,
 	});
 }
 
 export async function getCache<T>(key: string): Promise<T | null> {
-	const existing: string | null = (await redis.get(key)) ?? null;
+	const existing: string | null = await redis.get(key);
 
-	if (existing !== null) return JSON.parse(existing);
-	else return null;
+	return typeof existing === "string" ? JSON.parse(existing) : null;
 }
 
 export function getCollectionKey(collection: string, id: string, extra?: string) {
@@ -148,7 +147,6 @@ export function premium(env: Environment): {
 
 	/* Whether to prefer the Premium of the guild or user itself */
 	const typePriority: "plan" | "subscription" = getSettingsValue(
-		// biome-ignore lint/style/noNonNullAssertion: uh needed
 		env.guild ? env[locationPriority]! : env.user,
 		"premium:type_priority",
 	) as "plan" | "subscription";
@@ -182,7 +180,7 @@ export function premium(env: Environment): {
 
 export function voted(user: User): number | null {
 	if (!user.voted) return null;
-	if (Date.now() - Date.parse(user.voted) > 12.5 * 60 * 60 * 1000) return null;
+	if (Date.now() - Date.parse(user.voted) > 45e6) return null;
 
 	return Date.parse(user.voted);
 }
@@ -200,21 +198,12 @@ export async function icon(env: Environment) {
 	const votedAt = voted(env.user);
 
 	if (votedAt) {
-		if (votedAt + 12.5 * 60 * 60 * 1000 - Date.now() < 30 * 60 * 1000) return "📩";
+		if (votedAt + 45e6 - Date.now() < 18e5) return "📩";
 		else return "✉️";
 	}
 
 	return "👤";
 }
-
-/**
- *
- * Cuando tengas esto avisa
- * https://github.com/TuringAI-Team/chatgpt-discord-bot/blob/ddeno/src/bot/db.ts esto parece copilot
- * tambien los utils, como premium ?, env ?, etc
- *  https://github.com/TuringAI-Team/chatgpt-discord-bot/blob/e7ce6c62e26281bb03760e43dce444248263acfe/src/bot/db.ts#L113 el env es que me das una id de usuario y una de guild y te devuelvo el env que son los objetos?:
- * y el premium que es? https://github.com/TuringAI-Team/chatgpt-discord-bot/blob/e7ce6c62e26281bb03760e43dce444248263acfe/src/bot/db.ts#L56
- */
 
 export async function remove(collection: CollectionName, id: string) {
 	const result = await sendQuery({

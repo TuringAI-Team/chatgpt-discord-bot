@@ -1,7 +1,11 @@
-import { EventHandlers, InteractionTypes, logger } from "@discordeno/bot";
+import { EventHandlers, Interaction, InteractionTypes, logger } from "@discordeno/bot";
+import { Environment } from "../../types/other.js";
+import { NoCooldown } from "../config/setup.js";
 import { OptionResolver } from "../handlers/OptionResolver.js";
 import { commands } from "../index.js";
-import { env } from "../utils/db.js";
+import { Command } from "../types/command.js";
+import { checkCooldown } from "../utils/cooldown.js";
+import { env, premium, voted } from "../utils/db.js";
 
 export const interactionCreate: EventHandlers["interactionCreate"] = async (interaction) => {
 	switch (interaction.type) {
@@ -11,25 +15,52 @@ export const interactionCreate: EventHandlers["interactionCreate"] = async (inte
 			const cmd = commands.get(interaction.data.name);
 
 			if (!cmd) {
-				logger.error("Command not found (why is the command registered...)");
-				return;
+				return logger.error("Command not found (why is the command registered...)");
 			}
+
+			const environment = await env(interaction.user.id.toString(), interaction.guildId?.toString());
+			if (!environment) return;
 
 			await interaction.defer(cmd.isPrivate ?? false);
 
+			if (!(await manageCooldown(interaction, environment, cmd))) return;
+
 			const options = new OptionResolver(interaction.data.options ?? [], interaction.data.resolved!);
-			const environment = await env(interaction.user.id.toString(), interaction.guildId?.toString());
-			if (!environment) return;
-			await cmd.interaction({ interaction, options, env: environment }).catch((err) => {
-				interaction.bot.logger.error(`There was an error trying to execute the command ${interaction.data?.name}`);
-				interaction.bot.logger.error("A detailed walkthrough is provided below.");
-				interaction.bot.logger.error(err);
-			});
+
+			await cmd.interaction({ interaction, options, env: environment }).catch((err) => errorCallback(interaction, err));
 
 			break;
 		}
-
-		default:
-			break;
 	}
 };
+
+export async function checkStatus(environment: Environment) {
+	let status: keyof typeof NoCooldown = "user";
+
+	const hasVote = voted(environment.user);
+
+	if (hasVote) return (status = "voter");
+
+	const prem = await premium(environment);
+	if (prem) return (status = "subscription");
+
+	return status;
+}
+
+export function errorCallback(interaction: Interaction, err: NonNullable<unknown>) {
+	interaction.bot.logger.error(`There was an error trying to execute the command ${interaction.data?.name}`);
+	interaction.bot.logger.error("A detailed walkthrough is provided below.");
+	interaction.bot.logger.error(err);
+}
+
+export async function manageCooldown(interaction: Interaction, environment: Environment, cmd: Command) {
+	const status = await checkStatus(environment);
+
+	const hasCooldown = await checkCooldown(interaction.user.id, cmd, status);
+	if (hasCooldown) {
+		await interaction.edit({ embeds: hasCooldown });
+		return;
+	}
+
+	return true;
+}

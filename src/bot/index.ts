@@ -9,7 +9,6 @@ import { commands as cmds } from "./commands/index.js";
 import { events } from "./events/index.js";
 import { handleGatewayMessage } from "./gateway.js";
 import type { Command } from "./types/index.js";
-import { setMetrics } from "./utils/metrics.js";
 import { env, premium } from "./utils/db.js";
 
 export const logger = createLogger({ name: "[BOT]" });

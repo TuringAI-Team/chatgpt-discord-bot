@@ -7,4 +7,5 @@ export enum CollectionNames {
 	images = "images_new",
 	campaigns = "campaigns_new",
 	metrics = "metrics_new",
+	cooldowns = "cooldowns_new",
 }

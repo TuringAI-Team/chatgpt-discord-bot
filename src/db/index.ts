@@ -37,15 +37,14 @@ connection.on("connection", () => {
 
 /** Cache */
 async function getCache<T>(key: string): Promise<T | null> {
-	const existing: string | null = (await redis.get(key)) ?? null;
+	const existing: string | null = await redis.get(key);
 
-	if (existing !== null) return JSON.parse(existing);
-	else return null;
+	return typeof existing === "string" ? JSON.parse(existing) : null;
 }
 
 async function setCache<T>(key: string, data: T) {
 	await redis.set(key, JSON.stringify(data), {
-		EX: 30 * 60,
+		EX: 60 * 30,
 	});
 }
 
@@ -78,7 +77,7 @@ async function update(collection: CollectionName, id: string, data: NonNullable<
 async function insert(collection: CollectionName, id: string, data: NonNullable<unknown>) {
 	const collectionKey = getCollectionKey(collection, id);
 	let existing = await getCache(collectionKey);
-	console.log(existing);
+
 	if (!existing) {
 		existing = await db.from(collection).select("*").eq("id", id).single();
 		if (existing) {
@@ -101,10 +100,10 @@ connection.createConsumer(
 	{
 		queue: queue,
 	},
-	async (message, reply) => {
+	async (message, _reply) => {
 		console.log(message);
 		try {
-			const result = await handleMessage(message.body);
+			await handleMessage(message.body);
 		} catch (error) {
 			logger.error(JSON.stringify(error));
 
@@ -122,8 +121,11 @@ async function handleMessage(message: {
 	id: string;
 	data: NonNullable<unknown>;
 }) {
-	if (!message.action || !message.collection || !message.id || !message.data) throw new Error(`Invalid message: ${message}`);
-	if (!Object.keys(CollectionNames).includes(message.collection)) throw new Error(`Invalid collection name: ${message.collection}`);
+	for (const [k, v] of Object.entries(message)) {
+		if (!v) throw new Error(`Invalid message: ${k} is ${v}`);
+		if (!(k === "collection" && CollectionNames[k as keyof typeof CollectionNames]))
+			throw new Error(`Invalid collection name: ${message.collection}`);
+	}
 	switch (message.action) {
 		case "update":
 			await update(message.collection, message.id, message.data);
