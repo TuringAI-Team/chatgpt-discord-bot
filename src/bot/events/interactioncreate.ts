@@ -35,14 +35,14 @@ export const interactionCreate: EventHandlers["interactionCreate"] = async (inte
 };
 
 export async function checkStatus(environment: Environment) {
-	let status: keyof typeof NoCooldown = "user";
+	let status: keyof typeof NoCooldown | "plan" = "user";
 
 	const hasVote = voted(environment.user);
 
-	if (hasVote) return (status = "voter");
+	if (hasVote) status = "voter";
 
 	const prem = await premium(environment);
-	if (prem) return (status = "subscription");
+	if (prem) status = prem.type;
 
 	return status;
 }
@@ -55,6 +55,8 @@ export function errorCallback(interaction: Interaction, err: NonNullable<unknown
 
 export async function manageCooldown(interaction: Interaction, environment: Environment, cmd: Command) {
 	const status = await checkStatus(environment);
+
+	if (status === "plan") return true;
 
 	const hasCooldown = await checkCooldown(interaction.user.id, cmd, status);
 	if (hasCooldown) {

@@ -185,12 +185,12 @@ export type UpscalerModel = Prettify<
 			data: {
 				image: string;
 				upscaler?:
-				| "GFPGAN"
-				| "RealESRGAN_x4plus"
-				| "RealESRGAN_x2plus"
-				| "RealESRGAN_x4plus_anime_6B"
-				| "NMKD_Siax"
-				| "4x_AnimeSharp";
+					| "GFPGAN"
+					| "RealESRGAN_x4plus"
+					| "RealESRGAN_x2plus"
+					| "RealESRGAN_x4plus_anime_6B"
+					| "NMKD_Siax"
+					| "4x_AnimeSharp";
 			},
 		) => EventEmitter | NonNullable<unknown>;
 	}
@@ -221,18 +221,18 @@ export type StableHordeModel<T extends Record<string, ImageModelBase | ImageMode
 				steps?: number;
 				strength?: number;
 				sampler?:
-				| "k_lms"
-				| "k_heun"
-				| "k_euler"
-				| "k_euler_a"
-				| "k_dpm_2"
-				| "k_dpm_2_a"
-				| "DDIM"
-				| "k_dpm_fast"
-				| "k_dpm_adaptive"
-				| "k_dpmpp_2m"
-				| "k_dpmpp_2s_a"
-				| "k_dpmpp_sde";
+					| "k_lms"
+					| "k_heun"
+					| "k_euler"
+					| "k_euler_a"
+					| "k_dpm_2"
+					| "k_dpm_2_a"
+					| "DDIM"
+					| "k_dpm_fast"
+					| "k_dpm_adaptive"
+					| "k_dpmpp_2m"
+					| "k_dpmpp_2s_a"
+					| "k_dpmpp_sde";
 				cfg_scale?: number;
 				seed?: number;
 				model?: "majicMIX realistic" | "Deliberate" | "OpenJourney Diffusion";

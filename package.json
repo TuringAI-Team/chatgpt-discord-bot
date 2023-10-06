@@ -9,9 +9,12 @@
     "build:all": "bun run build && bun run check:types",
     "check:types": "bunx tsc --noEmit",
     "lint": "bunx biome format --write ./src/",
-    "start:gateway": "bun run build && node ./dist/gateway/manager.js",
-    "start:db": "bun run build && node ./dist/db/index.js",
-    "start:bot": "bun run build && node ./dist/bot/index.js",
+    "dev:gateway": "bun run build && node ./dist/gateway/manager.js",
+    "dev:db": "bun run build && node ./dist/db/index.js",
+    "dev:bot": "bun run build && node ./dist/bot/index.js",
+    "start:gateway": "node ./dist/gateway/manager.js",
+    "start:db": "node ./dist/db/index.js",
+    "start:bot": "node ./dist/bot/index.js",
     "git": "git fetch && git pull"
   },
   "repository": {

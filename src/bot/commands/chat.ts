@@ -1,4 +1,4 @@
-import { BigString, Bot, ButtonComponent, CreateMessageOptions, MessageComponentTypes } from "@discordeno/bot";
+import { BigString, Bot, ButtonComponent, ButtonStyles, CreateMessageOptions, MessageComponentTypes } from "@discordeno/bot";
 import config from "../../config.js";
 import { NoCooldown, buttonInfo, createCommand } from "../config/setup.js";
 import { gatewayConfig } from "../index.js";
@@ -42,22 +42,23 @@ async function buildInfo(bot: Bot, guildId?: BigString, options?: OptionResolver
 	return {
 		embeds: [
 			{
-				title: "Bot Statistics",
-
+				title: "The bot is under maintenance",
+				description:
+					"The bot is currently under maintenance, please try again later. Join our support server for more information.",
 				color: config.brand.color,
-			},
-			{
-				color: config.brand.color,
-				title: "Partners 🤝",
-				description: config.partners
-					.map((p) => `${p.emoji ? `${p.emoji} ` : ""}[**${p.name}**](${p.url})${p.description ? ` — *${p.description}*` : ""}`)
-					.join("\n"),
 			},
 		],
 		components: [
 			{
 				type: MessageComponentTypes.ActionRow,
-				components: Object.values(buttonInfo) as [ButtonComponent],
+				components: [
+					{
+						type: MessageComponentTypes.Button,
+						label: "Support Server",
+						url: `https://discord.gg/${config.brand.invite}`,
+						style: ButtonStyles.Link,
+					},
+				] as [ButtonComponent],
 			},
 		],
 	};

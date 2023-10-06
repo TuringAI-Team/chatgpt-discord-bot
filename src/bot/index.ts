@@ -1,21 +1,4 @@
 import { CreateApplicationCommand, createBot } from "@discordeno/bot";
-import { createRestManager } from "@discordeno/rest";
-import { createLogger } from "@discordeno/utils";
-import { Connection } from "rabbitmq-client";
-import { createClient } from "redis";
-import config from "../config.js";
-import API from "./api.js";
-import { commands as cmds } from "./commands/index.js";
-import { events } from "./events/index.js";
-import { handleGatewayMessage } from "./gateway.js";
-import type { Command } from "./types/index.js";
-import { env, premium } from "./utils/db.js";
-
-export const logger = createLogger({ name: "[BOT]" });
-const connection = new Connection(config.rabbitmq.uri);
-const envrionment = await env("530102778408861706");
-if (!envrionment) throw new Error("no envrionment");
-console.log(await premium(envrionment));
 
 export const bot = createBot({
 	token: config.bot.token,
@@ -23,6 +6,29 @@ export const bot = createBot({
 	events,
 });
 
+import { createRestManager } from "@discordeno/rest";
+import { createLogger } from "@discordeno/utils";
+import { Connection } from "rabbitmq-client";
+import { createClient } from "redis";
+import config from "../config.js";
+import API from "./api.js";
+import { commands as cmds } from "./commands/index.js";
+export const logger = createLogger({ name: "[BOT]" });
+import { events } from "./events/index.js";
+import { handleGatewayMessage } from "./gateway.js";
+import type { Command } from "./types/index.js";
+import { redis, connection } from "./utils/db.js";
+
+console.log("pre rabbit");
+console.log("post rabbit");
+/*const envrionment = await env("530102778408861706");
+if (!envrionment) throw new Error("no envrionment");
+const user = envrionment.user;
+console.log('???')
+console.log(await oldSettingsMigration(user));*/
+
+//getDefaultSettings(true);
+/*
 const client = createClient({
 	socket: {
 		host: config.database.redis.host,
@@ -31,9 +37,10 @@ const client = createClient({
 
 	password: config.database.redis.password,
 });
+console.log("pre commands redis ");
 
-await client.connect();
-bot.redis = client;
+await client.connect();*/
+bot.redis = redis;
 bot.logger = logger;
 bot.shards = new Map();
 bot.api = API;
@@ -117,3 +124,6 @@ connection.createConsumer(
 );
 
 console.log("post rabbit mq queue // THE BOT SHOULD BE UP");
+
+
+process.on("unhandledRejection", (...args) => logger.warn(...args));

@@ -22,6 +22,17 @@ export default {
 		id: "",
 		intents: Intents.DirectMessages | Intents.GuildMessages,
 		permissions: 0,
+		status: [
+			{
+				since: null,
+				activities: {
+					name: "",
+					type: "",
+					url: "",
+				},
+				status: 0,
+			},
+		],
 	},
 	rest: {
 		host: "",

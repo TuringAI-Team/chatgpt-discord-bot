@@ -2,7 +2,6 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import RabbitMQ from "rabbitmq-client";
 import { createClient as createRedisClient } from "redis";
 import config from "../../config.js";
-import { logger } from "../index.js";
 
 import { CollectionName, CollectionNames } from "../../types/collections.js";
 import { Guild } from "../../types/models/guilds.js";
@@ -13,7 +12,7 @@ import { getSettingsValue } from "./settings.js";
 let queue = "db";
 if (process.env.NODE_ENV === "development") queue = "db-dev";
 /** Redis client */
-const redis = createRedisClient({
+export const redis = createRedisClient({
 	socket: {
 		host: config.database.redis.host,
 		port: config.database.redis.port,
@@ -30,7 +29,10 @@ const db = createSupabaseClient(config.database.supabase.url, config.database.su
 });
 
 /** RabbitMQ connection */
-const connection = new RabbitMQ.Connection(config.rabbitmq.uri);
+export const connection = new RabbitMQ.Connection(config.rabbitmq.uri);
+connection.on("connection", () => {
+	console.info("RabbitMQ connected");
+});
 
 const publisher = connection.createPublisher();
 async function sendQuery(body: NonNullable<unknown>) {
@@ -216,7 +218,7 @@ export async function remove(collection: CollectionName, id: string) {
 await redis
 	.connect()
 	.then(() => {
-		logger.info("Redis connected");
+		console.info("Redis connected");
 	})
 	.catch((error) => {
 		console.error(error);

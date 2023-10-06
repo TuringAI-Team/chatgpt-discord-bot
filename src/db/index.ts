@@ -122,7 +122,7 @@ async function handleMessage(message: {
 	data: NonNullable<unknown>;
 }) {
 	for (const [k, v] of Object.entries(message)) {
-		if (!v) throw new Error(`Invalid message: ${k} is ${v}`);
+		if (!v) console.log(`Invalid message: ${k} is ${v}`);
 		if (!(k === "collection" && CollectionNames[k as keyof typeof CollectionNames]))
 			throw new Error(`Invalid collection name: ${message.collection}`);
 	}

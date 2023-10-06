@@ -62,6 +62,10 @@ async function parentListener(data: WorkerMessage) {
 				parentPort?.postMessage(request);
 			};
 
+			shard.makePresence = async () => {
+				return config.bot.status;
+			};
+
 			manager.set(shard.id, shard);
 
 			await shard.identify();
