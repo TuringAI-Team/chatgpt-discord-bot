@@ -1,6 +1,6 @@
 import { ConversationMessage } from "../../types/models/conversations.js";
-import neutral from "./neutral.js";
-import precise from "./precise.js";
+import { Neutral } from "./neutral.js";
+import { Precise } from "./precise.js";
 
 export interface ChatTone {
 	/** Name of the chat tone */
@@ -21,4 +21,4 @@ export interface ChatTone {
 	prompt?: ConversationMessage | ConversationMessage[];
 }
 
-export const TONES: ChatTone[] = [neutral, precise];
+export const TONES: ChatTone[] = [Neutral, Precise];

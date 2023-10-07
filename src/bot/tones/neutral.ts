@@ -1,4 +1,6 @@
-export default {
+import { ChatTone } from "./index.js";
+
+export const Neutral: ChatTone = {
 	name: "Neutral",
 	emoji: "🤖",
 	id: "neutral",
