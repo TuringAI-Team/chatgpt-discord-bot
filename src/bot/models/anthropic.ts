@@ -1,6 +1,7 @@
 import { AnthropicModel } from "./index.js";
 
-const claudeUser = {
+const Claude_instant = {
+	id: "claude-instant",
 	name: "Claude",
 	description: "AI model developed by Anthropic v1",
 	emoji: { name: "anthropic", id: "1097849339432423454" },
@@ -13,7 +14,8 @@ const claudeUser = {
 	},
 } satisfies AnthropicModel;
 
-const claudePremium = {
+const Claude = {
+	id: "claude",
 	name: "Claude 2",
 	description: "AI model developed by Anthropic v2",
 	emoji: { name: "anthropic", id: "1097849339432423454" },
@@ -26,4 +28,4 @@ const claudePremium = {
 	},
 } satisfies AnthropicModel;
 
-export { claudePremium, claudeUser };
+export { Claude, Claude_instant };

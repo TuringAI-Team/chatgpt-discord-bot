@@ -17,15 +17,15 @@ export const logger = createLogger({ name: "[BOT]" });
 import { events } from "./events/index.js";
 import { handleGatewayMessage } from "./gateway.js";
 import type { Command } from "./types/index.js";
-import { redis, connection } from "./utils/db.js";
+import { redis, connection, env } from "./utils/db.js";
+import { oldSettingsMigration } from "./utils/settings.js";
 
 console.log("pre rabbit");
 console.log("post rabbit");
-/*const envrionment = await env("530102778408861706");
+const envrionment = await env("530102778408861706");
 if (!envrionment) throw new Error("no envrionment");
 const user = envrionment.user;
-console.log('???')
-console.log(await oldSettingsMigration(user));*/
+console.log(await oldSettingsMigration(user));
 
 //getDefaultSettings(true);
 /*
@@ -124,6 +124,5 @@ connection.createConsumer(
 );
 
 console.log("post rabbit mq queue // THE BOT SHOULD BE UP");
-
 
 process.on("unhandledRejection", (...args) => logger.warn(...args));

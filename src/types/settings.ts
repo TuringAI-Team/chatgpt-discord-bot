@@ -21,12 +21,12 @@ export type SettingChoice =
 	| number
 	| boolean
 	| {
-			name: string;
-			value: string | number | boolean;
-			premium?: boolean;
-			description?: string;
-			emoji?: string;
-	  };
+		name: string;
+		value: string | number | boolean;
+		premium?: boolean;
+		description?: string;
+		emoji?: string;
+	};
 export interface SettingOption {
 	id: string;
 	key: string;
@@ -44,12 +44,10 @@ export interface SettingOption {
 
 export type SettingsCategoryNames = "chat" | "image" | "plugins" | "premium" | "general" | "limits";
 export interface SettingCategory {
-	key: SettingsCategoryNames;
+	name: SettingsCategoryNames;
 	emoji: string;
 	options: SettingOption[];
 	metadata?: {
-		description: string;
-		name: string;
 		premium?: boolean;
 	};
 }

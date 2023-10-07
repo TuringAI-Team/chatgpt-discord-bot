@@ -1,6 +1,7 @@
 import { DALLEModel, GPTModel } from "./index.js";
 
-const GPT3 = {
+const GPT3_5 = {
+	id: "gpt3.5",
 	name: "ChatGPT",
 	description: "The usual ChatGPT",
 	emoji: { name: "chatgpt", id: "1097849346164281475" },
@@ -13,8 +14,9 @@ const GPT3 = {
 	},
 } satisfies GPTModel;
 
-const GPT316K = {
-	name: "ChatGPT",
+const GPT16K = {
+	id: "gpt16k",
+	name: "ChatGPT 16k",
 	description: "The usual ChatGPT, but with a 16k context window!",
 	emoji: { name: "chatgpt_16k", id: "1118928845244989500" },
 	maxTokens: 4096,
@@ -27,6 +29,7 @@ const GPT316K = {
 } satisfies GPTModel;
 
 const GPT4 = {
+	id: "gpt4",
 	name: "GPT 4",
 	description: "The latest iteration of OpenAI's GPT models",
 	emoji: { name: "gpt3", id: "1097849352657047562" },
@@ -59,4 +62,4 @@ const DALLE2 = {
 	run: (api, data) => api.image.dall(data),
 } satisfies DALLEModel<2>;
 
-export { GPT3, GPT316K, GPT4, DALLE2 };
+export { GPT3_5, GPT16K, GPT4, DALLE2 };

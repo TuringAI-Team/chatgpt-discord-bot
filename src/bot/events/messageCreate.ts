@@ -70,7 +70,7 @@ export function getCommandArgs(message: Message, regex: RegExp): [command: strin
 	return [commandName, args];
 }
 
-export async function responseInfo(_message: Message) { }
+export async function responseInfo(_message: Message) {}
 
 export async function checkStatus(environment: Environment) {
 	let status: keyof typeof NoCooldown | "plan" = "user";

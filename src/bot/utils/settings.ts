@@ -1,6 +1,8 @@
 import { Guild } from "../../types/models/guilds.js";
-import { User } from "../../types/models/users.js";
+import { LOADING_INDICATORS, USER_LANGUAGES, User } from "../../types/models/users.js";
 import { SettingCategory, SettingChoice, SettingOption, SettingsCategoryNames } from "../../types/settings.js";
+import { CHAT_MODELS } from "../models/index.js";
+import { TONES } from "../tones/index.js";
 
 function key2data(key: string) {
 	const [collection, id] = key.split(":");
@@ -14,76 +16,99 @@ export async function generateEmbed() {
 function getDefaultValues(settingId: string) {}
 
 function getMetadata(settingId: string) {
-	const isCategory = settingId.split(":").length === 1;
-	if (isCategory) {
-		switch (settingId) {
-			case "chat":
-				return {
-					name: "Chat",
-					description: "This is a chat",
-					premium: false,
-				};
-			default:
-				return {
-					name: "Chat",
-					description: "This is a setting",
-					premium: false,
-				};
-		}
-	} else {
-		switch (settingId) {
-			case "chat:tone":
-				return {
-					name: "Tone",
-					description: "This is a tone",
-					options: [""],
-				};
-			case "chat:model":
-				return {
-					name: "Model",
-					description: "Which language model to use for chatting",
-					options: [
-						{
-							name: "OpenChat",
-							emoji: "<:openchat:1130816635402473563>",
-							value: "openchat",
-						},
-					],
-				};
-			case "chat:partialMessages":
-				return {
-					name: "Partial Messages",
-					description: "Whether chat messages by the bot should be shown while they're being generated",
-					type: "boolean",
-				};
-			default:
-				return {
-					name: "Tone",
-					description: "This is a setting",
-					options: [""],
-				};
-		}
+	switch (settingId) {
+		case "general:language":
+			return {
+				name: "Language",
+				description: "Primary language to use for the bot",
+				options: USER_LANGUAGES.map((l) => ({
+					name: l.name,
+					emoji: l.emoji,
+					value: l.id,
+				})),
+			};
+		case "general:loadingIndicator":
+			return {
+				name: "Loading Indicator",
+				description: "Which emoji to use throughout the bot to indicating loading",
+				options: LOADING_INDICATORS.map((l) => ({
+					name: l.name,
+					emoji: `<${l.emoji.name}:${l.emoji.id}>`,
+					value: l.emoji?.id || "default",
+				})),
+			};
+		case "chat:model":
+			return {
+				name: "Model",
+				description: "Which language model to use for chatting",
+				options: CHAT_MODELS.map((m) => ({
+					name: m.name,
+					emoji: `<${m.emoji.name}:${m.emoji.id}>`,
+					value: m.id,
+				})),
+			};
+		case "chat:tone":
+			return {
+				name: "Tone",
+				description: "Which tone the AI language model should have",
+				options: TONES.map((t) => ({
+					name: t.name,
+					emoji: `${t.emoji}`,
+					value: t.id,
+				})),
+			};
+		case "chat:partialMessages":
+			return {
+				name: "Partial Messages",
+				description: "Whether chat messages by the bot should be shown while they're being generated",
+				type: "boolean",
+			};
+		default:
+			return {
+				name: "Tone",
+				description: "This is a setting",
+				options: [""],
+			};
 	}
 }
 
 export function getDefaultSettings(metadata: boolean) {
 	let defaultUserSettings: SettingCategory[] = [
 		{
-			key: "chat",
-			emoji: "💬",
+			name: "general",
+			emoji: "🧭",
 			options: [
 				{
-					id: "chat:tone",
-					key: "tone",
-					value: "default",
-					emoji: "🗣️",
+					id: "general:language",
+					key: "language",
+					value: "en",
+					emoji: "🌐",
 				},
+				{
+					id: "general:loadingIndicator",
+					key: "loadingIndicator",
+					value: "default",
+					emoji: "🔄",
+				},
+			],
+		},
+		{
+			name: "chat",
+			emoji: "💬",
+			options: [
 				{
 					id: "chat:model",
 					key: "model",
 					value: "default",
 					emoji: "🤖",
 				},
+				{
+					id: "chat:tone",
+					key: "tone",
+					value: "default",
+					emoji: "🗣️",
+				},
+
 				{
 					id: "chat:partialMessages",
 					key: "partialMessages",
@@ -96,7 +121,6 @@ export function getDefaultSettings(metadata: boolean) {
 	if (metadata) {
 		const defaultUserSettingsWithMetadata: SettingCategory[] = [];
 		for (const category of defaultUserSettings) {
-			const categoryMetadata = getMetadata(category.key);
 			const OptionsWithMetadata: SettingOption[] = [];
 			for (const option of category.options) {
 				const optionMetadata = getMetadata(option.id);
@@ -110,7 +134,6 @@ export function getDefaultSettings(metadata: boolean) {
 			category.options = [];
 			const newCategory = {
 				...category,
-				metadata: categoryMetadata,
 				options: OptionsWithMetadata,
 			};
 			defaultUserSettingsWithMetadata.push(newCategory);
@@ -132,7 +155,7 @@ export async function oldSettingsMigration(entry: Guild | User) {
 		.filter((value, index, self) => self.indexOf(value) === index);
 	for (const category of oldSettingsCategories) {
 		newSettings.push({
-			key: category as SettingsCategoryNames,
+			name: category as SettingsCategoryNames,
 			emoji: "🔧",
 			options: [],
 		});
@@ -141,7 +164,7 @@ export async function oldSettingsMigration(entry: Guild | User) {
 		const categoryofSetting = settings[0].split(":")[0];
 		const settingName = settings[0].split(":")[1];
 		const settingValue = settings[1];
-		const newCategory = newSettings.find((category) => category.key === categoryofSetting);
+		const newCategory = newSettings.find((category) => category.name === categoryofSetting);
 		if (!newCategory) continue;
 		newCategory.options.push({
 			id: settings[0],

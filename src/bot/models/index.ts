@@ -1,5 +1,8 @@
 import EventEmitter from "node:events";
 import { Api } from "../api.js";
+import { GPT16K, GPT3_5, GPT4 } from "./openai.js";
+import { Claude, Claude_instant } from "./anthropic.js";
+import openchat from "./openchat.js";
 
 type Prettify<T> = {
 	[K in keyof T]: T[K];
@@ -10,6 +13,7 @@ type UnionFromNumber<T extends number, Tuple extends number[] = []> = Tuple["len
 	: UnionFromNumber<T, [...Tuple, Tuple["length"]]>;
 
 export type Model = {
+	id: string;
 	name: string;
 	description: string;
 };
@@ -63,6 +67,15 @@ export type OpenChatModel = Prettify<
 		) => EventEmitter | NonNullable<unknown>;
 	}
 >;
+
+export const CHAT_MODELS: Array<GPTModel | AnthropicModel | OpenChatModel> = [
+	GPT4,
+	GPT3_5,
+	GPT16K,
+	Claude,
+	Claude_instant,
+	openchat
+]
 
 export type ImageModelFixed = Prettify<
 	ImageModel & {
@@ -185,12 +198,12 @@ export type UpscalerModel = Prettify<
 			data: {
 				image: string;
 				upscaler?:
-					| "GFPGAN"
-					| "RealESRGAN_x4plus"
-					| "RealESRGAN_x2plus"
-					| "RealESRGAN_x4plus_anime_6B"
-					| "NMKD_Siax"
-					| "4x_AnimeSharp";
+				| "GFPGAN"
+				| "RealESRGAN_x4plus"
+				| "RealESRGAN_x2plus"
+				| "RealESRGAN_x4plus_anime_6B"
+				| "NMKD_Siax"
+				| "4x_AnimeSharp";
 			},
 		) => EventEmitter | NonNullable<unknown>;
 	}
@@ -221,18 +234,18 @@ export type StableHordeModel<T extends Record<string, ImageModelBase | ImageMode
 				steps?: number;
 				strength?: number;
 				sampler?:
-					| "k_lms"
-					| "k_heun"
-					| "k_euler"
-					| "k_euler_a"
-					| "k_dpm_2"
-					| "k_dpm_2_a"
-					| "DDIM"
-					| "k_dpm_fast"
-					| "k_dpm_adaptive"
-					| "k_dpmpp_2m"
-					| "k_dpmpp_2s_a"
-					| "k_dpmpp_sde";
+				| "k_lms"
+				| "k_heun"
+				| "k_euler"
+				| "k_euler_a"
+				| "k_dpm_2"
+				| "k_dpm_2_a"
+				| "DDIM"
+				| "k_dpm_fast"
+				| "k_dpm_adaptive"
+				| "k_dpmpp_2m"
+				| "k_dpmpp_2s_a"
+				| "k_dpmpp_sde";
 				cfg_scale?: number;
 				seed?: number;
 				model?: "majicMIX realistic" | "Deliberate" | "OpenJourney Diffusion";
