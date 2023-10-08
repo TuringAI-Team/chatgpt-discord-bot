@@ -8,17 +8,16 @@ export const bot = createBot({
 
 import { createRestManager } from "@discordeno/rest";
 import { createLogger } from "@discordeno/utils";
-import { Connection } from "rabbitmq-client";
-import { createClient } from "redis";
 import config from "../config.js";
 import API from "./api.js";
+import { Buttons } from "./buttons/index.js";
 import { commands as cmds } from "./commands/index.js";
-export const logger = createLogger({ name: "[BOT]" });
 import { events } from "./events/index.js";
 import { handleGatewayMessage } from "./gateway.js";
-import type { Command } from "./types/index.js";
-import { redis, connection, env } from "./utils/db.js";
+import type { ButtonResponse, Command } from "./types/index.js";
+import { connection, env, redis } from "./utils/db.js";
 import { oldSettingsMigration } from "./utils/settings.js";
+export const logger = createLogger({ name: "[BOT]" });
 
 console.log("pre rabbit");
 console.log("post rabbit");
@@ -57,6 +56,7 @@ console.log("post commands // pre create commands");
 
 const applicationCommands: CreateApplicationCommand[] = cmds.map((cmd) => cmd.body);
 export const commands = new Map<string, Command>(cmds.map((cmd) => [cmd.body.name, cmd]));
+export const buttons = new Map<string, ButtonResponse>(Buttons.map((b) => [b.id, b]));
 
 console.log("post create commands // pre upsert");
 
