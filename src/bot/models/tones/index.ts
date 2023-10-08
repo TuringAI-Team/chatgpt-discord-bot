@@ -1,4 +1,4 @@
-import { ConversationMessage } from "../../types/models/conversations.js";
+import { ConversationMessage } from "../../../types/models/conversations.js";
 import { Neutral } from "./neutral.js";
 import { Precise } from "./precise.js";
 

@@ -21,12 +21,12 @@ export type SettingChoice =
 	| number
 	| boolean
 	| {
-		name: string;
-		value: string | number | boolean;
-		premium?: boolean;
-		description?: string;
-		emoji?: string;
-	};
+			name: string;
+			value: string | number | boolean;
+			premium?: boolean;
+			description?: string;
+			emoji?: string;
+	  };
 export interface SettingOption {
 	id: string;
 	key: string;

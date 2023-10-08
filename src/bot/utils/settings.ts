@@ -2,7 +2,7 @@ import { Guild } from "../../types/models/guilds.js";
 import { LOADING_INDICATORS, USER_LANGUAGES, User } from "../../types/models/users.js";
 import { SettingCategory, SettingChoice, SettingOption, SettingsCategoryNames } from "../../types/settings.js";
 import { CHAT_MODELS } from "../models/index.js";
-import { TONES } from "../tones/index.js";
+import { TONES } from "../models/tones/index.js";
 
 function key2data(key: string) {
 	const [collection, id] = key.split(":");
@@ -63,6 +63,12 @@ function getMetadata(settingId: string) {
 				description: "Whether chat messages by the bot should be shown while they're being generated",
 				type: "boolean",
 			};
+		case "image:model":
+			return {
+				name: "Model",
+				description: "Which AI model to use for image generation",
+				options: [],
+			};
 		default:
 			return {
 				name: "Tone",
@@ -114,6 +120,42 @@ export function getDefaultSettings(metadata: boolean) {
 					key: "partialMessages",
 					value: true,
 					emoji: "⏳",
+				},
+			],
+		},
+		{
+			name: "image",
+			emoji: "🖼️",
+			options: [
+				{
+					id: "image:model",
+					key: "model",
+					value: "default",
+					emoji: "🤖",
+				},
+				{
+					id: "image:style",
+					key: "style",
+					value: "default",
+					emoji: "🎨",
+				},
+			],
+		},
+		{
+			name: "premium",
+			emoji: "💎",
+			options: [
+				{
+					id: "image:typePriority",
+					key: "typePriority",
+					value: "plan",
+					emoji: "✨",
+				},
+				{
+					id: "premium:locationPriority",
+					key: "locationPriority",
+					value: "guild",
+					emoji: "✨",
 				},
 			],
 		},

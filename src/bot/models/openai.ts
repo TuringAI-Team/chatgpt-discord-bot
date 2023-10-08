@@ -44,6 +44,7 @@ const GPT4 = {
 } satisfies GPTModel;
 
 const DALLE2 = {
+	id: "dalle2",
 	name: "DALL-E 2",
 	variableSizes: {
 		0: {

@@ -28,25 +28,4 @@ async function buildInfo(bot: Bot, userId: BigString, guildId?: BigString): Prom
 		premiumSelection: premiumInfo,
 	});
 	return embed;
-	/*   return {
-           embeds: [
-               {
-                   title: "Bot Statistics",
-                   color: config.brand.color,
-               },
-               {
-                   color: config.brand.color,
-                   title: "Partners 🤝",
-                   description: config.partners
-                       .map((p) => `${p.emoji ? `${p.emoji} ` : ""}[**${p.name}**](${p.url})${p.description ? ` — *${p.description}*` : ""}`)
-                       .join("\n"),
-               },
-           ],
-           components: [
-               {
-                   type: MessageComponentTypes.ActionRow,
-                   components: Object.values(buttonInfo) as [ButtonComponent],
-               },
-           ],
-       };*/
 }

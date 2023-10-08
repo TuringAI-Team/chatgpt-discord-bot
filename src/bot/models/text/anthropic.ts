@@ -1,4 +1,4 @@
-import { AnthropicModel } from "./index.js";
+import { AnthropicModel } from "../index.js";
 
 const Claude_instant = {
 	id: "claude-instant",

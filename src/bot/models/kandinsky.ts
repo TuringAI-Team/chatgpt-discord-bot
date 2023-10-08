@@ -1,6 +1,7 @@
 import { KandinskyModel } from "./index.js";
 
 export default {
+	id: "kandinsky",
 	name: "Kandinsky",
 	from: {
 		width: 512,

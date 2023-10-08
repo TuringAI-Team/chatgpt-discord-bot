@@ -1,4 +1,4 @@
-import { OpenChatModel } from "./index.js";
+import { OpenChatModel } from "../index.js";
 
 export default {
 	id: "openchat",
