@@ -16,7 +16,7 @@ export const messageCreate = async (message: Message, bot: Bot) => {
 	if (!message.content.match(regex) && message.guildId) {
 		// message response for only mention
 		// @chat-gpt
-		console.log('no trigger')
+		console.log('no trigger', message.content, regex)
 		responseInfo(message);
 		return;
 	}
