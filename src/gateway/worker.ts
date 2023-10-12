@@ -34,7 +34,10 @@ const connection = new Connection(config.rabbitmq.uri);
 const publisher = connection.createPublisher();
 let routingKey = "gateway";
 if (config.bot.dev) {
+	logger.info("Running in dev mode");
 	routingKey += ":dev";
+} else {
+	logger.info("Running in prod mode");
 }
 
 setInterval(() => {

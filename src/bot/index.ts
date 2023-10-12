@@ -20,15 +20,14 @@ import { oldSettingsMigration } from "./utils/settings.js";
 export const logger = createLogger({ name: "[BOT]" });
 let routingKey = "gateway";
 if (config.bot.dev) {
+	logger.info("Running in dev mode");
 	routingKey += ":dev";
-}
-console.log("pre rabbit");
-console.log("post rabbit");
-if (config.bot.dev) {
 	const envrionment = await env("530102778408861706");
 	if (!envrionment) throw new Error("no envrionment");
 	const user = envrionment.user;
 	console.log(await oldSettingsMigration(user));
+} else {
+	logger.info("Running in prod mode");
 }
 //getDefaultSettings(true);
 /*
