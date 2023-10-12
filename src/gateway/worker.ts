@@ -32,6 +32,10 @@ const manager = new Map<number, DiscordenoShard>();
 
 const connection = new Connection(config.rabbitmq.uri);
 const publisher = connection.createPublisher();
+let routingKey = "gateway";
+if (config.bot.dev) {
+	routingKey += ":dev";
+}
 
 setInterval(() => {
 	for (const shard of manager.values()) {
@@ -93,7 +97,7 @@ async function handleMessage(shard: DiscordenoShard, message: Camelize<DiscordGa
 		case "GUILD_DELETE":
 		case "MESSAGE_CREATE":
 		case "INTERACTION_CREATE":
-			await publisher.send({ routingKey: "gateway" }, { shardId: shard.id, payload: message });
+			await publisher.send({ routingKey: routingKey }, { shardId: shard.id, payload: message });
 	}
 }
 
@@ -132,7 +136,7 @@ setInterval(
 			rtt: s.heart.rtt ?? -1,
 		}));
 
-		pub.send({ routingKey: "gateway" }, { payload: { d: data, t: "SHARD_INFO" } });
+		pub.send({ routingKey: routingKey }, { payload: { d: data, t: "SHARD_INFO" } });
 	},
 	6e5,
 	manager,

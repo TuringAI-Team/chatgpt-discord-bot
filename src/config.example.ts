@@ -22,6 +22,7 @@ export default {
 		id: "",
 		intents: Intents.DirectMessages | Intents.GuildMessages,
 		permissions: 0,
+		dev: true,
 		status: [
 			{
 				since: null,

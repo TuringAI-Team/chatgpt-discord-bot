@@ -18,14 +18,18 @@ import type { ButtonResponse, Command } from "./types/index.js";
 import { connection, env, redis } from "./utils/db.js";
 import { oldSettingsMigration } from "./utils/settings.js";
 export const logger = createLogger({ name: "[BOT]" });
-
+let routingKey = "gateway";
+if (config.bot.dev) {
+	routingKey += ":dev";
+}
 console.log("pre rabbit");
 console.log("post rabbit");
-const envrionment = await env("530102778408861706");
-if (!envrionment) throw new Error("no envrionment");
-const user = envrionment.user;
-console.log(await oldSettingsMigration(user));
-
+if (config.bot.dev) {
+	const envrionment = await env("530102778408861706");
+	if (!envrionment) throw new Error("no envrionment");
+	const user = envrionment.user;
+	console.log(await oldSettingsMigration(user));
+}
 //getDefaultSettings(true);
 /*
 const client = createClient({
@@ -110,7 +114,7 @@ console.log("pre rabbitmq queue");
 
 connection.createConsumer(
 	{
-		queue: "gateway",
+		queue: routingKey,
 	},
 	(message) => {
 		try {
