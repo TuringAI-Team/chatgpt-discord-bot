@@ -20,7 +20,6 @@ export const messageCreate = async (message: Message, bot: Bot) => {
 		responseInfo(message);
 		return;
 	}
-	console.log("trigger", message.content, mentionsBot);
 
 	const getter = getCommandArgs(message, regex);
 	if (!getter) return;
@@ -66,6 +65,7 @@ export function getCommandArgs(message: Message, regex: RegExp): [command: strin
 		if (![0, args.length].includes(mentionIndex)) return;
 		delete args[mentionIndex];
 		commandName = args.shift()!;
+		if (!commandName) commandName = "chat";
 	} else {
 		commandName = "chat";
 	}
