@@ -20,6 +20,7 @@ export const messageCreate = async (message: Message, bot: Bot) => {
 		responseInfo(message);
 		return;
 	}
+	console.log("trigger", message.content, mentionsBot);
 
 	const getter = getCommandArgs(message, regex);
 	if (!getter) return;
@@ -71,7 +72,7 @@ export function getCommandArgs(message: Message, regex: RegExp): [command: strin
 	return [commandName, args];
 }
 
-export async function responseInfo(_message: Message) {}
+export async function responseInfo(_message: Message) { }
 
 export async function checkStatus(environment: Environment) {
 	let status: keyof typeof NoCooldown | "plan" = "user";
