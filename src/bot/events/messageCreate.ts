@@ -12,11 +12,11 @@ export const messageCreate = async (message: Message, bot: Bot) => {
 	if (messageBot(message)) return;
 
 	const regex = MentionRegex(bot.id);
-
-	if (!message.content.match(regex) && message.guildId) {
+	let mentionsBot = message.content.startsWith(`<@${bot.id}>`) || message.content.startsWith(`<@!${bot.id}>`);
+	if (mentionsBot && message.guildId) {
 		// message response for only mention
 		// @chat-gpt
-		console.log('no trigger', message.content, regex)
+		console.log("no trigger", message.content, message.content.match(regex));
 		responseInfo(message);
 		return;
 	}
