@@ -2,6 +2,7 @@ import { Guild } from "../../types/models/guilds.js";
 import { LOADING_INDICATORS, USER_LANGUAGES, User } from "../../types/models/users.js";
 import { SettingCategory, SettingChoice, SettingOption, SettingsCategoryNames } from "../../types/settings.js";
 import { CHAT_MODELS } from "../models/index.js";
+import { STYLES } from "../models/styles/index.js";
 import { TONES } from "../models/tones/index.js";
 
 function key2data(key: string) {
@@ -68,6 +69,16 @@ function getMetadata(settingId: string) {
 				name: "Model",
 				description: "Which AI model to use for image generation",
 				options: [],
+			};
+		case "image:style":
+			return {
+				name: "Style",
+				description: "Which style to use for image generation",
+				options: STYLES.map((s) => ({
+					name: s.name,
+					emoji: `${s.emoji}`,
+					value: s.id,
+				})),
 			};
 		default:
 			return {

@@ -1,3 +1,6 @@
+import { Cinematic } from "./cinematic.js";
+import { None } from "./none.js";
+
 export interface Style {
 	/** Name of the chat tone */
 	name: string;
@@ -15,4 +18,4 @@ export interface Style {
 	tags: string[];
 }
 
-export const TONES: Style[] = [];
+export const STYLES: Style[] = [None, Cinematic];

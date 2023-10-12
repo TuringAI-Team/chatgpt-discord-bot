@@ -10,7 +10,6 @@ export default createCommand({
 	},
 	cooldown: NoCooldown,
 	interaction: async ({ interaction }) => {
-		console.log(interaction);
 		await interaction.edit({ ...(await buildInfo(interaction.bot, interaction.guildId)) });
 	},
 	message: async ({ message, bot }) => {
