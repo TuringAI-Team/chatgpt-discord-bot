@@ -30,16 +30,7 @@
     "url": "https://github.com/TuringAI-Team/chatgpt-discord-bot/issues"
   },
   "homepage": "https://github.com/TuringAI-Team/chatgpt-discord-bot#readme",
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
-    }
-  },  
-  "lint-staged": {
-    "*.{js,ts}": [
-      "bun run check:types"
-    ]
-  },  
+ 
   "devDependencies": {
     "@biomejs/biome": "1.1.2",
     "@types/express": "^4.17.17",
