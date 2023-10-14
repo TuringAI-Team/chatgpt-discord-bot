@@ -15,7 +15,7 @@ export async function generateEmbed() {
 	return null;
 }
 
-function getDefaultValues(settingId: string) { }
+function getDefaultValues(settingId: string) {}
 
 function getMetadata(settingId: string) {
 	switch (settingId) {

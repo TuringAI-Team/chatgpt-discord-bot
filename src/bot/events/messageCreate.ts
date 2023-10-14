@@ -12,7 +12,7 @@ export const messageCreate = async (message: Message, bot: Bot) => {
 	if (messageBot(message)) return;
 
 	const regex = MentionRegex(bot.id);
-	const mentionsBot = message.content.startsWith(`<@${bot.id}>`) || message.content.startsWith(`<@!${bot.id}>`);
+	const mentionsBot = message.mentions?.find((m) => m.id === bot.id) ? true : false;
 	if (!mentionsBot && message.guildId) {
 		// message response for only mention
 		// @chat-gpt
@@ -59,16 +59,18 @@ export function getCommandArgs(message: Message, regex: RegExp): [command: strin
 	let commandName = args[0];
 	if (message.guildId) {
 		const mentionIndex = args.findIndex((a) => !!a.match(regex)?.[0]);
-
-		if (mentionIndex < 0) return;
-		// 0 or max args for compatibility with arabian
-		if (![0, args.length].includes(mentionIndex)) return;
-		delete args[mentionIndex];
-		commandName = args.shift()!;
+		if (mentionIndex != -1) {
+			// 0 or max args for compatibility with arabian
+			if (![0, args.length].includes(mentionIndex)) return;
+			delete args[mentionIndex];
+			commandName = args.shift()!;
+		}
+		2;
 		if (!commandName) commandName = "chat";
 	} else {
 		commandName = "chat";
 	}
+	if (args.length === 0) commandName = "bot";
 	return [commandName, args];
 }
 
