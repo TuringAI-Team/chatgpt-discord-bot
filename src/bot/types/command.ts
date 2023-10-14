@@ -1,4 +1,4 @@
-import { Bot, Interaction, Message } from "@discordeno/bot";
+import { Bot, Interaction, InteractionResponseTypes, Message } from "@discordeno/bot";
 import { CreateSlashApplicationCommand } from "@discordeno/types";
 import { Environment } from "../../types/other.js";
 import { OptionResolver } from "../handlers/OptionResolver.js";
@@ -31,7 +31,9 @@ export interface MessageContext extends Omit<CommandContext, "interaction" | "op
 }
 
 export interface ButtonResponse {
-	run: (interaction: MakeRequired<Interaction, "data">) => Promise<void>;
+	run: (interaction: MakeRequired<Interaction, "data">, data: Record<string, string>) => Promise<void>;
+	args: string[];
 	id: string;
+	deferType?: InteractionResponseTypes.DeferredChannelMessageWithSource | InteractionResponseTypes.DeferredUpdateMessage;
 	isPrivate?: boolean;
 }

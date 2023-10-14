@@ -2,6 +2,7 @@ import { createLogger } from "@discordeno/utils";
 import { createClient } from "redis";
 import type { ShardInfo } from "../../types/other.js";
 import API from "../api.js";
+import { EmbedPaginator } from "../utils/paginated.js";
 
 declare module "@discordeno/bot" {
 	interface Bot {
@@ -18,6 +19,8 @@ declare module "@discordeno/bot" {
 		 * Shard Data
 		 */
 		shards: Map<number, ShardInfo>;
+
+		pages: Map<string, EmbedPaginator>;
 	}
 }
 

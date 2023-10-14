@@ -3,7 +3,7 @@ name: Deploy to SSH VPS
 on:
   push:
     branches:
-      - main
+      - ddeno-new
 
 jobs:
   deploy:
@@ -28,7 +28,7 @@ jobs:
             cd /home/trident/github/ddeno-bot
             nvm use 20
             PATH="$HOME/.nvm/versions/node/v20.0.0/bin:$PATH"
-            npm run git
-            npm i
-            rm -r dist
-            npm run build
+            bun run git
+            bun run build
+            pm2 reload DB
+            pm2 reload Bot

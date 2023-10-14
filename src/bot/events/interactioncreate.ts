@@ -1,4 +1,15 @@
-import { EventHandlers, Interaction, InteractionTypes, MessageComponentTypes, logger } from "@discordeno/bot";
+import {
+	BigString,
+	Bot,
+	EventHandlers,
+	Interaction,
+	InteractionResponse,
+	InteractionResponseTypes,
+	InteractionTypes,
+	MessageComponentTypes,
+	MessageFlags,
+	logger,
+} from "@discordeno/bot";
 import { Environment } from "../../types/other.js";
 import { NoCooldown } from "../config/setup.js";
 import { OptionResolver } from "../handlers/OptionResolver.js";
@@ -16,6 +27,7 @@ export const interactionCreate: EventHandlers["interactionCreate"] = async (inte
 			break;
 		case InteractionTypes.MessageComponent:
 			if (!interaction.data) return;
+			if (!interaction.data.customId) return;
 			switch (interaction.data.componentType) {
 				case MessageComponentTypes.Button:
 					handleButton(interaction as MakeRequired<Interaction, "data">);
@@ -43,14 +55,20 @@ export async function handleCommand(interaction: MakeRequired<Interaction, "data
 }
 
 export async function handleButton(interaction: MakeRequired<Interaction, "data">) {
-	const button = buttons.get(interaction.data.customId!);
+	const name = interaction.data.customId!.split("_");
+	const button = buttons.get(name.shift()!);
 	if (!button) {
 		return logger.error("ButtonResponse not found (why this button was sent...)");
 	}
 
-	await interaction.defer(button.isPrivate ?? false);
+	await deferInteraction(interaction.bot, interaction.id, interaction.token, button.deferType, button.isPrivate);
+	interaction.acknowledged = true;
+	const args = name.reduce((prev, acc, i) => {
+		prev[button.args[i]] = acc;
+		return prev;
+	}, {} as Record<string, string>);
 
-	await button.run(interaction);
+	await button.run(interaction, args);
 }
 
 export async function checkStatus(environment: Environment) {
@@ -78,10 +96,31 @@ export async function manageCooldown(interaction: Interaction, environment: Envi
 	if (status === "plan") return true;
 
 	const hasCooldown = await checkCooldown(interaction.user.id, cmd, status);
+
 	if (hasCooldown) {
-		await interaction.edit({ embeds: hasCooldown, content: "Cooldown..." });
+		await interaction.edit(hasCooldown);
 		return;
 	}
 
 	return true;
+}
+
+// discordeno for no reason has a bad handle about defers
+export async function deferInteraction(
+	bot: Bot,
+	id: BigString,
+	token: string,
+	type:
+		| InteractionResponseTypes.DeferredChannelMessageWithSource
+		| InteractionResponseTypes.DeferredUpdateMessage = InteractionResponseTypes.DeferredChannelMessageWithSource,
+	isPrivate = false,
+) {
+	const data: Partial<InteractionResponse["data"]> = {};
+	if (isPrivate) data.flags = MessageFlags.Ephemeral;
+	return await bot.rest.sendInteractionResponse(id, token, {
+		type: InteractionResponseTypes.DeferredChannelMessageWithSource,
+		data: {
+			flags: isPrivate ? 64 : undefined,
+		},
+	});
 }

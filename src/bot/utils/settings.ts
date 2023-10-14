@@ -4,6 +4,7 @@ import { SettingCategory, SettingChoice, SettingOption, SettingsCategoryNames } 
 import { CHAT_MODELS } from "../models/index.js";
 import { STYLES } from "../models/styles/index.js";
 import { TONES } from "../models/tones/index.js";
+import { update } from "./db.js";
 
 function key2data(key: string) {
 	const [collection, id] = key.split(":");
@@ -226,16 +227,32 @@ export async function oldSettingsMigration(entry: Guild | User) {
 			emoji: "🔧",
 		});
 	}
-	console.log(JSON.stringify(newSettings, null, 2));
+	return newSettings;
 }
 
-export function getSettingsValue(entry: Guild | User, key: string): string | number | boolean | object {
-	if (!entry || !entry.settings_new) return false;
+export async function getSettingsValue(entry: Guild | User, key: string): Promise<string | number | boolean | object> {
+	let entryType: "users" | "guilds";
+
+	if ("roles" in entry) entryType = "users";
+	else entryType = "guilds";
+
+	if (!entry || !entry.settings_new) {
+		let newSettings = await oldSettingsMigration(entry);
+		if (newSettings) {
+			entry.settings_new = newSettings;
+			await update(entryType, entry.id, {
+				settings_new: newSettings,
+			});
+		} else {
+			return false;
+		}
+		return false;
+	}
 	const { collection, id } = key2data(key);
 	const category = entry.settings_new.find((category) => category.name === collection);
 	if (!category) return false;
-	// @ts-expect-error idk
-	const option = category.options.find((option) => option.id === id);
+
+	const option = category.options.find((option: { id: string }) => option.id === id);
 	if (!option) return false;
 	return option.value;
 }

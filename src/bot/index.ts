@@ -45,6 +45,7 @@ await client.connect();*/
 bot.redis = redis;
 bot.logger = logger;
 bot.shards = new Map();
+bot.pages = new Map();
 bot.api = API;
 bot.rest = createRestManager({
 	token: config.bot.token,

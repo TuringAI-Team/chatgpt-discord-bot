@@ -4,7 +4,9 @@ export interface Campaign {
 	created: Date;
 	active: boolean;
 	members: string[];
-	filters: Object;
+	filters: {
+		[key: string]: string[];
+	};
 	link: string;
 	settings: {
 		color?: string;

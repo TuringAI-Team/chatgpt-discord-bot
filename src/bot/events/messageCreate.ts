@@ -12,7 +12,7 @@ export const messageCreate = async (message: Message, bot: Bot) => {
 	if (messageBot(message)) return;
 
 	const regex = MentionRegex(bot.id);
-	let mentionsBot = message.content.startsWith(`<@${bot.id}>`) || message.content.startsWith(`<@!${bot.id}>`);
+	const mentionsBot = message.content.startsWith(`<@${bot.id}>`) || message.content.startsWith(`<@!${bot.id}>`);
 	if (!mentionsBot && message.guildId) {
 		// message response for only mention
 		// @chat-gpt
@@ -72,7 +72,7 @@ export function getCommandArgs(message: Message, regex: RegExp): [command: strin
 	return [commandName, args];
 }
 
-export async function responseInfo(_message: Message) { }
+export async function responseInfo(_message: Message) {}
 
 export async function checkStatus(environment: Environment) {
 	let status: keyof typeof NoCooldown | "plan" = "user";
@@ -101,7 +101,7 @@ export async function manageCooldown(bot: Bot, message: Message, environment: En
 	const hasCooldown = await checkCooldown(message.author.id, cmd, status);
 	if (hasCooldown) {
 		await bot.helpers.sendMessage(message.channelId, {
-			embeds: hasCooldown,
+			...hasCooldown,
 			messageReference: {
 				failIfNotExists: false,
 				messageId: message.id,

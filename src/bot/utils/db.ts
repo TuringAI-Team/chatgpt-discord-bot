@@ -45,6 +45,9 @@ export async function setCache<T>(key: string, data: T, EX = 6e5) {
 		EX,
 	});
 }
+export async function setCacheEX<T>(key: string, data: T, EX = 6e5) {
+	await redis.setEx(key, EX, JSON.stringify(data));
+}
 
 export async function getCache<T>(key: string): Promise<T | null> {
 	const existing: string | null = await redis.get(key);
@@ -89,11 +92,15 @@ export async function insert(collection: CollectionName, data: NonNullable<unkno
 export type GetParams<T = string | undefined> = {
 	collection: CollectionName;
 	id?: T;
+	/*
 	filter?: Array<{
 		column: string;
 		operator: string;
 		value: string;
-	}>;
+	}>;*/
+	filter?: {
+		[key: string]: string | number | boolean | null;
+	};
 };
 
 export async function get(params: GetParams): Promise<NonNullable<unknown>>;
@@ -140,18 +147,18 @@ export async function env(userId: string, guildId?: string) {
 	return result;
 }
 
-export function premium(env: Environment): {
+export async function premium(env: Environment): Promise<{
 	type: "plan" | "subscription";
 	location: "user" | "guild";
-} | null {
+} | null> {
 	/* In which order to use the plans in */
-	const locationPriority: "guild" | "user" = getSettingsValue(env.user, "premium:location_priority") as "guild" | "user";
+	const locationPriority: "guild" | "user" = (await getSettingsValue(env.user, "premium:location_priority")) as "guild" | "user";
 
 	/* Whether to prefer the Premium of the guild or user itself */
-	const typePriority: "plan" | "subscription" = getSettingsValue(
+	const typePriority: "plan" | "subscription" = (await getSettingsValue(
 		env.guild ? env[locationPriority]! : env.user,
 		"premium:type_priority",
-	) as "plan" | "subscription";
+	)) as "plan" | "subscription";
 
 	const checks: Record<typeof typePriority, (entry: Guild | User) => boolean> = {
 		subscription: (entry) => entry.subscription !== null && Date.now() < entry.subscription.expires,
@@ -189,7 +196,7 @@ export function voted(user: User): number | null {
 
 export async function icon(env: Environment) {
 	if (env.user?.roles.includes(Role.Moderator)) return "⚒️";
-	const p = premium(env);
+	const p = await premium(env);
 
 	if (p) {
 		if (p.type === "plan" && p.location === "user") return "📊";

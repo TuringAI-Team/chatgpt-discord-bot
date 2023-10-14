@@ -31,7 +31,7 @@ export default createCommand({
 		],
 	},
 	cooldown: NoCooldown,
-
+	isPrivate: true,
 	interaction: async ({ interaction, options }) => {
 		await interaction.edit({ ...(await buildInfo(options, interaction.user.id, interaction.guildId)) });
 	},

@@ -10,6 +10,7 @@ export default createCommand({
 		name: "premium",
 		description: "View information about Premium & your current subscription",
 	},
+	isPrivate: true,
 	cooldown: NoCooldown,
 	interaction: async ({ interaction }) => {
 		await interaction.edit({ ...(await buildInfo(interaction.bot, interaction.user.id, interaction.guildId)) });

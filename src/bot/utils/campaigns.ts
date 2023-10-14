@@ -1,18 +1,16 @@
 import { get, insert } from "./db.js";
 import { Campaign } from "../../types/models/campaigns.js";
+import { DiscordEmbed } from "@discordeno/bot";
+import { CollectionNames } from "../../types/collections.js";
+import config from "../../config.js";
 
 async function getCampaigns() {
 	const campaigns = await get({
 		collection: "campaigns",
-		filter: [
-			{
-				column: "active",
-				operator: "eq",
-				value: "true",
-			},
-		],
+		filter: {
+			active: true,
+		},
 	});
-	console.log(campaigns);
 	if (!campaigns) {
 		return [];
 	}
@@ -26,34 +24,58 @@ export async function getCampaign() {
 }
 
 async function checkCampaigns(campaigns: Campaign[]) {
-	let finalCampaign;
+	// Calculate the sum of budgets
+	const totalBudget = campaigns.reduce((total, campaign) => total + campaign.budget.total, 0);
 
-	const totalBudget = campaigns.reduce((acc, campaign: Campaign) => acc + (campaign.budget.total - campaign.budget.used), 0);
+	// Generate a random number between 0 and the total budget
+	const randomBudget = Math.random() * totalBudget;
 
-	const random = Math.floor(Math.random() * 100) + 1;
+	let currentWeight = 0;
+	for (const campaign of campaigns) {
+		// Calculate the weight for the current campaign based on its budget
+		const campaignWeight = campaign.budget.total;
 
-	let start = 0;
-	let end = 0;
-	for (let i = 0; i < campaigns.length; i++) {
-		const campaign = campaigns[i];
-		let percent = Math.round(((campaign.budget.total - campaign.budget.used) / totalBudget) * 100);
-		if (percent > 20) {
-			percent = 20 - (percent - 20);
+		// Check if the random number falls within the current weight and campaign's weight
+		if (randomBudget >= currentWeight && randomBudget < currentWeight + campaignWeight) {
+			return campaign; // Return the selected campaign
 		}
-		if (percent < 5) {
-			percent = 5 + (10 - percent);
-		}
-		end += percent;
-		if (random > start && random <= end) {
-			finalCampaign = campaigns[i];
-			break;
-		}
-		start += percent;
+
+		currentWeight += campaignWeight; // Update the current weight
 	}
-	console.log(finalCampaign); // this is the campaign to display
-	return finalCampaign;
+
+	return undefined; // Return undefined if no campaign is selected (this should be rare)
 }
 
-export async function generateEmbed() {
+export async function generateCampaignEmbed() {
 	// TODO: generate embed @latitu
+	const campaign = await getCampaign();
+	if (!campaign) {
+		return;
+	}
+	const embed: DiscordEmbed = {
+		title: campaign.settings.title,
+	};
+	if (campaign.settings.color) {
+		if (campaign.settings.color.startsWith("#")) {
+			embed.color = parseInt(campaign.settings.color.replace("#", ""), 16);
+		} else {
+			embed.color = config.brand.color;
+		}
+	} else {
+		embed.color = config.brand.color;
+	}
+	if (campaign.settings.description) {
+		embed.description = campaign.settings.description;
+	}
+	if (campaign.settings.image) {
+		embed.image = {
+			url: campaign.settings.image,
+		};
+	}
+	if (campaign.settings.thumbnail) {
+		embed.thumbnail = {
+			url: campaign.settings.thumbnail,
+		};
+	}
+	return { embed, id: campaign.id };
 }

@@ -20,14 +20,18 @@ export default createCommand({
 			},
 		],
 	},
-	cooldown: NoCooldown,
+	cooldown: {
+		user: 30 * 1000,
+		voter: 2 * 60 * 1000,
+		subscription: 60 * 1000,
+	},
 	interaction: async ({ interaction, options, env }) => {
-		await interaction.edit({ ...(await buildInfo(interaction.bot, interaction.guildId, options)) });
+		await interaction.edit({ ...(await buildInfo(interaction.bot, interaction.user.id, interaction.guildId, options)) });
 	},
 	message: async ({ message, bot, args, env }) => {
 		const parser = { getString: () => args.join(" ") } as unknown as OptionResolver;
 		await bot.helpers.sendMessage(message.channelId, {
-			...(await buildInfo(bot, message.guildId, parser)),
+			...(await buildInfo(bot, message.author.id, message.guildId, parser)),
 			messageReference: {
 				failIfNotExists: false,
 				messageId: message.id,
@@ -37,7 +41,9 @@ export default createCommand({
 	},
 });
 
-async function buildInfo(bot: Bot, guildId?: BigString, options?: OptionResolver): Promise<CreateMessageOptions> {
+async function buildInfo(bot: Bot, userId: bigint, guildId?: BigString, options?: OptionResolver): Promise<CreateMessageOptions> {
+	const envrionment = await env(userId.toString(), guildId?.toString());
+
 	const option = options?.getString("prompt");
 	return {
 		embeds: [
