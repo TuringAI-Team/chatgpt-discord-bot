@@ -1,6 +1,6 @@
 import { Guild } from "../../types/models/guilds.js";
 import { LOADING_INDICATORS, USER_LANGUAGES, User } from "../../types/models/users.js";
-import { SettingCategory, SettingChoice, SettingOption, SettingsCategoryNames } from "../../types/settings.js";
+import { SettingCategory, SettingCategoryMetadata, SettingChoice, SettingOption, SettingOptionMetadata, SettingsCategoryNames } from "../../types/settings.js";
 import { CHAT_MODELS } from "../models/index.js";
 import { STYLES } from "../models/styles/index.js";
 import { TONES } from "../models/tones/index.js";
@@ -15,78 +15,164 @@ export async function generateEmbed() {
 	return null;
 }
 
-function getDefaultValues(settingId: string) {}
+function getDefaultValues(settingId: string) { }
 
-function getMetadata(settingId: string) {
-	switch (settingId) {
-		case "general:language":
-			return {
-				name: "Language",
-				description: "Primary language to use for the bot",
-				options: USER_LANGUAGES.map((l) => ({
-					name: l.name,
-					emoji: l.emoji,
-					value: l.id,
-				})),
-			};
-		case "general:loadingIndicator":
-			return {
-				name: "Loading Indicator",
-				description: "Which emoji to use throughout the bot to indicating loading",
-				options: LOADING_INDICATORS.map((l) => ({
-					name: l.name,
-					emoji: `<${l.emoji.name}:${l.emoji.id}>`,
-					value: l.emoji?.id || "default",
-				})),
-			};
-		case "chat:model":
-			return {
-				name: "Model",
-				description: "Which language model to use for chatting",
-				options: CHAT_MODELS.map((m) => ({
-					name: m.name,
-					emoji: `<${m.emoji.name}:${m.emoji.id}>`,
-					value: m.id,
-				})),
-			};
-		case "chat:tone":
-			return {
-				name: "Tone",
-				description: "Which tone the AI language model should have",
-				options: TONES.map((t) => ({
-					name: t.name,
-					emoji: `${t.emoji}`,
-					value: t.id,
-				})),
-			};
-		case "chat:partialMessages":
-			return {
-				name: "Partial Messages",
-				description: "Whether chat messages by the bot should be shown while they're being generated",
-				type: "boolean",
-			};
-		case "image:model":
-			return {
-				name: "Model",
-				description: "Which AI model to use for image generation",
-				options: [],
-			};
-		case "image:style":
-			return {
-				name: "Style",
-				description: "Which style to use for image generation",
-				options: STYLES.map((s) => ({
-					name: s.name,
-					emoji: `${s.emoji}`,
-					value: s.id,
-				})),
-			};
-		default:
-			return {
-				name: "Tone",
-				description: "This is a setting",
-				options: [""],
-			};
+function getMetadata(settingId: string, type: "setting" | "category"): SettingOptionMetadata | SettingCategoryMetadata | undefined {
+	if (type == "setting") {
+		switch (settingId) {
+			case "general:language":
+				return {
+					name: "Language",
+					description: "Primary language to use for the bot",
+					options: USER_LANGUAGES.map((l) => ({
+						name: l.name,
+						emoji: l.emoji,
+						value: l.id,
+					})),
+					emoji: "🌐",
+				};
+			case "general:loadingIndicator":
+				return {
+					name: "Loading Indicator",
+					description: "Which emoji to use throughout the bot to indicating loading",
+					options: LOADING_INDICATORS.map((l) => ({
+						name: l.name,
+						emoji: `<${l.emoji.name}:${l.emoji.id}>`,
+						value: l.emoji?.id || "default",
+					})),
+					emoji: "🔄",
+				};
+			case "chat:model":
+				return {
+					name: "Model",
+					emoji: "🤖",
+					description: "Which language model to use for chatting",
+					options: CHAT_MODELS.map((m) => ({
+						name: m.name,
+						emoji: `<${m.emoji.name}:${m.emoji.id}>`,
+						value: m.id,
+					})),
+				};
+			case "chat:tone":
+				return {
+					name: "Tone",
+					emoji: "🗣️",
+					description: "Which tone the AI language model should have",
+					options: TONES.map((t) => ({
+						name: t.name,
+						emoji: `${t.emoji}`,
+						value: t.id,
+					})),
+				};
+			case "chat:partialMessages":
+				return {
+					name: "Partial Messages",
+					emoji: "⏳",
+					description: "Whether chat messages by the bot should be shown while they're being generated",
+					type: "boolean",
+				};
+			case "image:model":
+				return {
+					name: "Model",
+					emoji: "🤖",
+					description: "Which AI model to use for image generation",
+					options: [],
+				};
+			case "image:style":
+				return {
+					name: "Style",
+					emoji: "🎨",
+					description: "Which style to use for image generation",
+					options: STYLES.map((s) => ({
+						name: s.name,
+						emoji: `${s.emoji}`,
+						value: s.id,
+					})),
+				};
+			case "premium:typePriority":
+				return {
+					name: "Type Priority",
+					emoji: "✨",
+					description: "Which type of premium should be prioritized",
+					options: [
+						{
+							name: "Plan",
+							emoji: "📅",
+							value: "plan",
+						},
+						{
+							name: "Subscription",
+							emoji: "🔔",
+							value: "subscription",
+						},
+					],
+				};
+			case "premium:locationPriority":
+				return {
+					name: "Location Priority",
+					emoji: "✨",
+					description: "Which location of premium should be prioritized",
+					options: [
+						{
+							name: "Guild",
+							emoji: "🏰",
+							value: "guild",
+						},
+						{
+							name: "User",
+							emoji: "👤",
+							value: "user",
+						},
+					]
+
+				}
+			default:
+				return {
+					name: "Tone",
+					description: "This is a setting",
+					options: [""],
+					emoji: "🗣️",
+				};
+		}
+	} else if (type == "category") {
+		switch (settingId) {
+			case "general":
+				return {
+					name: "General",
+					emoji: "🧭",
+					premium: false,
+					description: "General settings",
+				};
+			case "chat":
+				return {
+					name: "Chat",
+					emoji: "💬",
+					premium: false,
+					description: "Chat settings",
+				};
+			case "image":
+				return {
+					name: "Image",
+					emoji: "🖼️",
+					premium: false,
+					description: "Image settings",
+				};
+			case "premium":
+				return {
+					name: "Premium",
+					emoji: "💎",
+					premium: true,
+					description: "Premium settings",
+				};
+			default:
+				return {
+					name: "General",
+					emoji: "🧭",
+					premium: false,
+					description: "General settings",
+				};
+
+		}
 	}
 }
 
@@ -94,80 +180,67 @@ export function getDefaultSettings(metadata: boolean) {
 	let defaultUserSettings: SettingCategory[] = [
 		{
 			name: "general",
-			emoji: "🧭",
 			options: [
 				{
 					id: "general:language",
 					key: "language",
 					value: "en",
-					emoji: "🌐",
 				},
 				{
 					id: "general:loadingIndicator",
 					key: "loadingIndicator",
 					value: "default",
-					emoji: "🔄",
 				},
 			],
 		},
 		{
 			name: "chat",
-			emoji: "💬",
 			options: [
 				{
 					id: "chat:model",
 					key: "model",
 					value: "default",
-					emoji: "🤖",
 				},
 				{
 					id: "chat:tone",
 					key: "tone",
 					value: "default",
-					emoji: "🗣️",
 				},
 
 				{
 					id: "chat:partialMessages",
 					key: "partialMessages",
 					value: true,
-					emoji: "⏳",
 				},
 			],
 		},
 		{
 			name: "image",
-			emoji: "🖼️",
 			options: [
 				{
 					id: "image:model",
 					key: "model",
 					value: "default",
-					emoji: "🤖",
 				},
 				{
 					id: "image:style",
 					key: "style",
 					value: "default",
-					emoji: "🎨",
 				},
 			],
 		},
 		{
 			name: "premium",
-			emoji: "💎",
 			options: [
 				{
-					id: "image:typePriority",
+					id: "premium:typePriority",
 					key: "typePriority",
 					value: "plan",
-					emoji: "✨",
 				},
 				{
 					id: "premium:locationPriority",
 					key: "locationPriority",
 					value: "guild",
-					emoji: "✨",
 				},
 			],
 		},
@@ -177,7 +250,7 @@ export function getDefaultSettings(metadata: boolean) {
 		for (const category of defaultUserSettings) {
 			const OptionsWithMetadata: SettingOption[] = [];
 			for (const option of category.options) {
-				const optionMetadata = getMetadata(option.id);
+				const optionMetadata = getMetadata(option.id, "setting") as SettingOptionMetadata;
 				if (!optionMetadata.options) return;
 				const newOption: SettingOption = {
 					...option,
@@ -186,9 +259,11 @@ export function getDefaultSettings(metadata: boolean) {
 				OptionsWithMetadata.push(newOption);
 			}
 			category.options = [];
+			const categoryMetadata = getMetadata(category.name, "category") as SettingCategoryMetadata;
 			const newCategory = {
 				...category,
 				options: OptionsWithMetadata,
+				metadata: categoryMetadata,
 			};
 			defaultUserSettingsWithMetadata.push(newCategory);
 		}
@@ -210,7 +285,6 @@ export async function oldSettingsMigration(entry: Guild | User) {
 	for (const category of oldSettingsCategories) {
 		newSettings.push({
 			name: category as SettingsCategoryNames,
-			emoji: "🔧",
 			options: [],
 		});
 	}
@@ -224,7 +298,6 @@ export async function oldSettingsMigration(entry: Guild | User) {
 			id: settings[0],
 			key: settingName,
 			value: settingValue,
-			emoji: "🔧",
 		});
 	}
 	return newSettings;

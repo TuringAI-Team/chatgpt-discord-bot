@@ -40,10 +40,12 @@ export default createCommand({
 async function buildInfo(options: OptionResolver, userId: BigString, guildId?: BigString): Promise<CreateMessageOptions> {
 	const subcommand = options.getSubCommand();
 	console.log(subcommand);
+	const environment = await env(userId?.toString(), guildId?.toString());
+
 	if (subcommand === "me") {
+
 	} else if (subcommand === "server") {
 	}
-	const environment = await env(userId?.toString(), guildId?.toString());
 	return {
 		content: "Settings are currently under development.",
 	};
