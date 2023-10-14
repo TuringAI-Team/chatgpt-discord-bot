@@ -15,7 +15,7 @@ export async function generateEmbed() {
 	return null;
 }
 
-function getDefaultValues(settingId: string) {}
+function getDefaultValues(settingId: string) { }
 
 function getMetadata(settingId: string) {
 	switch (settingId) {
@@ -232,7 +232,7 @@ export async function oldSettingsMigration(entry: Guild | User) {
 
 export async function getSettingsValue(entry: Guild | User, key: string): Promise<string | number | boolean | object> {
 	let entryType: "users" | "guilds";
-
+	if (!entry) return false;
 	if ("roles" in entry) entryType = "users";
 	else entryType = "guilds";
 
