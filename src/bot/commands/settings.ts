@@ -43,7 +43,6 @@ async function buildInfo(options: OptionResolver, userId: BigString, guildId?: B
 	const environment = await env(userId?.toString(), guildId?.toString());
 
 	if (subcommand === "me") {
-
 	} else if (subcommand === "server") {
 	}
 	return {

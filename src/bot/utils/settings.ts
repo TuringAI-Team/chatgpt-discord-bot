@@ -1,6 +1,13 @@
 import { Guild } from "../../types/models/guilds.js";
 import { LOADING_INDICATORS, USER_LANGUAGES, User } from "../../types/models/users.js";
-import { SettingCategory, SettingCategoryMetadata, SettingChoice, SettingOption, SettingOptionMetadata, SettingsCategoryNames } from "../../types/settings.js";
+import {
+	SettingCategory,
+	SettingCategoryMetadata,
+	SettingChoice,
+	SettingOption,
+	SettingOptionMetadata,
+	SettingsCategoryNames,
+} from "../../types/settings.js";
 import { CHAT_MODELS } from "../models/index.js";
 import { STYLES } from "../models/styles/index.js";
 import { TONES } from "../models/tones/index.js";
@@ -123,9 +130,8 @@ function getMetadata(settingId: string, type: "setting" | "category"): SettingOp
 							emoji: "👤",
 							value: "user",
 						},
-					]
-
-				}
+					],
+				};
 			default:
 				return {
 					name: "Tone",
@@ -171,7 +177,6 @@ function getMetadata(settingId: string, type: "setting" | "category"): SettingOp
 					premium: false,
 					description: "General settings",
 				};
-
 		}
 	}
 }
@@ -299,10 +304,10 @@ export async function oldSettingsMigration(entry: Guild | User) {
 			key: settingName,
 			value: settingValue,
 		});
-	}
-	return newSettings;
-}
 
+		return newSettings;
+	}
+}
 export async function getSettingsValue(entry: Guild | User, key: string): Promise<string | number | boolean | object> {
 	let entryType: "users" | "guilds";
 	if (!entry) return false;
