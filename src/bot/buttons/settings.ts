@@ -1,5 +1,6 @@
 import { ButtonComponent, ButtonStyles, MessageComponentTypes } from "@discordeno/bot";
 import { ButtonResponse } from "../types/command.js";
+import {generateEmbed} from '../utils/settings.js'
 
 export const settings: ButtonResponse = {
 	id: "settings",
@@ -8,7 +9,7 @@ export const settings: ButtonResponse = {
 	run: async (interaction, data) => {
         switch (data.action) {
             case 'open': 
-            
+                await generat
                 break;
             case 'update':
                 break;

@@ -27,7 +27,13 @@ function key2data(key: string) {
 }
 
 export async function generateEmbed(): Promise<CreateMessageOptions> {
-	return null;
+	const message = {
+		embeds: [],
+		components: []
+	}
+
+
+	return message;
 }
 
 function getDefaultValues(settingId: string) { }
