@@ -12,13 +12,21 @@ import { CHAT_MODELS } from "../models/index.js";
 import { STYLES } from "../models/styles/index.js";
 import { TONES } from "../models/tones/index.js";
 import { update } from "./db.js";
+import {
+	MessageComponentTypes,
+	ButtonComponent,
+	DiscordEmbed,
+	CreateMessageOptions,
+	MessageComponents,
+	DiscordEmbedField,
+} from "@discordeno/bot";
 
 function key2data(key: string) {
 	const [collection, id] = key.split(":");
 	return { collection, id };
 }
 
-export async function generateEmbed() {
+export async function generateEmbed(): Promise<CreateMessageOptions> {
 	return null;
 }
 
