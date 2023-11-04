@@ -3,6 +3,7 @@ import {
 	Bot,
 	ButtonComponent,
 	ButtonStyles,
+	Collection,
 	CreateMessageOptions,
 	Message,
 	MessageComponentTypes,
@@ -39,7 +40,7 @@ export default createCommand({
 		subscription: 60 * 1000,
 	},
 	interaction: async ({ interaction, options, env }) => {
-		const edit = async (message: CreateMessageOptions) => await interaction.edit(message);
+		const edit = async (message: CreateMessageOptions) => await interaction.edit(message).catch((...args) => ['chat interaction', interaction, ...args].forEach(x => interaction.bot.logger.warn(x)));
 		await buildInfo(interaction.bot, interaction.user.id, edit, interaction.guildId, options);
 	},
 	message: async ({ message, bot, args, env }) => {
@@ -47,8 +48,11 @@ export default createCommand({
 		let previousMsg: Message | undefined;
 		const edit = async (msg: CreateMessageOptions) => {
 			//	console.log(previousMsg ? previousMsg.id : "no previous message");
-			if (previousMsg) {
-				previousMsg = await bot.helpers.editMessage(previousMsg.channelId, previousMsg.id, msg);
+			if (previousMsg?.id) {
+				previousMsg = await bot.helpers.editMessage(previousMsg.channelId, previousMsg.id, msg).catch((...args) => {
+					['chat message', previousMsg, ...args].forEach(x => bot.logger.warn(x))
+					return undefined;
+				});
 			} else {
 				previousMsg = await bot.helpers.sendMessage(message.channelId, {
 					...msg,
@@ -125,9 +129,8 @@ async function buildInfo(
 				// if last update was more than 1 second ago
 				lastUpdate = Date.now();
 				await edit({
-					content: `${data.result}<${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${
-						loadingIndicator.emoji.id
-					}>`,
+					content: `${data.result}<${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${loadingIndicator.emoji.id
+						}>`,
 				});
 			}
 		} else {
