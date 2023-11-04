@@ -7,7 +7,7 @@ import { CollectionName, CollectionNames } from "../../types/collections.js";
 import { Guild } from "../../types/models/guilds.js";
 import { Role, User } from "../../types/models/users.js";
 import { Environment } from "../../types/other.js";
-import { getSettingsValue } from "./settings.js";
+import { getDefaultUserSettings, getSettingsValue } from "./settings.js";
 
 let queue = "db";
 if (process.env.NODE_ENV === "development") queue = "db-dev";
@@ -129,11 +129,29 @@ export async function get(params: GetParams | GetParams<string>) {
 
 export async function env(userId: string, guildId?: string) {
 	let guild: NonNullable<unknown> | null = null;
-	const user = await get({
+	let user = await get({
 		collection: "users",
 		id: userId,
 	});
-	if (!user) return null;
+	if (!user) {
+		const settings = await getDefaultUserSettings(false)
+		let newUser: User = {
+			id: userId,
+			moderator: false,
+			interactions: {},
+			infractions: [],
+			subscription: null,
+			plan: null,
+			voted: null,
+			settings_new: settings ?? [],
+			settings: {},
+			metadata: {},
+			roles: [],
+			created: new Date(),
+		}
+		await insert("users", newUser, userId);
+		user = newUser;
+	}
 	if (guildId) {
 		guild = await get({
 			collection: "guilds",
