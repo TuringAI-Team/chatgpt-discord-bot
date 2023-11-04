@@ -61,6 +61,10 @@ export default createCommand({
 						messageId: message.id,
 						guildId: message.guildId,
 					},
+					allowedMentions: {
+						repliedUser: true,
+						parse: []
+					}
 				});
 			}
 		};
@@ -124,6 +128,9 @@ async function buildInfo(
 	let done = false;
 	event.on("data", async (data) => {
 		if (data.result == "") return;
+		data.result = data.result.replaceAll('@everyone', 'everyone').replaceAll('@here', 'here');
+		// make a regex to replace all mentions of users or roles
+		data.result = data.result.replaceAll(/<@&\d+>/g, 'role').replaceAll(/<@!\d+>/g, 'user');
 		if (!data.done) {
 			if (lastUpdate + 1000 < Date.now() && !done) {
 				// if last update was more than 1 second ago
