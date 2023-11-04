@@ -106,7 +106,6 @@ connection.createConsumer(
 		queue: queue,
 	},
 	async (message, _reply) => {
-		console.log(message);
 		try {
 			await handleMessage(message.body);
 		} catch (error) {
