@@ -27,6 +27,7 @@ const db = createSupabaseClient(config.database.supabase.url, config.database.su
 		persistSession: false,
 	},
 });
+export { db as supabase };
 
 /** RabbitMQ connection */
 export const connection = new RabbitMQ.Connection(config.rabbitmq.uri);
@@ -81,7 +82,7 @@ export async function insert(collection: CollectionName, data: NonNullable<unkno
 		id?: string;
 	} = {
 		type: "insert",
-		collection,
+		collection: collection,
 		data,
 	};
 	if (id) body = { ...body, id };

@@ -1,3 +1,5 @@
+import { ButtonStyles, MessageComponentTypes } from "@discordeno/bot";
+import config from "../../config.js";
 import { createCommand } from "../config/setup.js";
 
 export default createCommand({
@@ -95,7 +97,39 @@ export default createCommand({
 		voter: 4 * 60 * 1000,
 		subscription: 1.5 * 60 * 1000,
 	},
-	interaction: async (ctx) => {
-		console.log(ctx);
+	interaction: async ({ interaction }) => {
+		await interaction.edit({
+			embeds: [
+				{
+					title: "The bot is under maintenance",
+					description: `The bot is currently under maintenance, please try again later. Join our support server for more information.\n\n**How can I help?**\n- Be patient.\n- You can donate to the project in order to be able to continue providing this service for free`,
+					color: config.brand.color,
+				},
+			],
+			components: [
+				{
+					type: MessageComponentTypes.ActionRow,
+					components: [
+						{
+							type: MessageComponentTypes.Button,
+							label: "Support Server",
+							url: `https://discord.gg/${config.brand.invite}`,
+							style: ButtonStyles.Link,
+						},
+						{
+							// KO-FI
+							type: MessageComponentTypes.Button,
+							label: "Donate to the project",
+							emoji: {
+								id: 1162684912206360627n,
+								name: "kofi",
+							},
+							url: "https://ko-fi.com/mrloldev",
+							style: ButtonStyles.Link,
+						},
+					],
+				},
+			],
+		});
 	},
 });

@@ -16,16 +16,13 @@ import { events } from "./events/index.js";
 import { handleGatewayMessage } from "./gateway.js";
 import type { ButtonResponse, Command } from "./types/index.js";
 import { connection, env, redis } from "./utils/db.js";
-import { oldSettingsMigration } from "./utils/settings.js";
+import { oldSettingsMigration, oldSettingsMigrationBulk } from "./utils/settings.js";
 export const logger = createLogger({ name: "[BOT]" });
 let routingKey = "gateway";
 if (config.bot.dev) {
 	logger.info("Running in dev mode");
 	routingKey += ":dev";
-	const envrionment = await env("530102778408861706");
-	if (!envrionment) throw new Error("no envrionment");
-	const user = envrionment.user;
-	console.log(await oldSettingsMigration(user));
+	await oldSettingsMigrationBulk();
 } else {
 	logger.info("Running in prod mode");
 }

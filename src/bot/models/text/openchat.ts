@@ -6,10 +6,10 @@ export default {
 	description: "Large Language Model based on LLaMA by OpenChat",
 	emoji: { name: "openchat", id: "1130816635402473563" },
 	maxTokens: 4096,
-	run: (api, data) => {
-		return api.text.openchat({
+	run: async (api, data) => {
+		return await api.text.openchat({
 			...data,
-			model: "openchat_v3.2",
+			model: "openchat_v3.2_mistral",
 		});
 	},
-} satisfies OpenChatModel;
+} as OpenChatModel;

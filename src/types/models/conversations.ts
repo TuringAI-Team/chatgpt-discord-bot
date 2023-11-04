@@ -9,3 +9,14 @@ export interface ConversationMessage {
 export type ConversationUserMessage = ConversationMessage & {
 	role: "user";
 };
+
+export type ConversationHistory = {
+	datasetId: string;
+	messages: ConversationMessage[];
+};
+export type Conversation = {
+	id: string;
+	history: ConversationHistory;
+	last_update: number;
+	model: string;
+};

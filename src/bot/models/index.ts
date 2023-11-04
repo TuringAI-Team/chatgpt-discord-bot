@@ -63,7 +63,7 @@ export type OpenChatModel = Prettify<
 				max_tokens?: number;
 				temperature?: number;
 			},
-		) => EventEmitter | NonNullable<unknown>;
+		) => Promise<EventEmitter | NonNullable<unknown>>;
 	}
 >;
 

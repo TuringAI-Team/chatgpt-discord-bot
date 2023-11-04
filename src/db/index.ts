@@ -56,11 +56,12 @@ function getCollectionKey(collection: CollectionName, id: string) {
 async function update(collection: CollectionName, id: string, data: NonNullable<unknown>) {
 	const collectionKey = getCollectionKey(collection, id);
 	let existing = await getCache(collectionKey);
+	const Realcollection = CollectionNames[collection];
 	if (!existing) {
-		existing = await db.from(collection).select("*").eq("id", id).single();
+		existing = await db.from(Realcollection).select("*").eq("id", id).single();
 		if (!existing) {
 			existing = await db
-				.from(collection)
+				.from(Realcollection)
 				.insert({ id, ...data })
 				.single();
 			await setCache(collectionKey, existing);
@@ -68,7 +69,7 @@ async function update(collection: CollectionName, id: string, data: NonNullable<
 		}
 	}
 	await db
-		.from(collection)
+		.from(Realcollection)
 		.update({ ...data })
 		.eq("id", id);
 	await setCache(collectionKey, { ...existing, ...data });
@@ -76,22 +77,26 @@ async function update(collection: CollectionName, id: string, data: NonNullable<
 
 async function insert(collection: CollectionName, id: string, data: NonNullable<unknown>) {
 	const collectionKey = getCollectionKey(collection, id);
+	console.log(collectionKey);
 	let existing = await getCache(collectionKey);
-
+	console.log(existing);
+	const Realcollection = CollectionNames[collection];
 	if (!existing) {
-		existing = await db.from(collection).select("*").eq("id", id).single();
-		if (existing) {
+		let { data: d } = await db.from(Realcollection).select("*").eq("id", id);
+		if (d && d.length > 0) {
 			await setCache(collectionKey, existing);
 			return;
+		} else {
+			await db.from(Realcollection).insert({ id, ...data });
+			await setCache(collectionKey, { id, ...data });
 		}
-		await db.from(collection).insert({ id, ...data });
-		await setCache(collectionKey, { id, ...data });
 	}
 }
 
 async function remove(collection: CollectionName, id: string) {
 	const collectionKey = getCollectionKey(collection, id);
-	await db.from(collection).delete().eq("id", id);
+	const Realcollection = CollectionNames[collection];
+	await db.from(Realcollection).delete().eq("id", id);
 	await redis.del(collectionKey);
 }
 
@@ -105,7 +110,7 @@ connection.createConsumer(
 		try {
 			await handleMessage(message.body);
 		} catch (error) {
-			logger.error(JSON.stringify(error));
+			logger.error(error);
 
 			/*await reply({
 				success: false,
@@ -116,17 +121,12 @@ connection.createConsumer(
 );
 
 async function handleMessage(message: {
-	action: "update" | "insert" | "remove";
+	type: "update" | "insert" | "remove";
 	collection: CollectionName;
 	id: string;
 	data: NonNullable<unknown>;
 }) {
-	for (const [k, v] of Object.entries(message)) {
-		if (!v) console.log(`Invalid message: ${k} is ${v}`);
-		if (!(k === "collection" && CollectionNames[k as keyof typeof CollectionNames]))
-			throw new Error(`Invalid collection name: ${message.collection}`);
-	}
-	switch (message.action) {
+	switch (message.type) {
 		case "update":
 			await update(message.collection, message.id, message.data);
 			break;

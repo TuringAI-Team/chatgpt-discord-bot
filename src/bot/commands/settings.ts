@@ -3,15 +3,19 @@ import {
 	BigString,
 	Bot,
 	ButtonComponent,
+	ButtonStyles,
 	CreateMessageOptions,
+	Interaction,
 	MessageComponentTypes,
 } from "@discordeno/bot";
 import config from "../../config.js";
 import { NoCooldown, buttonInfo, createCommand } from "../config/setup.js";
 import { gatewayConfig } from "../index.js";
-import { env, premium } from "../utils/db.js";
+import { premium } from "../utils/db.js";
 import { generatePremiumEmbed } from "../utils/premium.js";
 import { OptionResolver } from "../handlers/OptionResolver.js";
+import { Environment } from "../../types/other.js";
+import { Categories } from "../utils/settings.js";
 
 export default createCommand({
 	body: {
@@ -32,15 +36,54 @@ export default createCommand({
 	},
 	cooldown: NoCooldown,
 	isPrivate: true,
-	interaction: async ({ interaction, options }) => {
-		await interaction.edit({ ...(await buildInfo(options, interaction.user.id, interaction.guildId)) });
+	interaction: async ({ interaction, options, env }) => {
+		await interaction.edit({
+			embeds: [
+				{
+					title: "The bot is under maintenance",
+					description: `The bot is currently under maintenance, please try again later. Join our support server for more information.\n\n**How can I help?**\n- Be patient.\n- You can donate to the project in order to be able to continue providing this service for free`,
+					color: config.brand.color,
+				},
+			],
+			components: [
+				{
+					type: MessageComponentTypes.ActionRow,
+					components: [
+						{
+							type: MessageComponentTypes.Button,
+							label: "Support Server",
+							url: `https://discord.gg/${config.brand.invite}`,
+							style: ButtonStyles.Link,
+						},
+						{
+							// KO-FI
+							type: MessageComponentTypes.Button,
+							label: "Donate to the project",
+							emoji: {
+								id: 1162684912206360627n,
+								name: "kofi",
+							},
+							url: "https://ko-fi.com/mrloldev",
+							style: ButtonStyles.Link,
+						},
+					],
+				},
+			],
+		});
 	},
 });
 
-async function buildInfo(options: OptionResolver, userId: BigString, guildId?: BigString): Promise<CreateMessageOptions> {
+async function buildInfo(env: Environment, options: OptionResolver, interaction: Interaction): Promise<CreateMessageOptions> {
 	const subcommand = options.getSubCommand();
-	console.log(subcommand);
-	const environment = await env(userId?.toString(), guildId?.toString());
+	//const prem = await premium(env);
+
+	const buttons: ButtonComponent[] = Object.values(Categories).map((x) => ({
+		type: MessageComponentTypes.Button,
+		style: ButtonStyles.Primary,
+		emoji: { name: x.emoji },
+		label: x.name,
+		customId: ``,
+	}));
 
 	if (subcommand === "me") {
 	} else if (subcommand === "server") {

@@ -47,7 +47,7 @@ export interface SettingOptionMetadata {
 export type SettingsCategoryNames = "chat" | "image" | "plugins" | "premium" | "general" | "limits";
 export interface SettingCategory {
 	name: SettingsCategoryNames;
-	options: SettingOption[];
+	settings: SettingOption[];
 	metadata?: SettingCategoryMetadata;
 }
 export interface SettingCategoryMetadata {

@@ -285,7 +285,9 @@ export interface User {
 	subscription: Subscription | null;
 	plan: Plan | null;
 	voted: string | null;
-	settings: SettingCategory[];
+	settings: {
+		[key: string]: string | number | boolean | object | Array<string | number | boolean>;
+	};
 	settings_new: SettingCategory[];
 	metadata: Record<string, unknown>;
 	roles: Role[];

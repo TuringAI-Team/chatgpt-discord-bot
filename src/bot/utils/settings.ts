@@ -11,7 +11,7 @@ import {
 import { CHAT_MODELS } from "../models/index.js";
 import { STYLES } from "../models/styles/index.js";
 import { TONES } from "../models/tones/index.js";
-import { update } from "./db.js";
+import { supabase, update } from "./db.js";
 import {
 	MessageComponentTypes,
 	ButtonComponent,
@@ -29,17 +29,21 @@ function key2data(key: string) {
 export async function generateEmbed(): Promise<CreateMessageOptions> {
 	const message = {
 		embeds: [],
-		components: []
-	}
-
+		components: [],
+	};
 
 	return message;
 }
 
-function getDefaultValues(settingId: string) { }
+function getDefaultValues(settingId: string) {}
 
-function getMetadata(settingId: string, type: "setting" | "category"): SettingOptionMetadata | SettingCategoryMetadata | undefined {
-	if (type == "setting") {
+export function getMetadata(settingId: string, type: "setting" | "category"): SettingOptionMetadata;
+export function getMetadata(settingId: keyof typeof Categories, type: "setting" | "category"): SettingCategoryMetadata;
+export function getMetadata(
+	settingId: string | keyof typeof Categories,
+	type: "setting" | "category",
+): SettingOptionMetadata | SettingCategoryMetadata | undefined {
+	if (type === "setting") {
 		switch (settingId) {
 			case "general:language":
 				return {
@@ -154,52 +158,70 @@ function getMetadata(settingId: string, type: "setting" | "category"): SettingOp
 					emoji: "🗣️",
 				};
 		}
-	} else if (type == "category") {
-		switch (settingId) {
-			case "general":
-				return {
-					name: "General",
-					emoji: "🧭",
-					premium: false,
-					description: "General settings",
-				};
-			case "chat":
-				return {
-					name: "Chat",
-					emoji: "💬",
-					premium: false,
-					description: "Chat settings",
-				};
-			case "image":
-				return {
-					name: "Image",
-					emoji: "🖼️",
-					premium: false,
-					description: "Image settings",
-				};
-			case "premium":
-				return {
-					name: "Premium",
-					emoji: "💎",
-					premium: true,
-					description: "Premium settings",
-				};
-			default:
-				return {
-					name: "General",
-					emoji: "🧭",
-					premium: false,
-					description: "General settings",
-				};
-		}
+	} else if (type === "category") {
+		return Categories[settingId as keyof typeof Categories] ?? Categories["general"];
 	}
 }
 
-export function getDefaultSettings(metadata: boolean) {
+export const Categories = {
+	general: {
+		name: "General",
+		emoji: "🧭",
+		premium: false,
+		description: "General settings",
+	},
+	chat: {
+		name: "Chat",
+		emoji: "💬",
+		premium: false,
+		description: "Chat settings",
+	},
+	image: {
+		name: "Image",
+		emoji: "🖼️",
+		premium: false,
+		description: "Image settings",
+	},
+	premium: {
+		name: "Premium",
+		emoji: "💎",
+		premium: true,
+		description: "Premium settings",
+	},
+};
+
+async function getSettingsMetadata(settings: SettingCategory[]) {
+	const UserSettingsWithMetadata: SettingCategory[] = [];
+	for (const category of settings) {
+		const OptionsWithMetadata: SettingOption[] = [];
+		for (const option of category.settings) {
+			const optionMetadata = getMetadata(option.id, "setting") as SettingOptionMetadata;
+			if (!optionMetadata.options) return;
+			const newOption: SettingOption = {
+				...option,
+				metadata: optionMetadata,
+			};
+			OptionsWithMetadata.push(newOption);
+		}
+		category.settings = [];
+		const categoryMetadata = getMetadata(category.name, "category") as SettingCategoryMetadata;
+		const newCategory = {
+			...category,
+			options: OptionsWithMetadata,
+			metadata: categoryMetadata,
+		};
+		UserSettingsWithMetadata.push(newCategory);
+	}
+	let newsettings = UserSettingsWithMetadata;
+	return newsettings;
+}
+
+// this returns  the default settings for creating a new user
+export function getDefaultUserSettings(metadata: boolean) {
 	let defaultUserSettings: SettingCategory[] = [
 		{
 			name: "general",
-			options: [
+			settings: [
 				{
 					id: "general:language",
 					key: "language",
@@ -214,7 +236,7 @@ export function getDefaultSettings(metadata: boolean) {
 		},
 		{
 			name: "chat",
-			options: [
+			settings: [
 				{
 					id: "chat:model",
 					key: "model",
@@ -235,7 +257,7 @@ export function getDefaultSettings(metadata: boolean) {
 		},
 		{
 			name: "image",
-			options: [
+			settings: [
 				{
 					id: "image:model",
 					key: "model",
@@ -250,7 +272,7 @@ export function getDefaultSettings(metadata: boolean) {
 		},
 		{
 			name: "premium",
-			options: [
+			settings: [
 				{
 					id: "premium:typePriority",
 					key: "typePriority",
@@ -268,7 +290,7 @@ export function getDefaultSettings(metadata: boolean) {
 		const defaultUserSettingsWithMetadata: SettingCategory[] = [];
 		for (const category of defaultUserSettings) {
 			const OptionsWithMetadata: SettingOption[] = [];
-			for (const option of category.options) {
+			for (const option of category.settings) {
 				const optionMetadata = getMetadata(option.id, "setting") as SettingOptionMetadata;
 				if (!optionMetadata.options) return;
 				const newOption: SettingOption = {
@@ -277,7 +299,7 @@ export function getDefaultSettings(metadata: boolean) {
 				};
 				OptionsWithMetadata.push(newOption);
 			}
-			category.options = [];
+			category.settings = [];
 			const categoryMetadata = getMetadata(category.name, "category") as SettingCategoryMetadata;
 			const newCategory = {
 				...category,
@@ -288,13 +310,14 @@ export function getDefaultSettings(metadata: boolean) {
 		}
 		defaultUserSettings = defaultUserSettingsWithMetadata;
 	}
-	console.log(JSON.stringify(defaultUserSettings, null, 2));
+
 	return defaultUserSettings;
 }
 
-export async function oldSettingsMigration(entry: Guild | User) {
-	if (entry.settings_new.length >= 1) return;
-	const oldSettings = entry.settings;
+// this returns  the new  settings for migrating from the old settings
+export async function oldSettingsMigration(oldSettings: {
+	[key: string]: string | number | boolean | object | Array<string | number | boolean>;
+}) {
 	if (!oldSettings) return;
 	const newSettings: Array<SettingCategory> = [];
 	const oldSettingsArray = Object.entries(oldSettings);
@@ -304,16 +327,18 @@ export async function oldSettingsMigration(entry: Guild | User) {
 	for (const category of oldSettingsCategories) {
 		newSettings.push({
 			name: category as SettingsCategoryNames,
-			options: [],
+			settings: [],
 		});
 	}
+	console.log(newSettings);
 	for (const settings of oldSettingsArray) {
 		const categoryofSetting = settings[0].split(":")[0];
 		const settingName = settings[0].split(":")[1];
 		const settingValue = settings[1];
+		console.log(categoryofSetting, settingName, settingValue);
 		const newCategory = newSettings.find((category) => category.name === categoryofSetting);
 		if (!newCategory) continue;
-		newCategory.options.push({
+		newCategory.settings.push({
 			id: settings[0],
 			key: settingName,
 			value: settingValue,
@@ -322,6 +347,38 @@ export async function oldSettingsMigration(entry: Guild | User) {
 		return newSettings;
 	}
 }
+
+export async function oldSettingsMigrationBulk() {
+	//  there are 540k users do your thing
+	const pages = 567;
+	for (let i = 0; i < pages; i++) {
+		let usersPerPage = 1;
+		const { data, error } = await supabase
+			.from("users_new")
+			.select("*")
+			.range(i * usersPerPage, (i + 1) * usersPerPage - 1);
+		if (error) return console.error(error);
+		if (data) {
+			// do a bulk update
+			const upsertInfo = [];
+			for (const user of data) {
+				const newSettings = await oldSettingsMigration(user.settings);
+				if (newSettings) {
+					const newsettings = {
+						id: user.id,
+						settings_new: newSettings,
+					};
+					console.log(newsettings);
+					upsertInfo.push(newsettings);
+				}
+			}
+			return;
+			//		await supabase.from("users_new").upsert(upsertInfo);
+		}
+	}
+}
+
+// get the value of a specific setting
 export async function getSettingsValue(entry: Guild | User, key: string): Promise<string | number | boolean | object> {
 	let entryType: "users" | "guilds";
 	if (!entry) return false;
@@ -329,7 +386,7 @@ export async function getSettingsValue(entry: Guild | User, key: string): Promis
 	else entryType = "guilds";
 
 	if (!entry || !entry.settings_new) {
-		let newSettings = await oldSettingsMigration(entry);
+		const newSettings = await oldSettingsMigration(entry.settings);
 		if (newSettings) {
 			entry.settings_new = newSettings;
 			await update(entryType, entry.id, {
@@ -344,7 +401,7 @@ export async function getSettingsValue(entry: Guild | User, key: string): Promis
 	const category = entry.settings_new.find((category) => category.name === collection);
 	if (!category) return false;
 
-	const option = category.options.find((option: { id: string }) => option.id === id);
+	const option = category.settings.find((option: { id: string }) => option.id === id);
 	if (!option) return false;
 	return option.value;
 }
