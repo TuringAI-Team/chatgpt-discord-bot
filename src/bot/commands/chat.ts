@@ -39,7 +39,6 @@ export default createCommand({
 		subscription: 60 * 1000,
 	},
 	interaction: async ({ interaction, options, env }) => {
-		await interaction.defer();
 		const edit = async (message: CreateMessageOptions) => await interaction.edit(message);
 		await buildInfo(interaction.bot, interaction.user.id, edit, interaction.guildId, options);
 	},
