@@ -139,7 +139,27 @@ export async function env(userId: string, guildId?: string) {
 			collection: "guilds",
 			id: guildId,
 		});
-		if (!guild) return null;
+		if (!guild) {
+			await insert(
+				"guilds",
+				{
+					subscription: null,
+					plan: null,
+					settings: {},
+					infractions: [],
+					metadata: null,
+				},
+				guildId,
+			);
+			guild = {
+				id: guildId,
+				subscription: null,
+				plan: null,
+				settings: {},
+				infractions: [],
+				metadata: null,
+			};
+		}
 	}
 	const result = {
 		user: user,

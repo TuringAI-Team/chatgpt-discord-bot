@@ -30,10 +30,8 @@ export const messageCreate = async (message: Message, bot: Bot) => {
 	const command = commands.get(commandName) ?? commands.get("chat")!;
 
 	if (!command.message) return;
-
 	const environment = await env(message.author.id.toString(), message.guildId?.toString());
 	if (!environment) return;
-
 	await bot.helpers.triggerTypingIndicator(message.channelId);
 
 	if (!(await manageCooldown(bot, message, environment, command))) return;
@@ -74,7 +72,7 @@ export function getCommandArgs(message: Message, regex: RegExp): [command: strin
 	return [commandName, args];
 }
 
-export async function responseInfo(_message: Message) {}
+export async function responseInfo(_message: Message) { }
 
 export async function checkStatus(environment: Environment) {
 	let status: keyof typeof NoCooldown | "plan" = "user";
