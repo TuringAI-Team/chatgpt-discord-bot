@@ -77,9 +77,7 @@ async function update(collection: CollectionName, id: string, data: NonNullable<
 
 async function insert(collection: CollectionName, id: string, data: NonNullable<unknown>) {
 	const collectionKey = getCollectionKey(collection, id);
-	console.log(collectionKey);
 	let existing = await getCache(collectionKey);
-	console.log(existing);
 	const Realcollection = CollectionNames[collection];
 	if (!existing) {
 		let { data: d } = await db.from(Realcollection).select("*").eq("id", id);
