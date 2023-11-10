@@ -1,14 +1,15 @@
 import { Guild } from "../../types/models/guilds.js";
 import { LOADING_INDICATORS, USER_LANGUAGES, User } from "../../types/models/users.js";
+import { Environment } from "../../types/other.js";
 import {
+	Setting,
 	SettingCategory,
 	SettingCategoryMetadata,
-	SettingChoice,
+	SettingMetadata,
 	SettingOption,
-	SettingOptionMetadata,
 	SettingsCategoryNames,
 } from "../../types/settings.js";
-import { CHAT_MODELS } from "../models/index.js";
+import { CHAT_MODELS, ChatModel } from "../models/index.js";
 import { STYLES } from "../models/styles/index.js";
 import { TONES } from "../models/tones/index.js";
 import { supabase, update } from "./db.js";
@@ -19,6 +20,8 @@ import {
 	CreateMessageOptions,
 	MessageComponents,
 	DiscordEmbedField,
+	ButtonStyles,
+	SelectMenuComponent,
 } from "@discordeno/bot";
 
 function key2data(key: string) {
@@ -26,10 +29,111 @@ function key2data(key: string) {
 	return { collection, id };
 }
 
-export async function generateEmbed(): Promise<CreateMessageOptions> {
-	const message = {
-		embeds: [],
-		components: [],
+export type EnabledSectionsTypes = "chat" | "image" | "premium" | string;
+export const EnabledSections: Array<EnabledSectionsTypes> = ["chat", "image", "premium"];
+export async function generateSections(pageName: EnabledSectionsTypes, env: Environment): Promise<CreateMessageOptions | null> {
+	let message: null | CreateMessageOptions = null;
+	const user = env.user;
+	let settings = user.settings_new;
+	if (!settings || settings.length === 0) {
+		const newSettings = await oldSettingsMigration(user.settings);
+		if (newSettings) {
+			settings = newSettings;
+			await update("users", user.id, {
+				settings_new: newSettings,
+			});
+		}
+	}
+	const settingsWithMetadata = await getSettingsMetadata(settings);
+	console.log(settingsWithMetadata);
+	if (!settingsWithMetadata) return null;
+	const sectionSettings = settingsWithMetadata.find((category) => category.name === pageName);
+	let settingsComponents =
+		sectionSettings?.settings.map((setting) => {
+			if (setting.metadata) {
+				if (setting.metadata.options) {
+					return {
+						type: MessageComponentTypes.SelectMenu,
+						customId: setting.id,
+						options: setting.metadata.options.map((option) => ({
+							label: option.name,
+							value: option.value.toString(),
+							default: option.value === setting.value,
+							description: option.description,
+							emoji:
+								option.emoji &&
+								({
+									name: option.emoji,
+								} as string | { name: string; id: string }),
+						})),
+						placeholder: `${setting.metadata.emoji} ${setting.metadata.name}`,
+						disabled: !setting.metadata.enabled,
+					} as SelectMenuComponent;
+				} else if (setting.metadata.type === "boolean") {
+					return {
+						type: MessageComponentTypes.SelectMenu,
+						customId: setting.id,
+						options: [
+							{
+								label: "Enabled",
+								value: "true",
+								default: setting.value === true,
+								description: "Enable this setting",
+								emoji: {
+									name: "✅",
+								},
+							},
+							{
+								label: "Disabled",
+								value: "false",
+								default: setting.value === false,
+								description: "Disable this setting",
+								emoji: {
+									name: "❌",
+								},
+							},
+						],
+						disabled: !setting.metadata.enabled,
+						placeholder: `${setting.metadata.emoji} ${setting.metadata.name}`,
+					} as SelectMenuComponent;
+				}
+			}
+		}) || [];
+	settingsComponents = settingsComponents.filter((setting) => setting !== undefined) as SelectMenuComponent[];
+	const settingsRows: MessageComponents = [];
+	for (let i = 0; i < settingsComponents.length; i++) {
+		const component = settingsComponents[i];
+		if (component) {
+			settingsRows.push({
+				type: MessageComponentTypes.ActionRow,
+				components: [component],
+			});
+		}
+	}
+	message = {
+		content: "",
+		components: [
+			...settingsRows,
+			{
+				type: MessageComponentTypes.ActionRow,
+				components: [
+					{
+						type: MessageComponentTypes.SelectMenu,
+						customId: "settings_open",
+						options: settingsWithMetadata.map((category) => ({
+							label: category.metadata?.name || category.name,
+							value: category.metadata?.name || category.name.toLowerCase(),
+							default: category.metadata?.name === sectionSettings?.metadata?.name,
+							description: category.metadata?.description,
+							emoji: {
+								name: category.metadata?.emoji || "",
+							},
+							disabled: EnabledSections.includes(category.name) ? false : true,
+						})),
+					},
+				],
+			},
+		],
 	};
 
 	return message;
@@ -37,12 +141,12 @@ export async function generateEmbed(): Promise<CreateMessageOptions> {
 
 function getDefaultValues(settingId: string) {}
 
-export function getMetadata(settingId: string, type: "setting" | "category"): SettingOptionMetadata;
+export function getMetadata(settingId: string, type: "setting" | "category"): SettingMetadata;
 export function getMetadata(settingId: keyof typeof Categories, type: "setting" | "category"): SettingCategoryMetadata;
 export function getMetadata(
 	settingId: string | keyof typeof Categories,
 	type: "setting" | "category",
-): SettingOptionMetadata | SettingCategoryMetadata | undefined {
+): SettingMetadata | SettingCategoryMetadata | undefined {
 	if (type === "setting") {
 		switch (settingId) {
 			case "general:language":
@@ -72,11 +176,12 @@ export function getMetadata(
 					name: "Model",
 					emoji: "🤖",
 					description: "Which language model to use for chatting",
-					options: CHAT_MODELS.map((m) => ({
+					options: CHAT_MODELS.map((m: ChatModel) => ({
 						name: m.name,
 						emoji: `<${m.emoji.name}:${m.emoji.id}>`,
 						value: m.id,
 					})),
+					enabled: true,
 				};
 			case "chat:tone":
 				return {
@@ -154,12 +259,12 @@ export function getMetadata(
 				return {
 					name: "Tone",
 					description: "This is a setting",
-					options: [""],
+					options: [],
 					emoji: "🗣️",
 				};
 		}
 	} else if (type === "category") {
-		return Categories[settingId as keyof typeof Categories] ?? Categories["general"];
+		return Categories[settingId as keyof typeof Categories] ?? Categories.general;
 	}
 }
 
@@ -182,38 +287,49 @@ export const Categories = {
 		premium: false,
 		description: "Image settings",
 	},
+	plugins: {
+		name: "Plugins",
+		emoji: "🧩",
+		premium: false,
+		description: "Plugin settings",
+	},
 	premium: {
 		name: "Premium",
 		emoji: "💎",
 		premium: true,
 		description: "Premium settings",
 	},
+	limits: {
+		name: "Limits",
+		emoji: "📏",
+		premium: false,
+		description: "Limit settings",
+	},
 };
 
 async function getSettingsMetadata(settings: SettingCategory[]) {
 	const UserSettingsWithMetadata: SettingCategory[] = [];
 	for (const category of settings) {
-		const OptionsWithMetadata: SettingOption[] = [];
-		for (const option of category.settings) {
-			const optionMetadata = getMetadata(option.id, "setting") as SettingOptionMetadata;
-			if (!optionMetadata.options) return;
-			const newOption: SettingOption = {
-				...option,
-				metadata: optionMetadata,
+		const SettingsWithMetadata: Setting[] = [];
+		for (const setting of category.settings) {
+			const settingMetadata = getMetadata(setting.id, "setting") as SettingMetadata;
+			if (!settingMetadata.options) return;
+			const newOption: Setting = {
+				...setting,
+				metadata: settingMetadata,
 			};
-			OptionsWithMetadata.push(newOption);
+			SettingsWithMetadata.push(newOption);
 		}
-		category.settings = [];
+		category.settings = SettingsWithMetadata;
 		const categoryMetadata = getMetadata(category.name, "category") as SettingCategoryMetadata;
 		const newCategory = {
 			...category,
-			options: OptionsWithMetadata,
 			metadata: categoryMetadata,
 		};
 		UserSettingsWithMetadata.push(newCategory);
 	}
-	let newsettings = UserSettingsWithMetadata;
-	return newsettings;
+	console.log(UserSettingsWithMetadata);
+	return UserSettingsWithMetadata;
 }
 
 // this returns  the default settings for creating a new user
@@ -289,11 +405,11 @@ export function getDefaultUserSettings(metadata: boolean) {
 	if (metadata) {
 		const defaultUserSettingsWithMetadata: SettingCategory[] = [];
 		for (const category of defaultUserSettings) {
-			const OptionsWithMetadata: SettingOption[] = [];
+			const OptionsWithMetadata: Setting[] = [];
 			for (const option of category.settings) {
-				const optionMetadata = getMetadata(option.id, "setting") as SettingOptionMetadata;
+				const optionMetadata = getMetadata(option.id, "setting") as SettingMetadata;
 				if (!optionMetadata.options) return;
-				const newOption: SettingOption = {
+				const newOption: Setting = {
 					...option,
 					metadata: optionMetadata,
 				};
@@ -330,29 +446,26 @@ export async function oldSettingsMigration(oldSettings: {
 			settings: [],
 		});
 	}
-	console.log(newSettings);
-	for (const settings of oldSettingsArray) {
-		const categoryofSetting = settings[0].split(":")[0];
-		const settingName = settings[0].split(":")[1];
-		const settingValue = settings[1];
-		console.log(categoryofSetting, settingName, settingValue);
+	for (const setting of oldSettingsArray) {
+		const categoryofSetting = setting[0].split(":")[0];
+		const settingName = setting[0].split(":")[1];
+		const settingValue = setting[1];
 		const newCategory = newSettings.find((category) => category.name === categoryofSetting);
 		if (!newCategory) continue;
 		newCategory.settings.push({
-			id: settings[0],
+			id: setting[0],
 			key: settingName,
 			value: settingValue,
 		});
-
-		return newSettings;
 	}
+	return newSettings;
 }
 
 export async function oldSettingsMigrationBulk() {
 	//  there are 540k users do your thing
 	const pages = 567;
 	for (let i = 0; i < pages; i++) {
-		let usersPerPage = 1;
+		const usersPerPage = 1;
 		const { data, error } = await supabase
 			.from("users_new")
 			.select("*")
@@ -368,7 +481,6 @@ export async function oldSettingsMigrationBulk() {
 						id: user.id,
 						settings_new: newSettings,
 					};
-					console.log(newsettings);
 					upsertInfo.push(newsettings);
 				}
 			}

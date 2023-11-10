@@ -40,7 +40,10 @@ export default createCommand({
 		subscription: 60 * 1000,
 	},
 	interaction: async ({ interaction, options, env }) => {
-		const edit = async (message: CreateMessageOptions) => await interaction.edit(message).catch((...args) => ['chat interaction', interaction, ...args].forEach(x => interaction.bot.logger.warn(x)));
+		const edit = async (message: CreateMessageOptions) =>
+			await interaction
+				.edit(message)
+				.catch((...args) => ["chat interaction", interaction, ...args].forEach((x) => interaction.bot.logger.warn(x)));
 		await buildInfo(interaction.bot, interaction.user.id, edit, interaction.guildId, options);
 	},
 	message: async ({ message, bot, args, env }) => {
@@ -50,7 +53,7 @@ export default createCommand({
 			//	console.log(previousMsg ? previousMsg.id : "no previous message");
 			if (previousMsg?.id) {
 				previousMsg = await bot.helpers.editMessage(previousMsg.channelId, previousMsg.id, msg).catch((...args) => {
-					['chat message', previousMsg, ...args].forEach(x => bot.logger.warn(x))
+					["chat message", previousMsg, ...args].forEach((x) => bot.logger.warn(x));
 					return undefined;
 				});
 			} else {
@@ -63,8 +66,8 @@ export default createCommand({
 					},
 					allowedMentions: {
 						repliedUser: true,
-						parse: []
-					}
+						parse: [],
+					},
 				});
 			}
 		};
@@ -102,6 +105,7 @@ async function buildInfo(
 				content: prompt,
 			},
 		],
+		model: "openchat_v3.2_mistral",
 	});
 	if (conversation) {
 		await addMessageToConversation(conversation, {
@@ -127,17 +131,18 @@ async function buildInfo(
 	let lastUpdate = Date.now();
 	let done = false;
 	event.on("data", async (data) => {
-		if (data.result == "") return;
-		data.result = data.result.replaceAll('@everyone', 'everyone').replaceAll('@here', 'here');
+		if (data.result === "") return;
+		data.result = data.result.replaceAll("@everyone", "everyone").replaceAll("@here", "here");
 		// make a regex to replace all mentions of users or roles
-		data.result = data.result.replaceAll(/<@&\d+>/g, 'role').replaceAll(/<@!\d+>/g, 'user');
+		data.result = data.result.replaceAll(/<&\d+>/g, "role").replaceAll(/<@\d+>/g, "user");
 		if (!data.done) {
 			if (lastUpdate + 1000 < Date.now() && !done) {
 				// if last update was more than 1 second ago
 				lastUpdate = Date.now();
 				await edit({
-					content: `${data.result}<${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${loadingIndicator.emoji.id
-						}>`,
+					content: `${data.result}<${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${
+						loadingIndicator.emoji.id
+					}>`,
 				});
 			}
 		} else {
@@ -159,8 +164,7 @@ async function buildInfo(
 							{
 								type: MessageComponentTypes.Button,
 								label: model.name,
-								customId: "settings_open_models",
-								disabled: true,
+								customId: "settings_open",
 								emoji: {
 									name: model.emoji.name,
 									id: BigInt(model.emoji.id),

@@ -1,45 +1,70 @@
-import { ImageModelFromTo, StableHordeModel } from "./index.js";
+import { GenericModel } from "./index.js";
+import { Api } from "../api.js";
 
-export default {
-	name: "Stable Horde",
-	models: {
-		"majicMIX realistic": {
-			id: "majicMIX_realistic",
-			from: {
-				width: 512,
-				height: 512,
-			},
-			to: {
-				width: 1024,
-				height: 1024,
-			},
-		},
-		Deliberate: {
-			id: "deliberate",
-			from: {
-				width: 512,
-				height: 512,
-			},
-			to: {
-				width: 1024,
-				height: 1024,
-			},
-		},
-		"OpenJourney Diffusion": {
-			id: "openjourney_diffusion",
-			from: {
-				width: 512,
-				height: 512,
-			},
-			to: {
-				width: 1024,
-				height: 1024,
-			},
-		},
+export type GenericParam = Parameters<Api["image"]["sh"]>[0];
+
+const sdxl: GenericModel<GenericParam> = {
+	id: "sdxl",
+	name: "SDXL",
+	from: {
+		width: 1024,
+		height: 1024,
 	},
-	run: (api, data) => api.image.sh(data),
-} satisfies StableHordeModel<{
-	"majicMIX realistic": ImageModelFromTo;
-	Deliberate: ImageModelFromTo;
-	"OpenJourney Diffusion": ImageModelFromTo;
-}>;
+	to: {
+		width: 1024,
+		height: 1024,
+	},
+	run(api, data) {
+		api.image.sh(data);
+	},
+};
+
+const OpenJourneyDiffussion: GenericModel<GenericParam> = {
+	id: "openjourney_diffusion",
+	name: "OpenJourney Diffusion",
+	from: {
+		width: 512,
+		height: 512,
+	},
+	to: {
+		width: 1024,
+		height: 1024,
+	},
+	run(api, data) {
+		api.image.sh(data);
+	},
+};
+
+const Deliberate: GenericModel<GenericParam> = {
+	id: "deliberate",
+	name: "Deliberate",
+	from: {
+		width: 512,
+		height: 512,
+	},
+	to: {
+		width: 1024,
+		height: 1024,
+	},
+	run(api, data) {
+		api.image.sh(data);
+	},
+};
+
+const majicMIXR: GenericModel<GenericParam> = {
+	id: "majicMIX_realistic",
+	name: "majicMIX realistic",
+	from: {
+		width: 512,
+		height: 512,
+	},
+	to: {
+		width: 1024,
+		height: 1024,
+	},
+	run(api, data) {
+		api.image.sh(data);
+	},
+};
+
+export { majicMIXR, Deliberate, OpenJourneyDiffussion, sdxl };

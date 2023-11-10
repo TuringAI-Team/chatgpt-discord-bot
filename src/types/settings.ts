@@ -16,38 +16,35 @@ export enum SettingsLocation {
 	Both = "b",
 }
 
-export type SettingChoice =
-	| string
-	| number
-	| boolean
-	| {
-			name: string;
-			value: string | number | boolean;
-			premium?: boolean;
-			description?: string;
-			emoji?: string;
-	  };
-export interface SettingOption {
+export type SettingOption = {
+	name: string;
+	value: string | number | boolean;
+	premium?: boolean;
+	description?: string;
+	emoji?: string;
+};
+export interface Setting {
 	id: string;
 	key: string;
 	value: string | number | boolean | object | Array<string | number | boolean>;
-	metadata?: SettingOptionMetadata;
+	metadata?: SettingMetadata;
 }
 
-export interface SettingOptionMetadata {
+export interface SettingMetadata {
 	name: string;
 	emoji: string;
 	description: string;
 	explanation?: string;
 	premium?: boolean;
 	type?: "boolean" | "input" | "choice" | "multi-choice";
-	options?: SettingChoice[];
+	options?: SettingOption[];
+	enabled?: boolean;
 }
 
 export type SettingsCategoryNames = "chat" | "image" | "plugins" | "premium" | "general" | "limits";
 export interface SettingCategory {
 	name: SettingsCategoryNames;
-	settings: SettingOption[];
+	settings: Setting[];
 	metadata?: SettingCategoryMetadata;
 }
 export interface SettingCategoryMetadata {
@@ -55,4 +52,5 @@ export interface SettingCategoryMetadata {
 	emoji: string;
 	description: string;
 	premium?: boolean;
+	enabled?: boolean;
 }

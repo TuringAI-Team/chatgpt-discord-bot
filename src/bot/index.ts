@@ -22,7 +22,7 @@ let routingKey = "gateway";
 if (config.bot.dev) {
 	logger.info("Running in dev mode");
 	routingKey += ":dev";
-	await oldSettingsMigrationBulk();
+	//await oldSettingsMigrationBulk();
 } else {
 	logger.info("Running in prod mode");
 }
@@ -51,19 +51,11 @@ bot.rest = createRestManager({
 
 export const gatewayConfig = await bot.rest.getGatewayBot();
 
-console.log("post gateway // pre commands");
-
-console.log("post commands // pre create commands");
-
 const applicationCommands: CreateApplicationCommand[] = cmds.map((cmd) => cmd.body);
 export const commands = new Map<string, Command>(cmds.map((cmd) => [cmd.body.name, cmd]));
 export const buttons = new Map<string, ButtonResponse>(Buttons.map((b) => [b.id, b]));
 
-console.log("post create commands // pre upsert");
-
 await bot.rest.upsertGlobalApplicationCommands(applicationCommands).catch((err) => logger.warn(err));
-
-console.log("post upsert");
 
 logger.info(`${commands.size} commands deployed`);
 
@@ -107,8 +99,6 @@ bot.transformers.desiredProperties.message.interaction.name = true;
 bot.transformers.desiredProperties.message.components = true;
 bot.transformers.desiredProperties.message.embeds = true;
 
-console.log("pre rabbitmq queue");
-
 connection.createConsumer(
 	{
 		queue: routingKey,
@@ -124,6 +114,6 @@ connection.createConsumer(
 	},
 );
 
-console.log("post rabbit mq queue // THE BOT SHOULD BE UP");
+logger.info("Bot started");
 
 process.on("unhandledRejection", (...args) => logger.warn(...args));

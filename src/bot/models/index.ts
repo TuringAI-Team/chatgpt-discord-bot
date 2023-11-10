@@ -1,8 +1,10 @@
 import EventEmitter from "node:events";
 import { Api } from "../api.js";
-import { GPT16K, GPT3_5, GPT4 } from "./openai.js";
+import { DALLE2, GPT16K, GPT3_5, GPT4 } from "./openai.js";
 import { Claude, Claude_instant } from "./text/anthropic.js";
 import openchat from "./text/openchat.js";
+import { sdxl, OpenJourneyDiffussion, Deliberate, majicMIXR } from "./stablehorde.js";
+import kandinsky from "./kandinsky.js";
 
 type Prettify<T> = {
 	[K in keyof T]: T[K];
@@ -26,7 +28,6 @@ export type ChatModel = Prettify<
 	}
 >;
 
-export type ImageModel = Pick<Model, "name" | "id">;
 export type GPTModel = Prettify<
 	ChatModel & {
 		run: (
@@ -62,12 +63,15 @@ export type OpenChatModel = Prettify<
 				messages: { role: string; content: string }[];
 				max_tokens?: number;
 				temperature?: number;
+				model?: string;
 			},
 		) => Promise<EventEmitter | NonNullable<unknown>>;
 	}
 >;
 
-export const CHAT_MODELS: Array<GPTModel | AnthropicModel | OpenChatModel> = [GPT4, GPT3_5, GPT16K, Claude, Claude_instant, openchat];
+export const CHAT_MODELS: (GPTModel | AnthropicModel | OpenChatModel)[] = [GPT4, GPT3_5, GPT16K, Claude, Claude_instant, openchat];
+export const IMAGE_MODELS: ImageModel[] = [sdxl, OpenJourneyDiffussion, Deliberate, majicMIXR, DALLE2, kandinsky];
+export type ImageModel = Pick<Model, "name" | "id">;
 
 export type ImageModelFixed = Prettify<
 	ImageModel & {
@@ -124,19 +128,6 @@ export type ImageModelNone = Prettify<
 	}
 >;
 
-export type ImageModelStableHorde<T extends Record<string, ImageModelBase | ImageModelFixed | ImageModelFromTo>> = Prettify<
-	ImageModel & {
-		fixedSize?: never;
-		baseSize?: never;
-		from?: never;
-		to?: never;
-		variableSizes?: never;
-		models: {
-			[K in keyof T]: Omit<T[K], "name">;
-		};
-	}
->;
-
 export type DALLEModel<T extends number> = Prettify<
 	ImageModelVariable<T> & {
 		run: (
@@ -168,6 +159,10 @@ export type KandinskyModel = Prettify<
 			},
 		) => EventEmitter | NonNullable<unknown>;
 	}
+>;
+
+export type GenericModel<T extends NonNullable<unknown>> = Prettify<
+	ImageModelFromTo & { run: (api: Api, data: T) => EventEmitter | unknown }
 >;
 
 export type ControlNetModel = Prettify<
@@ -208,40 +203,6 @@ export type ImageVisionModel = Prettify<
 			data: {
 				model: ("blip2" | "ocr")[];
 				image: string;
-			},
-		) => EventEmitter | NonNullable<unknown>;
-	}
->;
-
-export type StableHordeModel<T extends Record<string, ImageModelBase | ImageModelFixed | ImageModelFromTo>> = Prettify<
-	Omit<ImageModelStableHorde<T>, "id"> & {
-		run: (
-			api: Api,
-			data: {
-				prompt: string;
-				negative_prompt?: string;
-				image?: string;
-				width?: number;
-				height?: number;
-				steps?: number;
-				strength?: number;
-				sampler?:
-					| "k_lms"
-					| "k_heun"
-					| "k_euler"
-					| "k_euler_a"
-					| "k_dpm_2"
-					| "k_dpm_2_a"
-					| "DDIM"
-					| "k_dpm_fast"
-					| "k_dpm_adaptive"
-					| "k_dpmpp_2m"
-					| "k_dpmpp_2s_a"
-					| "k_dpmpp_sde";
-				cfg_scale?: number;
-				seed?: number;
-				model?: keyof T;
-				nsfw?: boolean;
 			},
 		) => EventEmitter | NonNullable<unknown>;
 	}

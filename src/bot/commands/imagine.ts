@@ -1,6 +1,7 @@
 import { ButtonStyles, MessageComponentTypes } from "@discordeno/bot";
 import config from "../../config.js";
 import { createCommand } from "../config/setup.js";
+import { IMAGE_MODELS } from "../models/index.js";
 
 export default createCommand({
 	body: {
@@ -15,24 +16,24 @@ export default createCommand({
 				max_length: 1000,
 				required: true,
 			},
-			{
+			/*{
 				type: "String",
 				name: "negative",
 				description: "What will the AI try not to add to the picture",
-			},
+			},*/
 			{
 				type: "String",
 				name: "model",
 				description: "The model that will be used for the image generation",
 				choices: [
 					["SDXL · Latest Stable Diffusion model", "sdxl"],
-					["Kandinsky · Multi-lingual latent diffusion model", "kandinsky"],
-					["Project Unreal Engine 5 · Model trained on Unreal Engine 5 renders", "pue5"],
-					["Dreamshaper · A mix of several Stable Diffusion models", "dreamshaper"],
-					["ICBINP · Model trained on highly-realistic images", "icbninp"],
-					["Anything Diffusion · Stable Diffusion-based model trained on Anime", "anything"],
+					/*		["Kandinsky · Multi-lingual latent diffusion model", "kandinsky"],
+							["Project Unreal Engine 5 · Model trained on Unreal Engine 5 renders", "pue5"],
+							["Dreamshaper · A mix of several Stable Diffusion models", "dreamshaper"],
+							["ICBINP · Model trained on highly-realistic images", "icbninp"],
+							["Anything Diffusion · Stable Diffusion-based model trained on Anime", "anything"],*/
 				],
-			},
+			} /*
 			{
 				type: "String",
 				name: "style",
@@ -89,7 +90,7 @@ export default createCommand({
 					["Yes, improve my prompt.", "enhanceyes"],
 					["No, don't improve my prompt.", "enhanceno"],
 				],
-			},
+			},*/,
 		],
 	},
 	cooldown: {
@@ -97,39 +98,19 @@ export default createCommand({
 		voter: 4 * 60 * 1000,
 		subscription: 1.5 * 60 * 1000,
 	},
-	interaction: async ({ interaction }) => {
-		await interaction.edit({
-			embeds: [
-				{
-					title: "The bot is under maintenance",
-					description: `The bot is currently under maintenance, please try again later. Join our support server for more information.\n\n**How can I help?**\n- Be patient.\n- You can donate to the project in order to be able to continue providing this service for free`,
-					color: config.brand.color,
-				},
-			],
-			components: [
-				{
-					type: MessageComponentTypes.ActionRow,
-					components: [
-						{
-							type: MessageComponentTypes.Button,
-							label: "Support Server",
-							url: `https://discord.gg/${config.brand.invite}`,
-							style: ButtonStyles.Link,
-						},
-						{
-							// KO-FI
-							type: MessageComponentTypes.Button,
-							label: "Donate to the project",
-							emoji: {
-								id: 1162684912206360627n,
-								name: "kofi",
-							},
-							url: "https://ko-fi.com/mrloldev",
-							style: ButtonStyles.Link,
-						},
-					],
-				},
-			],
-		});
+	interaction: async ({ interaction, options, env }) => {
+		const prompt = options.getString("prompt", true);
+		const negative = options.getString("negative");
+		let modelName = options.getString("model");
+		const style = options.getString("style");
+		const steps = options.getNumber("steps");
+		const guidance = options.getNumber("guidance");
+		const sampler = options.getString("sampler");
+		const seed = options.getNumber("seed");
+		const ratio = options.getString("ratio");
+		const enhance = options.getString("enhance");
+
+		modelName = modelName ?? "sdxl";
+		const model = IMAGE_MODELS.find((x) => x.id === modelName);
 	},
 });

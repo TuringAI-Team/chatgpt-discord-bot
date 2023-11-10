@@ -134,8 +134,8 @@ export async function env(userId: string, guildId?: string) {
 		id: userId,
 	});
 	if (!user) {
-		const settings = await getDefaultUserSettings(false)
-		let newUser: User = {
+		const settings = await getDefaultUserSettings(false);
+		const newUser: User = {
 			id: userId,
 			moderator: false,
 			interactions: {},
@@ -148,7 +148,7 @@ export async function env(userId: string, guildId?: string) {
 			metadata: {},
 			roles: [],
 			created: new Date(),
-		}
+		};
 		await insert("users", newUser, userId);
 		user = newUser;
 	}
