@@ -169,6 +169,7 @@ async function buildInfo(
 									name: model.emoji.name,
 									id: BigInt(model.emoji.id),
 								},
+								disabled: true,
 								style: ButtonStyles.Secondary,
 							},
 						],
