@@ -28,7 +28,9 @@ export async function checkCooldown(
     const premiumInfo = await premium(user);
 
     const cooldownEmbed = {
-      description: `This is a cooldown message. You can use this command again <t:${has}:R>. You can reduce/remove this cooldown by donating to the project. [Click here](https://turing.sh/pay)`,
+      description: `This is a cooldown message. You can use this command again in ${formatTime(
+        has
+      )}. You can reduce/remove this cooldown by donating to the project. [Click here](https://turing.sh/pay)`,
     };
 
     if (!premiumInfo) {
@@ -73,7 +75,16 @@ export async function getCooldown(userId: BigString, command: string) {
   }>(collection);
   if (!cooldown) return false;
   //  calculate the time left
-  return cooldown.expires;
+  const timeLeft = cooldown.expires - Date.now();
+  return timeLeft;
+}
+
+function formatTime(time: number) {
+  // format into "MM minutes and SS seconds."
+  const minutes = Math.floor(time / 60000);
+  const seconds = ((time % 60000) / 1000).toFixed(0);
+
+  return `${minutes} minutes and ${seconds} seconds`;
 }
 
 export async function setCooldown(
