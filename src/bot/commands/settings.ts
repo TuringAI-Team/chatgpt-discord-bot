@@ -15,7 +15,7 @@ import { premium } from "../utils/db.js";
 import { generatePremiumEmbed } from "../utils/premium.js";
 import { OptionResolver } from "../handlers/OptionResolver.js";
 import { Environment } from "../../types/other.js";
-import { Categories } from "../utils/settings.js";
+import { Categories, generateSections } from "../utils/settings.js";
 
 export default createCommand({
   body: {
@@ -80,20 +80,18 @@ async function buildInfo(
   interaction: Interaction
 ): Promise<CreateMessageOptions> {
   const subcommand = options.getSubCommand();
-  //const prem = await premium(env);
 
-  const buttons: ButtonComponent[] = Object.values(Categories).map((x) => ({
-    type: MessageComponentTypes.Button,
-    style: ButtonStyles.Primary,
-    emoji: { name: x.emoji },
-    label: x.name,
-    customId: "a",
-  }));
-
-  if (subcommand === "me") {
-  } else if (subcommand === "server") {
-  }
   return {
     content: "Settings are currently under development.",
-  };
+  }; /*
+	if (subcommand === "me") {
+		const section = await generateSections("chat", env);
+		if (section) {
+			await interaction.edit(section);
+		}
+	} else if (subcommand === "server") {
+	}
+	return {
+		content: "Settings are currently under development.",
+	};*/
 }

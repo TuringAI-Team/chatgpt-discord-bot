@@ -30,7 +30,7 @@ function key2data(key: string) {
 }
 
 export type EnabledSectionsTypes = "chat" | "image" | "premium" | string;
-export const EnabledSections: Array<EnabledSectionsTypes> = ["chat", "image", "premium"];
+export const EnabledSections: Array<EnabledSectionsTypes> = ["chat"];
 export async function generateSections(pageName: EnabledSectionsTypes, env: Environment): Promise<CreateMessageOptions | null> {
 	let message: null | CreateMessageOptions = null;
 	const user = env.user;

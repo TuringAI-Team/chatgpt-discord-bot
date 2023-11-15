@@ -1,4 +1,4 @@
-import { Audio, Image, Other, Text, Video } from "turing.sh";
+import { Audio, Image, Text, Video } from "turing.sh";
 import config from "../config.js";
 
 export type Api = {
@@ -6,7 +6,6 @@ export type Api = {
 	image: Image;
 	audio: Audio;
 	video: Video;
-	other: Other;
 };
 
 export default {
@@ -35,14 +34,6 @@ export default {
 		},
 	}),
 	video: new Video({
-		apiKey: config.api.key,
-		captchaKey: config.api.captchaKey,
-		options: {
-			host: config.api.host,
-			stream: true,
-		},
-	}),
-	other: new Other({
 		apiKey: config.api.key,
 		captchaKey: config.api.captchaKey,
 		options: {

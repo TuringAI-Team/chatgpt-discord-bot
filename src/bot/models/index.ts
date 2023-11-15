@@ -5,6 +5,7 @@ import { Claude, Claude_instant } from "./text/anthropic.js";
 import openchat from "./text/openchat.js";
 import { sdxl, OpenJourneyDiffussion, Deliberate, majicMIXR } from "./stablehorde.js";
 import kandinsky from "./kandinsky.js";
+import { Zephyr } from "./text/pawan.js";
 
 type Prettify<T> = {
 	[K in keyof T]: T[K];
@@ -68,8 +69,21 @@ export type OpenChatModel = Prettify<
 		) => Promise<EventEmitter | NonNullable<unknown>>;
 	}
 >;
+export type PawanChatModel = Prettify<
+	ChatModel & {
+		run: (
+			api: Api,
+			data: {
+				messages: { role: string; content: string }[];
+				max_tokens?: number;
+				temperature?: number;
+				model?: string;
+			},
+		) => Promise<EventEmitter | NonNullable<unknown>>;
+	}
+>;
 
-export const CHAT_MODELS: (GPTModel | AnthropicModel | OpenChatModel)[] = [GPT4, GPT3_5, GPT16K, Claude, Claude_instant, openchat];
+export const CHAT_MODELS: (GPTModel | AnthropicModel | OpenChatModel)[] = [GPT4, GPT3_5, GPT16K, Claude, Claude_instant, openchat, Zephyr];
 export const IMAGE_MODELS: ImageModel[] = [sdxl, OpenJourneyDiffussion, Deliberate, majicMIXR, DALLE2, kandinsky];
 export type ImageModel = Pick<Model, "name" | "id">;
 
