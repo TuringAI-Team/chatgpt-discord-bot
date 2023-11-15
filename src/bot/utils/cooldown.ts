@@ -41,7 +41,7 @@ export async function checkCooldown(
           components: [
             {
               type: MessageComponentTypes.Button,
-              label: "Click here",
+              label: campaign.button,
               customId: `campaign_${campaign.id}`,
               style: ButtonStyles.Secondary,
             },
