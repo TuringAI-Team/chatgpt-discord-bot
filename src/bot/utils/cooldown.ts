@@ -76,6 +76,10 @@ export async function getCooldown(userId: BigString, command: string) {
   if (!cooldown) return false;
   //  calculate the time left
   const timeLeft = cooldown.expires - Date.now();
+  if (timeLeft <= 0) {
+    await setCache(collection, null);
+    return false;
+  }
   return timeLeft;
 }
 
