@@ -98,88 +98,94 @@ async function buildInfo(
 	const history = conversation?.history ?? {
 		messages: [],
 	};
-	const event = await model.run(bot.api, {
-		max_tokens: 200,
-		messages: [
-			...history.messages,
-			{
-				role: "user",
-				content: prompt,
-			},
-		],
-	});
-	if (conversation) {
-		await addMessageToConversation(conversation, {
-			role: "user",
-			content: prompt,
+	try {
+		const event = await model.run(bot.api, {
+			max_tokens: 200,
+			messages: [
+				...history.messages,
+				{
+					role: "user",
+					content: prompt,
+				},
+			],
 		});
-	} else {
-		conversation = await newConversation(
-			{
+		if (conversation) {
+			await addMessageToConversation(conversation, {
 				role: "user",
 				content: prompt,
-			},
-			userId.toString(),
-			modelName,
-		);
-	}
-	if (!event || !(event instanceof EventEmitter)) {
+			});
+		} else {
+			conversation = await newConversation(
+				{
+					role: "user",
+					content: prompt,
+				},
+				userId.toString(),
+				modelName,
+			);
+		}
+		if (!event || !(event instanceof EventEmitter)) {
+			return await edit({
+				content: "An error occurred",
+			});
+		}
+		const loadingIndicator = LOADING_INDICATORS[Math.floor(Math.random() * 5)];
+		let lastUpdate = Date.now();
+		let done = false;
+		event.on("data", async (data) => {
+			if (data.result === "") return;
+			data.result = data.result.replaceAll("@everyone", "everyone").replaceAll("@here", "here");
+			// make a regex to replace all mentions of users or roles
+			data.result = data.result.replaceAll(/<&\d+>/g, "role").replaceAll(/<@\d+>/g, "user");
+			if (!data.done) {
+				if (lastUpdate + 1000 < Date.now() && !done) {
+					// if last update was more than 1 second ago
+					lastUpdate = Date.now();
+					await edit({
+						content: `${data.result}<${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${
+							loadingIndicator.emoji.id
+						}>`,
+					});
+				}
+			} else {
+				done = true;
+				if (conversation) {
+					await addMessageToConversation(conversation, {
+						role: "assistant",
+						content: data.result,
+					});
+				}
+				// if last update was less than 1 second ago, wait 1 second
+				if (lastUpdate + 1000 > Date.now()) await delay(1000);
+				await edit({
+					content: `${data.result}`,
+					components: [
+						{
+							type: MessageComponentTypes.ActionRow,
+							components: [
+								{
+									type: MessageComponentTypes.Button,
+									label: model.name,
+									customId: "settings_open",
+									disabled: true,
+									emoji: {
+										name: model.emoji.name,
+										id: BigInt(model.emoji.id),
+									},
+									style: ButtonStyles.Secondary,
+								},
+							],
+						},
+					],
+				});
+			}
+		});
+	} catch (e) {
+		console.log(e);
 		return await edit({
 			content: "An error occurred",
 		});
 	}
-	const loadingIndicator = LOADING_INDICATORS[Math.floor(Math.random() * 5)];
-	let lastUpdate = Date.now();
-	let done = false;
-	event.on("data", async (data) => {
-		if (data.result === "") return;
-		data.result = data.result.replaceAll("@everyone", "everyone").replaceAll("@here", "here");
-		// make a regex to replace all mentions of users or roles
-		data.result = data.result.replaceAll(/<&\d+>/g, "role").replaceAll(/<@\d+>/g, "user");
-		if (!data.done) {
-			if (lastUpdate + 1000 < Date.now() && !done) {
-				// if last update was more than 1 second ago
-				lastUpdate = Date.now();
-				await edit({
-					content: `${data.result}<${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${
-						loadingIndicator.emoji.id
-					}>`,
-				});
-			}
-		} else {
-			done = true;
-			if (conversation) {
-				await addMessageToConversation(conversation, {
-					role: "assistant",
-					content: data.result,
-				});
-			}
-			// if last update was less than 1 second ago, wait 1 second
-			if (lastUpdate + 1000 > Date.now()) await delay(1000);
-			await edit({
-				content: `${data.result}`,
-				components: [
-					{
-						type: MessageComponentTypes.ActionRow,
-						components: [
-							{
-								type: MessageComponentTypes.Button,
-								label: model.name,
-								customId: "settings_open",
-								disabled: true,
-								emoji: {
-									name: model.emoji.name,
-									id: BigInt(model.emoji.id),
-								},
-								style: ButtonStyles.Secondary,
-							},
-						],
-					},
-				],
-			});
-		}
-	});
-
 	/*return {
 		embeds: [
 			{
