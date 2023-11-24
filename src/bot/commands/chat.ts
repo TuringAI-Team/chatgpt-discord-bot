@@ -146,6 +146,7 @@ async function buildInfo(
       content: "An error occurred",
     });
   }
+  console.log(event, history.messages.length);
   const loadingIndicator = LOADING_INDICATORS[Math.floor(Math.random() * 5)];
   let lastUpdate = Date.now();
   let done = false;

@@ -133,12 +133,11 @@ export async function get(params: GetParams | GetParams<string>) {
     const collectionKey = getCollectionKey(params.collection, params.id);
     const existing = await getCache(collectionKey);
     if (existing) return existing;
-    const { data: result, error } = await db
+    const { data: result } = await db
       .from(collection)
       .select("*")
       .eq("id", params.id)
       .single();
-    console.log(error);
     if (!result) return null;
     await setCache(collectionKey, result);
     return result;
