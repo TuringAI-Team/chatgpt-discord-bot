@@ -105,7 +105,7 @@ async function buildInfo(
   //const envrionment = await env(userId.toString(), guildId?.toString());
 
   const prompt: string = options?.getString("prompt") ?? "";
-  const modelName = "openchat";
+  const modelName = "zephyr";
   const model = CHAT_MODELS.find((x) => x.id === modelName);
   if (!model) {
     return await edit({
@@ -150,7 +150,6 @@ async function buildInfo(
   let lastUpdate = Date.now();
   let done = false;
   event.on("data", async (data) => {
-    console.log(data);
     if (data.result === "") return;
     data.result = data.result
       .replaceAll("@everyone", "everyone")
