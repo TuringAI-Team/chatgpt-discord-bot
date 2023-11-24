@@ -105,7 +105,7 @@ async function buildInfo(
   //const envrionment = await env(userId.toString(), guildId?.toString());
 
   const prompt: string = options?.getString("prompt") ?? "";
-  const modelName = "zephyr";
+  const modelName = "openchat";
   const model = CHAT_MODELS.find((x) => x.id === modelName);
   if (!model) {
     return await edit({
