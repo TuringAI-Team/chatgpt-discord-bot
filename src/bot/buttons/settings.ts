@@ -9,6 +9,7 @@ export const settings: ButtonResponse = {
 	isPrivate: false,
 	run: async (interaction, data) => {
 		const environment = await env(interaction.user.id.toString(), interaction.guildId?.toString());
+		console.log(data);
 		switch (data.action) {
 			case "open": {
 				const page = EnabledSections[0];
@@ -23,6 +24,12 @@ export const settings: ButtonResponse = {
 				break;
 			}
 			case "update":
+				const id = data.value;
+				console.log(interaction.data);
+				const newValue = interaction.data;
+				await interaction.edit({
+					content: "Updated",
+				});
 				break;
 			default:
 				await interaction.edit({

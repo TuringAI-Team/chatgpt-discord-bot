@@ -31,6 +31,8 @@ export const interactionCreate: EventHandlers["interactionCreate"] = async (inte
 			switch (interaction.data.componentType) {
 				case MessageComponentTypes.Button:
 					handleButton(interaction as MakeRequired<Interaction, "data">);
+				case MessageComponentTypes.SelectMenu:
+					handleButton(interaction as MakeRequired<Interaction, "data">);
 			}
 	}
 };

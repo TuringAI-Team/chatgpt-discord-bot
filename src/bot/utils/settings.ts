@@ -45,52 +45,55 @@ export async function generateSections(pageName: EnabledSectionsTypes, env: Envi
 		}
 	}
 	const settingsWithMetadata = await getSettingsMetadata(settings);
-	console.log(settingsWithMetadata);
 	if (!settingsWithMetadata) return null;
 	const sectionSettings = settingsWithMetadata.find((category) => category.name === pageName);
 	let settingsComponents =
 		sectionSettings?.settings.map((setting) => {
-			if (setting.metadata) {
+			if (setting.metadata && setting.metadata.enabled) {
 				if (setting.metadata.options) {
-					return {
-						type: MessageComponentTypes.SelectMenu,
-						customId: setting.id,
-						options: setting.metadata.options.map((option) => ({
-							label: option.name,
+					const options = setting.metadata.options.map((option) => {
+						let res2: any = {
+							label: `${option.name}`,
 							value: option.value.toString(),
 							default: option.value === setting.value,
 							description: option.description,
-							emoji:
-								option.emoji &&
-								({
-									name: option.emoji,
-								} as string | { name: string; id: string }),
-						})),
+						};
+
+						if (option.emoji && option.emoji.includes(":")) {
+							res2.emoji = {
+								name: option.emoji.split("<")[1].split(":")[0],
+								id: option.emoji.split("<")[1].split(":")[1].split(">")[0],
+							};
+						} else if (option.emoji) {
+							res2.label = `${option.emoji} ${option.name}`;
+						}
+
+						return res2;
+					});
+					const res = {
+						type: MessageComponentTypes.SelectMenu,
+						customId: `settings_update_${setting.id}`,
+						options: options,
 						placeholder: `${setting.metadata.emoji} ${setting.metadata.name}`,
 						disabled: !setting.metadata.enabled,
-					} as SelectMenuComponent;
+					};
+					return res as SelectMenuComponent;
 				} else if (setting.metadata.type === "boolean") {
 					return {
 						type: MessageComponentTypes.SelectMenu,
-						customId: setting.id,
+						customId: `settings_update_${setting.id}`,
 						options: [
 							{
-								label: "Enabled",
+								label: "✅ Enable",
 								value: "true",
 								default: setting.value === true,
 								description: "Enable this setting",
-								emoji: {
-									name: "✅",
-								},
 							},
 							{
-								label: "Disabled",
+								label: "❌ Disabled",
 								value: "false",
 								default: setting.value === false,
 								description: "Disable this setting",
-								emoji: {
-									name: "❌",
-								},
 							},
 						],
 						disabled: !setting.metadata.enabled,
@@ -139,7 +142,28 @@ export async function generateSections(pageName: EnabledSectionsTypes, env: Envi
 	return message;
 }
 
-function getDefaultValues(settingId: string) {}
+function getDefaultValues(settingId: string) {
+	switch (settingId) {
+		case "general:language":
+			return "en";
+		case "general:loadingIndicator":
+			return 3; // default loading indicator
+		case "chat:model":
+			return "claude-instant";
+		case "chat:tone":
+			return "neutral";
+		case "chat:partialMessages":
+			return true;
+		case "image:model":
+			return "sdxl";
+		case "image:style":
+			return "default";
+		case "premium:typePriority":
+			return "plan";
+		case "premium:locationPriority":
+			return "guild";
+	}
+}
 
 export function getMetadata(settingId: string, type: "setting" | "category"): SettingMetadata;
 export function getMetadata(settingId: keyof typeof Categories, type: "setting" | "category"): SettingCategoryMetadata;
@@ -313,7 +337,9 @@ async function getSettingsMetadata(settings: SettingCategory[]) {
 		const SettingsWithMetadata: Setting[] = [];
 		for (const setting of category.settings) {
 			const settingMetadata = getMetadata(setting.id, "setting") as SettingMetadata;
-			if (!settingMetadata.options) return;
+			if (!settingMetadata.options && settingMetadata.type !== "boolean") {
+				continue;
+			}
 			const newOption: Setting = {
 				...setting,
 				metadata: settingMetadata,
@@ -328,7 +354,6 @@ async function getSettingsMetadata(settings: SettingCategory[]) {
 		};
 		UserSettingsWithMetadata.push(newCategory);
 	}
-	console.log(UserSettingsWithMetadata);
 	return UserSettingsWithMetadata;
 }
 
@@ -449,9 +474,12 @@ export async function oldSettingsMigration(oldSettings: {
 	for (const setting of oldSettingsArray) {
 		const categoryofSetting = setting[0].split(":")[0];
 		const settingName = setting[0].split(":")[1];
-		const settingValue = setting[1];
+		let settingValue = setting[1];
 		const newCategory = newSettings.find((category) => category.name === categoryofSetting);
 		if (!newCategory) continue;
+		if (settingName === "model" && settingValue === "chatgpt") settingValue = "default";
+		if (settingName == "count" && settingValue == 4) settingValue = "default";
+		if (settingName == "tone" && settingValue == "neutral") settingValue = "default";
 		newCategory.settings.push({
 			id: setting[0],
 			key: settingName,
