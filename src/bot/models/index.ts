@@ -1,11 +1,12 @@
 import EventEmitter from "node:events";
 import { Api } from "../api.js";
-import { DALLE2, GPT16K, GPT3_5, GPT4 } from "./openai.js";
+import { DALLE3, GPT16K, GPT3_5, GPT4 } from "./openai.js";
 import { Claude, Claude_instant } from "./text/anthropic.js";
 import openchat from "./text/openchat.js";
 import { sdxl, OpenJourneyDiffussion, Deliberate, majicMIXR } from "./stablehorde.js";
 import kandinsky from "./kandinsky.js";
 import { Zephyr } from "./text/pawan.js";
+import fastSdxl from "./fast-sdxl.js";
 
 type Prettify<T> = {
 	[K in keyof T]: T[K];
@@ -83,8 +84,23 @@ export type PawanChatModel = Prettify<
 	}
 >;
 
-export const CHAT_MODELS: (GPTModel | AnthropicModel | OpenChatModel)[] = [GPT4, GPT3_5, GPT16K, Claude, Claude_instant, openchat, Zephyr];
-export const IMAGE_MODELS: ImageModel[] = [sdxl, OpenJourneyDiffussion, Deliberate, majicMIXR, DALLE2, kandinsky];
+export const CHAT_MODELS: (GPTModel | AnthropicModel | OpenChatModel)[] = [
+	/*GPT4, GPT3_5, GPT16K,*/ Claude,
+	Claude_instant,
+	openchat,
+	Zephyr,
+];
+export type GenericParam = Parameters<Api["image"]["sh"]>[0];
+
+export const IMAGE_MODELS: (GenericModel<GenericParam> | DALLEModel<2>)[] = [
+	sdxl,
+	OpenJourneyDiffussion,
+	Deliberate,
+	majicMIXR,
+	DALLE3,
+	kandinsky,
+	fastSdxl,
+];
 export type ImageModel = Pick<Model, "name" | "id">;
 
 export type ImageModelFixed = Prettify<

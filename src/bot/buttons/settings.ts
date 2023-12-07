@@ -1,7 +1,7 @@
 import { ButtonComponent, ButtonStyles, MessageComponentTypes } from "@discordeno/bot";
 import { ButtonResponse } from "../types/command.js";
 import { EnabledSections, generateSections } from "../utils/settings.js";
-import { env } from "../utils/db.js";
+import { env, premium } from "../utils/db.js";
 
 export const settings: ButtonResponse = {
 	id: "settings",
@@ -9,7 +9,7 @@ export const settings: ButtonResponse = {
 	isPrivate: false,
 	run: async (interaction, data) => {
 		const environment = await env(interaction.user.id.toString(), interaction.guildId?.toString());
-		console.log(data);
+		const prem = await premium(environment);
 		switch (data.action) {
 			case "open": {
 				const page = EnabledSections[0];

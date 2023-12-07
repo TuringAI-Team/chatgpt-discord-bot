@@ -22,6 +22,10 @@ export interface CommandContext {
 	interaction: MakeRequired<Interaction, "data">;
 	options: OptionResolver;
 	env: Environment;
+	premium: {
+		type: "plan" | "subscription";
+		location: "user" | "guild";
+	} | null;
 }
 
 export interface MessageContext extends Omit<CommandContext, "interaction" | "options"> {

@@ -46,6 +46,7 @@ export async function handleCommand(interaction: MakeRequired<Interaction, "data
 
 	const environment = await env(interaction.user.id.toString(), interaction.guildId?.toString());
 	if (!environment) return;
+	const prem = await premium(environment);
 
 	await interaction.defer(cmd.isPrivate ?? false);
 
@@ -53,7 +54,7 @@ export async function handleCommand(interaction: MakeRequired<Interaction, "data
 
 	const options = new OptionResolver(interaction.data.options ?? [], interaction.data.resolved!);
 
-	await cmd.interaction({ interaction, options, env: environment }).catch((err) => errorCallback(interaction, err));
+	await cmd.interaction({ interaction, options, env: environment, premium: prem }).catch((err) => errorCallback(interaction, err));
 }
 
 export async function handleButton(interaction: MakeRequired<Interaction, "data">) {

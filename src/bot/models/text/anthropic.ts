@@ -20,10 +20,11 @@ const Claude = {
 	description: "AI model developed by Anthropic v2",
 	emoji: { name: "anthropic", id: "1097849339432423454" },
 	maxTokens: 8192,
+	premium: true,
 	run: (api, data) => {
 		return api.text.anthropic({
 			...data,
-			model: "claude-2",
+			model: "claude-2.1",
 		});
 	},
 } satisfies AnthropicModel;

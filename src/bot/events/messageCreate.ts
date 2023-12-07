@@ -33,10 +33,11 @@ export const messageCreate = async (message: Message, bot: Bot) => {
 	const environment = await env(message.author.id.toString(), message.guildId?.toString());
 	if (!environment) return;
 	await bot.helpers.triggerTypingIndicator(message.channelId);
+	const prem = await premium(environment);
 
 	if (!(await manageCooldown(bot, message, environment, command))) return;
 
-	await command.message({ bot, message, args, env: environment }).catch((err) => {
+	await command.message({ bot, message, args, env: environment, premium: prem }).catch((err) => {
 		bot.logger.error(`There was an error trying to execute the command ${command.body.name}`);
 		bot.logger.error("A detailed walkthrough is provided below.");
 		bot.logger.error(err);

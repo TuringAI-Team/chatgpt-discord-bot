@@ -43,9 +43,9 @@ const GPT4 = {
 	},
 } satisfies GPTModel;
 
-const DALLE2 = {
-	id: "dalle2",
-	name: "DALL-E 2",
+const DALLE3 = {
+	id: "dalle3",
+	name: "DALL-E 3",
 	variableSizes: {
 		0: {
 			width: 256,
@@ -63,4 +63,4 @@ const DALLE2 = {
 	run: (api, data) => api.image.dall(data),
 } satisfies DALLEModel<2>;
 
-export { GPT3_5, GPT16K, GPT4, DALLE2 };
+export { GPT3_5, GPT16K, GPT4, DALLE3 };

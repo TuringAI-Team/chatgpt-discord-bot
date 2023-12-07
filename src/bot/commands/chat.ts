@@ -39,14 +39,14 @@ export default createCommand({
 		voter: 2 * 60 * 1000,
 		subscription: 60 * 1000,
 	},
-	interaction: async ({ interaction, options, env }) => {
+	interaction: async ({ interaction, options, env, premium }) => {
 		const edit = async (message: CreateMessageOptions) =>
 			await interaction
 				.edit(message)
 				.catch((...args) => ["chat interaction", interaction, ...args].forEach((x) => interaction.bot.logger.warn(x)));
-		await buildInfo(interaction.bot, interaction.user.id, edit, interaction.guildId, options);
+		await buildInfo(interaction.bot, interaction.user.id, edit, interaction.guildId, options, premium);
 	},
-	message: async ({ message, bot, args, env }) => {
+	message: async ({ message, bot, args, env, premium }) => {
 		const parser = {
 			getString: () => args.join(" "),
 		} as unknown as OptionResolver;
@@ -73,7 +73,7 @@ export default createCommand({
 				});
 			}
 		};
-		await buildInfo(bot, message.author.id, edit, message.guildId, parser);
+		await buildInfo(bot, message.author.id, edit, message.guildId, parser, premium);
 	},
 });
 
@@ -83,6 +83,10 @@ async function buildInfo(
 	edit: (message: CreateMessageOptions) => void,
 	guildId?: BigString,
 	options?: OptionResolver,
+	premium?: {
+		type: "plan" | "subscription";
+		location: "user" | "guild";
+	} | null,
 ): Promise<void> {
 	//const envrionment = await env(userId.toString(), guildId?.toString());
 
@@ -100,7 +104,7 @@ async function buildInfo(
 	};
 	try {
 		const event = await model.run(bot.api, {
-			max_tokens: 200,
+			max_tokens: premium ? 300 : 200,
 			messages: [
 				...history.messages,
 				{
@@ -186,37 +190,4 @@ async function buildInfo(
 			content: "An error occurred",
 		});
 	}
-	/*return {
-		embeds: [
-			{
-				title: "The bot is under maintenance",
-				description: `The bot is currently under maintenance, please try again later. Join our support server for more information.\n\n**How can I help?**\n- Be patient.\n- You can donate to the project in order to be able to continue providing this service for free`,
-				color: config.brand.color,
-			},
-		],
-		components: [
-			{
-				type: MessageComponentTypes.ActionRow,
-				components: [
-					{
-						type: MessageComponentTypes.Button,
-						label: "Support Server",
-						url: `https://discord.gg/${config.brand.invite}`,
-						style: ButtonStyles.Link,
-					},
-					{
-						// KO-FI
-						type: MessageComponentTypes.Button,
-						label: "Donate to the project",
-						emoji: {
-							id: 1162684912206360627n,
-							name: "kofi",
-						},
-						url: "https://ko-fi.com/mrloldev",
-						style: ButtonStyles.Link,
-					},
-				],
-			},
-		],
-	};*/
 }

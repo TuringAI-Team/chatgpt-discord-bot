@@ -48,9 +48,11 @@
     "@swc/core": "^1.3.85",
     "axios": "^1.5.0",
     "bun-types": "^1.0.2",
+    "canvas": "^2.11.2",
     "express": "^4.18.2",
     "rabbitmq-client": "^4.3.0",
     "redis": "^4.6.8",
-    "turing.sh": "0.0.8"
+    "sharp": "^0.33.0",
+    "turing.sh": "^0.0.9"
   }
 }

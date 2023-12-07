@@ -15,7 +15,7 @@ const sdxl: GenericModel<GenericParam> = {
 		height: 1024,
 	},
 	run(api, data) {
-		api.image.sh(data);
+		return api.image.sh(data);
 	},
 };
 
@@ -31,7 +31,7 @@ const OpenJourneyDiffussion: GenericModel<GenericParam> = {
 		height: 1024,
 	},
 	run(api, data) {
-		api.image.sh(data);
+		return api.image.sh(data);
 	},
 };
 
@@ -47,7 +47,7 @@ const Deliberate: GenericModel<GenericParam> = {
 		height: 1024,
 	},
 	run(api, data) {
-		api.image.sh(data);
+		return api.image.sh(data);
 	},
 };
 
@@ -63,7 +63,7 @@ const majicMIXR: GenericModel<GenericParam> = {
 		height: 1024,
 	},
 	run(api, data) {
-		api.image.sh(data);
+		return api.image.sh(data);
 	},
 };
 
