@@ -15,10 +15,6 @@ import {
 } from "@discordeno/bot";
 import { ButtonStyles, DiscordButtonComponent } from "@discordeno/bot";
 
-export async function getPremiumInfo(env: Environment) {
-	const premiumInfo = await premium(env);
-}
-
 const buttons: Array<DiscordButtonComponent> = [
 	{
 		type: MessageComponentTypes.Button,

@@ -19,6 +19,7 @@ import { LOADING_INDICATORS } from "../../types/models/users.js";
 import { CHAT_MODELS } from "../models/index.js";
 import EventEmitter from "events";
 import { addMessageToConversation, getConversation, newConversation } from "../utils/conversations.js";
+import { getDefaultValues, getSettingsValue } from "../utils/settings.js";
 
 export default createCommand({
 	body: {
@@ -44,7 +45,7 @@ export default createCommand({
 			await interaction
 				.edit(message)
 				.catch((...args) => ["chat interaction", interaction, ...args].forEach((x) => interaction.bot.logger.warn(x)));
-		await buildInfo(interaction.bot, interaction.user.id, edit, interaction.guildId, options, premium);
+		await buildInfo(interaction.bot, interaction.user.id, edit, env, interaction.guildId, options, premium);
 	},
 	message: async ({ message, bot, args, env, premium }) => {
 		const parser = {
@@ -73,7 +74,7 @@ export default createCommand({
 				});
 			}
 		};
-		await buildInfo(bot, message.author.id, edit, message.guildId, parser, premium);
+		await buildInfo(bot, message.author.id, edit, env, message.guildId, parser, premium);
 	},
 });
 
@@ -81,6 +82,7 @@ async function buildInfo(
 	bot: Bot,
 	userId: bigint,
 	edit: (message: CreateMessageOptions) => void,
+	env: Environment,
 	guildId?: BigString,
 	options?: OptionResolver,
 	premium?: {
@@ -91,13 +93,19 @@ async function buildInfo(
 	//const envrionment = await env(userId.toString(), guildId?.toString());
 
 	const prompt: string = options?.getString("prompt") ?? "";
-	const modelName = "zephyr";
+	const user = env.user;
+	let setting = (await getSettingsValue(user, "chat:model")) as string;
+	if (!setting) {
+		setting = (await getDefaultValues("chat:model")) as string;
+	}
+	const modelName = setting;
 	const model = CHAT_MODELS.find((x) => x.id === modelName);
 	if (!model) {
 		return await edit({
 			content: "Model not found",
 		});
 	}
+
 	let conversation = await getConversation(userId.toString(), modelName);
 	const history = conversation?.history ?? {
 		messages: [],
@@ -171,7 +179,7 @@ async function buildInfo(
 									type: MessageComponentTypes.Button,
 									label: model.name,
 									customId: "settings_open",
-									disabled: true,
+									disabled: false,
 									emoji: {
 										name: model.emoji.name,
 										id: BigInt(model.emoji.id),

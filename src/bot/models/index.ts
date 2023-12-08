@@ -85,7 +85,7 @@ export type PawanChatModel = Prettify<
 >;
 
 export const CHAT_MODELS: (GPTModel | AnthropicModel | OpenChatModel)[] = [
-	/*GPT4, GPT3_5, GPT16K,*/ Claude,
+	/*GPT4, GPT3_5, GPT16K, Claude,*/
 	Claude_instant,
 	openchat,
 	Zephyr,
@@ -94,11 +94,11 @@ export type GenericParam = Parameters<Api["image"]["sh"]>[0];
 
 export const IMAGE_MODELS: (GenericModel<GenericParam> | DALLEModel<2>)[] = [
 	sdxl,
-	OpenJourneyDiffussion,
-	Deliberate,
-	majicMIXR,
-	DALLE3,
-	kandinsky,
+	//OpenJourneyDiffussion,
+	//Deliberate,
+	//majicMIXR,
+	//DALLE3,
+	//kandinsky,
 	fastSdxl,
 ];
 export type ImageModel = Pick<Model, "name" | "id">;

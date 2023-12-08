@@ -10,9 +10,10 @@ import {
 } from "@discordeno/bot";
 import { CollectionNames } from "../../types/collections.js";
 import { Command, CommandCooldown } from "../types/index.js";
-import { env, getCache, getCollectionKey, premium, setCache } from "./db.js";
+import { env, get, getCache, getCollectionKey, premium, setCache, update } from "./db.js";
 import { generateCampaignEmbed } from "./campaigns.js";
 import config from "../../config.js";
+import { Campaign } from "../../types/models/campaigns.js";
 
 export async function checkCooldown(
 	userId: BigString,
@@ -49,6 +50,21 @@ export async function checkCooldown(
 				});
 				embeds.push(campaign.embed);
 				embeds.push(cooldownEmbed);
+
+				const campaignInfo = (await get({
+					collection: "campaigns",
+					id: campaign.id,
+				})) as Campaign;
+				await update("campaigns", campaign.id, {
+					stats: {
+						clicks: campaignInfo?.stats.clicks,
+						views: {
+							geo: campaignInfo.stats.views.geo,
+							total: campaignInfo.stats.views.total + 1,
+						},
+					},
+				});
+
 				return {
 					embeds,
 					components,

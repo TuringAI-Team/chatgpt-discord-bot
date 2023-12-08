@@ -9,7 +9,7 @@ import {
 	SettingOption,
 	SettingsCategoryNames,
 } from "../../types/settings.js";
-import { CHAT_MODELS, ChatModel } from "../models/index.js";
+import { CHAT_MODELS, ChatModel, IMAGE_MODELS } from "../models/index.js";
 import { STYLES } from "../models/styles/index.js";
 import { TONES } from "../models/tones/index.js";
 import { supabase, update } from "./db.js";
@@ -30,7 +30,7 @@ function key2data(key: string) {
 }
 
 export type EnabledSectionsTypes = "chat" | "image" | "premium" | string;
-export const EnabledSections: Array<EnabledSectionsTypes> = ["chat"];
+export const EnabledSections: Array<EnabledSectionsTypes> = ["chat", "image"];
 export async function generateSections(pageName: EnabledSectionsTypes, env: Environment): Promise<CreateMessageOptions | null> {
 	let message: null | CreateMessageOptions = null;
 	const user = env.user;
@@ -113,6 +113,7 @@ export async function generateSections(pageName: EnabledSectionsTypes, env: Envi
 			});
 		}
 	}
+	const filteredSettings = settingsWithMetadata.filter((category) => EnabledSections.includes(category.name));
 	message = {
 		content: "",
 		components: [
@@ -123,7 +124,7 @@ export async function generateSections(pageName: EnabledSectionsTypes, env: Envi
 					{
 						type: MessageComponentTypes.SelectMenu,
 						customId: "settings_open",
-						options: settingsWithMetadata.map((category) => ({
+						options: filteredSettings.map((category) => ({
 							label: category.metadata?.name || category.name,
 							value: category.metadata?.name || category.name.toLowerCase(),
 							default: category.metadata?.name === sectionSettings?.metadata?.name,
@@ -142,7 +143,7 @@ export async function generateSections(pageName: EnabledSectionsTypes, env: Envi
 	return message;
 }
 
-function getDefaultValues(settingId: string) {
+export function getDefaultValues(settingId: string) {
 	switch (settingId) {
 		case "general:language":
 			return "en";
@@ -155,7 +156,7 @@ function getDefaultValues(settingId: string) {
 		case "chat:partialMessages":
 			return true;
 		case "image:model":
-			return "sdxl";
+			return "fast_sdxl";
 		case "image:style":
 			return "default";
 		case "premium:typePriority":
@@ -230,7 +231,11 @@ export function getMetadata(
 					name: "Model",
 					emoji: "🤖",
 					description: "Which AI model to use for image generation",
-					options: [],
+					options: IMAGE_MODELS.map((m) => ({
+						name: m.name,
+						value: m.id,
+					})),
+					enabled: true,
 				};
 			case "image:style":
 				return {
@@ -541,7 +546,10 @@ export async function getSettingsValue(entry: Guild | User, key: string): Promis
 	const category = entry.settings_new.find((category) => category.name === collection);
 	if (!category) return false;
 
-	const option = category.settings.find((option: { id: string }) => option.id === id);
+	const option = category.settings.find((option: { key: string }) => option.key === id);
 	if (!option) return false;
+	if (option.value == "default") {
+		return getDefaultValues(key) as string | number | boolean | object;
+	}
 	return option.value;
 }

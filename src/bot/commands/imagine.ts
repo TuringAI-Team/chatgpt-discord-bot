@@ -5,42 +5,43 @@ import { IMAGE_MODELS } from "../models/index.js";
 import EventEmitter from "events";
 import { LOADING_INDICATORS } from "../../types/models/users.js";
 import { mergeImages } from "../utils/image-merge.js";
+import { getDefaultValues, getSettingsValue } from "../utils/settings.js";
 
 export default createCommand({
-  body: {
-    name: "imagine",
-    description: "Generate beautiful images with AI",
-    type: "ChatInput",
-    options: [
-      {
-        type: "String",
-        name: "prompt",
-        description: "The prompt that will be used for the image generation",
-        max_length: 1000,
-        required: true,
-      },
-      /*{
+	body: {
+		name: "imagine",
+		description: "Generate beautiful images with AI",
+		type: "ChatInput",
+		options: [
+			{
+				type: "String",
+				name: "prompt",
+				description: "The prompt that will be used for the image generation",
+				max_length: 1000,
+				required: true,
+			},
+			/*{
 				type: "String",
 				name: "negative",
 				description: "What will the AI try not to add to the picture",
 			},*/
-      {
-        type: "String",
-        name: "model",
-        description: "The model that will be used for the image generation",
-        choices: [
-          //			["SDXL Turbo · Latest Stable Diffusion model", "sdxlturbo"],
-          ["SDXL · Latest Stable Diffusion model", "sdxl"],
-          ["Fast SDXL - faster version of SDXL", "fast_sdxl"],
+			{
+				type: "String",
+				name: "model",
+				description: "The model that will be used for the image generation",
+				choices: [
+					//			["SDXL Turbo · Latest Stable Diffusion model", "sdxlturbo"],
+					["SDXL · Latest Stable Diffusion model", "sdxl"],
+					["Fast SDXL - faster version of SDXL", "fast_sdxl"],
 
-          //        ["DALL-E 3 · Latest DALL-E model", "dalle3"],
-          /*		["Kandinsky · Multi-lingual latent diffusion model", "kandinsky"],
+					//        ["DALL-E 3 · Latest DALL-E model", "dalle3"],
+					/*		["Kandinsky · Multi-lingual latent diffusion model", "kandinsky"],
 							["Project Unreal Engine 5 · Model trained on Unreal Engine 5 renders", "pue5"],
 							["Dreamshaper · A mix of several Stable Diffusion models", "dreamshaper"],
 							["ICBINP · Model trained on highly-realistic images", "icbninp"],
 							["Anything Diffusion · Stable Diffusion-based model trained on Anime", "anything"],*/
-        ],
-      } /*
+				],
+			} /*
 			{
 				type: "String",
 				name: "style",
@@ -98,120 +99,134 @@ export default createCommand({
 					["No, don't improve my prompt.", "enhanceno"],
 				],
 			},*/,
-    ],
-  },
-  cooldown: {
-    user: 1.5 * 60 * 1000,
-    voter: 1 * 60 * 1000,
-    subscription: 1 * 60 * 1000,
-  },
-  interaction: async ({ interaction, options, env, premium }) => {
-    const prompt = options.getString("prompt", true);
-    const negative = options.getString("negative");
-    let modelName = options.getString("model");
-    const style = options.getString("style");
-    const steps = options.getNumber("steps");
-    const guidance = options.getNumber("guidance");
-    const sampler = options.getString("sampler");
-    const seed = options.getNumber("seed");
-    const ratio = options.getString("ratio");
-    const enhance = options.getString("enhance");
+		],
+	},
+	cooldown: {
+		user: 1.5 * 60 * 1000,
+		voter: 1 * 60 * 1000,
+		subscription: 1 * 60 * 1000,
+	},
+	interaction: async ({ interaction, options, env, premium }) => {
+		const prompt = options.getString("prompt", true);
+		const negative = options.getString("negative");
+		let modelName = options.getString("model");
+		const style = options.getString("style");
+		const steps = options.getNumber("steps");
+		const guidance = options.getNumber("guidance");
+		const sampler = options.getString("sampler");
+		const seed = options.getNumber("seed");
+		const ratio = options.getString("ratio");
+		const enhance = options.getString("enhance");
 
-    modelName = modelName ?? "fast_sdxl";
-    const model = IMAGE_MODELS.find((x) => x.id === modelName);
-    if (!model) {
-      await interaction.edit({
-        content: "The model you specified does not exist.",
-      });
-      return;
-    }
-    let number: 1 | 2 = 1;
-    if (premium) {
-      number = 2;
-    }
-    let data: any = {
-      prompt,
-      number,
-      width: 1024,
-      height: 1024,
-    };
-    if (modelName == "sdxl") {
-      data["model"] = "SDXL 1.0";
-    }
-    if (modelName == "fast_sdxl") {
-      data["model_version"] = "lcm";
-    }
-    const event = await model.run(interaction.bot.api, data);
-    if (!event || !(event instanceof EventEmitter)) {
-      await interaction.edit({
-        content: "An error occurred",
-      });
-      return;
-    }
-    const loadingIndicator = LOADING_INDICATORS[Math.floor(Math.random() * 5)];
-    event.on("data", async (data) => {
-      if (data.status == "queued") {
-        await interaction.edit({
-          embeds: [
-            {
-              color: config.brand.color,
-              title: `Waiting in queue <${
-                loadingIndicator.emoji.animated ? "a" : ""
-              }:${loadingIndicator.emoji.name}:${loadingIndicator.emoji.id}>`,
-            },
-          ],
-        });
-      }
-      if (data.status == "generating") {
-        await interaction.edit({
-          embeds: [
-            {
-              color: config.brand.color,
-              title: `Generating <${
-                loadingIndicator.emoji.animated ? "a" : ""
-              }:${loadingIndicator.emoji.name}:${loadingIndicator.emoji.id}>`,
-            },
-          ],
-        });
-      }
-      if (data.status == "done") {
-        // data.results with is a json that has base64 images
+		if (!modelName) {
+			const user = env.user;
+			let setting = (await getSettingsValue(user, "image:model")) as string;
+			if (!setting) {
+				setting = (await getDefaultValues("image:model")) as string;
+			}
+			modelName = setting;
+		}
+		const model = IMAGE_MODELS.find((x) => x.id === modelName);
+		if (!model) {
+			await interaction.edit({
+				content: "The model you specified does not exist.",
+			});
+			return;
+		}
+		let number: 1 | 2 = 1;
+		if (premium) {
+			number = 2;
+		}
+		const data: {
+			prompt: string;
+			number: 1 | 2;
+			width: number;
+			height: number;
+			model?: string;
+			model_version?: string;
+		} = {
+			prompt,
+			number,
+			width: 1024,
+			height: 1024,
+		};
+		if (modelName === "sdxl") {
+			data.model = "SDXL 1.0";
+		}
+		if (modelName === "fast_sdxl") {
+			data.model_version = "lcm";
+		}
+		const event = await model.run(interaction.bot.api, data);
+		if (!event || !(event instanceof EventEmitter)) {
+			await interaction.edit({
+				content: "An error occurred",
+			});
+			return;
+		}
+		const loadingIndicator = LOADING_INDICATORS[Math.floor(Math.random() * 5)];
+		event.on("data", async (data) => {
+			if (data.status === "queued") {
+				await interaction.edit({
+					embeds: [
+						{
+							color: config.brand.color,
+							title: `Waiting in queue <${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${
+								loadingIndicator.emoji.id
+							}>`,
+						},
+					],
+				});
+			}
+			if (data.status === "generating") {
+				await interaction.edit({
+					embeds: [
+						{
+							color: config.brand.color,
+							title: `Generating <${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${
+								loadingIndicator.emoji.id
+							}>`,
+						},
+					],
+				});
+			}
+			if (data.status === "done") {
+				// data.results with is a json that has base64 images
 
-        let finalImage = data.results[0].base64;
-        var imgs = data.results.map((result: any) => {
-          const sfbuff = Buffer.from(result.base64, "base64");
-          return sfbuff;
-        });
+				let finalImage = data.results[0].base64;
+				const imgs = data.results.map((result: { base64: string }) => {
+					const sfbuff = Buffer.from(result.base64, "base64");
+					return sfbuff;
+				});
 
-        if (data.results.length > 1) {
-          finalImage = await mergeImages(imgs, 1024 / 2, 1024 / 2);
-          finalImage = finalImage.split("base64,")[1];
-        }
+				if (data.results.length > 1) {
+					finalImage = await mergeImages(imgs, 1024 / 2, 1024 / 2);
+					finalImage = finalImage.split("base64,")[1];
+				}
 
-        // from base64 to blob
-        const buff = Buffer.from(finalImage, "base64");
-        const blob = new Blob([buff], { type: "image/png" });
+				// from base64 to blob
+				const buff = Buffer.from(finalImage, "base64");
+				const blob = new Blob([buff], { type: "image/png" });
 
-        await interaction.edit({
-          embeds: [
-            {
-              color: config.brand.color,
-              title: `Done!`,
-              description: `${prompt}`,
-              image: {
-                //is a base64
-                url: `attachment://image.png`,
-              },
-            },
-          ],
-          files: [
-            {
-              name: "image.png",
-              blob: blob,
-            },
-          ],
-        });
-      }
-    });
-  },
+				await interaction.edit({
+					embeds: [
+						{
+							color: config.brand.color,
+							title: "Done!",
+							description: `${prompt}`,
+							image: {
+								//is a base64
+								url: "attachment://image.png",
+							},
+						},
+					],
+					files: [
+						{
+							name: "image.png",
+							blob: blob,
+						},
+					],
+				});
+			}
+		});
+	},
 });

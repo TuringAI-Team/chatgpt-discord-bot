@@ -63,8 +63,11 @@ export async function handleButton(interaction: MakeRequired<Interaction, "data"
 	if (!button) {
 		return logger.error("ButtonResponse not found (why this button was sent...)");
 	}
-
-	await deferInteraction(interaction.bot, interaction.id, interaction.token, button.deferType, button.isPrivate);
+	let deferType = button.deferType;
+	if (button.id === "settings" && interaction.data.values?.length) {
+		deferType = InteractionResponseTypes.DeferredUpdateMessage;
+	}
+	await deferInteraction(interaction.bot, interaction.id, interaction.token, deferType, button.isPrivate);
 	interaction.acknowledged = true;
 	const args = name.reduce((prev, acc, i) => {
 		prev[button.args[i]] = acc;
@@ -121,7 +124,7 @@ export async function deferInteraction(
 	const data: Partial<InteractionResponse["data"]> = {};
 	if (isPrivate) data.flags = MessageFlags.Ephemeral;
 	return await bot.rest.sendInteractionResponse(id, token, {
-		type: InteractionResponseTypes.DeferredChannelMessageWithSource,
+		type: type,
 		data: {
 			flags: isPrivate ? 64 : undefined,
 		},
