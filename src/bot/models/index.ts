@@ -20,6 +20,7 @@ export type Model = {
 	id: string;
 	name: string;
 	description: string;
+	premium?: boolean;
 };
 
 export type ChatModel = Prettify<
@@ -85,7 +86,7 @@ export type PawanChatModel = Prettify<
 >;
 
 export const CHAT_MODELS: (GPTModel | AnthropicModel | OpenChatModel)[] = [
-	/*GPT4, GPT3_5, GPT16K, Claude,*/
+	/*GPT4, GPT3_5, GPT16K, */ Claude,
 	Claude_instant,
 	openchat,
 	Zephyr,
@@ -101,7 +102,7 @@ export const IMAGE_MODELS: (GenericModel<GenericParam> | DALLEModel<2>)[] = [
 	//kandinsky,
 	fastSdxl,
 ];
-export type ImageModel = Pick<Model, "name" | "id">;
+export type ImageModel = Pick<Model, "name" | "id" | "premium">;
 
 export type ImageModelFixed = Prettify<
 	ImageModel & {

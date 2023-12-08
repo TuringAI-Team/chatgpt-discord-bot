@@ -23,6 +23,28 @@ const buttons: Array<DiscordButtonComponent> = [
 		style: ButtonStyles.Link,
 	},
 ];
+export const requiredPremium = {
+	embeds: [
+		{
+			title: "This is a premium feature",
+			description: "You can get premium by donating to the project. [Click here](https://app.turing.sh/pay)",
+			color: config.brand.color,
+		},
+	],
+	components: [
+		{
+			type: MessageComponentTypes.ActionRow,
+			components: [
+				{
+					type: MessageComponentTypes.Button,
+					label: "💸 Visit our shop",
+					style: ButtonStyles.Link,
+					url: "https://app.turing.sh/pay",
+				},
+			] as [ButtonComponent],
+		},
+	],
+};
 
 export async function generatePremiumEmbed(premiumInfo: {
 	environment: Environment;

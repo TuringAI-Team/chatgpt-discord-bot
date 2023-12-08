@@ -53,8 +53,8 @@ export async function generateSections(pageName: EnabledSectionsTypes, env: Envi
 				if (setting.metadata.options) {
 					const options = setting.metadata.options.map((option) => {
 						let res2: any = {
-							label: `${option.name}`,
-							value: option.value.toString(),
+							label: `${option.name}${option.premium ? " ✨ (Premium)" : ""}`,
+							value: `${option.value.toString()}${option.premium ? "_premium" : ""}`,
 							default: option.value === setting.value,
 							description: option.description,
 						};
@@ -205,6 +205,7 @@ export function getMetadata(
 						name: m.name,
 						emoji: `<${m.emoji.name}:${m.emoji.id}>`,
 						value: m.id,
+						premium: m.premium,
 					})),
 					enabled: true,
 				};

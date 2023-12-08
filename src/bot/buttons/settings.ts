@@ -1,9 +1,11 @@
-import { ButtonComponent, ButtonStyles, InteractionResponseTypes, MessageComponentTypes } from "@discordeno/bot";
+import { ButtonComponent, ButtonStyles, CreateMessageOptions, InteractionResponseTypes, MessageComponentTypes } from "@discordeno/bot";
 import { ButtonResponse } from "../types/command.js";
 import { EnabledSections, EnabledSectionsTypes, generateSections, oldSettingsMigration } from "../utils/settings.js";
 import { env, premium, update } from "../utils/db.js";
 import { SettingsCategoryNames } from "../../types/settings.js";
 import { Environment } from "../../types/other.js";
+import config from "../../config.js";
+import { requiredPremium } from "../utils/premium.js";
 
 export const settings: ButtonResponse = {
 	id: "settings",
@@ -32,8 +34,18 @@ export const settings: ButtonResponse = {
 			}
 			case "update":
 				const id = data.value;
+				const prem = await premium(environment);
 				const categoryId = id.split(":")[0] as SettingsCategoryNames;
-				const newValue = interaction.data.values?.[0];
+				let newValue = interaction.data.values?.[0];
+				const isPremium = newValue?.includes("_premium");
+				if (isPremium) {
+					newValue = newValue?.replace("_premium", "");
+				}
+				if (!prem && isPremium) {
+					await interaction.edit(requiredPremium as CreateMessageOptions);
+					return;
+				}
+
 				const user = environment.user;
 				let settings = user.settings_new;
 				if (!settings || settings.length === 0) {

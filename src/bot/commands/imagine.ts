@@ -1,4 +1,4 @@
-import { ButtonStyles, MessageComponentTypes } from "@discordeno/bot";
+import { ButtonStyles, CreateMessageOptions, MessageComponentTypes } from "@discordeno/bot";
 import config from "../../config.js";
 import { createCommand } from "../config/setup.js";
 import { IMAGE_MODELS } from "../models/index.js";
@@ -6,6 +6,7 @@ import EventEmitter from "events";
 import { LOADING_INDICATORS } from "../../types/models/users.js";
 import { mergeImages } from "../utils/image-merge.js";
 import { getDefaultValues, getSettingsValue } from "../utils/settings.js";
+import { requiredPremium } from "../utils/premium.js";
 
 export default createCommand({
 	body: {
@@ -131,6 +132,10 @@ export default createCommand({
 			await interaction.edit({
 				content: "The model you specified does not exist.",
 			});
+			return;
+		}
+		if (model.premium && !premium) {
+			await interaction.edit(requiredPremium as CreateMessageOptions);
 			return;
 		}
 		let number: 1 | 2 = 1;

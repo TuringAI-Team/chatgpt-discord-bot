@@ -20,6 +20,7 @@ import { CHAT_MODELS } from "../models/index.js";
 import EventEmitter from "events";
 import { addMessageToConversation, getConversation, newConversation } from "../utils/conversations.js";
 import { getDefaultValues, getSettingsValue } from "../utils/settings.js";
+import { requiredPremium } from "../utils/premium.js";
 
 export default createCommand({
 	body: {
@@ -104,6 +105,9 @@ async function buildInfo(
 		return await edit({
 			content: "Model not found",
 		});
+	}
+	if (model.premium && !premium) {
+		return await edit(requiredPremium as CreateMessageOptions);
 	}
 
 	let conversation = await getConversation(userId.toString(), modelName);

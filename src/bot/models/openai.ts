@@ -46,6 +46,7 @@ const GPT4 = {
 const DALLE3 = {
 	id: "dalle3",
 	name: "DALL-E 3",
+	premium: true,
 	variableSizes: {
 		0: {
 			width: 256,
