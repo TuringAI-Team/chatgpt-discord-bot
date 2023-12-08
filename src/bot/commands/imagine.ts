@@ -6,7 +6,7 @@ import EventEmitter from "events";
 import { LOADING_INDICATORS } from "../../types/models/users.js";
 import { mergeImages } from "../utils/image-merge.js";
 import { getDefaultValues, getSettingsValue } from "../utils/settings.js";
-import { requiredPremium } from "../utils/premium.js";
+import { chargePlan, requiredPremium } from "../utils/premium.js";
 
 export default createCommand({
 	body: {
@@ -175,9 +175,8 @@ export default createCommand({
 					embeds: [
 						{
 							color: config.brand.color,
-							title: `Waiting in queue <${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${
-								loadingIndicator.emoji.id
-							}>`,
+							title: `Waiting in queue <${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${loadingIndicator.emoji.id
+								}>`,
 						},
 					],
 				});
@@ -187,9 +186,8 @@ export default createCommand({
 					embeds: [
 						{
 							color: config.brand.color,
-							title: `Generating <${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${
-								loadingIndicator.emoji.id
-							}>`,
+							title: `Generating <${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${loadingIndicator.emoji.id
+								}>`,
 						},
 					],
 				});
@@ -212,6 +210,7 @@ export default createCommand({
 				const buff = Buffer.from(finalImage, "base64");
 				const blob = new Blob([buff], { type: "image/png" });
 
+				await chargePlan(data.cost, env, "image", modelName);
 				await interaction.edit({
 					embeds: [
 						{

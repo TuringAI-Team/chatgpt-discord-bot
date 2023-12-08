@@ -20,7 +20,7 @@ import { CHAT_MODELS } from "../models/index.js";
 import EventEmitter from "events";
 import { addMessageToConversation, getConversation, newConversation } from "../utils/conversations.js";
 import { getDefaultValues, getSettingsValue } from "../utils/settings.js";
-import { requiredPremium } from "../utils/premium.js";
+import { chargePlan, requiredPremium } from "../utils/premium.js";
 
 export default createCommand({
 	body: {
@@ -158,9 +158,8 @@ async function buildInfo(
 					// if last update was more than 1 second ago
 					lastUpdate = Date.now();
 					await edit({
-						content: `${data.result}<${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${
-							loadingIndicator.emoji.id
-						}>`,
+						content: `${data.result}<${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${loadingIndicator.emoji.id
+							}>`,
 					});
 				}
 			} else {
@@ -173,6 +172,8 @@ async function buildInfo(
 				}
 				// if last update was less than 1 second ago, wait 1 second
 				if (lastUpdate + 1000 > Date.now()) await delay(1000);
+				await chargePlan(data.cost, env, "image", modelName);
+
 				await edit({
 					content: `${data.result}`,
 					components: [
