@@ -116,7 +116,7 @@ async function buildInfo(
 	};
 	try {
 		const event = await model.run(bot.api, {
-			max_tokens: premium ? 300 : 200,
+			max_tokens: premium ? 500 : 300,
 			messages: [
 				...history.messages,
 				{
