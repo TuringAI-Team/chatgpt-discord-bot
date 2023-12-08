@@ -2,8 +2,8 @@ import { AnthropicModel } from "../index.js";
 
 const Claude_instant = {
 	id: "claude-instant",
-	name: "Claude",
-	description: "AI model developed by Anthropic v1",
+	name: "Claude Instant",
+	description: "AI model developed by Anthropic v1.2",
 	emoji: { name: "anthropic", id: "1097849339432423454" },
 	maxTokens: 8192,
 	run: (api, data) => {
@@ -17,7 +17,7 @@ const Claude_instant = {
 const Claude = {
 	id: "claude",
 	name: "Claude 2",
-	description: "AI model developed by Anthropic v2",
+	description: "AI model developed by Anthropic v2.1",
 	emoji: { name: "anthropic", id: "1097849339432423454" },
 	maxTokens: 8192,
 	premium: true,

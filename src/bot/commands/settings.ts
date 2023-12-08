@@ -15,7 +15,7 @@ import { premium } from "../utils/db.js";
 import { generatePremiumEmbed } from "../utils/premium.js";
 import { OptionResolver } from "../handlers/OptionResolver.js";
 import { Environment } from "../../types/other.js";
-import { Categories, generateSections } from "../utils/settings.js";
+import { Categories, EnabledSections, EnabledSectionsTypes, generateSections } from "../utils/settings.js";
 
 export default createCommand({
 	body: {
@@ -37,57 +37,29 @@ export default createCommand({
 	cooldown: NoCooldown,
 	isPrivate: true,
 	interaction: async ({ interaction, options, env }) => {
-		await interaction.edit({
-			embeds: [
-				{
-					title: "The bot is under maintenance",
-					description:
-						"The bot is currently under maintenance, please try again later. Join our support server for more information.\n\n**How can I help?**\n- Be patient.\n- You can donate to the project in order to be able to continue providing this service for free",
-					color: config.brand.color,
-				},
-			],
-			components: [
-				{
-					type: MessageComponentTypes.ActionRow,
-					components: [
-						{
-							type: MessageComponentTypes.Button,
-							label: "Support Server",
-							url: `https://discord.gg/${config.brand.invite}`,
-							style: ButtonStyles.Link,
-						},
-						{
-							// KO-FI
-							type: MessageComponentTypes.Button,
-							label: "Donate to the project",
-							emoji: {
-								id: 1162684912206360627n,
-								name: "kofi",
-							},
-							url: "https://ko-fi.com/mrloldev",
-							style: ButtonStyles.Link,
-						},
-					],
-				},
-			],
-		});
+		await interaction.edit(await buildInfo(env, options, interaction));
 	},
 });
 
 async function buildInfo(env: Environment, options: OptionResolver, interaction: Interaction): Promise<CreateMessageOptions> {
 	const subcommand = options.getSubCommand();
 
-	return {
-		content: "Settings are currently under development.",
-	}; /*
 	if (subcommand === "me") {
-		const section = await generateSections("chat", env);
-		if (section) {
-			await interaction.edit(section);
+		let page = EnabledSections[0];
+		const newValue = options?.getString("page") ?? null;
+		if (newValue) {
+			page = newValue.toLowerCase() as EnabledSectionsTypes;
 		}
-	} else if (subcommand === "server") {
+		const section = await generateSections(page, env);
+		if (section) {
+			return section;
+		} else {
+			return {
+				content: "No section found",
+			};
+		}
 	}
 	return {
-		content: "Settings are currently under development.",
-	};*/
+		content: "This feature is not available yet",
+	};
 }
