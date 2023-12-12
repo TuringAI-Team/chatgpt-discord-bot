@@ -175,9 +175,8 @@ export default createCommand({
 					embeds: [
 						{
 							color: config.brand.color,
-							title: `Waiting in queue <${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${
-								loadingIndicator.emoji.id
-							}>`,
+							title: `Waiting in queue <${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${loadingIndicator.emoji.id
+								}>`,
 						},
 					],
 				});
@@ -187,9 +186,8 @@ export default createCommand({
 					embeds: [
 						{
 							color: config.brand.color,
-							title: `Generating <${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${
-								loadingIndicator.emoji.id
-							}>`,
+							title: `Generating <${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${loadingIndicator.emoji.id
+								}>`,
 						},
 					],
 				});
@@ -198,6 +196,18 @@ export default createCommand({
 				// data.results with is a json that has base64 images
 
 				let finalImage = data.results[0].base64;
+				if (!finalImage || finalImage.status === "filtered") {
+					await interaction.edit({
+						embeds: [
+							{
+								color: config.brand.color,
+								title: "Error",
+								description: "The image was censorred cause it violates our filter rules.",
+							},
+						],
+					})
+					return
+				}
 				const imgs = data.results.map((result: { base64: string }) => {
 					const sfbuff = Buffer.from(result.base64, "base64");
 					return sfbuff;

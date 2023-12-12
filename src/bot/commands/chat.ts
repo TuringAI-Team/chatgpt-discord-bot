@@ -158,8 +158,9 @@ async function buildInfo(
 					// if last update was more than 1 second ago
 					lastUpdate = Date.now();
 					await edit({
-						content: `${data.result}<${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${loadingIndicator.emoji.id
-							}>`,
+						content: `${data.result}<${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${
+							loadingIndicator.emoji.id
+						}>`,
 					});
 				}
 			} else {

@@ -22,6 +22,7 @@ import {
 	DiscordEmbedField,
 	ButtonStyles,
 	SelectMenuComponent,
+	SelectOption,
 } from "@discordeno/bot";
 
 function key2data(key: string) {
@@ -49,20 +50,20 @@ export async function generateSections(pageName: EnabledSectionsTypes, env: Envi
 	const sectionSettings = settingsWithMetadata.find((category) => category.name === pageName);
 	let settingsComponents =
 		sectionSettings?.settings.map((setting) => {
-			if (setting.metadata && setting.metadata.enabled) {
+			if (setting.metadata?.enabled) {
 				if (setting.metadata.options) {
 					const options = setting.metadata.options.map((option) => {
-						let res2: any = {
+						const res2: SelectOption = {
 							label: `${option.name}${option.premium ? " ✨ (Premium)" : ""}`,
 							value: `${option.value.toString()}${option.premium ? "_premium" : ""}`,
 							default: option.value === setting.value,
 							description: option.description,
 						};
 
-						if (option.emoji && option.emoji.includes(":")) {
+						if (option.emoji?.includes(":")) {
 							res2.emoji = {
 								name: option.emoji.split("<")[1].split(":")[0],
-								id: option.emoji.split("<")[1].split(":")[1].split(">")[0],
+								id: BigInt(option.emoji.split("<")[1].split(":")[1].split(">")[0]),
 							};
 						} else if (option.emoji) {
 							res2.label = `${option.emoji} ${option.name}`;
@@ -150,7 +151,7 @@ export function getDefaultValues(settingId: string) {
 		case "general:loadingIndicator":
 			return 3; // default loading indicator
 		case "chat:model":
-			return "claude-instant";
+			return "openchat";
 		case "chat:tone":
 			return "neutral";
 		case "chat:partialMessages":
@@ -484,8 +485,8 @@ export async function oldSettingsMigration(oldSettings: {
 		const newCategory = newSettings.find((category) => category.name === categoryofSetting);
 		if (!newCategory) continue;
 		if (settingName === "model" && settingValue === "chatgpt") settingValue = "default";
-		if (settingName == "count" && settingValue == 4) settingValue = "default";
-		if (settingName == "tone" && settingValue == "neutral") settingValue = "default";
+		if (settingName === "count" && settingValue === 4) settingValue = "default";
+		if (settingName === "tone" && settingValue === "neutral") settingValue = "default";
 		newCategory.settings.push({
 			id: setting[0],
 			key: settingName,
@@ -549,7 +550,7 @@ export async function getSettingsValue(entry: Guild | User, key: string): Promis
 
 	const option = category.settings.find((option: { key: string }) => option.key === id);
 	if (!option) return false;
-	if (option.value == "default") {
+	if (option.value === "default") {
 		return getDefaultValues(key) as string | number | boolean | object;
 	}
 	return option.value;
