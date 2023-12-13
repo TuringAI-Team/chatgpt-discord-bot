@@ -98,7 +98,6 @@ export function errorCallback(interaction: Interaction, err: NonNullable<unknown
 
 export async function manageCooldown(interaction: Interaction, environment: Environment, cmd: Command) {
 	const status = await checkStatus(environment);
-
 	if (status === "plan") return true;
 
 	const hasCooldown = await checkCooldown(interaction.user.id, cmd, status);

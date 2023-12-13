@@ -214,7 +214,6 @@ export async function premium(env: Environment): Promise<{
 		for (const location of locations) {
 			const entry = env[location];
 			if (!entry) continue;
-
 			if (checks[type](entry))
 				return {
 					location,

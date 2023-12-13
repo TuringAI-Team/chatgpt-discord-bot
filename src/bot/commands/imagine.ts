@@ -175,8 +175,9 @@ export default createCommand({
 					embeds: [
 						{
 							color: config.brand.color,
-							title: `Waiting in queue <${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${loadingIndicator.emoji.id
-								}>`,
+							title: `Waiting in queue <${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${
+								loadingIndicator.emoji.id
+							}>`,
 						},
 					],
 				});
@@ -186,8 +187,9 @@ export default createCommand({
 					embeds: [
 						{
 							color: config.brand.color,
-							title: `Generating <${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${loadingIndicator.emoji.id
-								}>`,
+							title: `Generating <${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${
+								loadingIndicator.emoji.id
+							}>`,
 						},
 					],
 				});
@@ -205,8 +207,8 @@ export default createCommand({
 								description: "The image was censorred cause it violates our filter rules.",
 							},
 						],
-					})
-					return
+					});
+					return;
 				}
 				const imgs = data.results.map((result: { base64: string }) => {
 					const sfbuff = Buffer.from(result.base64, "base64");

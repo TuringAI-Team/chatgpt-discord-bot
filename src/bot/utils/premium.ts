@@ -228,6 +228,7 @@ export async function chargePlan(cost: number, environment: Environment, type: "
 		await update("users", environment.user.id, {
 			plan: {
 				used: environment.user.plan.used + cost,
+				total: environment.user.plan.total,
 				history: [
 					...environment.user.plan.history,
 					{
@@ -246,6 +247,7 @@ export async function chargePlan(cost: number, environment: Environment, type: "
 		await update("guilds", environment.guild.id, {
 			plan: {
 				used: environment.guild.plan.used + cost,
+				total: environment.guild.plan.total,
 				history: [
 					...environment.guild.plan.history,
 					{
