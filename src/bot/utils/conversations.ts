@@ -8,6 +8,20 @@ export async function getConversation(userId: string, modelName: string) {
 		id: `${userId}-${modelName}`,
 	})) as Conversation;
 	if (!conversation) return null;
+	const numberOfUserMessages = conversation.history.messages.filter((x) => x.role === "user").length;
+	const numberOfBotMessages = conversation.history.messages.filter((x) => x.role !== "user").length;
+	// for each 2 messages, there would be 1 bot message
+	if (numberOfUserMessages > numberOfBotMessages * 2) {
+		const updatedConversation = {
+			history: {
+				datasetId: conversation.history.datasetId,
+				messages: [],
+			},
+			last_update: Date.now(),
+		};
+		await update("conversations", conversation.id, updatedConversation);
+		conversation.history.messages = [];
+	}
 	return conversation;
 }
 

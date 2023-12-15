@@ -31,7 +31,7 @@ function key2data(key: string) {
 }
 
 export type EnabledSectionsTypes = "chat" | "image" | "premium" | string;
-export const EnabledSections: Array<EnabledSectionsTypes> = ["chat", "image"];
+export const EnabledSections: Array<EnabledSectionsTypes> = ["chat", "image", "general"];
 export async function generateSections(pageName: EnabledSectionsTypes, env: Environment): Promise<CreateMessageOptions | null> {
 	let message: null | CreateMessageOptions = null;
 	const user = env.user;
@@ -185,6 +185,7 @@ export function getMetadata(
 						value: l.id,
 					})),
 					emoji: "🌐",
+					enabled: true,
 				};
 			case "general:loadingIndicator":
 				return {
@@ -196,6 +197,7 @@ export function getMetadata(
 						value: l.emoji?.id || "default",
 					})),
 					emoji: "🔄",
+					enabled: true,
 				};
 			case "chat:model":
 				return {

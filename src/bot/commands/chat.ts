@@ -154,7 +154,12 @@ async function buildInfo(
 				content: "An error occurred",
 			});
 		}
-		const loadingIndicator = LOADING_INDICATORS[Math.floor(Math.random() * 5)];
+		let loadingIndicatorId: string | boolean | number | object = await getSettingsValue(user, "general:loadingIndicator");
+		if (!loadingIndicatorId) {
+			loadingIndicatorId = (await getDefaultValues("general:loadingIndicator")) as string;
+		}
+		const loadingIndicator = LOADING_INDICATORS[loadingIndicatorId as number];
+
 		let lastUpdate = Date.now();
 		let done = false;
 		event.on("data", async (data) => {
