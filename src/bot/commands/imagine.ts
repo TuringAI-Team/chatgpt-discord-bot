@@ -104,7 +104,7 @@ export default createCommand({
 	},
 	cooldown: {
 		user: 1.5 * 60 * 1000,
-		voter: 1 * 60 * 1000,
+		voter: 1.25 * 60 * 1000,
 		subscription: 1 * 60 * 1000,
 	},
 	interaction: async ({ interaction, options, env, premium }) => {
@@ -175,9 +175,8 @@ export default createCommand({
 					embeds: [
 						{
 							color: config.brand.color,
-							title: `Waiting in queue <${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${
-								loadingIndicator.emoji.id
-							}>`,
+							title: `Waiting in queue <${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${loadingIndicator.emoji.id
+								}>`,
 						},
 					],
 				});
@@ -187,9 +186,8 @@ export default createCommand({
 					embeds: [
 						{
 							color: config.brand.color,
-							title: `Generating <${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${
-								loadingIndicator.emoji.id
-							}>`,
+							title: `Generating <${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${loadingIndicator.emoji.id
+								}>`,
 						},
 					],
 				});

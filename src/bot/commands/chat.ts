@@ -37,9 +37,9 @@ export default createCommand({
 		],
 	},
 	cooldown: {
-		user: 30 * 1000,
-		voter: 2 * 60 * 1000,
-		subscription: 60 * 1000,
+		user: 2 * 60 * 1000,
+		voter: 90 * 1000,
+		subscription: 45 * 1000,
 	},
 	interaction: async ({ interaction, options, env, premium }) => {
 		const edit = async (message: CreateMessageOptions) =>
@@ -158,9 +158,8 @@ async function buildInfo(
 					// if last update was more than 1 second ago
 					lastUpdate = Date.now();
 					await edit({
-						content: `${data.result}<${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${
-							loadingIndicator.emoji.id
-						}>`,
+						content: `${data.result}<${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${loadingIndicator.emoji.id
+							}>`,
 					});
 				}
 			} else {
