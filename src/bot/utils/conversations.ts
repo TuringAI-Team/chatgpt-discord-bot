@@ -11,6 +11,7 @@ export async function getConversation(userId: string, modelName: string) {
 	const numberOfUserMessages = conversation.history.messages.filter((x) => x.role === "user").length;
 	const numberOfBotMessages = conversation.history.messages.filter((x) => x.role !== "user").length;
 	// for each 2 messages, there would be 1 bot message
+	console.log(numberOfUserMessages, numberOfBotMessages, numberOfUserMessages > numberOfBotMessages * 2);
 	if (numberOfUserMessages > numberOfBotMessages * 2) {
 		const updatedConversation = {
 			history: {
