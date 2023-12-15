@@ -28,5 +28,8 @@ export default createCommand({
         subscription: 1 * 60 * 1000,
     },
     interaction: async ({ interaction, options, env, premium }) => {
+        await interaction.edit({
+            content: "This command is currently disabled."
+        })
     }
 })
