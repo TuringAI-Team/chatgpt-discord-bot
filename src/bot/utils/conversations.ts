@@ -1,17 +1,14 @@
+import { delay } from "@discordeno/utils";
 import { Conversation, ConversationHistory, ConversationMessage } from "../../types/models/conversations.js";
 import { get, insert, update } from "./db.js";
 
 export async function getConversation(userId: string, modelName: string) {
 	const conversation = (await get({
 		collection: "conversations",
-		filter: {
-			id: `${userId}-${modelName}`,
-			user: userId,
-			model: modelName,
-		},
-	})) as Conversation[];
-	if (conversation.length === 0) return null;
-	return conversation[0];
+		id: `${userId}-${modelName}`,
+	})) as Conversation;
+	if (!conversation) return null;
+	return conversation;
 }
 
 export async function addMessageToConversation(conversation: Conversation, message: ConversationMessage) {
@@ -32,21 +29,24 @@ export async function addMessageToConversation(conversation: Conversation, messa
 }
 
 export async function newConversation(message: ConversationMessage, userId: string, modelName: string) {
+	const newConversation = {
+		history: {
+			datasetId: "",
+			messages: [message],
+		},
+		last_update: Date.now(),
+		model: modelName,
+		user: userId,
+		id: `${userId}-${modelName}`,
+	} as Conversation;
 	await insert(
 		"conversations",
 		{
-			history: {
-				datasetId: "",
-				messages: [message],
-			},
-			last_update: Date.now(),
-			model: modelName,
-			user: userId,
+			...newConversation,
 		},
 		`${userId}-${modelName}`,
 	);
-	const conversation = await getConversation(userId, modelName);
-	return conversation;
+	return newConversation;
 }
 
 export async function resetConversation(userId: string, modelName: string) {

@@ -114,17 +114,26 @@ async function buildInfo(
 	const history = conversation?.history ?? {
 		messages: [],
 	};
+	const data: {
+		messages: { role: string; content: string }[];
+		max_tokens?: number;
+		temperature?: number;
+		model?: string;
+	} = {
+		max_tokens: premium ? 500 : 300,
+		messages: [
+			...history.messages,
+			{
+				role: "user",
+				content: prompt,
+			},
+		],
+	};
+	if (modelName === "gemini") {
+		data.model = "gemini-pro";
+	}
 	try {
-		const event = await model.run(bot.api, {
-			max_tokens: premium ? 500 : 300,
-			messages: [
-				...history.messages,
-				{
-					role: "user",
-					content: prompt,
-				},
-			],
-		});
+		const event = await model.run(bot.api, data);
 		if (conversation) {
 			await addMessageToConversation(conversation, {
 				role: "user",
@@ -158,8 +167,9 @@ async function buildInfo(
 					// if last update was more than 1 second ago
 					lastUpdate = Date.now();
 					await edit({
-						content: `${data.result}<${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${loadingIndicator.emoji.id
-							}>`,
+						content: `${data.result}<${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${
+							loadingIndicator.emoji.id
+						}>`,
 					});
 				}
 			} else {
@@ -172,7 +182,7 @@ async function buildInfo(
 				}
 				// if last update was less than 1 second ago, wait 1 second
 				if (lastUpdate + 1000 > Date.now()) await delay(1000);
-				await chargePlan(data.cost, env, "image", modelName);
+				await chargePlan(data.cost, env, "chat", modelName);
 
 				await edit({
 					content: `${data.result}`,

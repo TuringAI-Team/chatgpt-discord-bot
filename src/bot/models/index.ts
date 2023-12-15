@@ -7,6 +7,7 @@ import { sdxl, OpenJourneyDiffussion, Deliberate, majicMIXR } from "./stablehord
 import kandinsky from "./kandinsky.js";
 import { Zephyr } from "./text/pawan.js";
 import fastSdxl from "./fast-sdxl.js";
+import google from "./text/google.js";
 
 type Prettify<T> = {
 	[K in keyof T]: T[K];
@@ -28,6 +29,7 @@ export type ChatModel = Prettify<
 		emoji: { name: string; id: string };
 		maxTokens: 2048 | 4096 | 8192;
 		premium?: boolean;
+		model?: string;
 	}
 >;
 
@@ -90,6 +92,7 @@ export const CHAT_MODELS: (GPTModel | AnthropicModel | OpenChatModel)[] = [
 	Claude_instant,
 	openchat,
 	Zephyr,
+	google,
 ];
 export type GenericParam = Parameters<Api["image"]["sh"]>[0];
 

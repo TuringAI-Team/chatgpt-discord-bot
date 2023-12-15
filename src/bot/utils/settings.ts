@@ -151,7 +151,7 @@ export function getDefaultValues(settingId: string) {
 		case "general:loadingIndicator":
 			return 3; // default loading indicator
 		case "chat:model":
-			return "claude-instant";
+			return "gemini";
 		case "chat:tone":
 			return "neutral";
 		case "chat:partialMessages":

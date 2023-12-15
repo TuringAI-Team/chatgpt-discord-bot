@@ -3,6 +3,7 @@ import config from "../../config.js";
 import { NoCooldown, buttonInfo, createCommand } from "../config/setup.js";
 import { gatewayConfig } from "../index.js";
 import { resetConversation } from "../utils/conversations.js";
+import { getDefaultValues, getSettingsValue } from "../utils/settings.js";
 
 export default createCommand({
 	body: {
@@ -11,7 +12,7 @@ export default createCommand({
 	},
 	cooldown: NoCooldown,
 	isPrivate: true,
-	interaction: async ({ interaction }) => {
+	interaction: async ({ interaction, env }) => {
 		await interaction.edit({
 			embeds: [
 				{
@@ -21,7 +22,12 @@ export default createCommand({
 				},
 			],
 		});
-		await resetConversation(interaction.user.id.toString(), "openchat");
+		const user = env.user;
+		let setting = (await getSettingsValue(user, "chat:model")) as string;
+		if (!setting) {
+			setting = (await getDefaultValues("chat:model")) as string;
+		}
+		await resetConversation(interaction.user.id.toString(), setting);
 		await interaction.edit({
 			embeds: [
 				{
