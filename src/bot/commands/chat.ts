@@ -162,14 +162,30 @@ async function buildInfo(
 			data.result = data.result.replaceAll("@everyone", "everyone").replaceAll("@here", "here");
 			// make a regex to replace all mentions of users or roles
 			data.result = data.result.replaceAll(/<&\d+>/g, "role").replaceAll(/<@\d+>/g, "user");
+			const characters = data.result.split("");
+
 			if (!data.done) {
 				if (lastUpdate + 1000 < Date.now() && !done) {
 					// if last update was more than 1 second ago
 					lastUpdate = Date.now();
-					await edit({
-						content: `${data.result}<${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${loadingIndicator.emoji.id
-							}>`,
-					});
+					if (characters.length > 2000) {
+						await edit({
+							content: `<${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${loadingIndicator.emoji.id
+								}>`,
+							// send result as a file
+							files: [
+								{
+									name: "chat.txt",
+									blob: new Blob([data.result], { type: "text/plain" }),
+								},
+							],
+						});
+					} else {
+						await edit({
+							content: `${data.result}<${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${loadingIndicator.emoji.id
+								}>`,
+						});
+					}
 				}
 			} else {
 				done = true;
@@ -205,9 +221,28 @@ async function buildInfo(
 				// if last update was less than 1 second ago, wait 1 second
 				if (lastUpdate + 1000 > Date.now()) await delay(1000);
 				await chargePlan(data.cost, env, "chat", modelName);
-
-				await edit({
+				let contentR: {
+					content?: string;
+					files?: {
+						name: string;
+						blob: Blob;
+					}[];
+				} = {
 					content: `${data.result}`,
+				};
+				if (characters.length > 2000) {
+					contentR = {
+						content: "",
+						files: [
+							{
+								name: "chat.txt",
+								blob: new Blob([data.result], { type: "text/plain" }),
+							},
+						],
+					};
+				}
+				await edit({
+					...contentR,
 					components: [
 						{
 							type: MessageComponentTypes.ActionRow,

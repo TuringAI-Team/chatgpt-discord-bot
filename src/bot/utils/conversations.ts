@@ -64,16 +64,11 @@ export async function addMessagesToConversation(conversation: Conversation, mess
 	const updatedConversation = {
 		history: {
 			datasetId: conversation.history.datasetId,
-			messages: [
-				...conversation.history.messages,
-				...messages.map((x) => ({
-					role: x.role,
-					content: x.content,
-				})),
-			],
+			messages: [...conversation.history.messages, ...messages],
 		},
 		last_update: Date.now(),
 	};
+	console.log(updatedConversation);
 	await update("conversations", conversation.id, updatedConversation);
 }
 export async function newConversation(messages: ConversationMessage[], userId: string, modelName: string) {
