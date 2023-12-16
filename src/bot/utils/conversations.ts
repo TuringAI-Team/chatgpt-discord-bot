@@ -24,7 +24,7 @@ export async function getConversation(userId: string, modelName: string) {
 	}
 	// check if order is user, model, user, model, etc
 	// if not, reset conversation
-	let lastRole = "user";
+	let lastRole = "model";
 	for (const message of conversation.history.messages) {
 		if (message.role === lastRole) {
 			const updatedConversation = {
