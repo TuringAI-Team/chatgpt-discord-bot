@@ -41,12 +41,27 @@ export async function addMessageToConversation(conversation: Conversation, messa
 	};
 	await update("conversations", conversation.id, updatedConversation);
 }
-
-export async function newConversation(message: ConversationMessage, userId: string, modelName: string) {
+export async function addMessagesToConversation(conversation: Conversation, messages: ConversationMessage[]) {
+	const updatedConversation = {
+		history: {
+			datasetId: conversation.history.datasetId,
+			messages: [
+				...conversation.history.messages,
+				...messages.map((x) => ({
+					role: x.role,
+					content: x.content,
+				})),
+			],
+		},
+		last_update: Date.now(),
+	};
+	await update("conversations", conversation.id, updatedConversation);
+}
+export async function newConversation(messages: ConversationMessage[], userId: string, modelName: string) {
 	const newConversation = {
 		history: {
 			datasetId: "",
-			messages: [message],
+			messages: messages,
 		},
 		last_update: Date.now(),
 		model: modelName,

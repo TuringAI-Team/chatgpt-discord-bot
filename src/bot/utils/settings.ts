@@ -151,7 +151,7 @@ export function getDefaultValues(settingId: string) {
 		case "general:loadingIndicator":
 			return 3; // default loading indicator
 		case "chat:model":
-			return "claude-instant";
+			return "gemini";
 		case "chat:tone":
 			return "neutral";
 		case "chat:partialMessages":
@@ -191,10 +191,10 @@ export function getMetadata(
 				return {
 					name: "Loading Indicator",
 					description: "Which emoji to use throughout the bot to indicating loading",
-					options: LOADING_INDICATORS.map((l) => ({
+					options: LOADING_INDICATORS.map((l, i) => ({
 						name: l.name,
 						emoji: `<${l.emoji.name}:${l.emoji.id}>`,
-						value: l.emoji?.id || "default",
+						value: i || "default",
 					})),
 					emoji: "🔄",
 					enabled: true,

@@ -18,7 +18,7 @@ import { env } from "../utils/db.js";
 import { LOADING_INDICATORS } from "../../types/models/users.js";
 import { CHAT_MODELS } from "../models/index.js";
 import EventEmitter from "events";
-import { addMessageToConversation, getConversation, newConversation } from "../utils/conversations.js";
+import { addMessageToConversation, addMessagesToConversation, getConversation, newConversation } from "../utils/conversations.js";
 import { getDefaultValues, getSettingsValue } from "../utils/settings.js";
 import { chargePlan, requiredPremium } from "../utils/premium.js";
 
@@ -95,6 +95,20 @@ async function buildInfo(
 
 	const prompt: string = options?.getString("prompt") ?? "";
 	const user = env.user;
+
+	let loadingIndicatorIndex = (await getSettingsValue(user, "general:loadingIndicator")) as number | string;
+	if (
+		!loadingIndicatorIndex ||
+		loadingIndicatorIndex == "default" ||
+		(typeof loadingIndicatorIndex == "string" && parseInt(loadingIndicatorIndex) >= LOADING_INDICATORS.length)
+	) {
+		loadingIndicatorIndex = (await getDefaultValues("general:loadingIndicator")) as number;
+	}
+	const loadingIndicator = LOADING_INDICATORS[loadingIndicatorIndex as number];
+	await edit({
+		content: `<${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${loadingIndicator.emoji.id}>`,
+	});
+
 	let setting = (await getSettingsValue(user, "chat:model")) as string;
 	if (!setting) {
 		setting = (await getDefaultValues("chat:model")) as string;
@@ -134,28 +148,12 @@ async function buildInfo(
 	}
 	try {
 		const event = await model.run(bot.api, data);
-		if (conversation) {
-			await addMessageToConversation(conversation, {
-				role: "user",
-				content: prompt,
-			});
-		} else {
-			conversation = await newConversation(
-				{
-					role: "user",
-					content: prompt,
-				},
-				userId.toString(),
-				modelName,
-			);
-		}
+
 		if (!event || !(event instanceof EventEmitter)) {
 			return await edit({
 				content: "An error occurred",
 			});
 		}
-
-		const loadingIndicator = LOADING_INDICATORS[Math.floor(Math.random() * LOADING_INDICATORS.length)];
 
 		let lastUpdate = Date.now();
 		let done = false;
@@ -169,19 +167,41 @@ async function buildInfo(
 					// if last update was more than 1 second ago
 					lastUpdate = Date.now();
 					await edit({
-						content: `${data.result}<${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${
-							loadingIndicator.emoji.id
-						}>`,
+						content: `${data.result}<${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${loadingIndicator.emoji.id
+							}>`,
 					});
 				}
 			} else {
 				done = true;
 				if (conversation) {
-					await addMessageToConversation(conversation, {
-						role: "assistant",
-						content: data.result,
-					});
+					await addMessagesToConversation(conversation, [
+						{
+							role: "user",
+							content: prompt,
+						},
+						{
+							role: "assistant",
+							content: data.result,
+						},
+					]);
+				} else {
+					conversation = await newConversation(
+						[
+							{
+								role: "user",
+								content: prompt,
+							},
+							{
+								role: "assistant",
+								content: data.result,
+							},
+						],
+
+						userId.toString(),
+						modelName,
+					);
 				}
+
 				// if last update was less than 1 second ago, wait 1 second
 				if (lastUpdate + 1000 > Date.now()) await delay(1000);
 				await chargePlan(data.cost, env, "chat", modelName);
