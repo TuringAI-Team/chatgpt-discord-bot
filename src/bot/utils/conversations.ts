@@ -22,6 +22,25 @@ export async function getConversation(userId: string, modelName: string) {
 		await update("conversations", conversation.id, updatedConversation);
 		conversation.history.messages = [];
 	}
+	// check if order is user, model, user, model, etc
+	// if not, reset conversation
+	let lastRole = "user";
+	for (const message of conversation.history.messages) {
+		if (message.role === lastRole) {
+			const updatedConversation = {
+				history: {
+					datasetId: conversation.history.datasetId,
+					messages: [],
+				},
+				last_update: Date.now(),
+			};
+			await update("conversations", conversation.id, updatedConversation);
+			conversation.history.messages = [];
+			break;
+		}
+		lastRole = message.role;
+	}
+
 	return conversation;
 }
 
