@@ -99,8 +99,8 @@ async function buildInfo(
 	let loadingIndicatorIndex = (await getSettingsValue(user, "general:loadingIndicator")) as number | string;
 	if (
 		!loadingIndicatorIndex ||
-		loadingIndicatorIndex == "default" ||
-		(typeof loadingIndicatorIndex == "string" && parseInt(loadingIndicatorIndex) >= LOADING_INDICATORS.length)
+		loadingIndicatorIndex === "default" ||
+		(typeof loadingIndicatorIndex === "string" && parseInt(loadingIndicatorIndex) >= LOADING_INDICATORS.length)
 	) {
 		loadingIndicatorIndex = (await getDefaultValues("general:loadingIndicator")) as number;
 	}
@@ -170,8 +170,9 @@ async function buildInfo(
 					lastUpdate = Date.now();
 					if (characters.length > 2000) {
 						await edit({
-							content: `<${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${loadingIndicator.emoji.id
-								}>`,
+							content: `<${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${
+								loadingIndicator.emoji.id
+							}>`,
 							// send result as a file
 							files: [
 								{
@@ -182,8 +183,9 @@ async function buildInfo(
 						});
 					} else {
 						await edit({
-							content: `${data.result}<${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${loadingIndicator.emoji.id
-								}>`,
+							content: `${data.result}<${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${
+								loadingIndicator.emoji.id
+							}>`,
 						});
 					}
 				}

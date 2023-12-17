@@ -23,6 +23,7 @@ export default {
 		intents: Intents.DirectMessages | Intents.GuildMessages,
 		permissions: 0,
 		dev: true,
+		privateGuild: "",
 		status: [
 			{
 				since: null,

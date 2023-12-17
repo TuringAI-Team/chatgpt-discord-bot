@@ -15,8 +15,8 @@ import { commands as cmds } from "./commands/index.js";
 import { events } from "./events/index.js";
 import { handleGatewayMessage } from "./gateway.js";
 import type { ButtonResponse, Command } from "./types/index.js";
-import { connection, env, redis } from "./utils/db.js";
-import { oldSettingsMigration, oldSettingsMigrationBulk } from "./utils/settings.js";
+import { connection, redis } from "./utils/db.js";
+
 export const logger = createLogger({ name: "[BOT]" });
 let routingKey = "gateway";
 if (config.bot.dev) {
@@ -51,11 +51,14 @@ bot.rest = createRestManager({
 
 export const gatewayConfig = await bot.rest.getGatewayBot();
 
-const applicationCommands: CreateApplicationCommand[] = cmds.map((cmd) => cmd.body);
+const privateCommands: CreateApplicationCommand[] = cmds.filter((cmd) => cmd.pr).map((cmd) => cmd.body);
+const applicationCommands: CreateApplicationCommand[] = cmds.filter((cmd) => !cmd.pr).map((cmd) => cmd.body);
 export const commands = new Map<string, Command>(cmds.map((cmd) => [cmd.body.name, cmd]));
 export const buttons = new Map<string, ButtonResponse>(Buttons.map((b) => [b.id, b]));
 
 await bot.rest.upsertGlobalApplicationCommands(applicationCommands).catch((err) => logger.warn(err));
+
+await bot.rest.upsertGuildApplicationCommands(config.bot.privateGuild, privateCommands);
 
 logger.info(`${commands.size} commands deployed`);
 

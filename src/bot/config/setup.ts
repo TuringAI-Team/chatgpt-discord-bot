@@ -17,7 +17,11 @@ export interface CreateCommand extends Omit<Command, "body"> {
 
 export function createCommand({ body, ...base }: CreateCommand): Command {
 	const { options, ...info } = body;
-	const payload: Command = { ...base, body: { ...info, type: ApplicationCommandTypes[body.type!] ?? ApplicationCommandTypes.ChatInput } };
+	const payload: Command = {
+		...base,
+		body: { ...info, type: ApplicationCommandTypes[body.type!] ?? ApplicationCommandTypes.ChatInput },
+		pr: !!base.pr,
+	};
 	if (options) payload.body.options = optionsTranformer(options);
 	return payload;
 }

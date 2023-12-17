@@ -16,6 +16,7 @@ export interface Command {
 	body: CreateSlashApplicationCommand;
 	cooldown: CommandCooldown;
 	isPrivate?: boolean;
+	pr?: boolean;
 }
 
 export interface CommandContext {
