@@ -71,7 +71,7 @@ export async function generatePremiumEmbed(premiumInfo: {
 				if (expensesFields.length >= 10) break;
 				expensesFields.push({
 					name: `${expense.type.slice(0, 1).toUpperCase()}${expense.type.slice(1)} - using \`${expense.data.model
-						}\` - $${expense.used.toFixed(5)}`,
+						}\` - $${expense.used?.toFixed(5) ?? "0"}`,
 					value: `<t:${Math.floor(expense.time / 1000)}:R>`,
 				});
 			}
@@ -80,7 +80,7 @@ export async function generatePremiumEmbed(premiumInfo: {
 				if (expensesFields.length >= 10) break;
 				expensesFields.push({
 					name: `${expense.type.slice(0, 1).toUpperCase()}${expense.type.slice(1)} - using \`${expense.data.model
-						}\` - $${expense.used.toFixed(5)}`,
+						}\` - $${expense.used?.toFixed(5) ?? "0"}`,
 					value: `<t:${Math.floor(expense.time / 1000)}>`,
 				});
 			}
@@ -99,7 +99,7 @@ export async function generatePremiumEmbed(premiumInfo: {
 				chargesFields.push({
 					name: `${charge.type.slice(0, 1).toUpperCase()}${charge.type.slice(1)} ${charge.gateway ? `- using \`${charge.gateway}\`` : ""
 						}`,
-					value: `$${charge.amount.toFixed(2)} - <t:${Math.floor(charge.time / 1000)}>`,
+					value: `$${charge.amount?.toFixed(2) ?? "0"} - <t:${Math.floor(charge.time / 1000)}>`,
 				});
 			}
 		} else if (premiumInfo.premiumSelection.location === "guild" && guild?.plan) {
@@ -108,7 +108,7 @@ export async function generatePremiumEmbed(premiumInfo: {
 				chargesFields.push({
 					name: `${charge.type.slice(0, 1).toUpperCase()}${charge.type.slice(1)} ${charge.gateway ? `- using \`${charge.gateway}\`` : ""
 						}`,
-					value: `$${charge.amount.toFixed(2)} - <t:${Math.floor(charge.time / 1000)}>`,
+					value: `$${charge.amount?.toFixed(2)} - <t:${Math.floor(charge.time / 1000)}>`,
 				});
 			}
 		}
@@ -123,10 +123,10 @@ export async function generatePremiumEmbed(premiumInfo: {
 		// LAST EMBED
 		let description = "";
 		if (premiumInfo.premiumSelection.location === "user" && user.plan) {
-			description = `**$${user.plan?.used.toFixed(2)}**\`${generateProgressBar(user.plan.total, user.plan.used)}\`**$${user.plan?.total
+			description = `**$${user.plan?.used?.toFixed(2)}**\`${generateProgressBar(user.plan.total, user.plan.used)}\`**$${user.plan?.total
 				}**`;
 		} else if (premiumInfo.premiumSelection.location === "guild" && guild?.plan) {
-			description = `**$${guild.plan?.used.toFixed(2)}**\`${generateProgressBar(guild.plan.total, guild.plan.used)}\`**$${guild.plan?.total
+			description = `**$${guild.plan?.used?.toFixed(2)}**\`${generateProgressBar(guild.plan.total, guild.plan.used)}\`**$${guild.plan?.total
 				}**`;
 		}
 		embeds.push({
