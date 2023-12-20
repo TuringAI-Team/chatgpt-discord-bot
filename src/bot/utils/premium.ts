@@ -225,6 +225,7 @@ export async function chargePlan(cost: number, environment: Environment, type: "
 			plan: {
 				used: environment.user.plan.used + cost,
 				total: environment.user.plan.total,
+				history: environment.user.plan.history,
 				expenses: [
 					...environment.user.plan.expenses ?? [],
 					{
@@ -244,6 +245,7 @@ export async function chargePlan(cost: number, environment: Environment, type: "
 			plan: {
 				used: environment.guild.plan.used + cost,
 				total: environment.guild.plan.total,
+				history: environment.guild.plan.history,
 				expenses: [
 					...environment.guild.plan.expenses ?? [],
 					{
