@@ -157,7 +157,7 @@ export function getDefaultValues(settingId: string) {
 		case "chat:partialMessages":
 			return true;
 		case "image:model":
-			return "sdxl";
+			return "fast_sdxl";
 		case "image:style":
 			return "default";
 		case "premium:typePriority":
