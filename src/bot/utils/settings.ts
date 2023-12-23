@@ -45,6 +45,14 @@ export async function generateSections(pageName: EnabledSectionsTypes, env: Envi
 			});
 		}
 	}
+	if (settings.length === 0) {
+		const newSettings = await getDefaultUserSettings(false);
+		if (!newSettings) return null;
+		settings = newSettings as SettingCategory[];
+		await update("users", user.id, {
+			settings_new: settings,
+		});
+	}
 	const settingsWithMetadata = await getSettingsMetadata(settings);
 	if (!settingsWithMetadata) return null;
 	const sectionSettings = settingsWithMetadata.find((category) => category.name === pageName);
