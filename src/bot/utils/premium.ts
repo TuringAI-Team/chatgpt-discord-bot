@@ -96,14 +96,16 @@ export async function generatePremiumEmbed(premiumInfo: {
 		// SECOND EMBED: Charges ups
 		const chargesFields: DiscordEmbedField[] = [];
 		if (premiumInfo.premiumSelection.location === "user" && user.plan) {
-			for (const charge of user.plan.history) {
-				if (chargesFields.length >= 10) break;
-				chargesFields.push({
-					name: `${charge.type.slice(0, 1).toUpperCase()}${charge.type.slice(1)} ${
-						charge.gateway ? `- using \`${charge.gateway}\`` : ""
-					}`,
-					value: `$${charge.amount?.toFixed(2) ?? "0"} - <t:${Math.floor(charge.time / 1000)}>`,
-				});
+			if (user.plan.history && user.plan.history.length > 0) {
+				for (const charge of user.plan.history) {
+					if (chargesFields.length >= 10) break;
+					chargesFields.push({
+						name: `${charge.type.slice(0, 1).toUpperCase()}${charge.type.slice(1)} ${
+							charge.gateway ? `- using \`${charge.gateway}\`` : ""
+						}`,
+						value: `$${charge.amount?.toFixed(2) ?? "0"} - <t:${Math.floor(charge.time / 1000)}>`,
+					});
+				}
 			}
 		} else if (premiumInfo.premiumSelection.location === "guild" && guild?.plan) {
 			for (const charge of guild.plan.history) {
@@ -116,13 +118,14 @@ export async function generatePremiumEmbed(premiumInfo: {
 				});
 			}
 		}
-
-		embeds.push({
-			title: "Previous charges-ups 💸",
-			timestamp: new Date().toISOString(),
-			color: config.brand.color,
-			fields: chargesFields,
-		});
+		if (chargesFields.length > 0) {
+			embeds.push({
+				title: "Previous charges-ups 💸",
+				timestamp: new Date().toISOString(),
+				color: config.brand.color,
+				fields: chargesFields,
+			});
+		}
 
 		// LAST EMBED
 		let description = "";
