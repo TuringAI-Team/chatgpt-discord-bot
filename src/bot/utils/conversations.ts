@@ -83,7 +83,6 @@ export async function addMessagesToConversation(conversation: Conversation, mess
 		},
 		last_update: Date.now(),
 	};
-	console.log(updatedConversation);
 	await update("conversations", conversation.id, updatedConversation);
 }
 export async function newConversation(messages: ConversationMessage[], userId: string, modelName: string) {
