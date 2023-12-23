@@ -191,12 +191,12 @@ export async function premium(env: Environment): Promise<{
 	location: "user" | "guild";
 } | null> {
 	/* In which order to use the plans in */
-	const locationPriority: "guild" | "user" = (await getSettingsValue(env.user, "premium:location_priority")) as "guild" | "user";
+	const locationPriority: "guild" | "user" = (await getSettingsValue(env.user, "premium:locationPriority")) as "guild" | "user";
 
 	/* Whether to prefer the Premium of the guild or user itself */
 	const typePriority: "plan" | "subscription" = (await getSettingsValue(
 		env.guild ? env[locationPriority]! : env.user,
-		"premium:type_priority",
+		"premium:typePriority",
 	)) as "plan" | "subscription";
 
 	const checks: Record<typeof typePriority, (entry: Guild | User) => boolean> = {

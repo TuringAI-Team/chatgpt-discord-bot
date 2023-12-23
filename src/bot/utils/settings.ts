@@ -30,8 +30,8 @@ function key2data(key: string) {
 	return { collection, id };
 }
 
-export type EnabledSectionsTypes = "chat" | "image" | "premium" | string;
-export const EnabledSections: Array<EnabledSectionsTypes> = ["chat", "image", "general"];
+export type EnabledSectionsTypes = "general" | "chat" | "image" | "premium" | string;
+export const EnabledSections: Array<EnabledSectionsTypes> = ["chat", "image", "general", "premium"];
 export async function generateSections(pageName: EnabledSectionsTypes, env: Environment): Promise<CreateMessageOptions | null> {
 	let message: null | CreateMessageOptions = null;
 	const user = env.user;
@@ -277,6 +277,7 @@ export function getMetadata(
 							value: "subscription",
 						},
 					],
+					enabled: true,
 				};
 			case "premium:locationPriority":
 				return {
@@ -295,6 +296,7 @@ export function getMetadata(
 							value: "user",
 						},
 					],
+					enabled: true,
 				};
 			default:
 				return {

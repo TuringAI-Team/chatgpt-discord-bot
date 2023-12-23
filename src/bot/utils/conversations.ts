@@ -55,7 +55,6 @@ export async function getConversation(userId: string, modelName: string) {
 		//  get the last 10 messages
 	}
 
-
 	return conversation;
 }
 
