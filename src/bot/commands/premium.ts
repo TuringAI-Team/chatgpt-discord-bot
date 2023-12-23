@@ -24,6 +24,7 @@ async function buildInfo(bot: Bot, userId: BigString, guildId?: BigString): Prom
 			content: "You don't have any premium plan or subscription.",
 		};
 	const premiumInfo = await premium(environment);
+	console.log(premiumInfo);
 	const embed = await generatePremiumEmbed({
 		environment: environment,
 		premiumSelection: premiumInfo,
