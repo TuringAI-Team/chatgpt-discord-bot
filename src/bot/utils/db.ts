@@ -201,7 +201,7 @@ export async function premium(env: Environment): Promise<{
 
 	const checks: Record<typeof typePriority, (entry: Guild | User) => boolean> = {
 		subscription: (entry) => entry.subscription !== null && Date.now() < entry.subscription.expires,
-		plan: (entry) => entry.plan !== null && entry.plan.total > entry.plan.used + 0.01,
+		plan: (entry) => entry.plan !== null && entry.plan?.total > entry.plan.used + 0.01,
 	};
 
 	const locations: typeof locationPriority[] = ["guild", "user"];
