@@ -40,6 +40,21 @@ export async function getConversation(userId: string, modelName: string) {
 		}
 		lastRole = message.role;
 	}
+	// if there is more than 10 messages, use the last 10
+	if (conversation.history.messages.length > 10) {
+		const updatedConversation = {
+			history: {
+				datasetId: conversation.history.datasetId,
+				messages: conversation.history.messages.slice(-10),
+			},
+			last_update: Date.now(),
+		};
+		await update("conversations", conversation.id, updatedConversation);
+		conversation.history.messages = conversation.history.messages.slice(-10);
+		conversation.history.messages = conversation.history.messages.slice(-10);
+		//  get the last 10 messages
+	}
+
 
 	return conversation;
 }
