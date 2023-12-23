@@ -533,7 +533,6 @@ export async function getSettingsValue(entry: Guild | User, key: string): Promis
 	if (!entry) return false;
 	if ("roles" in entry) entryType = "users";
 	else entryType = "guilds";
-
 	if (!entry || !entry.settings_new) {
 		const newSettings = await oldSettingsMigration(entry.settings);
 		if (newSettings) {
@@ -546,6 +545,14 @@ export async function getSettingsValue(entry: Guild | User, key: string): Promis
 		}
 		return false;
 	}
+	if (entry.settings_new.length === 0) {
+		const newSettings = await getDefaultUserSettings(false);
+		entry.settings_new = newSettings as SettingCategory[];
+		await update(entryType, entry.id, {
+			settings_new: newSettings,
+		});
+	}
+
 	const { collection, id } = key2data(key);
 	const category = entry.settings_new.find((category) => category.name === collection);
 	if (!category) return false;
