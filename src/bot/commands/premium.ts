@@ -25,6 +25,7 @@ async function buildInfo(bot: Bot, userId: BigString, guildId?: BigString): Prom
 		};
 	const premiumInfo = await premium(environment);
 	console.log('premiumInfo', premiumInfo);
+	console.log('env', guildId);
 	const embed = await generatePremiumEmbed({
 		environment: environment,
 		premiumSelection: premiumInfo,
