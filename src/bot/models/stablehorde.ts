@@ -60,7 +60,7 @@ const icbinp: GenericModel<GenericParam> = {
 };
 
 const turbo: GenericModel<GenericParam> = {
-	id: "turbo",
+	id: "turboxl",
 	name: "TURBO XL",
 	from: {
 		width: 1024,
@@ -92,6 +92,7 @@ const fustercluck: GenericModel<GenericParam> = {
 		return api.image.sh({
 			...data,
 			model: "Fustercluck",
+			prompt: `cartoon, ${data.prompt}`
 		});
 	},
 };
