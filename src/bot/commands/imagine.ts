@@ -124,7 +124,6 @@ export default createCommand({
 			}
 			modelName = setting;
 		}
-		console.log(modelName);
 		const model = IMAGE_MODELS.find((x) => x.id === modelName);
 		if (!model) {
 			await interaction.edit({
@@ -167,9 +166,8 @@ export default createCommand({
 					embeds: [
 						{
 							color: config.brand.color,
-							title: `Waiting in queue <${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${
-								loadingIndicator.emoji.id
-							}>`,
+							title: `Waiting in queue <${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${loadingIndicator.emoji.id
+								}>`,
 						},
 					],
 				});
@@ -179,9 +177,8 @@ export default createCommand({
 					embeds: [
 						{
 							color: config.brand.color,
-							title: `Generating <${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${
-								loadingIndicator.emoji.id
-							}>`,
+							title: `Generating <${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${loadingIndicator.emoji.id
+								}>`,
 						},
 					],
 				});
