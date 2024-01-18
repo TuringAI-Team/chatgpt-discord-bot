@@ -31,16 +31,13 @@ export default createCommand({
 				name: "model",
 				description: "The model that will be used for the image generation",
 				choices: [
-					//			["SDXL Turbo · Latest Stable Diffusion model", "sdxlturbo"],
 					["SDXL · Latest Stable Diffusion model", "sdxl"],
-					["Fast SDXL - faster version of SDXL", "fast_sdxl"],
-
+					["TURBO XL · Faster version of SDXL", "turboxl"],
+					["Fustercluck · SDXL model trained for creating cartoony or anime style images", "fustercluck"],
+					["ICBINP XL · Model trained on highly-realistic images", "icbninp"],
+					["AlbedoBase XL (SDXL) · SDXL model without refiner", "albedobase"],
 					//        ["DALL-E 3 · Latest DALL-E model", "dalle3"],
-					/*		["Kandinsky · Multi-lingual latent diffusion model", "kandinsky"],
-							["Project Unreal Engine 5 · Model trained on Unreal Engine 5 renders", "pue5"],
-							["Dreamshaper · A mix of several Stable Diffusion models", "dreamshaper"],
-							["ICBINP · Model trained on highly-realistic images", "icbninp"],
-							["Anything Diffusion · Stable Diffusion-based model trained on Anime", "anything"],*/
+					/*		["Kandinsky · Multi-lingual latent diffusion model", "kandinsky"],*/
 				],
 			} /*
 			{
@@ -127,6 +124,7 @@ export default createCommand({
 			}
 			modelName = setting;
 		}
+		console.log(modelName);
 		const model = IMAGE_MODELS.find((x) => x.id === modelName);
 		if (!model) {
 			await interaction.edit({
@@ -148,19 +146,13 @@ export default createCommand({
 			width: number;
 			height: number;
 			model?: string;
-			model_version?: string;
 		} = {
 			prompt,
 			number,
 			width: 1024,
 			height: 1024,
 		};
-		if (modelName === "sdxl") {
-			data.model = "SDXL 1.0";
-		}
-		if (modelName === "fast_sdxl") {
-			data.model_version = "lcm";
-		}
+
 		const event = await model.run(interaction.bot.api, data);
 		if (!event || !(event instanceof EventEmitter)) {
 			await interaction.edit({

@@ -15,56 +15,85 @@ const sdxl: GenericModel<GenericParam> = {
 		height: 1024,
 	},
 	run(api, data) {
-		return api.image.sh(data);
+		return api.image.sh({
+			...data,
+			model: "SDXL 1.0",
+		});
 	},
 };
 
-const OpenJourneyDiffussion: GenericModel<GenericParam> = {
-	id: "openjourney_diffusion",
-	name: "OpenJourney Diffusion",
+const albedobase: GenericModel<GenericParam> = {
+	id: "albedobase",
+	name: "AlbedoBase XL",
 	from: {
-		width: 512,
-		height: 512,
+		width: 1024,
+		height: 1024,
 	},
 	to: {
 		width: 1024,
 		height: 1024,
 	},
 	run(api, data) {
-		return api.image.sh(data);
+		return api.image.sh({
+			...data,
+			model: "AlbedoBase XL (SDXL)",
+		});
 	},
 };
-
-const Deliberate: GenericModel<GenericParam> = {
-	id: "deliberate",
-	name: "Deliberate",
+const icbinp: GenericModel<GenericParam> = {
+	id: "icbinp",
+	name: "ICBINP XL",
 	from: {
-		width: 512,
-		height: 512,
+		width: 1024,
+		height: 1024,
 	},
 	to: {
 		width: 1024,
 		height: 1024,
 	},
 	run(api, data) {
-		return api.image.sh(data);
+		return api.image.sh({
+			...data,
+			model: "ICBINP XL",
+		});
 	},
 };
 
-const majicMIXR: GenericModel<GenericParam> = {
-	id: "majicMIX_realistic",
-	name: "majicMIX realistic",
+const turbo: GenericModel<GenericParam> = {
+	id: "turbo",
+	name: "TURBO XL",
 	from: {
-		width: 512,
-		height: 512,
+		width: 1024,
+		height: 1024,
 	},
 	to: {
 		width: 1024,
 		height: 1024,
 	},
 	run(api, data) {
-		return api.image.sh(data);
+		return api.image.sh({
+			...data,
+			model: "TURBO XL",
+		});
+	},
+};
+const fustercluck: GenericModel<GenericParam> = {
+	id: "fustercluck",
+	name: "Fustercluck",
+	from: {
+		width: 1024,
+		height: 1024,
+	},
+	to: {
+		width: 1024,
+		height: 1024,
+	},
+	run(api, data) {
+		return api.image.sh({
+			...data,
+			model: "Fustercluck",
+		});
 	},
 };
 
-export { majicMIXR, Deliberate, OpenJourneyDiffussion, sdxl };
+export { sdxl, albedobase, icbinp, turbo, fustercluck };

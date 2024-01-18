@@ -3,10 +3,9 @@ import { Api } from "../api.js";
 import { DALLE3, GPT16K, GPT3_5, GPT4 } from "./openai.js";
 import { Claude, Claude_instant } from "./text/anthropic.js";
 import openchat from "./text/openchat.js";
-import { sdxl, OpenJourneyDiffussion, Deliberate, majicMIXR } from "./stablehorde.js";
+import { albedobase, fustercluck, icbinp, sdxl, turbo } from "./stablehorde.js";
 import kandinsky from "./kandinsky.js";
 import { Zephyr } from "./text/pawan.js";
-import fastSdxl from "./fast-sdxl.js";
 import google from "./text/google.js";
 
 type Prettify<T> = {
@@ -98,12 +97,15 @@ export type GenericParam = Parameters<Api["image"]["sh"]>[0];
 
 export const IMAGE_MODELS: (GenericModel<GenericParam> | DALLEModel<2>)[] = [
 	sdxl,
+	albedobase,
+	icbinp,
+	turbo,
+	fustercluck,
 	//OpenJourneyDiffussion,
 	//Deliberate,
 	//majicMIXR,
 	//DALLE3,
 	//kandinsky,
-	fastSdxl,
 ];
 export type ImageModel = Pick<Model, "name" | "id" | "premium">;
 
