@@ -50,7 +50,7 @@ async function buildInfo(bot: Bot, guildId?: BigString): Promise<CreateMessageOp
 				fields: [
 					{
 						name: "Servers 🖥️",
-						value: `301.000`,
+						value: "312.000",
 						inline: true,
 					},
 					{
