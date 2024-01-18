@@ -34,7 +34,7 @@ export default createCommand({
 					["SDXL · Latest Stable Diffusion model", "sdxl"],
 					["TURBO XL · Faster version of SDXL", "turboxl"],
 					["Fustercluck · SDXL model trained for creating cartoony or anime style images", "fustercluck"],
-					["ICBINP XL · Model trained on highly-realistic images", "icbninp"],
+					["ICBINP XL · Model trained on highly-realistic images", "icbinp"],
 					["AlbedoBase XL (SDXL) · SDXL model without refiner", "albedobase"],
 					//        ["DALL-E 3 · Latest DALL-E model", "dalle3"],
 					/*		["Kandinsky · Multi-lingual latent diffusion model", "kandinsky"],*/
@@ -125,6 +125,7 @@ export default createCommand({
 			modelName = setting;
 		}
 		const model = IMAGE_MODELS.find((x) => x.id === modelName);
+		console.log(modelName);
 		if (!model) {
 			await interaction.edit({
 				content: "The model you specified does not exist.",
@@ -166,8 +167,9 @@ export default createCommand({
 					embeds: [
 						{
 							color: config.brand.color,
-							title: `Waiting in queue <${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${loadingIndicator.emoji.id
-								}>`,
+							title: `Waiting in queue <${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${
+								loadingIndicator.emoji.id
+							}>`,
 						},
 					],
 				});
@@ -177,8 +179,9 @@ export default createCommand({
 					embeds: [
 						{
 							color: config.brand.color,
-							title: `Generating <${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${loadingIndicator.emoji.id
-								}>`,
+							title: `Generating <${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${
+								loadingIndicator.emoji.id
+							}>`,
 						},
 					],
 				});
