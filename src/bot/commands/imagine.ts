@@ -101,8 +101,8 @@ export default createCommand({
 		],
 	},
 	cooldown: {
-		user: 1.5 * 60 * 1000,
-		voter: 1.25 * 60 * 1000,
+		user: 2 * 60 * 1000,
+		voter: 1.5 * 60 * 1000,
 		subscription: 1 * 60 * 1000,
 	},
 	interaction: async ({ interaction, options, env, premium }) => {
