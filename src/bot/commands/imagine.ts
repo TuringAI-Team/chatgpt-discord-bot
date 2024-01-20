@@ -33,7 +33,8 @@ export default createCommand({
 				choices: [
 					["SDXL · Latest Stable Diffusion model", "sdxl"],
 					["TURBO XL · Faster version of SDXL", "turboxl"],
-					["Fustercluck · SDXL model trained for creating cartoony or anime style images", "fustercluck"],
+					["Fustercluck (Cartoon) · SDXL model trained for creating cartoony style images", "fustercluck-c"],
+					["Fustercluck (Anime) · SDXL model trained for creating cartoony style images", "fustercluck-a"],
 					["ICBINP XL · Model trained on highly-realistic images", "icbinp"],
 					["AlbedoBase XL (SDXL) · SDXL model without refiner", "albedobase"],
 					//        ["DALL-E 3 · Latest DALL-E model", "dalle3"],
@@ -105,7 +106,7 @@ export default createCommand({
 		subscription: 1 * 60 * 1000,
 	},
 	interaction: async ({ interaction, options, env, premium }) => {
-		const prompt = options.getString("prompt", true);
+		let prompt = options.getString("prompt", true);
 		const negative = options.getString("negative");
 		let modelName = options.getString("model");
 		const style = options.getString("style");
@@ -123,6 +124,19 @@ export default createCommand({
 				setting = (await getDefaultValues("image:model")) as string;
 			}
 			modelName = setting;
+		}
+		if (modelName.includes('fustercluck')) {
+			modelName = "fustercluck"
+			let type = "c"
+			if (modelName.split("-")[1] === "a") {
+				type = "a"
+			}
+			if (type === "c") {
+				prompt = `cartoon, ${prompt}`
+			}
+			if (type === "a") {
+				prompt = `anime, ${prompt}`
+			}
 		}
 		const model = IMAGE_MODELS.find((x) => x.id === modelName);
 		if (!model) {
