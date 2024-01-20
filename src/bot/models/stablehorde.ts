@@ -92,7 +92,7 @@ const fustercluck: GenericModel<GenericParam> = {
 		return api.image.sh({
 			...data,
 			model: "Fustercluck",
-			prompt: `${data.prompt}`
+			prompt: `${data.prompt}`,
 		});
 	},
 };
