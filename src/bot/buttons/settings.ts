@@ -15,92 +15,90 @@ export const settings: ButtonResponse = {
 	run: async (interaction, data) => {
 		const environment = await env(interaction.user.id.toString(), interaction.guildId?.toString());
 		const prem = await premium(environment);
-		switch (data.action) {
-			case "open": {
-				let page = EnabledSections[0];
-				const newValue = interaction.data.values?.[0];
-				if (newValue) {
-					page = newValue.toLowerCase() as EnabledSectionsTypes;
-				}
-				const section = await generateSections(page, environment);
-				if (section) {
-					await interaction.edit(section);
-				} else {
-					await interaction.edit({
-						content: "No section found",
-					});
-				}
-				break;
+		if (data.action === "open") {
+			let page = EnabledSections[0];
+			const newValue = interaction.data.values?.[0];
+			if (newValue) {
+				page = newValue.toLowerCase() as EnabledSectionsTypes;
+			} else if (data.value) {
+				page = data.value.toLowerCase() as EnabledSectionsTypes;
 			}
-			case "update":
-				const id = data.value;
-				const prem = await premium(environment);
-				const categoryId = id.split(":")[0] as SettingsCategoryNames;
-				let newValue = interaction.data.values?.[0];
-				const isPremium = newValue?.includes("_premium");
-				if (isPremium) {
-					newValue = newValue?.replace("_premium", "");
-				}
-				if (!prem && isPremium) {
-					await interaction.edit(requiredPremium as CreateMessageOptions);
-					return;
-				}
+			const section = await generateSections(page, environment);
+			if (section) {
+				await interaction.edit(section);
+			} else {
+				await interaction.edit({
+					content: "No section found",
+				});
+			}
+		} else if (data.action === "update") {
+			const id = data.value;
+			const prem = await premium(environment);
+			const categoryId = id.split(":")[0] as SettingsCategoryNames;
+			let newValue = interaction.data.values?.[0];
+			const isPremium = newValue?.includes("_premium");
+			if (isPremium) {
+				newValue = newValue?.replace("_premium", "");
+			}
+			if (!prem && isPremium) {
+				await interaction.edit(requiredPremium as CreateMessageOptions);
+				return;
+			}
 
-				const user = environment.user;
-				let settings = user.settings_new;
-				if (!settings || settings.length === 0) {
-					const newSettings = await oldSettingsMigration(user.settings);
-					if (newSettings) {
-						settings = newSettings;
-						await update("users", user.id, {
-							settings_new: newSettings,
-						});
-					}
-				}
-				const newSettings = settings?.map((x) => {
-					if (x.name === categoryId) {
-						return {
-							...x,
-							settings: x.settings.map((y) => {
-								if (y.id === id) {
-									return {
-										id: y.id,
-										key: y.key,
-										value: newValue,
-									};
-								} else {
-									return y;
-								}
-							}),
-						};
-					} else {
-						return x;
-					}
-				});
-				await update("users", user.id, {
-					settings_new: newSettings,
-				});
-				const newEnvironment = {
-					...environment,
-					user: {
-						...user,
+			const user = environment.user;
+			let settings = user.settings_new;
+			if (!settings || settings.length === 0) {
+				const newSettings = await oldSettingsMigration(user.settings);
+				if (newSettings) {
+					settings = newSettings;
+					await update("users", user.id, {
 						settings_new: newSettings,
-					},
-				} as Environment;
-
-				const section = await generateSections(categoryId, newEnvironment);
-				if (section) {
-					await interaction.edit(section);
-				} else {
-					await interaction.edit({
-						content: "No section found",
 					});
 				}
-				break;
-			default:
+			}
+			const newSettings = settings?.map((x) => {
+				if (x.name === categoryId) {
+					return {
+						...x,
+						settings: x.settings.map((y) => {
+							if (y.id === id) {
+								return {
+									id: y.id,
+									key: y.key,
+									value: newValue,
+								};
+							} else {
+								return y;
+							}
+						}),
+					};
+				} else {
+					return x;
+				}
+			});
+			await update("users", user.id, {
+				settings_new: newSettings,
+			});
+			const newEnvironment = {
+				...environment,
+				user: {
+					...user,
+					settings_new: newSettings,
+				},
+			} as Environment;
+
+			const section = await generateSections(categoryId, newEnvironment);
+			if (section) {
+				await interaction.edit(section);
+			} else {
 				await interaction.edit({
-					content: "No action found",
+					content: "No section found",
 				});
+			}
+		} else {
+			await interaction.edit({
+				content: "No action found",
+			});
 		}
 	},
 };

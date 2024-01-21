@@ -144,6 +144,24 @@ export default createCommand({
 		if (!model) {
 			await interaction.edit({
 				content: "The model you specified does not exist.",
+				components: [
+					{
+						type: MessageComponentTypes.ActionRow,
+						components: [
+							{
+								type: MessageComponentTypes.Button,
+								label: 'Change model Here',
+								customId: "settings_open_image",
+								disabled: false,
+								emoji: {
+									//  warning symbol
+									name: '⚠️',
+								},
+								style: ButtonStyles.Secondary,
+							},
+						],
+					},
+				],
 			});
 			return;
 		}
