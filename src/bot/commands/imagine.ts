@@ -169,10 +169,7 @@ export default createCommand({
 			await interaction.edit(requiredPremium as CreateMessageOptions);
 			return;
 		}
-		let number: 1 | 2 = 1;
-		if (premium) {
-			number = 2;
-		}
+		const number: 1 | 2 = 1;
 		const data: {
 			prompt: string;
 			number: 1 | 2;
