@@ -70,9 +70,8 @@ export async function generatePremiumEmbed(premiumInfo: {
 			for (const expense of user.plan.expenses) {
 				if (expensesFields.length >= 10) break;
 				expensesFields.push({
-					name: `${expense.type.slice(0, 1).toUpperCase()}${expense.type.slice(1)} - using \`${expense.data.model}\` - $${
-						expense.used?.toFixed(5) ?? "0"
-					}`,
+					name: `${expense.type.slice(0, 1).toUpperCase()}${expense.type.slice(1)} - using \`${expense.data.model}\` - $${expense.used?.toFixed(5) ?? "0"
+						}`,
 					value: `<t:${Math.floor(expense.time / 1000)}:R>`,
 				});
 			}
@@ -80,9 +79,8 @@ export async function generatePremiumEmbed(premiumInfo: {
 			for (const expense of guild.plan.expenses) {
 				if (expensesFields.length >= 10) break;
 				expensesFields.push({
-					name: `${expense.type.slice(0, 1).toUpperCase()}${expense.type.slice(1)} - using \`${expense.data.model}\` - $${
-						expense.used?.toFixed(5) ?? "0"
-					}`,
+					name: `${expense.type.slice(0, 1).toUpperCase()}${expense.type.slice(1)} - using \`${expense.data.model}\` - $${expense.used?.toFixed(5) ?? "0"
+						}`,
 					value: `<t:${Math.floor(expense.time / 1000)}>`,
 				});
 			}
@@ -100,9 +98,8 @@ export async function generatePremiumEmbed(premiumInfo: {
 				for (const charge of user.plan.history) {
 					if (chargesFields.length >= 10) break;
 					chargesFields.push({
-						name: `${charge.type.slice(0, 1).toUpperCase()}${charge.type.slice(1)} ${
-							charge.gateway ? `- using \`${charge.gateway}\`` : ""
-						}`,
+						name: `${charge.type.slice(0, 1).toUpperCase()}${charge.type.slice(1)} ${charge.gateway ? `- using \`${charge.gateway}\`` : ""
+							}`,
 						value: `$${charge.amount?.toFixed(2) ?? "0"} - <t:${Math.floor(charge.time / 1000)}>`,
 					});
 				}
@@ -111,9 +108,8 @@ export async function generatePremiumEmbed(premiumInfo: {
 			for (const charge of guild.plan.history) {
 				if (chargesFields.length >= 10) break;
 				chargesFields.push({
-					name: `${charge.type.slice(0, 1).toUpperCase()}${charge.type.slice(1)} ${
-						charge.gateway ? `- using \`${charge.gateway}\`` : ""
-					}`,
+					name: `${charge.type.slice(0, 1).toUpperCase()}${charge.type.slice(1)} ${charge.gateway ? `- using \`${charge.gateway}\`` : ""
+						}`,
 					value: `$${charge.amount?.toFixed(2)} - <t:${Math.floor(charge.time / 1000)}>`,
 				});
 			}
@@ -130,13 +126,11 @@ export async function generatePremiumEmbed(premiumInfo: {
 		// LAST EMBED
 		let description = "";
 		if (premiumInfo.premiumSelection.location === "user" && user.plan) {
-			description = `**$${user.plan?.used?.toFixed(2)}**\`${generateProgressBar(user.plan.total, user.plan.used)}\`**$${
-				user.plan?.total
-			}**`;
+			description = `**$${user.plan?.used?.toFixed(2)}**\`${generateProgressBar(user.plan.total, user.plan.used)}\`**$${user.plan?.total
+				}**`;
 		} else if (premiumInfo.premiumSelection.location === "guild" && guild?.plan) {
-			description = `**$${guild.plan?.used?.toFixed(2)}**\`${generateProgressBar(guild.plan.total, guild.plan.used)}\`**$${
-				guild.plan?.total
-			}**`;
+			description = `**$${guild.plan?.used?.toFixed(2)}**\`${generateProgressBar(guild.plan.total, guild.plan.used)}\`**$${guild.plan?.total
+				}**`;
 		}
 		embeds.push({
 			title: "Your pay-as-you-go plan 📊",
@@ -227,46 +221,72 @@ async function premCheck() {
 
 export async function chargePlan(cost: number, environment: Environment, type: "chat" | "image", model: string) {
 	const prem = await premium(environment);
-	if (!prem || prem.type !== "plan") return false;
-	if (prem.location === "user") {
-		if (!environment.user?.plan) return false;
-		await update("users", environment.user.id, {
-			plan: {
-				used: environment.user.plan.used + cost,
-				total: environment.user.plan.total,
-				history: environment.user.plan.history ?? [],
-				expenses: [
-					...(environment.user.plan.expenses ?? []),
-					{
-						data: {
-							model,
+	if (!prem) return false;
+	if (prem.type === "plan") {
+		if (prem.location === "user") {
+			if (!environment.user?.plan) return false;
+			await update("users", environment.user.id, {
+				plan: {
+					used: environment.user.plan.used + cost,
+					total: environment.user.plan.total,
+					history: environment.user.plan.history ?? [],
+					expenses: [
+						...(environment.user.plan.expenses ?? []),
+						{
+							data: {
+								model,
+							},
+							type: type,
+							used: cost,
+							time: Date.now(),
 						},
-						type: type,
-						used: cost,
-						time: Date.now(),
-					},
-				],
-			},
-		});
-	} else if (prem.location === "guild") {
-		if (!environment.guild?.plan) return false;
-		await update("guilds", environment.guild.id, {
-			plan: {
-				used: environment.guild.plan.used + cost,
-				total: environment.guild.plan.total,
-				history: environment.guild.plan.history ?? [],
-				expenses: [
-					...(environment.guild.plan.expenses ?? []),
-					{
-						data: {
-							model,
+					],
+				},
+			});
+		} else if (prem.location === "guild") {
+			if (!environment.guild?.plan) return false;
+			await update("guilds", environment.guild.id, {
+				plan: {
+					used: environment.guild.plan.used + cost,
+					total: environment.guild.plan.total,
+					history: environment.guild.plan.history ?? [],
+					expenses: [
+						...(environment.guild.plan.expenses ?? []),
+						{
+							data: {
+								model,
+							},
+							type: type,
+							used: cost,
+							time: Date.now(),
 						},
-						type: type,
-						used: cost,
-						time: Date.now(),
-					},
-				],
-			},
-		});
+					],
+				},
+			});
+		}
+	} else if (prem.type === "subscription") {
+		if (prem.location === "user") {
+			if (!environment.user?.subscription) return false;
+			const subscription = environment.user.subscription;
+			// if it's expired
+			if (subscription.expires < Date.now()) {
+				await update("users", environment.user.id, {
+					subscription: null,
+				});
+				return false;
+			}
+			// if is not expired do nothing
+
+		} else if (prem.location === "guild") {
+			if (!environment.guild?.subscription) return false;
+			const subscription = environment.guild.subscription;
+			// if it's expired
+			if (subscription.expires < Date.now()) {
+				await update("guilds", environment.guild.id, {
+					subscription: null,
+				});
+				return false;
+			}
+		}
 	}
 }
