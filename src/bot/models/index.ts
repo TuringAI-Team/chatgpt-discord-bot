@@ -1,12 +1,11 @@
 import EventEmitter from "node:events";
 import { Api } from "../api.js";
-import { DALLE3, GPT16K, GPT3_5, GPT4 } from "./openai.js";
 import { Claude, Claude_instant } from "./text/anthropic.js";
 import openchat from "./text/openchat.js";
-import { albedobase, fustercluck, icbinp, sdxl, turbo } from "./stablehorde.js";
-import kandinsky from "./kandinsky.js";
+import { albedobase, cascade, fustercluck, icbinp, sdxl, turbo } from "./stablehorde.js";
 import { Zephyr } from "./text/pawan.js";
 import google from "./text/google.js";
+import groq from "./text/groq.js";
 
 type Prettify<T> = {
 	[K in keyof T]: T[K];
@@ -87,9 +86,11 @@ export type PawanChatModel = Prettify<
 >;
 
 export const CHAT_MODELS: (GPTModel | AnthropicModel | OpenChatModel)[] = [
-	/*GPT4, GPT3_5, GPT16K, */ Claude,
-	Claude_instant,
+	/*GPT4, GPT3_5, GPT16K, */
+	groq,
 	openchat,
+	Claude,
+	Claude_instant,
 	Zephyr,
 	google,
 ];
@@ -237,8 +238,8 @@ export type ImageVisionModel = Prettify<
 		run: (
 			api: Api,
 			data: {
-				model: ("blip2" | "ocr")[];
 				image: string;
+				typeImage: "anything" | "person";
 			},
 		) => EventEmitter | NonNullable<unknown>;
 	}

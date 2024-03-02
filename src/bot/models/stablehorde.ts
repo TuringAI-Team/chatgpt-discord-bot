@@ -96,5 +96,23 @@ const fustercluck: GenericModel<GenericParam> = {
 		});
 	},
 };
-
-export { sdxl, albedobase, icbinp, turbo, fustercluck };
+const cascade: GenericModel<GenericParam> = {
+	id: "stable_cascade",
+	name: "Stable Cascade",
+	from: {
+		width: 1024,
+		height: 1024,
+	},
+	to: {
+		width: 1024,
+		height: 1024,
+	},
+	run(api, data) {
+		return api.image.sh({
+			...data,
+			model: "stable_cascade",
+			prompt: `${data.prompt}`,
+		});
+	},
+};
+export { sdxl, albedobase, icbinp, turbo, fustercluck, cascade };

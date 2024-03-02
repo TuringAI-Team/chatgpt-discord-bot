@@ -150,12 +150,12 @@ export default createCommand({
 						components: [
 							{
 								type: MessageComponentTypes.Button,
-								label: 'Change model Here',
+								label: "Change model Here",
 								customId: "settings_open_image",
 								disabled: false,
 								emoji: {
 									//  warning symbol
-									name: '⚠️',
+									name: "⚠️",
 								},
 								style: ButtonStyles.Secondary,
 							},
@@ -197,8 +197,9 @@ export default createCommand({
 					embeds: [
 						{
 							color: config.brand.color,
-							title: `Waiting in queue <${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${loadingIndicator.emoji.id
-								}>`,
+							title: `Waiting in queue <${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${
+								loadingIndicator.emoji.id
+							}>`,
 						},
 					],
 				});
@@ -208,8 +209,9 @@ export default createCommand({
 					embeds: [
 						{
 							color: config.brand.color,
-							title: `Generating <${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${loadingIndicator.emoji.id
-								}>`,
+							title: `Generating <${loadingIndicator.emoji.animated ? "a" : ""}:${loadingIndicator.emoji.name}:${
+								loadingIndicator.emoji.id
+							}>`,
 						},
 					],
 				});

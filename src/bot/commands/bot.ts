@@ -39,10 +39,6 @@ async function buildInfo(bot: Bot, guildId?: BigString): Promise<CreateMessageOp
 		bot.shards.forEach((shard) => workers.add(shard.workerId));
 	}
 
-	const stats = {
-		guilds: 291000,
-	};
-
 	return {
 		embeds: [
 			{
@@ -50,7 +46,7 @@ async function buildInfo(bot: Bot, guildId?: BigString): Promise<CreateMessageOp
 				fields: [
 					{
 						name: "Servers 🖥️",
-						value: "312.000",
+						value: "334.000",
 						inline: true,
 					},
 					{

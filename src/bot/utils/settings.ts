@@ -159,7 +159,7 @@ export function getDefaultValues(settingId: string) {
 		case "general:loadingIndicator":
 			return 3; // default loading indicator
 		case "chat:model":
-			return "gemini";
+			return "mixtral-8x7b-32768";
 		case "chat:tone":
 			return "neutral";
 		case "chat:partialMessages":
